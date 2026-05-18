@@ -13,7 +13,7 @@ export async function GET(_request: Request, { params }: Params) {
 
     const { data, error } = await supabase
       .from("clubs")
-      .select("id, name, region_id, region:regions(code, name)")
+      .select("id, name, location, region_id, region:regions(code, name)")
       .eq("id", clubId)
       .single();
 
@@ -40,9 +40,23 @@ export async function PATCH(request: Request, { params }: Params) {
     }
 
     const body = await request.json();
+    const patch: { name?: string; location?: string | null } = {};
+    if (body.name !== undefined) {
+      patch.name = String(body.name);
+    }
+    if ("location" in body) {
+      patch.location =
+        body.location === "" || body.location == null
+          ? null
+          : String(body.location);
+    }
+    if (Object.keys(patch).length === 0) {
+      return jsonError("No fields to update", 400);
+    }
+
     const { error } = await supabase
       .from("clubs")
-      .update({ name: body.name })
+      .update(patch)
       .eq("id", clubId);
 
     if (error) return jsonError(error.message, 400);

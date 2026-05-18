@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getActiveSeason } from "@/lib/competition/season";
+import { teamLocationFromClub } from "@/lib/competition/team-location";
 import { matchStatus, type MatchStatus } from "@/lib/scoring/match-state";
 
 export type TeamRosterPlayer = {
@@ -83,10 +84,9 @@ export async function loadTeamDetail(
       `
       id,
       name,
-      location,
       captain_id,
       captain:players(id, name, member_number),
-      club:clubs(id, name),
+      club:clubs(id, name, location),
       group:groups (
         id,
         name,
@@ -125,7 +125,7 @@ export async function loadTeamDetail(
       member_number: string | null;
     } | null,
   );
-  const club = unwrapOne(teamRow.club as { id: string; name: string });
+  const club = unwrapOne(teamRow.club as { id: string; name: string; location: string | null });
   if (!club) return null;
 
   const season = await getActiveSeason(supabase);
@@ -194,7 +194,7 @@ export async function loadTeamDetail(
     team: {
       id: teamRow.id,
       name: teamRow.name,
-      location: teamRow.location,
+      location: teamLocationFromClub(club),
       captain_id: teamRow.captain_id,
     },
     captain: captainRaw,

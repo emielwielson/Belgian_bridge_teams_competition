@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getActiveSeason } from "@/lib/competition/season";
+import { teamLocationFromClub } from "@/lib/competition/team-location";
 
 export type ClubOverviewPlayer = {
   membership_id: string;
@@ -13,7 +14,6 @@ export type ClubOverviewPlayer = {
 export type ClubOverviewTeam = {
   id: string;
   name: string;
-  location: string | null;
   captain_id: string | null;
   captain_name: string | null;
   group_name: string;
@@ -26,6 +26,7 @@ export type ClubOverview = {
   club: {
     id: string;
     name: string;
+    location: string | null;
     region: { code: string; name: string } | null;
   };
   season: { id: string; name: string; status: string } | null;
@@ -44,7 +45,7 @@ export async function loadClubOverview(
 ): Promise<ClubOverview | null> {
   const { data: clubRow, error: clubError } = await supabase
     .from("clubs")
-    .select("id, name, region:regions(code, name)")
+    .select("id, name, location, region:regions(code, name)")
     .eq("id", clubId)
     .maybeSingle();
 
@@ -74,7 +75,6 @@ export async function loadClubOverview(
         `
         id,
         name,
-        location,
         captain_id,
         captain:players(id, name),
         group:groups (
@@ -138,7 +138,6 @@ export async function loadClubOverview(
       return {
         id: t.id,
         name: t.name,
-        location: t.location,
         captain_id: t.captain_id,
         captain_name: captain?.name ?? null,
         group_name: group?.name ?? "—",
@@ -176,6 +175,7 @@ export async function loadClubOverview(
     club: {
       id: clubRow.id,
       name: clubRow.name,
+      location: teamLocationFromClub(clubRow),
       region: regionRaw,
     },
     season: season
@@ -222,9 +222,9 @@ export async function loadClubTeamDetail(
       `
       id,
       name,
-      location,
       captain_id,
       club_id,
+      club:clubs (location),
       group:groups (
         name,
         division:divisions (
@@ -385,11 +385,15 @@ export async function loadClubTeamDetail(
     (a, b) => new Date(a.datetime).getTime() - new Date(b.datetime).getTime(),
   );
 
+  const clubRaw = unwrapOne(
+    teamRow.club as { location: string | null } | null,
+  );
+
   return {
     team: {
       id: teamRow.id,
       name: teamRow.name,
-      location: teamRow.location,
+      location: teamLocationFromClub(clubRaw),
       captain_id: teamRow.captain_id,
       club_id: teamRow.club_id,
       group_name: group?.name ?? "—",

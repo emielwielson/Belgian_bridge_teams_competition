@@ -8,7 +8,7 @@ export async function GET(request: Request) {
 
     let query = supabase
       .from("clubs")
-      .select("id, name, region_id, region:regions(code, name)")
+      .select("id, name, location, region_id, region:regions(code, name)")
       .order("name");
 
     if (regionId) {

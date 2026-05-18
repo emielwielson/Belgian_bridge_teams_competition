@@ -12,12 +12,16 @@ export function ClubOverviewView({ clubId }: Props) {
   const [overview, setOverview] = useState<ClubOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
+  const [location, setLocation] = useState("");
+  const [savingLocation, setSavingLocation] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     const res = await fetch(`/api/clubs/${clubId}/overview`);
     if (res.ok) {
-      setOverview(await res.json());
+      const body = (await res.json()) as ClubOverview;
+      setOverview(body);
+      setLocation(body.club.location ?? "");
       setMessage(null);
     } else {
       const err = await res.json();
@@ -44,6 +48,23 @@ export function ClubOverviewView({ clubId }: Props) {
 
   const seasonLocked = overview.season?.status !== "setup";
 
+  async function saveLocation() {
+    setSavingLocation(true);
+    const res = await fetch(`/api/clubs/${clubId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ location: location.trim() || null }),
+    });
+    setSavingLocation(false);
+    if (!res.ok) {
+      const err = await res.json();
+      setMessage(err.error ?? "Failed to update location");
+      return;
+    }
+    setMessage(null);
+    await load();
+  }
+
   return (
     <div className="flex flex-col gap-8">
       <section className="card flex flex-col gap-2">
@@ -60,6 +81,24 @@ export function ClubOverviewView({ clubId }: Props) {
             {seasonLocked ? " · roster locked" : " · setup (roster editable)"}
           </p>
         ) : null}
+        <label className="mt-4 flex flex-col gap-1 text-sm">
+          <span className="text-zinc-600">Location (match venue for all club teams)</span>
+          <input
+            type="text"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            placeholder="Address or venue name"
+            className="rounded-lg border border-zinc-300 px-3 py-2"
+          />
+        </label>
+        <button
+          type="button"
+          onClick={saveLocation}
+          disabled={savingLocation}
+          className="btn-primary mt-2 w-fit"
+        >
+          {savingLocation ? "Saving…" : "Save location"}
+        </button>
       </section>
 
       {message ? (
@@ -89,9 +128,6 @@ export function ClubOverviewView({ clubId }: Props) {
                   <p className="mt-1 text-sm text-zinc-600">
                     {team.league_name} · {team.division_name} · {team.group_name}
                   </p>
-                  {team.location ? (
-                    <p className="mt-1 text-sm text-zinc-600">{team.location}</p>
-                  ) : null}
                   {team.captain_name ? (
                     <p className="mt-1 text-sm text-zinc-600">
                       Captain: {team.captain_name}

@@ -14,7 +14,6 @@ export function ClubTeamView({ clubId, teamId }: Props) {
   const [detail, setDetail] = useState<ClubTeamDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
-  const [location, setLocation] = useState("");
   const [captainId, setCaptainId] = useState<string>("");
   const [addPlayerId, setAddPlayerId] = useState("");
 
@@ -24,7 +23,6 @@ export function ClubTeamView({ clubId, teamId }: Props) {
     if (res.ok) {
       const body = (await res.json()) as ClubTeamDetail;
       setDetail(body);
-      setLocation(body.team.location ?? "");
       setCaptainId(body.team.captain_id ?? "");
       setMessage(null);
     } else {
@@ -45,7 +43,6 @@ export function ClubTeamView({ clubId, teamId }: Props) {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        location: location.trim() || null,
         captain_id: captainId || null,
       }),
     });
@@ -122,15 +119,22 @@ export function ClubTeamView({ clubId, teamId }: Props) {
 
       <section className="card flex flex-col gap-4">
         <h2 className="text-sm font-semibold text-zinc-900">Team settings</h2>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-zinc-600">Location (match venue)</span>
-          <input
-            type="text"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            className="rounded-lg border border-zinc-300 px-3 py-2"
-          />
-        </label>
+        <p className="text-sm text-zinc-600">
+          <span className="font-medium text-zinc-700">Location: </span>
+          {detail.team.location?.trim() ? (
+            detail.team.location
+          ) : (
+            <span className="text-zinc-500">
+              Not set — update on the{" "}
+              <Link
+                href={`/club-manager/${clubId}`}
+                className="text-emerald-800 hover:underline"
+              >
+                club overview
+              </Link>
+            </span>
+          )}
+        </p>
         <label className="flex flex-col gap-1 text-sm">
           <span className="text-zinc-600">Captain</span>
           <select

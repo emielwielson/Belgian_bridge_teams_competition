@@ -40,14 +40,8 @@ export async function PATCH(request: Request, { params }: Params) {
     }
 
     const body = await request.json();
-    const updates: { location?: string | null; captain_id?: string | null } = {};
+    const updates: { captain_id?: string | null } = {};
 
-    if ("location" in body) {
-      updates.location =
-        body.location === "" || body.location == null
-          ? null
-          : String(body.location);
-    }
     if ("captain_id" in body) {
       updates.captain_id =
         body.captain_id === "" || body.captain_id == null

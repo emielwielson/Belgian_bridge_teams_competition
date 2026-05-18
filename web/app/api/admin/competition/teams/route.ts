@@ -6,6 +6,7 @@ import {
 import { isNationalGroup } from "@/lib/competition/national-teams";
 import { requireActiveSeason } from "@/lib/competition/season";
 import { requireSeasonInSetup } from "@/lib/competition/season-setup";
+import { teamLocationFromClub } from "@/lib/competition/team-location";
 import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
 
 export async function GET(request: Request) {
@@ -17,7 +18,7 @@ export async function GET(request: Request) {
     const { data: teams, error } = await supabase
       .from("teams")
       .select(
-        "id, name, club_id, captain_id, location, club:clubs(id, name, region_id)",
+        "id, name, club_id, captain_id, club:clubs(id, name, region_id, location)",
       )
       .eq("group_id", groupId)
       .order("name");
@@ -51,10 +52,18 @@ export async function GET(request: Request) {
     }
 
     return jsonOk({
-      teams: (teams ?? []).map((t) => ({
-        ...t,
-        roster: rosters[t.id] ?? [],
-      })),
+      teams: (teams ?? []).map((t) => {
+        const rawClub = t.club as unknown;
+        const club = Array.isArray(rawClub)
+          ? (rawClub[0] as { location?: string | null } | undefined)
+          : (rawClub as { location?: string | null } | null);
+        const { club: _club, ...rest } = t;
+        return {
+          ...rest,
+          location: teamLocationFromClub(club),
+          roster: rosters[t.id] ?? [],
+        };
+      }),
     });
   } catch (err) {
     return jsonFromError(err);
@@ -110,7 +119,6 @@ export async function POST(request: Request) {
         club_id: body.club_id,
         name: body.name,
         captain_id: body.captain_id ?? null,
-        location: body.location ?? null,
       })
       .select()
       .single();
@@ -129,7 +137,6 @@ export async function PATCH(request: Request) {
     const patch: Record<string, unknown> = {};
     if (body.name !== undefined) patch.name = body.name;
     if (body.captain_id !== undefined) patch.captain_id = body.captain_id;
-    if (body.location !== undefined) patch.location = body.location;
 
     const { error } = await supabase
       .from("teams")
