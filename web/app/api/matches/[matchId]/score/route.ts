@@ -9,7 +9,9 @@ import {
   assertCanViewMatchOps,
   loadMatchContext,
 } from "@/lib/auth/match-access";
+import { revalidateStandingsForGroup } from "@/lib/competition/revalidate-standings";
 import { submitMatchScore } from "@/lib/scoring/match-operations";
+import { matchResponseFields } from "@/lib/scoring/match-state";
 import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
 
 type Params = { params: Promise<{ matchId: string }> };
@@ -31,7 +33,7 @@ export async function GET(_request: Request, { params }: Params) {
     const match = await loadMatchContext(supabase, matchId);
 
     return jsonOk({
-      match: {
+      match: matchResponseFields({
         id: match.id,
         board_count: match.board_count,
         imps_home: match.imps_home,
@@ -39,7 +41,7 @@ export async function GET(_request: Request, { params }: Params) {
         vp_home: match.vp_home,
         vp_away: match.vp_away,
         played_at: match.played_at,
-      },
+      }),
     });
   } catch (err) {
     return jsonFromError(err);
@@ -63,7 +65,9 @@ export async function POST(request: Request, { params }: Params) {
       isAdminEdit: false,
     });
 
-    return jsonOk({ match: result }, { status: 201 });
+    await revalidateStandingsForGroup(supabase, match.group_id);
+
+    return jsonOk({ match: matchResponseFields(result) }, { status: 201 });
   } catch (err) {
     return jsonFromError(err);
   }
@@ -106,7 +110,9 @@ export async function PATCH(request: Request, { params }: Params) {
       previous,
     });
 
-    return jsonOk({ match: result });
+    await revalidateStandingsForGroup(supabase, match.group_id);
+
+    return jsonOk({ match: matchResponseFields(result) });
   } catch (err) {
     return jsonFromError(err);
   }

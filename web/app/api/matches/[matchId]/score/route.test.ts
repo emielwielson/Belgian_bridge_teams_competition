@@ -18,6 +18,10 @@ vi.mock("@/lib/scoring/match-operations", () => ({
   submitMatchScore: vi.fn(),
 }));
 
+vi.mock("@/lib/competition/revalidate-standings", () => ({
+  revalidateStandingsForGroup: vi.fn(),
+}));
+
 import { requireAuth, requireRoles } from "@/lib/auth/route-auth";
 import {
   loadMatchContext,
@@ -64,6 +68,7 @@ describe("GET /api/matches/[matchId]/score", () => {
     expect(res.status).toBe(200);
     expect(body.match.board_count).toBe(24);
     expect(body.match.played_at).toBeNull();
+    expect(body.match.status).toBe("scheduled");
   });
 });
 
@@ -98,6 +103,7 @@ describe("POST /api/matches/[matchId]/score", () => {
     const body = await res.json();
     expect(res.status).toBe(201);
     expect(body.match.vp_home).toBe(24);
+    expect(body.match.status).toBe("played");
     expect(submitMatchScore).toHaveBeenCalledWith(
       expect.anything(),
       baseMatch,

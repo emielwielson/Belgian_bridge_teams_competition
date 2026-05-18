@@ -133,18 +133,18 @@ Based on: `internal-docs/prd-belgian-bridge-competition-platform.md`
   - [x] 3.9 Add `api/admin/competition/dates/route.ts` for scope-level match date configuration.
   - [x] 3.10 Write `supabase/tests/task3_schedule_smoke_test.sql` for generation output, round uniqueness, and lock behavior.
 
-- [ ] 4.0 Match operations (lineups, scoring, VP tables, standings, corrections)
-  - [ ] 4.1 Implement `api/matches/[matchId]/players/route.ts` and UI for match lineups: min 4 players per team, unlimited substitutes, non-roster subs allowed (FR 27–31).
-  - [ ] 4.2 Implement VP lookup: given `board_count` and IMPs, compute `vp_home`/`vp_away` from group-scoped VP table (FR 38–39).
-  - [ ] 4.3 Build score submission in `api/matches/[matchId]/score/route.ts` (or edge function): authorize Players (match teams), Club Managers, Competition Managers, System Admins; first submission is immediately official, no approval (FR 32–36).
-  - [ ] 4.4 Restrict post-submission edits to Competition Manager and System Admin only; overwrite previous official score; log submission and admin edits (FR 35–37, 57–58).
-  - [ ] 4.5 Mark match as played on first official score; expose match state in API and UI (FR 36).
-  - [ ] 4.6 Implement standings query: derive from scored matches, apply penalties/corrections, sort by `vp_total` desc then `team_name` asc; auto-refresh on score/correction changes (FR 40–43).
-  - [ ] 4.7 Build public standings pages (`standings/page.tsx`, `standings/[groupId]/page.tsx`, `StandingsTable.tsx`) and APIs (`api/standings/`, `api/public/groups`) (FR 63, 7).
-  - [ ] 4.8 Build Player scoring UI (`RegularSeasonScoring.tsx`, `api/matches/scorable`) optimized for mobile (FR 65).
-  - [ ] 4.9 Implement admin standings corrections and penalty CRUD (FR 41, 44–45) with audit logging.
-  - [ ] 4.10 Implement `lib/time/brussels.ts` and use consistently in match UI (FR 26).
-  - [ ] 4.11 Write `supabase/tests/task4_match_ops_smoke_test.sql` and component tests for scoring and standings.
+- [x] 4.0 Match operations (lineups, scoring, VP tables, standings, corrections)
+  - [x] 4.1 Implement `api/matches/[matchId]/players/route.ts` and UI for match lineups: min 4 players per team, unlimited substitutes, non-roster subs allowed (FR 27–31).
+  - [x] 4.2 Implement VP lookup: given `board_count` and IMPs, compute `vp_home`/`vp_away` from group-scoped VP table (FR 38–39).
+  - [x] 4.3 Build score submission in `api/matches/[matchId]/score/route.ts` (or edge function): authorize Players (match teams), Club Managers, Competition Managers, System Admins; first submission is immediately official, no approval (FR 32–36).
+  - [x] 4.4 Restrict post-submission edits to Competition Manager and System Admin only; overwrite previous official score; log submission and admin edits (FR 35–37, 57–58).
+  - [x] 4.5 Mark match as played on first official score; expose match state in API and UI (FR 36).
+  - [x] 4.6 Implement standings query: derive from scored matches, apply penalties/corrections, sort by `vp_total` desc then `team_name` asc; auto-refresh on score/correction changes (FR 40–43).
+  - [x] 4.7 Build public standings pages (`standings/page.tsx`, `standings/group/[groupId]/page.tsx`, `StandingsTable.tsx`) and APIs (`api/standings/`, `api/public/groups`) (FR 63, 7).
+  - [x] 4.8 Build Player scoring UI (`RegularSeasonScoring.tsx`, `api/matches/scorable`) optimized for mobile (FR 65).
+  - [x] 4.9 Implement admin standings corrections and penalty CRUD (FR 41, 44–45) with audit logging.
+  - [x] 4.10 Implement `lib/time/brussels.ts` and use consistently in match UI (FR 26).
+  - [x] 4.11 Write `supabase/tests/task4_match_ops_smoke_test.sql` and component tests for scoring and standings.
 
 - [ ] 5.0 Operational workflows (postponement, switches, arbiter, discipline, files, notifications, audit)
   - [ ] 5.1 Implement postponement workflow API and `PostponeWorkflow.tsx`: home captain proposes, away captain approves, notify Competition Manager (FR 50).

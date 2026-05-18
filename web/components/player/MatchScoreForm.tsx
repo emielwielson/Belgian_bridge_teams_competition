@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { formatBrussels } from "@/lib/time/brussels";
 
 type Props = {
   matchId: string;
@@ -20,7 +21,7 @@ export function MatchScoreForm({
   initialImpsAway,
   initialVpHome,
   initialVpAway,
-  playedAt,
+  playedAt: initialPlayedAt,
   isAdmin,
 }: Props) {
   const [impsHome, setImpsHome] = useState(
@@ -32,9 +33,10 @@ export function MatchScoreForm({
   const [saving, setSaving] = useState(false);
   const [vpHome, setVpHome] = useState<number | null>(initialVpHome);
   const [vpAway, setVpAway] = useState<number | null>(initialVpAway);
-  const [locked, setLocked] = useState(playedAt != null);
+  const [playedAt, setPlayedAt] = useState<string | null>(initialPlayedAt);
   const [error, setError] = useState<string | null>(null);
 
+  const locked = playedAt != null;
   const canSubmit = !locked;
   const canAdminEdit = locked && isAdmin;
 
@@ -54,7 +56,9 @@ export function MatchScoreForm({
       if (!res.ok) throw new Error(body.error ?? "Failed to submit score");
       setVpHome(body.match.vp_home);
       setVpAway(body.match.vp_away);
-      setLocked(true);
+      setPlayedAt(body.match.played_at ?? new Date().toISOString());
+      if (body.match.imps_home != null) setImpsHome(String(body.match.imps_home));
+      if (body.match.imps_away != null) setImpsAway(String(body.match.imps_away));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Submit failed");
     } finally {
@@ -67,11 +71,16 @@ export function MatchScoreForm({
       <section className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
         <h3 className="text-sm font-semibold text-zinc-900">Official score</h3>
         <p className="mt-2 text-sm text-zinc-700">
-          IMPs: {initialImpsHome ?? impsHome} – {initialImpsAway ?? impsAway}
+          IMPs: {impsHome} – {impsAway}
         </p>
         {vpHome != null && vpAway != null ? (
           <p className="mt-1 text-sm text-zinc-700">
             VP: {vpHome} – {vpAway}
+          </p>
+        ) : null}
+        {playedAt ? (
+          <p className="mt-2 text-xs text-zinc-500">
+            Played {formatBrussels(playedAt)}
           </p>
         ) : null}
         <p className="mt-2 text-xs text-zinc-500">
@@ -87,6 +96,11 @@ export function MatchScoreForm({
         {canAdminEdit ? "Admin score edit" : "Submit score"}
       </h3>
       <p className="mt-1 text-xs text-zinc-500">{boardCount} boards · VP from table</p>
+      {playedAt && canAdminEdit ? (
+        <p className="mt-1 text-xs text-zinc-500">
+          Last scored {formatBrussels(playedAt)}
+        </p>
+      ) : null}
       <ScoreImpsInputs
         impsHome={impsHome}
         impsAway={impsAway}
@@ -99,7 +113,7 @@ export function MatchScoreForm({
           type="button"
           onClick={() => submit("POST")}
           disabled={saving || impsHome === "" || impsAway === ""}
-          className="mt-4 w-full rounded-md bg-emerald-700 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+          className="mt-4 w-full rounded-md bg-emerald-700 px-3 py-3 text-sm font-medium text-white disabled:opacity-50"
         >
           {saving ? "Submitting…" : "Submit official score"}
         </button>
@@ -109,7 +123,7 @@ export function MatchScoreForm({
           type="button"
           onClick={() => submit("PATCH")}
           disabled={saving || impsHome === "" || impsAway === ""}
-          className="mt-4 w-full rounded-md bg-amber-700 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+          className="mt-4 w-full rounded-md bg-amber-700 px-3 py-3 text-sm font-medium text-white disabled:opacity-50"
         >
           {saving ? "Saving…" : "Overwrite official score"}
         </button>

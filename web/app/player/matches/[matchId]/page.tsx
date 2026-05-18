@@ -11,6 +11,7 @@ import { getUserRoles } from "@/lib/auth/session";
 import { hasAnyRole } from "@/lib/auth/roles";
 import { COMPETITION_ADMIN_ROLES } from "@/lib/auth/route-auth";
 import { getMatchLineup } from "@/lib/scoring/match-operations";
+import { matchStatus } from "@/lib/scoring/match-state";
 import { formatBrussels } from "@/lib/time/brussels";
 import { createSessionClient } from "@/lib/supabase/server-client";
 
@@ -41,6 +42,7 @@ export default async function PlayerMatchPage({ params }: Props) {
   const roles = await getUserRoles(supabase, user.id);
   const isAdmin = hasAnyRole(roles, [...COMPETITION_ADMIN_ROLES]);
   const canEdit = match.played_at == null;
+  const status = matchStatus(match.played_at);
 
   const homeLineup = lineup
     .filter((e) => e.team_id === match.home_team_id)
@@ -68,6 +70,22 @@ export default async function PlayerMatchPage({ params }: Props) {
         </h1>
         <p className="mt-1 text-sm text-zinc-600">
           {formatBrussels(match.datetime)}
+        </p>
+        <p className="mt-2 flex flex-wrap items-center gap-2">
+          <span
+            className={
+              status === "played"
+                ? "rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800"
+                : "rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-700"
+            }
+          >
+            {status === "played" ? "Played" : "Scheduled"}
+          </span>
+          {match.played_at ? (
+            <span className="text-xs text-zinc-500">
+              Scored {formatBrussels(match.played_at)}
+            </span>
+          ) : null}
         </p>
       </header>
 

@@ -10,6 +10,7 @@ import {
   type LineupPlayerInput,
 } from "@/lib/scoring/match-operations";
 import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
+import { matchStatus } from "@/lib/scoring/match-state";
 
 type Params = { params: Promise<{ matchId: string }> };
 
@@ -37,6 +38,7 @@ export async function GET(_request: Request, { params }: Params) {
       home_team_id: match.home_team_id,
       away_team_id: match.away_team_id,
       played_at: match.played_at,
+      status: matchStatus(match.played_at),
       lineup: groupLineupByTeam(
         lineup,
         match.home_team_id,

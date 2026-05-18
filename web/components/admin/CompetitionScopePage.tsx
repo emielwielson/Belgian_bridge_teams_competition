@@ -10,6 +10,7 @@ import {
 } from "@/lib/competition/scopes";
 import { CompetitionManagement } from "./CompetitionManagement";
 import { NationalCompetitionSetup } from "./NationalCompetitionSetup";
+import { PenaltyManagement } from "./PenaltyManagement";
 
 type DivisionLevel = { id: string; code: string; name: string };
 type Group = {
@@ -314,6 +315,13 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
             ))}
           </ul>
         </section>
+      )}
+
+      {scope === SCOPES.NATIONAL && (
+        <PenaltyManagement
+          groupId={selectedGroupId}
+          teams={teams.map((t) => ({ id: t.id, name: t.name }))}
+        />
       )}
     </main>
   );

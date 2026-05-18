@@ -4,6 +4,7 @@ import {
   loadMatchContext,
 } from "@/lib/auth/match-access";
 import { jsonFromError, jsonOk } from "@/lib/http/api-response";
+import { matchResponseFields } from "@/lib/scoring/match-state";
 
 type Params = { params: Promise<{ matchId: string }> };
 
@@ -15,7 +16,7 @@ export async function GET(_request: Request, { params }: Params) {
     const match = await loadMatchContext(supabase, matchId);
 
     return jsonOk({
-      match: {
+      match: matchResponseFields({
         id: match.id,
         group_id: match.group_id,
         round: match.round,
@@ -28,7 +29,7 @@ export async function GET(_request: Request, { params }: Params) {
         imps_away: match.imps_away,
         vp_home: match.vp_home,
         vp_away: match.vp_away,
-      },
+      }),
     });
   } catch (err) {
     return jsonFromError(err);

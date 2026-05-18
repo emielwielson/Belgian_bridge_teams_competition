@@ -52,6 +52,27 @@ const LEAGUE_PICKER_ORDER: LeagueName[] = [
 const STANDINGS_SELECT =
   "group_id, team_id, team_name, vp_total" as const;
 
+/** FR 40-43: scored matches + penalty corrections (penalties table) via standings_group view. */
+export async function fetchGroupStandings(
+  supabase: SupabaseClient,
+  groupId: string,
+): Promise<Omit<StandingsRow, "group_id">[]> {
+  const { data, error } = await supabase
+    .from("standings_group")
+    .select(STANDINGS_SELECT)
+    .eq("group_id", groupId)
+    .order("vp_total", { ascending: false })
+    .order("team_name", { ascending: true });
+
+  if (error) throw error;
+
+  return (data ?? []).map(({ team_id, team_name, vp_total }) => ({
+    team_id,
+    team_name,
+    vp_total,
+  }));
+}
+
 function sortLeaguesForPicker(leagues: ActiveSeasonLeague[]): ActiveSeasonLeague[] {
   const order = new Map(LEAGUE_PICKER_ORDER.map((name, i) => [name, i]));
   return [...leagues].sort(
@@ -213,24 +234,13 @@ export async function loadGroupStandings(
     ? division.league[0]
     : division.league;
 
-  const { data: standings, error: standingsError } = await supabase
-    .from("standings_group")
-    .select(STANDINGS_SELECT)
-    .eq("group_id", groupId)
-    .order("vp_total", { ascending: false })
-    .order("team_name", { ascending: true });
-
-  if (standingsError) throw standingsError;
+  const standings = await fetchGroupStandings(supabase, groupId);
 
   return {
     group: { id: group.id, name: group.name },
     division: { id: division.id, name: division.name },
     league,
-    standings: (standings ?? []).map(({ team_id, team_name, vp_total }) => ({
-      team_id,
-      team_name,
-      vp_total,
-    })),
+    standings,
   };
 }
 
