@@ -26,7 +26,7 @@ describe("national structure", () => {
   it("shares default schedule for 2nd and 3rd divisions", () => {
     const shared = NATIONAL_DIVISIONS.filter((d) => d.scheduleKey === "default");
     expect(shared).toHaveLength(6);
-    expect(NATIONAL_SCHEDULE_LABELS.default).toContain("shared");
+    expect(NATIONAL_SCHEDULE_LABELS.default).toContain("14 match days");
   });
 
   it("maps division names to schedule keys", () => {

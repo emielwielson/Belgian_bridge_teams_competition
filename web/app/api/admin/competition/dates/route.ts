@@ -4,9 +4,12 @@ import {
   nationalMatchDatesDivisionId,
 } from "@/lib/competition/match-dates-query";
 import {
-  NATIONAL_SCHEDULE_ROUND_COUNTS,
-  type NationalScheduleKey,
-} from "@/lib/competition/national-structure";
+  collapseRoundsToMatchDays,
+  expandMatchDaysToRounds,
+  formatSlotTimesLabel,
+  NATIONAL_MATCH_DAY_COUNTS,
+} from "@/lib/competition/national-match-schedule";
+import type { NationalScheduleKey } from "@/lib/competition/national-structure";
 import { resolveRegionId } from "@/lib/competition/queries";
 import { requireActiveSeason } from "@/lib/competition/season";
 import { parseScopeParam, SCOPES } from "@/lib/competition/scopes";
@@ -61,6 +64,19 @@ export async function GET(request: Request) {
     const { data, error } = await datesQuery;
 
     if (error) return jsonError(error.message, 500);
+
+    if (scope === SCOPES.NATIONAL) {
+      const scheduleKey =
+        parseNationalScheduleKey(searchParams.get("schedule")) ?? "default";
+      const matchDays = collapseRoundsToMatchDays(scheduleKey, data ?? []);
+      return jsonOk({
+        dates: data ?? [],
+        matchDays,
+        slotTimes: formatSlotTimesLabel(scheduleKey),
+        matchDayCount: NATIONAL_MATCH_DAY_COUNTS[scheduleKey],
+      });
+    }
+
     return jsonOk({ dates: data ?? [] });
   } catch (err) {
     return jsonFromError(err);
@@ -81,26 +97,36 @@ export async function PUT(request: Request) {
       body.region ?? undefined,
     );
 
-    const rounds: { round: number; datetime: string }[] = body.rounds ?? [];
-
     let divisionId: string | null = null;
-    let expectedRounds = 14;
+    let rounds: { round: number; datetime: string }[] = body.rounds ?? [];
+
     if (scope === SCOPES.NATIONAL) {
       const scheduleKey =
         parseNationalScheduleKey(body.schedule) ?? "default";
-      expectedRounds = NATIONAL_SCHEDULE_ROUND_COUNTS[scheduleKey];
       divisionId = await nationalMatchDatesDivisionId(
         supabase,
         season.id,
         scheduleKey,
       );
-    }
 
-    if (rounds.length !== expectedRounds) {
-      return jsonError(
-        `Exactly ${expectedRounds} round datetimes required`,
-        400,
-      );
+      const matchDays: string[] = body.matchDays ?? [];
+      const expectedDays = NATIONAL_MATCH_DAY_COUNTS[scheduleKey];
+      if (matchDays.length !== expectedDays) {
+        return jsonError(
+          `Exactly ${expectedDays} match days required`,
+          400,
+        );
+      }
+      try {
+        rounds = expandMatchDaysToRounds(scheduleKey, matchDays);
+      } catch (err) {
+        return jsonError(
+          err instanceof Error ? err.message : "Invalid match days",
+          400,
+        );
+      }
+    } else if (rounds.length !== 14) {
+      return jsonError("Exactly 14 round datetimes required", 400);
     }
 
     let deleteQuery = supabase

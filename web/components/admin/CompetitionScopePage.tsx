@@ -5,15 +5,16 @@ import Link from "next/link";
 import {
   NATIONAL_DIVISIONS,
   NATIONAL_SCHEDULE_LABELS,
-  NATIONAL_SCHEDULE_ROUND_COUNTS,
   type NationalScheduleKey,
 } from "@/lib/competition/national-structure";
+import { NATIONAL_TEAMS_PER_GROUP } from "@/lib/competition/national-teams";
 import {
   SCOPES,
   scopeLabel,
   type CompetitionScope,
 } from "@/lib/competition/scopes";
 import { CompetitionManagement } from "./CompetitionManagement";
+import { NationalMatchDatesEditor } from "./NationalMatchDatesEditor";
 
 const NATIONAL_SCHEDULE_KEYS: NationalScheduleKey[] = [
   "honor",
@@ -151,6 +152,16 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
   }
 
   async function addTeam(groupId: string) {
+    if (scope === SCOPES.NATIONAL) {
+      const check = await fetch(`/api/admin/competition/teams?groupId=${groupId}`);
+      const checkBody = await check.json();
+      if ((checkBody.teams ?? []).length >= NATIONAL_TEAMS_PER_GROUP) {
+        setMessage(
+          `National groups are limited to ${NATIONAL_TEAMS_PER_GROUP} teams.`,
+        );
+        return;
+      }
+    }
     const clubId = clubs[0]?.id;
     if (!clubId) {
       setMessage("Create a club first");
@@ -158,11 +169,31 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
     }
     const name = prompt("Team name");
     if (!name) return;
-    await fetch("/api/admin/competition/teams", {
+    const res = await fetch("/api/admin/competition/teams", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ group_id: groupId, club_id: clubId, name }),
     });
+    if (!res.ok) {
+      const body = await res.json();
+      setMessage(body.error ?? "Failed to add team");
+      return;
+    }
+    await loadTeams(groupId);
+  }
+
+  async function removeTeam(teamId: string, groupId: string) {
+    if (!confirm("Remove this team from the group?")) return;
+    const res = await fetch("/api/admin/competition/teams", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: teamId }),
+    });
+    const body = await res.json();
+    if (!res.ok) {
+      setMessage(body.error ?? "Failed to remove team");
+      return;
+    }
     await loadTeams(groupId);
   }
 
@@ -214,12 +245,11 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
 
       {scope === SCOPES.NATIONAL ? (
         NATIONAL_SCHEDULE_KEYS.map((key) => (
-          <CompetitionManagement
+          <NationalMatchDatesEditor
             key={key}
             scope={scope}
             scheduleKey={key}
-            roundCount={NATIONAL_SCHEDULE_ROUND_COUNTS[key]}
-            title={`Match dates — ${NATIONAL_SCHEDULE_LABELS[key]}`}
+            title={`Match days — ${NATIONAL_SCHEDULE_LABELS[key]}`}
           />
         ))
       ) : (
@@ -326,12 +356,33 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
       {selectedGroupId && (
         <section className="card">
           <h2 className="font-semibold text-zinc-900">
-            Teams ({teams.length}/8 for RBBF)
+            Teams ({teams.length}
+            {scope === SCOPES.NATIONAL
+              ? `/${NATIONAL_TEAMS_PER_GROUP}`
+              : "/8 for RBBF"}
+            )
           </h2>
+          {scope === SCOPES.NATIONAL && teams.length > NATIONAL_TEAMS_PER_GROUP && (
+            <p className="mt-1 text-sm text-amber-800">
+              This group has {teams.length} teams; national competition allows{" "}
+              {NATIONAL_TEAMS_PER_GROUP}. Remove extras before generating a schedule.
+            </p>
+          )}
           <ul className="mt-2 space-y-1 text-sm text-zinc-800">
             {teams.map((t) => (
-              <li key={t.id}>
-                {t.name} — roster: {t.roster?.length ?? 0}
+              <li key={t.id} className="flex flex-wrap items-center gap-2">
+                <span>
+                  {t.name} — roster: {t.roster?.length ?? 0}
+                </span>
+                {scope === SCOPES.NATIONAL && (
+                  <button
+                    type="button"
+                    className="text-xs font-medium text-red-700 underline"
+                    onClick={() => removeTeam(t.id, selectedGroupId)}
+                  >
+                    Remove
+                  </button>
+                )}
               </li>
             ))}
           </ul>

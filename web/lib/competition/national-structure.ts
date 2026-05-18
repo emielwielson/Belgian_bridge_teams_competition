@@ -83,7 +83,8 @@ export const NATIONAL_DIVISIONS: NationalDivisionSpec[] = [
 ];
 
 export const NATIONAL_SCHEDULE_LABELS: Record<NationalScheduleKey, string> = {
-  honor: "Honor (21 rounds, 7 match days × 3 slots, max 3 matches per day per team)",
-  first: "1st Division (separate schedule, max 2 matches per day per team)",
-  default: "2nd & 3rd divisions (shared schedule)",
+  honor: "Honor (7 match days, slots 11:00 / 13:50 / 16:40)",
+  first: "1st Division (7 match days, slots 13:00 / 16:00)",
+  default: "2nd & 3rd divisions (14 match days at 14:00)",
 };
+

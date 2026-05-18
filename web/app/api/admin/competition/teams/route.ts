@@ -1,4 +1,8 @@
 import { COMPETITION_ADMIN_ROLES, requireRoles } from "@/lib/auth/route-auth";
+import {
+  assertNationalGroupCanAddTeam,
+  NATIONAL_TEAMS_PER_GROUP,
+} from "@/lib/competition/national-teams";
 import { requireActiveSeason } from "@/lib/competition/season";
 import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
 
@@ -83,6 +87,15 @@ export async function POST(request: Request) {
       return jsonOk({ removed: true });
     }
 
+    try {
+      await assertNationalGroupCanAddTeam(supabase, body.group_id);
+    } catch (err) {
+      return jsonError(
+        err instanceof Error ? err.message : "Cannot add team",
+        400,
+      );
+    }
+
     const { data, error } = await supabase
       .from("teams")
       .insert({
@@ -118,6 +131,37 @@ export async function PATCH(request: Request) {
 
     if (error) return jsonError(error.message, 400);
     return jsonOk({ updated: true });
+  } catch (err) {
+    return jsonFromError(err);
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { supabase } = await requireRoles([...COMPETITION_ADMIN_ROLES]);
+    const body = await request.json();
+    const teamId = body.id as string | undefined;
+    if (!teamId) return jsonError("id required", 400);
+
+    const [{ count: homeCount }, { count: awayCount }] = await Promise.all([
+      supabase
+        .from("matches")
+        .select("id", { count: "exact", head: true })
+        .eq("home_team_id", teamId),
+      supabase
+        .from("matches")
+        .select("id", { count: "exact", head: true })
+        .eq("away_team_id", teamId),
+    ]);
+    const matchCount = (homeCount ?? 0) + (awayCount ?? 0);
+
+    if ((matchCount ?? 0) > 0) {
+      return jsonError("Cannot delete team with scheduled matches", 409);
+    }
+
+    const { error } = await supabase.from("teams").delete().eq("id", teamId);
+    if (error) return jsonError(error.message, 400);
+    return jsonOk({ deleted: true });
   } catch (err) {
     return jsonFromError(err);
   }
