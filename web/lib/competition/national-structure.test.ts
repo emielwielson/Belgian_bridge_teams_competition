@@ -17,8 +17,10 @@ describe("national structure", () => {
     const first = NATIONAL_DIVISIONS.find((d) => d.name === "1st Division");
     expect(honor?.scheduleKey).toBe("honor");
     expect(honor?.maxMatchesPerDay).toBe(3);
+    expect(honor?.roundCount).toBe(21);
     expect(first?.scheduleKey).toBe("first");
     expect(first?.maxMatchesPerDay).toBe(2);
+    expect(first?.roundCount).toBe(14);
   });
 
   it("shares default schedule for 2nd and 3rd divisions", () => {

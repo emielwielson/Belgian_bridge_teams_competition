@@ -3,7 +3,10 @@ import {
   applyMatchDatesDivisionFilter,
   nationalMatchDatesDivisionId,
 } from "@/lib/competition/match-dates-query";
-import type { NationalScheduleKey } from "@/lib/competition/national-structure";
+import {
+  NATIONAL_SCHEDULE_ROUND_COUNTS,
+  type NationalScheduleKey,
+} from "@/lib/competition/national-structure";
 import { resolveRegionId } from "@/lib/competition/queries";
 import { requireActiveSeason } from "@/lib/competition/season";
 import { parseScopeParam, SCOPES } from "@/lib/competition/scopes";
@@ -79,18 +82,24 @@ export async function PUT(request: Request) {
     );
 
     const rounds: { round: number; datetime: string }[] = body.rounds ?? [];
-    if (rounds.length !== 14) {
-      return jsonError("Exactly 14 round datetimes required", 400);
-    }
 
     let divisionId: string | null = null;
+    let expectedRounds = 14;
     if (scope === SCOPES.NATIONAL) {
       const scheduleKey =
         parseNationalScheduleKey(body.schedule) ?? "default";
+      expectedRounds = NATIONAL_SCHEDULE_ROUND_COUNTS[scheduleKey];
       divisionId = await nationalMatchDatesDivisionId(
         supabase,
         season.id,
         scheduleKey,
+      );
+    }
+
+    if (rounds.length !== expectedRounds) {
+      return jsonError(
+        `Exactly ${expectedRounds} round datetimes required`,
+        400,
       );
     }
 

@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import { toDatetimeLocalValue } from "@/lib/time/brussels";
-import type { NationalScheduleKey } from "@/lib/competition/national-structure";
+import {
+  NATIONAL_SCHEDULE_ROUND_COUNTS,
+  type NationalScheduleKey,
+} from "@/lib/competition/national-structure";
 import type { CompetitionScope } from "@/lib/competition/scopes";
 
 type RoundDate = { round: number; datetime: string };
@@ -11,6 +14,7 @@ type Props = {
   scope: CompetitionScope;
   regionCode?: string;
   scheduleKey?: NationalScheduleKey;
+  roundCount?: number;
   title?: string;
 };
 
@@ -18,10 +22,18 @@ export function CompetitionManagement({
   scope,
   regionCode,
   scheduleKey,
+  roundCount: roundCountProp,
   title,
 }: Props) {
-  const [dates, setDates] = useState<RoundDate[]>(
-    Array.from({ length: 14 }, (_, i) => ({ round: i + 1, datetime: "" })),
+  const roundCount =
+    roundCountProp ??
+    (scheduleKey ? NATIONAL_SCHEDULE_ROUND_COUNTS[scheduleKey] : 14);
+
+  const [dates, setDates] = useState<RoundDate[]>(() =>
+    Array.from({ length: roundCount }, (_, i) => ({
+      round: i + 1,
+      datetime: "",
+    })),
   );
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -36,7 +48,7 @@ export function CompetitionManagement({
     const loaded = (body.dates ?? []) as { round: number; datetime: string }[];
     if (loaded.length === 0) return;
     setDates(
-      Array.from({ length: 14 }, (_, i) => {
+      Array.from({ length: roundCount }, (_, i) => {
         const row = loaded.find((d) => d.round === i + 1);
         return {
           round: i + 1,
@@ -73,7 +85,7 @@ export function CompetitionManagement({
     <section className="card flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-lg font-semibold text-zinc-900">
-          {title ?? "Match dates (14 rounds)"}
+          {title ?? `Match dates (${roundCount} rounds)`}
         </h2>
         <button type="button" onClick={loadDates} className="link-back">
           Reload

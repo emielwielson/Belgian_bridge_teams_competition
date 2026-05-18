@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { getRbbfRoundPairings } from "./template";
+import { getRbbfRoundPairingsForCount } from "./template.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -67,6 +67,7 @@ Deno.serve(async (req) => {
       .select(
         `
         id,
+        round_count,
         division:divisions (
           league:leagues (season_id, scope, region_id)
         )
@@ -81,6 +82,8 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const roundCount = groupRow.round_count ?? 14;
 
     const division = Array.isArray(groupRow.division)
       ? groupRow.division[0]
@@ -130,9 +133,11 @@ Deno.serve(async (req) => {
         : datesQuery.eq("division_id", datesDivisionId);
 
     const { data: dates, error: datesError } = await datesQuery;
-    if (datesError || !dates || dates.length < 14) {
+    if (datesError || !dates || dates.length < roundCount) {
       return new Response(
-        JSON.stringify({ error: "Missing competition match dates for scope" }),
+        JSON.stringify({
+          error: `Missing competition match dates (need ${roundCount})`,
+        }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -148,7 +153,7 @@ Deno.serve(async (req) => {
     );
 
     const matchRows: Record<string, unknown>[] = [];
-    const allRounds = getRbbfRoundPairings();
+    const allRounds = getRbbfRoundPairingsForCount(roundCount);
 
     allRounds.forEach((pairings, index) => {
       const round = index + 1;
@@ -181,7 +186,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         matchesCreated: matchRows.length,
-        rounds: 14,
+        rounds: roundCount,
       }),
       {
         status: 200,

@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   NATIONAL_DIVISIONS,
   NATIONAL_SCHEDULE_LABELS,
+  NATIONAL_SCHEDULE_ROUND_COUNTS,
   type NationalScheduleKey,
 } from "@/lib/competition/national-structure";
 import {
@@ -217,6 +218,7 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
             key={key}
             scope={scope}
             scheduleKey={key}
+            roundCount={NATIONAL_SCHEDULE_ROUND_COUNTS[key]}
             title={`Match dates — ${NATIONAL_SCHEDULE_LABELS[key]}`}
           />
         ))

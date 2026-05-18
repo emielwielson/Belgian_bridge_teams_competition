@@ -1,7 +1,6 @@
 import {
-  getRbbfRoundPairings,
+  getRbbfRoundPairingsForCount,
   mapSlotsToTeamIds,
-  RBBF_ROUND_COUNT,
   RBBF_TEAMS_REQUIRED,
   type SlotPairing,
 } from "./rbbf-8-team-template";
@@ -33,14 +32,15 @@ export function buildMatchRows(
   teams: TeamSlot[],
   roundDates: RoundDate[],
   boardCount: number,
+  roundCount = 14,
 ): GeneratedMatch[] {
-  if (roundDates.length < RBBF_ROUND_COUNT) {
-    throw new Error(`Need ${RBBF_ROUND_COUNT} round datetimes`);
+  if (roundDates.length < roundCount) {
+    throw new Error(`Need ${roundCount} round datetimes`);
   }
 
   const slotToTeamId = new Map(teams.map((t) => [t.slot, t.id]));
   const dateByRound = new Map(roundDates.map((d) => [d.round, d.datetime]));
-  const allRounds = getRbbfRoundPairings();
+  const allRounds = getRbbfRoundPairingsForCount(roundCount);
   const matches: GeneratedMatch[] = [];
 
   allRounds.forEach((pairings: SlotPairing[], index) => {

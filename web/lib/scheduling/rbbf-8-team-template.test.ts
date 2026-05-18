@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   getRbbfRoundPairings,
+  getRbbfTripleRoundPairings,
   RBBF_FIRST_LEG,
   RBBF_ROUND_COUNT,
   RBBF_TEAMS_REQUIRED,
+  RBBF_TRIPLE_ROUND_COUNT,
 } from "./rbbf-8-team-template";
 import { assignTeamSlots, buildMatchRows } from "./generate-group-schedule";
 
@@ -25,6 +27,12 @@ describe("rbbf-8-team-template", () => {
         first.map((p) => ({ home: p.away, away: p.home })),
       );
     }
+  });
+
+  it("triple schedule has 21 rounds (84 fixtures)", () => {
+    const rounds = getRbbfTripleRoundPairings();
+    expect(rounds).toHaveLength(RBBF_TRIPLE_ROUND_COUNT);
+    expect(rounds.reduce((n, r) => n + r.length, 0)).toBe(84);
   });
 
   it("builds 56 matches for 8 teams", () => {

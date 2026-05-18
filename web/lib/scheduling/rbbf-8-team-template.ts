@@ -49,6 +49,7 @@ export const RBBF_FIRST_LEG: SlotPairing[][] = [
 ];
 
 export const RBBF_ROUND_COUNT = 14;
+export const RBBF_TRIPLE_ROUND_COUNT = 21;
 export const RBBF_TEAMS_REQUIRED = 8;
 
 function mirrorPairing(pair: SlotPairing): SlotPairing {
@@ -64,6 +65,21 @@ export function getRbbfRoundPairings(): SlotPairing[][] {
     rounds.push(leg.map(mirrorPairing));
   }
   return rounds;
+}
+
+/** All 21 rounds: three full legs (triple round-robin). */
+export function getRbbfTripleRoundPairings(): SlotPairing[][] {
+  const rounds = getRbbfRoundPairings();
+  for (const leg of RBBF_FIRST_LEG) {
+    rounds.push(leg.map((p) => ({ ...p })));
+  }
+  return rounds;
+}
+
+export function getRbbfRoundPairingsForCount(roundCount: number): SlotPairing[][] {
+  if (roundCount === RBBF_ROUND_COUNT) return getRbbfRoundPairings();
+  if (roundCount === RBBF_TRIPLE_ROUND_COUNT) return getRbbfTripleRoundPairings();
+  throw new Error(`Unsupported round count: ${roundCount}`);
 }
 
 export function mapSlotsToTeamIds(

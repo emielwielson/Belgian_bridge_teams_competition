@@ -54,3 +54,17 @@ export function getRbbfRoundPairings(): SlotPairing[][] {
   }
   return rounds;
 }
+
+export function getRbbfTripleRoundPairings(): SlotPairing[][] {
+  const rounds = getRbbfRoundPairings();
+  for (const leg of RBBF_FIRST_LEG) {
+    rounds.push(leg.map((p) => ({ ...p })));
+  }
+  return rounds;
+}
+
+export function getRbbfRoundPairingsForCount(roundCount: number): SlotPairing[][] {
+  if (roundCount === 14) return getRbbfRoundPairings();
+  if (roundCount === 21) return getRbbfTripleRoundPairings();
+  throw new Error(`Unsupported round count: ${roundCount}`);
+}
