@@ -61,7 +61,7 @@ on conflict (user_id, club_id) do nothing;
 | `/api/auth/me` | Current user + roles |
 | `/api/auth/signout` | POST — sign out |
 
-Public: `/standings`, `/api/public/*`, `/api/standings/*`. Protected: `/admin`, `/player`, `/captain`, `/club-manager`, `/arbiter`.
+Public: `/standings`, `/api/public/*`, `/api/standings/*`. Protected: `/admin`, `/player`, `/club-manager`, `/arbiter`. Postponement propose/approve: `/player/matches/[matchId]`.
 
 ## Scripts
 

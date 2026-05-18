@@ -13,6 +13,21 @@ export function statusForError(err: unknown): number {
   if (err instanceof Error && err.message.includes("must have at least")) {
     return 400;
   }
+  if (
+    err instanceof Error &&
+    err.message.includes("max_matches_per_day_per_team")
+  ) {
+    return 409;
+  }
+  if (err instanceof Error && err.message.includes("Postponement")) {
+    return 400;
+  }
+  if (err instanceof Error && err.message.includes("captain")) {
+    return 403;
+  }
+  if (err instanceof Error && err.message.includes("Authentication required")) {
+    return 401;
+  }
   return 500;
 }
 

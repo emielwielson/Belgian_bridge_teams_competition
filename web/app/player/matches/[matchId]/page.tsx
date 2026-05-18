@@ -1,7 +1,12 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { PostponeWorkflow } from "@/components/matches/PostponeWorkflow";
 import { MatchLineupEditor } from "@/components/player/MatchLineupEditor";
 import { MatchScoreForm } from "@/components/player/MatchScoreForm";
+import {
+  canAccessPostponementWorkflow,
+  getMatchPostponementState,
+} from "@/lib/competition/postponement";
 import {
   canEditLineupForTeam,
   canViewMatchOps,
@@ -55,6 +60,10 @@ export default async function PlayerMatchPage({ params }: Props) {
   ]);
   const lineupsComplete = await isLineupComplete(supabase, match);
   const status = matchStatus(match.played_at);
+  const postponementState = await getMatchPostponementState(supabase, matchId);
+  const showPostpone =
+    postponementState != null &&
+    canAccessPostponementWorkflow(postponementState);
 
   const homeLineup = lineup
     .filter((e) => e.team_id === match.home_team_id)
@@ -103,6 +112,16 @@ export default async function PlayerMatchPage({ params }: Props) {
           ) : null}
         </p>
       </header>
+
+      {showPostpone ? (
+        <PostponeWorkflow
+          matchId={matchId}
+          homeTeamName={match.home_team.name}
+          awayTeamName={match.away_team.name}
+          homeTeamId={match.home_team_id}
+          awayTeamId={match.away_team_id}
+        />
+      ) : null}
 
       <div className="grid gap-4 md:grid-cols-2">
         <MatchLineupEditor

@@ -37,6 +37,8 @@ export type GridCell = {
   pairingClass: string | null;
   /** Home fixture in this round; links to match scoring. */
   matchId: string | null;
+  /** Compact scheduled date when match is not yet scored. */
+  scheduledLabel: string | null;
 };
 
 export type RoundColumn = {
@@ -137,6 +139,10 @@ export function buildGroupStandingsGrid(
       const homeVp = scored ? match.vp_home : null;
       const awayVp = scored ? match.vp_away : null;
 
+      const scheduledLabel = scored
+        ? null
+        : formatBrusselsRoundHeader(match.datetime).date;
+
       const setCell = (
         teamId: string,
         vp: number | null,
@@ -148,7 +154,13 @@ export function buildGroupStandingsGrid(
           teamCells = new Map();
           cellMaps.set(teamId, teamCells);
         }
-        teamCells.set(round, { vp, isHome, pairingClass, matchId });
+        teamCells.set(round, {
+          vp,
+          isHome,
+          pairingClass,
+          matchId,
+          scheduledLabel,
+        });
       };
 
       setCell(match.home_team_id, homeVp, true, match.id);
@@ -161,6 +173,7 @@ export function buildGroupStandingsGrid(
     isHome: false,
     pairingClass: null,
     matchId: null,
+    scheduledLabel: null,
   };
 
   for (const bye of byeRounds) {
@@ -175,6 +188,7 @@ export function buildGroupStandingsGrid(
       isHome: false,
       pairingClass: null,
       matchId: null,
+      scheduledLabel: null,
     });
   }
 
@@ -188,6 +202,7 @@ export function buildGroupStandingsGrid(
           isHome: false,
           pairingClass: null,
           matchId: null,
+          scheduledLabel: null,
         };
       }
       return teamCells?.get(round) ?? emptyCell;

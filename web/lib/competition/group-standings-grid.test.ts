@@ -59,6 +59,20 @@ describe("buildGroupStandingsGrid", () => {
     expect(grid.rows[0].cells[0].pairingClass).toBe(PAIRING_BG_CLASSES[0]);
   });
 
+  it("shows scheduled date label in cell when match is not scored", () => {
+    const matches = [match({ round: 1, played_at: null })];
+    const grid = buildGroupStandingsGrid(teams, matches);
+    expect(grid.rows[0].cells[0].scheduledLabel).toBeTruthy();
+    expect(grid.rows[1].cells[0].scheduledLabel).toBeTruthy();
+  });
+
+  it("omits scheduled label when match is scored", () => {
+    const matches = [match({ round: 1 })];
+    const grid = buildGroupStandingsGrid(teams, matches);
+    expect(grid.rows[0].cells[0].scheduledLabel).toBeNull();
+    expect(grid.rows[0].cells[0].vp).toBe(12);
+  });
+
   it("assigns the same pairing background to both teams in a fixture", () => {
     const matches = [match({ round: 1 })];
     const grid = buildGroupStandingsGrid(teams, matches);

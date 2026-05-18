@@ -15,7 +15,6 @@ const PUBLIC_PREFIXES = ["/api/public/", "/standings", "/teams"];
 const ROLE_ROUTES: { prefix: string; roles: string[] }[] = [
   { prefix: "/admin", roles: [ROLES.SYSTEM_ADMIN, ROLES.COMPETITION_MANAGER] },
   { prefix: "/player", roles: [ROLES.PLAYER] },
-  { prefix: "/captain", roles: [ROLES.CAPTAIN] },
   { prefix: "/club-manager", roles: [ROLES.CLUB_MANAGER] },
   { prefix: "/arbiter", roles: [ROLES.ARBITER] },
 ];

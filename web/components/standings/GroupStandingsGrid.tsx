@@ -114,6 +114,10 @@ export function GroupStandingsGrid({ grid }: Props) {
                       ) : null}
                       {cell.vp != null ? (
                         <span>{cell.vp}</span>
+                      ) : cell.scheduledLabel ? (
+                        <span className="text-[11px] text-zinc-600">
+                          {cell.scheduledLabel}
+                        </span>
                       ) : null}
                     </div>
                   </td>
