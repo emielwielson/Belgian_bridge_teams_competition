@@ -27,13 +27,13 @@ ${teamValues.join(",\n")};
 
   insert into public.clubs (name, region_id)
   select distinct
-    regexp_replace(ndt.team_name, '\\s+\\d{3}$', ''),
+    regexp_replace(ndt.team_name, '\\s+\\d+$', ''),
     v_region_id
   from national_demo_teams ndt
   where not exists (
     select 1
     from public.clubs c
-    where c.name = regexp_replace(ndt.team_name, '\\s+\\d{3}$', '')
+    where c.name = regexp_replace(ndt.team_name, '\\s+\\d+$', '')
       and c.region_id = v_region_id
   );
 
@@ -44,7 +44,7 @@ ${teamValues.join(",\n")};
     and d.name = ndt.division_name
   join public.groups g on g.division_id = d.id and g.name = d.name
   join public.clubs c on c.region_id = v_region_id
-    and c.name = regexp_replace(ndt.team_name, '\\s+\\d{3}$', '');
+    and c.name = regexp_replace(ndt.team_name, '\\s+\\d+$', '');
 
   insert into public.players (name, member_number)
   select
