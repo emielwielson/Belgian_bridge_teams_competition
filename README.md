@@ -28,10 +28,10 @@ Development uses the **Supabase Dashboard** (no Docker or Supabase CLI required)
    - **Secret key** (`sb_secret_...`) → `SUPABASE_SECRET_KEY`  
    Do not use legacy **anon** / **service_role** JWT keys.
 
-4. Create `.env.local` from the template:
+4. Create `.env` (or `.env.local`) from the template:
 
    ```bash
-   cp .env.example .env.local
+   cp .env.example .env
    # Fill in values from the Dashboard
    ```
 
@@ -39,13 +39,18 @@ Development uses the **Supabase Dashboard** (no Docker or Supabase CLI required)
 
 Migration files live in [`supabase/migrations/`](supabase/migrations/). Apply them **in filename order** using the Dashboard:
 
-1. Open **SQL Editor** → **New query**
-2. Paste the contents of each migration file (e.g. `0001_core_schema.sql`, then `0002_...`)
-3. Run the query and confirm success before running the next file
+1. `0001_core_schema.sql`
+2. `0002_constraints_and_indexes.sql`
+3. `0003_scoring_standings_audit.sql`
+4. `0004_competition_lifecycle.sql`
+5. [`supabase/seed.sql`](supabase/seed.sql)
+6. [`supabase/tests/task1_smoke_test.sql`](supabase/tests/task1_smoke_test.sql) — should return `task1_smoke_test passed`
+
+For each step, open **SQL Editor** → **New query**, paste the file contents, and run.
 
 Optional: use **Database** → **Migrations** in the Dashboard if you prefer its migration UI.
 
-Reference seed script: [`supabase/seed.sql`](supabase/seed.sql) (task 1.6).
+VP template rows in the seed use sample IMP bands — verify against your competition rules before production.
 
 [`supabase/config.toml`](supabase/config.toml) is kept as reference for local/auth defaults only; you do not need the CLI to run the project.
 
@@ -60,9 +65,18 @@ Reference seed script: [`supabase/seed.sql`](supabase/seed.sql) (task 1.6).
 | `DATABASE_URL` | Optional (external SQL tools) | Database → Connection string |
 | `MAKE_WEBHOOK_URL` | Email notifications (task 5.6) | Make.com scenario webhook |
 
-Never commit `.env.local` or expose `SUPABASE_SECRET_KEY` in the browser. See [Understanding API keys](https://supabase.com/docs/guides/getting-started/api-keys).
+Never commit `.env` / `.env.local` or expose `SUPABASE_SECRET_KEY` in the browser. See [Understanding API keys](https://supabase.com/docs/guides/getting-started/api-keys).
 
 Template: [`.env.example`](.env.example).
+
+## Web app (task 1.8)
+
+```bash
+cp .env web/.env.local   # or symlink; Next.js reads env from web/
+cd web && npm install && npm run dev
+```
+
+See [`web/README.md`](web/README.md). Health check: `http://localhost:3000/api/health`
 
 ## Repository layout
 

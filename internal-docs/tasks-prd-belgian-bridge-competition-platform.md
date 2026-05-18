@@ -8,7 +8,8 @@ Based on: `internal-docs/prd-belgian-bridge-competition-platform.md`
 - `supabase/migrations/0001_core_schema.sql` - Core tables: seasons, regions, leagues, divisions, groups, clubs, players, teams, matches.
 - `supabase/migrations/0002_constraints_and_indexes.sql` - Uniqueness, foreign keys, and performance indexes.
 - `supabase/migrations/0003_scoring_standings_audit.sql` - VP tables, standings views/functions, penalties, warnings, rulings, match logs.
-- `supabase/migrations/0004_policies_roles.sql` - Row Level Security policies per role.
+- `supabase/migrations/0004_competition_lifecycle.sql` - Season/group status and setup vs active lock triggers.
+- `supabase/migrations/0004_policies_roles.sql` - Row Level Security policies per role (task 2.4).
 - `supabase/migrations/0005_auth_helpers.sql` - Role assignment helpers and authorization SQL functions.
 - `supabase/migrations/0006_competition_management.sql` - Competition state, roster locks, schedule constraints, regional rules.
 - `supabase/migrations/0007_match_ops_constraints.sql` - Score state, match player rules, postponement/switch constraints.
@@ -100,15 +101,15 @@ Based on: `internal-docs/prd-belgian-bridge-competition-platform.md`
 
 ## Tasks
 
-- [ ] 1.0 Platform foundation and core data model
+- [x] 1.0 Platform foundation and core data model
   - [x] 1.1 Initialize Supabase in the repo (`supabase/` layout, `config.toml` reference) and document hosted env vars (Dashboard + publishable/secret keys; no CLI/Docker required).
-  - [ ] 1.2 Create migration `0001_core_schema.sql`: `seasons` (with single active season support), `regions` (`flanders`, `wallonia`), `leagues`, `divisions`, `groups` (including nullable `max_matches_per_day_per_team`), `clubs`, `players`, `player_club_memberships`, `teams`, `team_players`, `matches`, `match_players`.
-  - [ ] 1.3 Create migration `0002_constraints_and_indexes.sql`: league hierarchy FKs, one club per player per active season, one team per player per season, one match per team per round per group, no home=away, unique fixtures per round/group.
-  - [ ] 1.4 Create migration `0003_scoring_standings_audit.sql`: `vp_tables`, `vp_table_rows`, standings computation (view or function), `penalties`, `warnings`, `rulings`, `match_logs`, score fields on `matches`.
-  - [ ] 1.5 Add competition lifecycle fields (e.g. season/group `status` or `competition_started_at`) to support setup vs active lock behavior (FR 13, 17–18, 24).
-  - [ ] 1.6 Seed reference data: regions, division levels (Honor–3rd), VP table templates per board count, and a single active season row.
-  - [ ] 1.7 Write `supabase/tests/task1_smoke_test.sql` verifying schema creation, FK integrity, and core uniqueness constraints.
-  - [ ] 1.8 Scaffold Next.js app under `web/` (App Router, TypeScript, Tailwind) with base layout and health check route.
+  - [x] 1.2 Create migration `0001_core_schema.sql`: `seasons` (with single active season support), `regions` (`flanders`, `wallonia`), `leagues`, `divisions`, `groups` (including nullable `max_matches_per_day_per_team`), `clubs`, `players`, `player_club_memberships`, `teams`, `team_players`, `matches`, `match_players`.
+  - [x] 1.3 Create migration `0002_constraints_and_indexes.sql`: league hierarchy FKs, one club per player per active season, one team per player per season, one match per team per round per group, no home=away, unique fixtures per round/group.
+  - [x] 1.4 Create migration `0003_scoring_standings_audit.sql`: `vp_tables`, `vp_table_rows`, standings computation (view or function), `penalties`, `warnings`, `rulings`, `match_logs`, score fields on `matches`.
+  - [x] 1.5 Add competition lifecycle fields (e.g. season/group `status` or `competition_started_at`) to support setup vs active lock behavior (FR 13, 17–18, 24).
+  - [x] 1.6 Seed reference data: regions, division levels (Honor–3rd), VP table templates per board count, and a single active season row.
+  - [x] 1.7 Write `supabase/tests/task1_smoke_test.sql` verifying schema creation, FK integrity, and core uniqueness constraints.
+  - [x] 1.8 Scaffold Next.js app under `web/` (App Router, TypeScript, Tailwind) with base layout and health check route.
 
 - [ ] 2.0 Authentication, roles, and authorization
   - [ ] 2.1 Enable Supabase Magic Link auth and configure redirect URLs for local and production.
