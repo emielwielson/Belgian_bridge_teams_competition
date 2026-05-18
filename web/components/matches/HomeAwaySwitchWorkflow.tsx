@@ -106,9 +106,8 @@ export function HomeAwaySwitchWorkflow({
           Home/away for return leg
         </h2>
         <p className="mt-1 text-sm text-zinc-600">
-          Rounds 8–14 are the return leg: the away team from the first meeting
-          should host. Use this section when the match still lists the same home
-          team as in round {state.first_leg_round ?? "the first leg"}.
+          On return legs (rounds 8–14), captains can agree to swap which team is
+          listed as home. The other captain must approve.
         </p>
       </div>
 
@@ -144,12 +143,6 @@ export function HomeAwaySwitchWorkflow({
           Only the home or away <span className="font-medium">team captain</span>{" "}
           can propose or approve a swap. Log in with the captain&apos;s account,
           or ask your club manager to assign you as captain on the team.
-        </p>
-      ) : !state.needs_switch && !state.pending ? (
-        <p className="text-sm text-zinc-600">
-          Home/away is already correct for this return leg (home and away are
-          swapped compared with the first leg). No action is needed unless the
-          fixture was entered incorrectly.
         </p>
       ) : state.pending ? (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-sm">
@@ -198,6 +191,20 @@ export function HomeAwaySwitchWorkflow({
         </div>
       ) : state.can_propose ? (
         <form onSubmit={handlePropose} className="flex flex-col gap-3">
+          {state.needs_switch ? (
+            <p className="text-sm text-zinc-600">
+              This match still lists the same home team as round{" "}
+              {state.first_leg_round}. Propose a swap so the other team hosts, as
+              in the standard return leg.
+            </p>
+          ) : (
+            <p className="text-sm text-amber-800">
+              The listing already follows return-leg rules (home and away are
+              swapped compared with round {state.first_leg_round}). Propose only
+              if that is wrong or you agreed with the other captain to switch
+              venues.
+            </p>
+          )}
           {state.captain_teams.length > 1 ? (
             <label className="flex flex-col gap-1 text-sm">
               <span className="text-zinc-600">Proposing as</span>
