@@ -51,31 +51,31 @@ export default function ClubDetailPage() {
   }
 
   return (
-    <main className="mx-auto flex max-w-lg flex-col gap-6 p-8">
-      <Link href="/club-manager" className="text-sm text-zinc-600">
+    <main className="page-container flex flex-col gap-6">
+      <Link href="/club-manager" className="link-back">
         ← My clubs
       </Link>
-      <h1 className="text-2xl font-semibold">{clubName || "Club"}</h1>
-      <p className="text-sm text-zinc-500">
+      <h1 className="text-2xl font-semibold text-zinc-900">{clubName || "Club"}</h1>
+      <p className="text-sm text-zinc-600">
         Membership changes are blocked once the season is active.
       </p>
-      {message && <p className="text-sm text-red-600">{message}</p>}
-      <button
-        type="button"
-        onClick={addPlayer}
-        className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white"
-      >
+      {message && (
+        <p className="text-sm text-red-600" role="alert">
+          {message}
+        </p>
+      )}
+      <button type="button" onClick={addPlayer} className="btn-primary w-fit">
         Add player
       </button>
       <ul className="flex flex-col gap-2 text-sm">
         {memberships.map((m) => (
           <li
             key={m.id}
-            className="rounded border border-zinc-100 bg-white px-3 py-2"
+            className="card py-2"
           >
-            {m.player?.name}
+            <span className="text-zinc-900">{m.player?.name}</span>
             {m.player?.member_number && (
-              <span className="text-zinc-500"> · {m.player.member_number}</span>
+              <span className="text-zinc-600"> · {m.player.member_number}</span>
             )}
           </li>
         ))}

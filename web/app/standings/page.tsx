@@ -53,7 +53,7 @@ export default async function StandingsPage() {
   const groups = await loadGroups();
 
   return (
-    <main className="mx-auto flex w-full max-w-lg flex-col gap-6 p-8">
+    <main className="page-container flex max-w-lg flex-col gap-6">
       <header>
         <h1 className="text-2xl font-semibold">Standings</h1>
         <p className="mt-1 text-sm text-zinc-600">Public group standings</p>

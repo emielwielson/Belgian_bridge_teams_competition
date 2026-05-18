@@ -14,7 +14,7 @@ export default async function GroupStandingsPage({ params }: Props) {
     .order("vp_total", { ascending: false });
 
   return (
-    <main className="mx-auto flex w-full max-w-lg flex-col gap-6 p-8">
+    <main className="page-container flex max-w-lg flex-col gap-6">
       <header>
         <Link href="/standings" className="text-sm text-zinc-600 hover:text-zinc-900">
           ← All groups

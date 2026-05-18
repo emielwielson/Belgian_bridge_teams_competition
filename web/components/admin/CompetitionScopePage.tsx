@@ -162,19 +162,19 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
   }
 
   return (
-    <div className="flex flex-col gap-6 p-4">
+    <main className="page-container flex flex-col gap-6">
       <header>
-        <Link href="/admin/competition" className="text-sm text-zinc-600">
+        <Link href="/admin/competition" className="link-back">
           ← Scopes
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold">
+        <h1 className="mt-2 text-2xl font-semibold text-zinc-900">
           {scopeLabel(scope, regionCode)}
         </h1>
-        <p className="text-sm text-zinc-500">Season status: {seasonStatus}</p>
+        <p className="text-sm text-zinc-600">Season status: {seasonStatus}</p>
       </header>
 
       {message && (
-        <p className="rounded bg-zinc-100 px-3 py-2 text-sm">{message}</p>
+        <p className="rounded-lg bg-zinc-100 px-3 py-2 text-sm text-zinc-800">{message}</p>
       )}
 
       <CompetitionManagement scope={scope} regionCode={regionCode} />
@@ -183,7 +183,7 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
         <button
           type="button"
           onClick={createLeague}
-          className="rounded-lg border px-3 py-1.5 text-sm"
+          className="btn-secondary"
         >
           Add league
         </button>
@@ -191,7 +191,7 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
           <button
             type="button"
             onClick={activateSeason}
-            className="rounded-lg bg-amber-600 px-3 py-1.5 text-sm text-white"
+            className="btn-danger"
           >
             Activate season
           </button>
@@ -201,22 +201,22 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
       {leagues.map((league) => (
         <section
           key={league.id}
-          className="rounded-lg border border-zinc-200 bg-white p-4"
+          className="card"
         >
-          <h2 className="font-semibold">{league.name}</h2>
+          <h2 className="font-semibold text-zinc-900">{league.name}</h2>
           <button
             type="button"
-            className="mt-2 text-sm underline"
+            className="mt-2 text-sm font-medium text-zinc-700 underline hover:text-zinc-900"
             onClick={() => createDivision(league.id)}
           >
             Add division
           </button>
           {league.divisions.map((division) => (
             <div key={division.id} className="mt-4 border-t pt-3">
-              <h3 className="text-sm font-medium">{division.name}</h3>
+              <h3 className="text-sm font-medium text-zinc-900">{division.name}</h3>
               <button
                 type="button"
-                className="mt-1 text-sm underline"
+                className="mt-1 text-sm font-medium text-zinc-700 underline hover:text-zinc-900"
                 onClick={() => createGroup(division.id)}
               >
                 Add group
@@ -229,7 +229,7 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
                   >
                     <button
                       type="button"
-                      className="font-medium underline"
+                      className="font-medium text-zinc-900 underline hover:text-zinc-700"
                       onClick={() => loadTeams(group.id)}
                     >
                       {group.name}
@@ -237,14 +237,14 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
                     <span className="text-xs text-zinc-500">{group.status}</span>
                     <button
                       type="button"
-                      className="text-xs underline"
+                      className="text-xs font-medium text-zinc-700 underline"
                       onClick={() => addTeam(group.id)}
                     >
                       Add team
                     </button>
                     <button
                       type="button"
-                      className="text-xs underline"
+                      className="text-xs font-medium text-zinc-700 underline"
                       onClick={() => generateSchedule(group.id)}
                     >
                       Generate schedule
@@ -258,9 +258,11 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
       ))}
 
       {selectedGroupId && (
-        <section className="rounded-lg border bg-white p-4">
-          <h2 className="font-semibold">Teams ({teams.length}/8 for RBBF)</h2>
-          <ul className="mt-2 text-sm">
+        <section className="card">
+          <h2 className="font-semibold text-zinc-900">
+            Teams ({teams.length}/8 for RBBF)
+          </h2>
+          <ul className="mt-2 space-y-1 text-sm text-zinc-800">
             {teams.map((t) => (
               <li key={t.id}>
                 {t.name} — roster: {t.roster?.length ?? 0}
@@ -269,6 +271,6 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
           </ul>
         </section>
       )}
-    </div>
+    </main>
   );
 }

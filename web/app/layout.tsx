@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Link from "next/link";
 import { AuthNavControls } from "@/components/auth/AuthNavControls";
 import "./globals.css";
 
@@ -26,19 +27,19 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full`}
       suppressHydrationWarning
     >
-      <body className="flex min-h-full flex-col bg-zinc-50 text-zinc-900">
-        <header className="border-b border-zinc-200 bg-white px-4 py-3">
-          <div className="mx-auto flex max-w-3xl items-center justify-between gap-4">
-            <a href="/" className="text-sm font-semibold">
+      <body className="flex min-h-full flex-col bg-zinc-50 text-zinc-900 antialiased">
+        <header className="border-b border-zinc-200 bg-white shadow-sm">
+          <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-3">
+            <Link href="/" className="text-sm font-semibold text-zinc-900">
               Belgian Bridge
-            </a>
+            </Link>
             <AuthNavControls />
           </div>
         </header>
-        {children}
+        <div className="flex flex-1 flex-col text-zinc-900">{children}</div>
       </body>
     </html>
   );

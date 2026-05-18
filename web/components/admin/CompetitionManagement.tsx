@@ -56,22 +56,22 @@ export function CompetitionManagement({ scope, regionCode }: Props) {
   }
 
   return (
-    <section className="flex flex-col gap-4 rounded-lg border border-zinc-200 bg-white p-4">
+    <section className="card flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold">Match dates (14 rounds)</h2>
-        <button
-          type="button"
-          onClick={loadDates}
-          className="text-sm text-zinc-600 underline"
-        >
+        <h2 className="text-lg font-semibold text-zinc-900">
+          Match dates (14 rounds)
+        </h2>
+        <button type="button" onClick={loadDates} className="link-back">
           Reload
         </button>
       </div>
-      <p className="text-sm text-zinc-500">Times in Europe/Brussels</p>
+      <p className="text-sm text-zinc-600">Times in Europe/Brussels</p>
       <ul className="flex flex-col gap-2">
         {dates.map((d) => (
           <li key={d.round} className="flex items-center gap-3">
-            <span className="w-16 text-sm font-medium">Round {d.round}</span>
+            <span className="w-16 text-sm font-medium text-zinc-700">
+              Round {d.round}
+            </span>
             <input
               type="datetime-local"
               value={d.datetime}
@@ -84,7 +84,7 @@ export function CompetitionManagement({ scope, regionCode }: Props) {
                   ),
                 )
               }
-              className="flex-1 rounded border border-zinc-300 px-2 py-1.5 text-sm"
+              className="input flex-1"
             />
           </li>
         ))}
@@ -93,11 +93,15 @@ export function CompetitionManagement({ scope, regionCode }: Props) {
         type="button"
         disabled={loading}
         onClick={saveDates}
-        className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+        className="btn-primary w-fit"
       >
         {loading ? "Saving…" : "Save dates"}
       </button>
-      {message && <p className="text-sm text-zinc-600">{message}</p>}
+      {message && (
+        <p className="text-sm text-zinc-700" role="status">
+          {message}
+        </p>
+      )}
     </section>
   );
 }

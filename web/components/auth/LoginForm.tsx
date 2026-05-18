@@ -41,8 +41,8 @@ export function LoginForm({ nextPath }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex w-full max-w-sm flex-col gap-4">
-      <label className="flex flex-col gap-1 text-sm font-medium">
+    <form onSubmit={handleSubmit} className="card flex max-w-sm flex-col gap-4">
+      <label className="flex flex-col gap-1 text-sm font-medium text-zinc-900">
         Email
         <input
           type="email"
@@ -51,14 +51,14 @@ export function LoginForm({ nextPath }: Props) {
           autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-900"
+          className="input"
           placeholder="you@example.com"
         />
       </label>
       <button
         type="submit"
         disabled={status === "loading" || status === "sent"}
-        className="rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-60"
+        className="btn-primary w-full"
       >
         {status === "loading" ? "Sending…" : "Send magic link"}
       </button>
