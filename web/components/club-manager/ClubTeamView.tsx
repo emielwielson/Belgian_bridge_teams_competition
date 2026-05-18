@@ -250,7 +250,7 @@ export function ClubTeamView({ clubId, teamId }: Props) {
             {detail.matches.map((match) => (
               <li key={match.id}>
                 <Link
-                  href={`/player/matches/${match.id}`}
+                  href={`/matches/${match.id}`}
                   className="block rounded-md border border-zinc-100 px-3 py-3 transition-colors hover:border-zinc-300"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">

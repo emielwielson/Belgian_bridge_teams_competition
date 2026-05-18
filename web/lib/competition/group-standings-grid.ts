@@ -222,3 +222,23 @@ export function buildGroupStandingsGrid(
 
   return { rounds, rows, hasMatches };
 }
+
+/** Strip match links the current user cannot open on /player/matches. */
+export function applyAccessibleMatchLinks(
+  grid: GroupStandingsGridData,
+  accessibleMatchIds: ReadonlySet<string>,
+): GroupStandingsGridData {
+  return {
+    ...grid,
+    rows: grid.rows.map((row) => ({
+      ...row,
+      cells: row.cells.map((cell) => ({
+        ...cell,
+        matchId:
+          cell.matchId && accessibleMatchIds.has(cell.matchId)
+            ? cell.matchId
+            : null,
+      })),
+    })),
+  };
+}

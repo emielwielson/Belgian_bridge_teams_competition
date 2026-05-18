@@ -77,7 +77,7 @@ export function RegularSeasonScoring({ linkedPlayerName }: Props) {
       {matches.map((m) => (
         <li key={m.id}>
           <Link
-            href={`/player/matches/${m.id}`}
+            href={`/matches/${m.id}`}
             className="block rounded-lg border border-zinc-200 bg-white px-4 py-4 shadow-sm hover:border-emerald-300 hover:bg-emerald-50/30"
           >
             <span className="text-xs font-medium uppercase tracking-wide text-zinc-500">

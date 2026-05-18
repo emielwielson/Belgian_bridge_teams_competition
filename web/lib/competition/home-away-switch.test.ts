@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { canAccessHomeAwaySwitchWorkflow } from "./home-away-switch";
+import {
+  canAccessHomeAwaySwitchWorkflow,
+  isHomeAwaySwitchCaptain,
+  shouldShowHomeAwaySwitchSection,
+} from "./home-away-switch";
 import type { MatchHomeAwaySwitchState } from "./home-away-switch";
 
 function baseState(
@@ -25,34 +29,40 @@ function baseState(
   };
 }
 
-describe("canAccessHomeAwaySwitchWorkflow", () => {
+describe("shouldShowHomeAwaySwitchSection", () => {
   it("returns false when not a mirror round", () => {
     expect(
-      canAccessHomeAwaySwitchWorkflow(
-        baseState({ is_mirror_round: false, can_propose: true }),
+      shouldShowHomeAwaySwitchSection(
+        baseState({ is_mirror_round: false, round: 3 }),
       ),
     ).toBe(false);
   });
 
-  it("returns true when captain can propose", () => {
-    expect(canAccessHomeAwaySwitchWorkflow(baseState({ can_propose: true }))).toBe(
-      true,
+  it("returns true for unscored mirror-round matches", () => {
+    expect(shouldShowHomeAwaySwitchSection(baseState())).toBe(true);
+  });
+
+  it("returns false when match is played", () => {
+    expect(
+      shouldShowHomeAwaySwitchSection(
+        baseState({ played_at: "2025-01-01T00:00:00.000Z" }),
+      ),
+    ).toBe(false);
+  });
+});
+
+describe("canAccessHomeAwaySwitchWorkflow", () => {
+  it("matches section visibility for API GET", () => {
+    expect(canAccessHomeAwaySwitchWorkflow(baseState())).toBe(true);
+    expect(canAccessHomeAwaySwitchWorkflow(null)).toBe(false);
+  });
+});
+
+describe("isHomeAwaySwitchCaptain", () => {
+  it("detects captain membership", () => {
+    expect(isHomeAwaySwitchCaptain(baseState())).toBe(true);
+    expect(isHomeAwaySwitchCaptain(baseState({ captain_teams: [] }))).toBe(
+      false,
     );
-  });
-
-  it("returns true for read-only when already mirrored", () => {
-    expect(
-      canAccessHomeAwaySwitchWorkflow(
-        baseState({ needs_switch: false, captain_teams: ["h1"] }),
-      ),
-    ).toBe(true);
-  });
-
-  it("returns false when already mirrored and user is not a captain", () => {
-    expect(
-      canAccessHomeAwaySwitchWorkflow(
-        baseState({ needs_switch: false, captain_teams: [] }),
-      ),
-    ).toBe(false);
   });
 });

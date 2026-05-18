@@ -118,19 +118,21 @@ export async function respondMatchHomeAwaySwitch(
   if (error) throw error;
 }
 
-export function canAccessHomeAwaySwitchWorkflow(
+/** Mirror-leg section on the match page (rounds 8–14, unscored). */
+export function shouldShowHomeAwaySwitchSection(
   state: MatchHomeAwaySwitchState | null,
 ): boolean {
   if (!state) return false;
-  if (!state.is_mirror_round) return false;
-  const isCaptain = state.captain_teams.length > 0;
-  const hasActions =
-    state.can_propose ||
-    state.can_approve ||
-    state.can_reject ||
-    state.can_cancel ||
-    state.pending != null;
-  const showAlreadyMirrored =
-    isCaptain && !state.needs_switch && state.played_at == null;
-  return hasActions || showAlreadyMirrored;
+  return state.is_mirror_round && state.played_at == null;
+}
+
+/** Client/API may load switch state (not only when captain actions exist). */
+export function canAccessHomeAwaySwitchWorkflow(
+  state: MatchHomeAwaySwitchState | null,
+): boolean {
+  return shouldShowHomeAwaySwitchSection(state);
+}
+
+export function isHomeAwaySwitchCaptain(state: MatchHomeAwaySwitchState): boolean {
+  return state.captain_teams.length > 0;
 }

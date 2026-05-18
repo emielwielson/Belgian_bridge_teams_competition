@@ -13,6 +13,8 @@ type Props = {
   playedAt: string | null;
   isAdmin: boolean;
   lineupsComplete: boolean;
+  /** When false, show read-only score info (no submit form). */
+  allowSubmit?: boolean;
 };
 
 export function MatchScoreForm({
@@ -25,6 +27,7 @@ export function MatchScoreForm({
   playedAt: initialPlayedAt,
   isAdmin,
   lineupsComplete,
+  allowSubmit = true,
 }: Props) {
   const [impsHome, setImpsHome] = useState(
     initialImpsHome != null ? String(initialImpsHome) : "",
@@ -39,8 +42,17 @@ export function MatchScoreForm({
   const [error, setError] = useState<string | null>(null);
 
   const locked = playedAt != null;
-  const canSubmit = !locked && lineupsComplete;
-  const canAdminEdit = locked && isAdmin;
+  const canSubmit = allowSubmit && !locked && lineupsComplete;
+  const canAdminEdit = allowSubmit && locked && isAdmin;
+
+  if (!allowSubmit && !locked) {
+    return (
+      <section className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+        <h3 className="text-sm font-semibold text-zinc-900">Score</h3>
+        <p className="mt-2 text-sm text-zinc-600">This match has not been played yet.</p>
+      </section>
+    );
+  }
 
   if (!locked && !lineupsComplete) {
     return (

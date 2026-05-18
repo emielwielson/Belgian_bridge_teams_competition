@@ -1,8 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
-import type { MatchHomeAwaySwitchState } from "@/lib/competition/home-away-switch";
+import { useState } from "react";
+import {
+  isHomeAwaySwitchCaptain,
+  type MatchHomeAwaySwitchState,
+} from "@/lib/competition/home-away-switch";
 
 type Props = {
   matchId: string;
@@ -10,6 +13,7 @@ type Props = {
   awayTeamName: string;
   homeTeamId: string;
   awayTeamId: string;
+  initialState: MatchHomeAwaySwitchState;
 };
 
 export function HomeAwaySwitchWorkflow({
@@ -18,41 +22,24 @@ export function HomeAwaySwitchWorkflow({
   awayTeamName,
   homeTeamId,
   awayTeamId,
+  initialState,
 }: Props) {
   const router = useRouter();
-  const [state, setState] = useState<MatchHomeAwaySwitchState | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [state, setState] = useState(initialState);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [requestingTeamId, setRequestingTeamId] = useState("");
+  const [requestingTeamId, setRequestingTeamId] = useState(() =>
+    initialState.captain_teams.length === 1
+      ? initialState.captain_teams[0]
+      : "",
+  );
   const [busy, setBusy] = useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    const res = await fetch(`/api/matches/${matchId}/switch-home-away`);
-    if (res.status === 403) {
-      setState(null);
-      setLoading(false);
-      return;
-    }
-    if (!res.ok) {
-      const body = await res.json();
-      setError(body.error ?? "Failed to load home/away switch state");
-      setLoading(false);
-      return;
-    }
-    const body = (await res.json()) as { state: MatchHomeAwaySwitchState };
-    setState(body.state);
-    if (body.state.captain_teams.length === 1) {
-      setRequestingTeamId(body.state.captain_teams[0]);
-    }
-    setLoading(false);
-  }, [matchId]);
+  const teamLabel = (teamId: string) =>
+    teamId === homeTeamId ? homeTeamName : awayTeamName;
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const firstLeg = state.first_leg;
+  const isCaptain = isHomeAwaySwitchCaptain(state);
 
   async function handlePropose(e: React.FormEvent) {
     e.preventDefault();
@@ -82,7 +69,7 @@ export function HomeAwaySwitchWorkflow({
   }
 
   async function handleRespond(action: "approve" | "reject" | "cancel") {
-    if (!state?.pending) return;
+    if (!state.pending) return;
     setBusy(true);
     setError(null);
     setMessage(null);
@@ -112,36 +99,6 @@ export function HomeAwaySwitchWorkflow({
     }
   }
 
-  if (loading) {
-    return (
-      <section className="card">
-        <p className="text-sm text-zinc-500">Loading home/away options…</p>
-      </section>
-    );
-  }
-
-  if (!state) {
-    return null;
-  }
-
-  const teamLabel = (teamId: string) =>
-    teamId === homeTeamId ? homeTeamName : awayTeamName;
-
-  const showSection =
-    state.can_propose ||
-    state.can_approve ||
-    state.can_reject ||
-    state.can_cancel ||
-    state.pending != null ||
-    (!state.needs_switch && state.played_at == null);
-
-  if (!showSection) {
-    return null;
-  }
-
-  const firstLeg = state.first_leg;
-  const played = state.played_at != null;
-
   return (
     <section className="card flex flex-col gap-4">
       <div>
@@ -149,9 +106,9 @@ export function HomeAwaySwitchWorkflow({
           Home/away for return leg
         </h2>
         <p className="mt-1 text-sm text-zinc-600">
-          In mirror rounds (8–14), the return leg should be played at the other
-          team&apos;s venue. Swap home and away here if this match still shows
-          the same sides as the first leg.
+          Rounds 8–14 are the return leg: the away team from the first meeting
+          should host. Use this section when the match still lists the same home
+          team as in round {state.first_leg_round ?? "the first leg"}.
         </p>
       </div>
 
@@ -162,7 +119,7 @@ export function HomeAwaySwitchWorkflow({
             {teamLabel(firstLeg.home_team_id)} (home) vs{" "}
             {teamLabel(firstLeg.away_team_id)} (away)
           </span>
-          . Current match:{" "}
+          . This match (round {state.round}):{" "}
           <span className="font-medium">
             {teamLabel(state.home_team_id)} (home) vs{" "}
             {teamLabel(state.away_team_id)} (away)
@@ -182,13 +139,17 @@ export function HomeAwaySwitchWorkflow({
         </p>
       ) : null}
 
-      {played ? (
-        <p className="text-sm text-zinc-500">
-          This match has been played; home/away can no longer be changed.
+      {!isCaptain ? (
+        <p className="text-sm text-zinc-600">
+          Only the home or away <span className="font-medium">team captain</span>{" "}
+          can propose or approve a swap. Log in with the captain&apos;s account,
+          or ask your club manager to assign you as captain on the team.
         </p>
       ) : !state.needs_switch && !state.pending ? (
         <p className="text-sm text-zinc-600">
-          Home/away is already set correctly for this return leg.
+          Home/away is already correct for this return leg (home and away are
+          swapped compared with the first leg). No action is needed unless the
+          fixture was entered incorrectly.
         </p>
       ) : state.pending ? (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-sm">
@@ -263,6 +224,11 @@ export function HomeAwaySwitchWorkflow({
             {busy ? "Sending…" : "Propose home/away swap"}
           </button>
         </form>
+      ) : isCaptain && state.needs_switch ? (
+        <p className="text-sm text-amber-800">
+          A postponement may be pending, or this match cannot accept a new
+          request right now.
+        </p>
       ) : null}
     </section>
   );

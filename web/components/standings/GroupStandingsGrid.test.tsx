@@ -57,17 +57,13 @@ describe("GroupStandingsGrid", () => {
     expect(screen.getByText("14")).toBeInTheDocument();
   });
 
-  it("shows home icon only for home cells", () => {
+  it("links home icons to the public match page", () => {
     render(<GroupStandingsGrid grid={sampleGrid} />);
-    expect(screen.getAllByLabelText("Score match")).toHaveLength(2);
-  });
-
-  it("links home icons to the match scoring page", () => {
-    render(<GroupStandingsGrid grid={sampleGrid} />);
-    const links = screen.getAllByRole("link", { name: "Score match" });
+    const links = screen.getAllByRole("link", { name: "View match" });
+    expect(links).toHaveLength(2);
     expect(links.map((l) => l.getAttribute("href"))).toEqual([
-      "/player/matches/m1",
-      "/player/matches/m2",
+      "/matches/m1",
+      "/matches/m2",
     ]);
   });
 

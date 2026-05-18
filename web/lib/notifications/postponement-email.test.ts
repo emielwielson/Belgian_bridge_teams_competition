@@ -17,7 +17,7 @@ describe("postponement-email URLs", () => {
 
   it("builds match URL for approve link", () => {
     expect(matchPostponementUrl("match-abc")).toBe(
-      "https://app.example.com/player/matches/match-abc",
+      "https://app.example.com/matches/match-abc",
     );
   });
 

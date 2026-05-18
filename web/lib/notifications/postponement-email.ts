@@ -28,12 +28,12 @@ export function getAppBaseUrl(): string {
 }
 
 export function matchPostponementUrl(matchId: string): string {
-  const path = `/player/matches/${matchId}`;
+  const path = `/matches/${matchId}`;
   return `${getAppBaseUrl()}${path}`;
 }
 
 export function loginThenMatchUrl(matchId: string): string {
-  const next = encodeURIComponent(`/player/matches/${matchId}`);
+  const next = encodeURIComponent(`/matches/${matchId}`);
   return `${getAppBaseUrl()}/login?next=${next}`;
 }
 

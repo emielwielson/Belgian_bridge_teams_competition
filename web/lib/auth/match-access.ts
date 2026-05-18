@@ -4,7 +4,14 @@ import {
   COMPETITION_ADMIN_ROLES,
 } from "./route-auth";
 import { hasAnyRole } from "./roles";
+import { resolveUserTeamIds } from "@/lib/competition/player-matches";
 import { getManagedClubIds } from "./user-access";
+
+export type MatchTeamPair = {
+  id: string;
+  home_team_id: string;
+  away_team_id: string;
+};
 
 export type MatchContext = {
   id: string;
@@ -96,6 +103,33 @@ export async function canViewMatchOps(
   matchId: string,
 ): Promise<boolean> {
   return rpcBool(supabase, "current_user_can_view_match_ops", matchId);
+}
+
+/** Match ids the user may open on /player/matches (same rules as can_view_match_ops). */
+export async function matchIdsUserCanViewOps(
+  supabase: SupabaseClient,
+  userId: string,
+  roles: string[],
+  matches: MatchTeamPair[],
+): Promise<Set<string>> {
+  if (matches.length === 0) return new Set();
+  if (hasAnyRole(roles, [...COMPETITION_ADMIN_ROLES])) {
+    return new Set(matches.map((m) => m.id));
+  }
+
+  const userTeamIds = await resolveUserTeamIds(supabase, userId);
+  if (userTeamIds.size === 0) return new Set();
+
+  const accessible = new Set<string>();
+  for (const match of matches) {
+    if (
+      userTeamIds.has(match.home_team_id) ||
+      userTeamIds.has(match.away_team_id)
+    ) {
+      accessible.add(match.id);
+    }
+  }
+  return accessible;
 }
 
 export async function assertCanViewMatchOps(

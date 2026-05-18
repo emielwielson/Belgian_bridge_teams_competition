@@ -95,8 +95,11 @@ describe("/api/matches/[matchId]/switch-home-away", () => {
     expect(body.state.can_propose).toBe(true);
   });
 
-  it("GET returns 403 when user cannot access workflow", async () => {
-    vi.mocked(getMatchHomeAwaySwitchState).mockResolvedValue(baseState);
+  it("GET returns 403 when match is not a mirror leg", async () => {
+    vi.mocked(getMatchHomeAwaySwitchState).mockResolvedValue({
+      ...baseState,
+      is_mirror_round: false,
+    });
     vi.mocked(canAccessHomeAwaySwitchWorkflow).mockReturnValue(false);
     const res = await GET(new Request("http://x"), {
       params: Promise.resolve({ matchId: "match-1" }),
@@ -158,6 +161,6 @@ describe("/api/matches/[matchId]/switch-home-away", () => {
       expect.anything(),
       "group-1",
     );
-    expect(revalidatePath).toHaveBeenCalledWith("/player/matches/match-1");
+    expect(revalidatePath).toHaveBeenCalledWith("/matches/match-1");
   });
 });

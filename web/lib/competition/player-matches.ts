@@ -91,7 +91,7 @@ export type ScorableMatchSummary = PlayerMatchSummary & {
   status: "scheduled";
 };
 
-async function resolveUserTeamIds(
+export async function resolveUserTeamIds(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<Set<string>> {

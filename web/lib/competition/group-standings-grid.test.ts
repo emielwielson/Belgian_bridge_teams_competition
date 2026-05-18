@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyAccessibleMatchLinks,
   buildGroupStandingsGrid,
   PAIRING_BG_CLASSES,
   type GroupMatchRow,
@@ -123,5 +124,20 @@ describe("buildGroupStandingsGrid", () => {
     expect(grid.hasMatches).toBe(false);
     expect(grid.rows.map((r) => r.rank)).toEqual([1, 2, 3]);
     expect(grid.rows[0].vpTotal).toBe(20);
+  });
+
+  it("applyAccessibleMatchLinks keeps matchId only for allowed fixtures", () => {
+    const matches = [
+      match({ round: 1, id: "m1" }),
+      match({ round: 2, id: "m2", home_team_id: "t3", away_team_id: "t4" }),
+    ];
+    const grid = buildGroupStandingsGrid(teams, matches);
+    const filtered = applyAccessibleMatchLinks(grid, new Set(["m1"]));
+    expect(filtered.rows.find((r) => r.teamId === "t1")!.cells[0].matchId).toBe(
+      "m1",
+    );
+    expect(filtered.rows.find((r) => r.teamId === "t3")!.cells[1].matchId).toBe(
+      null,
+    );
   });
 });

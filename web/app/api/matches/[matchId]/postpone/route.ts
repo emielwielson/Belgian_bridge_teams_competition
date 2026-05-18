@@ -123,7 +123,7 @@ export async function PATCH(request: Request, { params }: Params) {
 
     if (action === "approve") {
       await revalidateStandingsForGroup(supabase, matchBefore.group_id);
-      revalidatePath(`/player/matches/${matchId}`);
+      revalidatePath(`/matches/${matchId}`);
     }
 
     return jsonOk({ state });

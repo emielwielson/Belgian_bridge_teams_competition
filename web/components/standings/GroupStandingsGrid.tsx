@@ -101,9 +101,9 @@ export function GroupStandingsGrid({ grid }: Props) {
                     <div className="flex items-center justify-end gap-1">
                       {cell.isHome && cell.matchId ? (
                         <Link
-                          href={`/player/matches/${cell.matchId}`}
+                          href={`/matches/${cell.matchId}`}
                           className="inline-flex rounded text-zinc-500 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-1"
-                          aria-label="Score match"
+                          aria-label="View match"
                         >
                           <HomeIcon linked />
                         </Link>
