@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { NATIONAL_DIVISIONS } from "@/lib/competition/national-structure";
+import { sortDivisionsByCanonicalName } from "@/lib/competition/sort-divisions";
 import {
   SCOPES,
   scopeLabel,
@@ -10,13 +10,6 @@ import {
 } from "@/lib/competition/scopes";
 import { CompetitionManagement } from "./CompetitionManagement";
 import { NationalCompetitionSetup } from "./NationalCompetitionSetup";
-
-function sortNationalDivisions(divisions: Division[]): Division[] {
-  const order = new Map(NATIONAL_DIVISIONS.map((d, i) => [d.name, i]));
-  return [...divisions].sort(
-    (a, b) => (order.get(a.name) ?? 99) - (order.get(b.name) ?? 99),
-  );
-}
 
 type DivisionLevel = { id: string; code: string; name: string };
 type Group = {
@@ -248,7 +241,7 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
           >
             Add division
           </button>
-          {sortNationalDivisions(league.divisions).map((division) => (
+          {sortDivisionsByCanonicalName(league.divisions).map((division) => (
             <div key={division.id} className="mt-4 border-t pt-3">
               <h3 className="text-sm font-medium text-zinc-900">{division.name}</h3>
               <button

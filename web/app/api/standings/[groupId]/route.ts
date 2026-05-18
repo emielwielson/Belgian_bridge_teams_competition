@@ -12,7 +12,8 @@ export async function GET(_request: Request, { params }: Params) {
       .from("standings_group")
       .select("group_id, team_id, team_name, vp_total")
       .eq("group_id", groupId)
-      .order("vp_total", { ascending: false });
+      .order("vp_total", { ascending: false })
+      .order("team_name", { ascending: true });
 
     if (error) return jsonError(error.message, 500);
     return jsonOk({ groupId, standings: data ?? [] });
