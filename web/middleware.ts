@@ -88,6 +88,10 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
+  if (pathname.startsWith("/player/matches/")) {
+    return response;
+  }
+
   if (!hasAnyRole(roles, requiredRoles)) {
     const home = request.nextUrl.clone();
     home.pathname = "/";

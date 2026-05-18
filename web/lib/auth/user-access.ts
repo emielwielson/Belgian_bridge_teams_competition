@@ -56,9 +56,9 @@ export async function canAccessClubManagerRoute(
   }
 
   const clubIds = await getManagedClubIds(supabase, userId);
-  const clubPageMatch = pathname.match(/^\/club-manager\/([^/]+)$/);
-  if (clubPageMatch) {
-    return clubIds.includes(clubPageMatch[1]);
+  const clubPrefixMatch = pathname.match(/^\/club-manager\/([^/]+)/);
+  if (clubPrefixMatch) {
+    return clubIds.includes(clubPrefixMatch[1]);
   }
   if (pathname === "/club-manager") {
     return clubIds.length > 0;

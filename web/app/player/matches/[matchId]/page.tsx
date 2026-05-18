@@ -3,8 +3,10 @@ import { notFound, redirect } from "next/navigation";
 import { MatchLineupEditor } from "@/components/player/MatchLineupEditor";
 import { MatchScoreForm } from "@/components/player/MatchScoreForm";
 import {
+  canEditLineupForTeam,
   canViewMatchOps,
   loadMatchContext,
+  userManagesMatchClub,
 } from "@/lib/auth/match-access";
 import { loadTeamRoster } from "@/lib/competition/player-matches";
 import { getUserRoles } from "@/lib/auth/session";
@@ -41,7 +43,16 @@ export default async function PlayerMatchPage({ params }: Props) {
 
   const roles = await getUserRoles(supabase, user.id);
   const isAdmin = hasAnyRole(roles, [...COMPETITION_ADMIN_ROLES]);
-  const canEdit = match.played_at == null;
+  const managesClub = await userManagesMatchClub(
+    supabase,
+    user.id,
+    roles,
+    match,
+  );
+  const [canEditHome, canEditAway] = await Promise.all([
+    canEditLineupForTeam(supabase, user.id, roles, match, match.home_team_id),
+    canEditLineupForTeam(supabase, user.id, roles, match, match.away_team_id),
+  ]);
   const lineupsComplete = await isLineupComplete(supabase, match);
   const status = matchStatus(match.played_at);
 
@@ -63,8 +74,11 @@ export default async function PlayerMatchPage({ params }: Props) {
   return (
     <main className="page-container flex flex-col gap-6">
       <header>
-        <Link href="/player" className="link-back">
-          ← Player dashboard
+        <Link
+          href={managesClub ? "/club-manager" : "/player"}
+          className="link-back"
+        >
+          {managesClub ? "← My club" : "← Player dashboard"}
         </Link>
         <h1 className="mt-2 text-2xl font-semibold text-zinc-900">
           Round {match.round}: {match.home_team.name} vs {match.away_team.name}
@@ -97,7 +111,7 @@ export default async function PlayerMatchPage({ params }: Props) {
           teamName={match.home_team.name}
           roster={homeRoster}
           initialLineup={homeLineup}
-          canEdit={canEdit}
+          canEdit={canEditHome}
         />
         <MatchLineupEditor
           matchId={matchId}
@@ -105,7 +119,7 @@ export default async function PlayerMatchPage({ params }: Props) {
           teamName={match.away_team.name}
           roster={awayRoster}
           initialLineup={awayLineup}
-          canEdit={canEdit}
+          canEdit={canEditAway}
         />
       </div>
 

@@ -34,6 +34,29 @@ describe("canAccessClubManagerRoute", () => {
     ).resolves.toBe(true);
   });
 
+  it("allows nested team routes for assigned clubs", async () => {
+    const supabase = {
+      from: () => ({
+        select: () => ({
+          eq: () =>
+            Promise.resolve({
+              data: [{ club_id: "club-1" }],
+              error: null,
+            }),
+        }),
+      }),
+    } as never;
+
+    await expect(
+      canAccessClubManagerRoute(
+        supabase,
+        "user-1",
+        [],
+        "/club-manager/club-1/teams/team-9",
+      ),
+    ).resolves.toBe(true);
+  });
+
   it("denies users not assigned to the club", async () => {
     const supabase = {
       from: () => ({

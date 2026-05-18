@@ -140,10 +140,10 @@ export function assertCanAdminEditScore(roles: string[]): void {
   }
 }
 
-export async function isUserOnMatchTeam(
+export async function isUserOnTeam(
   supabase: SupabaseClient,
   userId: string,
-  match: MatchContext,
+  teamId: string,
 ): Promise<boolean> {
   const { data: player } = await supabase
     .from("players")
@@ -157,9 +157,20 @@ export async function isUserOnMatchTeam(
     .from("team_players")
     .select("team_id")
     .eq("player_id", player.id)
-    .in("team_id", [match.home_team_id, match.away_team_id]);
+    .eq("team_id", teamId)
+    .maybeSingle();
 
-  return (roster?.length ?? 0) > 0;
+  return roster != null;
+}
+
+export async function isUserOnMatchTeam(
+  supabase: SupabaseClient,
+  userId: string,
+  match: MatchContext,
+): Promise<boolean> {
+  const onHome = await isUserOnTeam(supabase, userId, match.home_team_id);
+  if (onHome) return true;
+  return isUserOnTeam(supabase, userId, match.away_team_id);
 }
 
 export async function userManagesMatchClub(
@@ -174,4 +185,42 @@ export async function userManagesMatchClub(
     clubIds.includes(match.home_team.club_id) ||
     clubIds.includes(match.away_team.club_id)
   );
+}
+
+export async function userManagesTeamClub(
+  supabase: SupabaseClient,
+  userId: string,
+  roles: string[],
+  clubId: string,
+): Promise<boolean> {
+  if (hasAnyRole(roles, [...COMPETITION_ADMIN_ROLES])) return true;
+  const clubIds = await getManagedClubIds(supabase, userId);
+  return clubIds.includes(clubId);
+}
+
+/** Whether the current user may edit lineup for one side of a match. */
+export async function canEditLineupForTeam(
+  supabase: SupabaseClient,
+  userId: string,
+  roles: string[],
+  match: MatchContext,
+  teamId: string,
+): Promise<boolean> {
+  if (match.played_at) return false;
+  if (!(await canEditLineup(supabase, match.id))) return false;
+  if (hasAnyRole(roles, [...COMPETITION_ADMIN_ROLES])) return true;
+
+  const teamClubId =
+    teamId === match.home_team_id
+      ? match.home_team.club_id
+      : teamId === match.away_team_id
+        ? match.away_team.club_id
+        : null;
+  if (!teamClubId) return false;
+
+  if (await userManagesTeamClub(supabase, userId, roles, teamClubId)) {
+    return true;
+  }
+
+  return isUserOnTeam(supabase, userId, teamId);
 }

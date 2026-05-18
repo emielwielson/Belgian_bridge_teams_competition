@@ -1,0 +1,132 @@
+import { requireAuth } from "@/lib/auth/route-auth";
+import { assertClubManagerForClub } from "@/lib/auth/user-access";
+import { loadClubTeamDetail } from "@/lib/competition/club-manager-queries";
+import { requireActiveSeason } from "@/lib/competition/season";
+import { requireSeasonInSetup } from "@/lib/competition/season-setup";
+import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
+
+type Params = { params: Promise<{ clubId: string; teamId: string }> };
+
+export async function GET(_request: Request, { params }: Params) {
+  try {
+    const { clubId, teamId } = await params;
+    const { user, roles, supabase } = await requireAuth();
+    await assertClubManagerForClub(supabase, user.id, roles, clubId);
+
+    const detail = await loadClubTeamDetail(supabase, clubId, teamId);
+    if (!detail) return jsonError("Team not found", 404);
+
+    return jsonOk(detail);
+  } catch (err) {
+    return jsonFromError(err);
+  }
+}
+
+export async function PATCH(request: Request, { params }: Params) {
+  try {
+    const { clubId, teamId } = await params;
+    const { user, roles, supabase } = await requireAuth();
+    await assertClubManagerForClub(supabase, user.id, roles, clubId);
+
+    const { data: team, error: teamError } = await supabase
+      .from("teams")
+      .select("id, club_id")
+      .eq("id", teamId)
+      .maybeSingle();
+
+    if (teamError) return jsonError(teamError.message, 500);
+    if (!team || team.club_id !== clubId) {
+      return jsonError("Team not found", 404);
+    }
+
+    const body = await request.json();
+    const updates: { location?: string | null; captain_id?: string | null } = {};
+
+    if ("location" in body) {
+      updates.location =
+        body.location === "" || body.location == null
+          ? null
+          : String(body.location);
+    }
+    if ("captain_id" in body) {
+      updates.captain_id =
+        body.captain_id === "" || body.captain_id == null
+          ? null
+          : String(body.captain_id);
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return jsonError("No fields to update", 400);
+    }
+
+    const { error } = await supabase
+      .from("teams")
+      .update(updates)
+      .eq("id", teamId)
+      .eq("club_id", clubId);
+
+    if (error) return jsonError(error.message, 400);
+    return jsonOk({ updated: true });
+  } catch (err) {
+    return jsonFromError(err);
+  }
+}
+
+export async function POST(request: Request, { params }: Params) {
+  try {
+    const { clubId, teamId } = await params;
+    const { user, roles, supabase } = await requireAuth();
+    await assertClubManagerForClub(supabase, user.id, roles, clubId);
+
+    const { data: team, error: teamError } = await supabase
+      .from("teams")
+      .select("id, club_id")
+      .eq("id", teamId)
+      .maybeSingle();
+
+    if (teamError) return jsonError(teamError.message, 500);
+    if (!team || team.club_id !== clubId) {
+      return jsonError("Team not found", 404);
+    }
+
+    const season = await requireActiveSeason(supabase);
+    requireSeasonInSetup(season);
+
+    const body = await request.json();
+    const playerId = body.player_id as string | undefined;
+    if (!playerId) return jsonError("player_id is required", 400);
+
+    const { data: membership } = await supabase
+      .from("player_club_memberships")
+      .select("id")
+      .eq("club_id", clubId)
+      .eq("player_id", playerId)
+      .eq("season_id", season.id)
+      .maybeSingle();
+
+    if (!membership) {
+      return jsonError("Player is not a member of this club", 403);
+    }
+
+    if (body.action === "roster_remove") {
+      const { error } = await supabase
+        .from("team_players")
+        .delete()
+        .eq("team_id", teamId)
+        .eq("player_id", playerId)
+        .eq("season_id", season.id);
+      if (error) return jsonError(error.message, 400);
+      return jsonOk({ removed: true });
+    }
+
+    const { error } = await supabase.from("team_players").insert({
+      team_id: teamId,
+      player_id: playerId,
+      season_id: season.id,
+    });
+    if (error) return jsonError(error.message, 400);
+    return jsonOk({ added: true }, { status: 201 });
+  } catch (err) {
+    return jsonFromError(err);
+  }
+}
