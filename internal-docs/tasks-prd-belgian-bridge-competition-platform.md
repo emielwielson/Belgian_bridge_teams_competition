@@ -93,14 +93,15 @@ Based on: `internal-docs/prd-belgian-bridge-competition-platform.md`
 
 - Unit tests should typically live alongside the code they test (e.g. `StandingsTable.tsx` and `StandingsTable.test.tsx`).
 - Run web tests with `cd web && npm test` (Vitest).
-- Run SQL smoke tests against a local or linked Supabase instance per project README once added.
+- Run SQL smoke tests via the Supabase Dashboard **SQL Editor** (no local CLI/Docker required).
+- Migrations in `supabase/migrations/` are applied in filename order through the Dashboard unless you opt into the CLI later.
 - Enforce PRD rules in the database and server layer; UI validations are supplementary only.
 - MVP assumes one active season; no season-picker UX.
 
 ## Tasks
 
 - [ ] 1.0 Platform foundation and core data model
-  - [x] 1.1 Initialize Supabase in the repo (`supabase init`, `config.toml`) and document required env vars for local and hosted projects.
+  - [x] 1.1 Initialize Supabase in the repo (`supabase/` layout, `config.toml` reference) and document hosted env vars (Dashboard + publishable/secret keys; no CLI/Docker required).
   - [ ] 1.2 Create migration `0001_core_schema.sql`: `seasons` (with single active season support), `regions` (`flanders`, `wallonia`), `leagues`, `divisions`, `groups` (including nullable `max_matches_per_day_per_team`), `clubs`, `players`, `player_club_memberships`, `teams`, `team_players`, `matches`, `match_players`.
   - [ ] 1.3 Create migration `0002_constraints_and_indexes.sql`: league hierarchy FKs, one club per player per active season, one team per player per season, one match per team per round per group, no home=away, unique fixtures per round/group.
   - [ ] 1.4 Create migration `0003_scoring_standings_audit.sql`: `vp_tables`, `vp_table_rows`, standings computation (view or function), `penalties`, `warnings`, `rulings`, `match_logs`, score fields on `matches`.

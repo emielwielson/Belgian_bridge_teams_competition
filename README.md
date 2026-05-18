@@ -2,106 +2,65 @@
 
 Mobile-first PWA for managing Belgian bridge team competitions (National, Flanders, Wallonia). See the [PRD](internal-docs/prd-belgian-bridge-competition-platform.md) and [implementation tasks](internal-docs/tasks-prd-belgian-bridge-competition-platform.md).
 
-**Stack:** Supabase (Postgres, Auth, Storage) + Next.js (task 1.8+).
+**Stack:** Hosted Supabase (Postgres, Auth, Storage) + Next.js (task 1.8+).
+
+Development uses the **Supabase Dashboard** (no Docker or Supabase CLI required).
 
 ## Prerequisites
 
 | Tool | Purpose |
 |------|---------|
-| [Supabase CLI](https://supabase.com/docs/guides/cli) | Local stack, migrations, `db push` |
-| [Docker Desktop](https://www.docker.com/products/docker-desktop/) | Required for `supabase start` |
-| Node.js 20+ (later) | Next.js app under `web/` (task 1.8) |
+| [Supabase](https://supabase.com/dashboard) account and project | Database, Auth, Storage, SQL Editor |
+| Node.js 20+ (from task 1.8) | Next.js app under `web/` |
 
-Install CLI (macOS):
+## One-time project setup (Dashboard)
 
-```bash
-brew install supabase/tap/supabase
-```
+1. Create a project in the [Supabase Dashboard](https://supabase.com/dashboard).
 
-## One-time cloud setup
-
-1. Create an empty project in the [Supabase Dashboard](https://supabase.com/dashboard).
-2. Log in to the CLI:
-
-   ```bash
-   supabase login
-   ```
-
-3. Link this repo (from the project root):
-
-   ```bash
-   supabase link --project-ref <PROJECT_REF>
-   ```
-
-   `PROJECT_REF` is in **Project Settings → General**.
-
-4. In the Dashboard, configure **Authentication**:
-
-   - **URL configuration**
-     - Site URL: `http://localhost:3000`
-     - Redirect URLs: `http://localhost:3000/auth/callback` (add production URLs when deployed)
+2. Configure **Authentication** → **URL configuration**:
+   - Site URL: `http://localhost:3000` (add production URL when deployed)
+   - Redirect URLs: `http://localhost:3000/auth/callback`
    - **Providers:** enable **Email** (Magic Link / OTP)
 
-5. Copy API keys from **Project Settings → [API Keys](https://supabase.com/dashboard/project/_/settings/api-keys)** into `.env.local`:
+3. Copy keys from **Project Settings → [API Keys](https://supabase.com/dashboard/project/_/settings/api-keys)**:
+   - Project URL → `NEXT_PUBLIC_SUPABASE_URL`
    - **Publishable key** (`sb_publishable_...`) → `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
    - **Secret key** (`sb_secret_...`) → `SUPABASE_SECRET_KEY`  
-   Do not use the legacy **anon** / **service_role** JWT keys.
+   Do not use legacy **anon** / **service_role** JWT keys.
 
-After migrations exist (task 1.2+), apply them to the cloud project:
-
-```bash
-supabase db push
-```
-
-Ensure `major_version` in [`supabase/config.toml`](supabase/config.toml) matches your hosted Postgres version.
-
-## Local development
-
-1. Start Docker Desktop.
-2. From the repo root:
-
-   ```bash
-   supabase start
-   supabase status
-   ```
-
-3. Copy keys from `supabase status` into `.env.local`:
+4. Create `.env.local` from the template:
 
    ```bash
    cp .env.example .env.local
+   # Fill in values from the Dashboard
    ```
 
-   Print env-style output with this repo’s variable names:
+## Database migrations (SQL Editor)
 
-   ```bash
-   supabase status -o env \
-     --override-name api.url=NEXT_PUBLIC_SUPABASE_URL \
-     --override-name api.publishable_key=NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY \
-     --override-name api.secret_key=SUPABASE_SECRET_KEY
-   ```
+Migration files live in [`supabase/migrations/`](supabase/migrations/). Apply them **in filename order** using the Dashboard:
 
-   If your CLI still shows legacy `ANON_KEY` / `SERVICE_ROLE_KEY`, map them to `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` and `SUPABASE_SECRET_KEY` in `.env.local`, or create publishable/secret keys in the Dashboard for hosted use.
+1. Open **SQL Editor** → **New query**
+2. Paste the contents of each migration file (e.g. `0001_core_schema.sql`, then `0002_...`)
+3. Run the query and confirm success before running the next file
 
-4. Open Studio at the URL shown in `supabase status` (default `http://127.0.0.1:54323`).
+Optional: use **Database** → **Migrations** in the Dashboard if you prefer its migration UI.
 
-5. Stop the stack when finished:
+Reference seed script: [`supabase/seed.sql`](supabase/seed.sql) (task 1.6).
 
-   ```bash
-   supabase stop
-   ```
+[`supabase/config.toml`](supabase/config.toml) is kept as reference for local/auth defaults only; you do not need the CLI to run the project.
 
 ## Environment variables
 
-| Variable | Used by | Local source | Hosted source |
-|----------|---------|--------------|---------------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Browser, Next.js | `http://127.0.0.1:54321` from `supabase status` | Dashboard → API Keys → Project URL |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Browser, Next.js | `supabase status` → publishable key (`sb_publishable_...`) | Dashboard → API Keys → **Publishable key** |
-| `SUPABASE_SECRET_KEY` | Server only (API routes, admin scripts) | `supabase status` → secret key (`sb_secret_...`) | Dashboard → API Keys → **Secret key** |
-| `SUPABASE_PROJECT_REF` | CLI (`link`, `db push`) | N/A | Dashboard → General → Reference ID |
-| `DATABASE_URL` | Optional direct SQL / tools | `postgresql://postgres:postgres@127.0.0.1:54322/postgres` | Dashboard → Database → connection string |
-| `MAKE_WEBHOOK_URL` | Email notifications (task 5.6) | N/A | Make.com scenario webhook |
+| Variable | Used by | Source (Dashboard) |
+|----------|---------|-------------------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Browser, Next.js | API Keys → Project URL |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Browser, Next.js | API Keys → **Publishable key** |
+| `SUPABASE_SECRET_KEY` | Server only (API routes, admin scripts) | API Keys → **Secret key** |
+| `SUPABASE_PROJECT_REF` | Optional reference / docs | General → Reference ID |
+| `DATABASE_URL` | Optional (external SQL tools) | Database → Connection string |
+| `MAKE_WEBHOOK_URL` | Email notifications (task 5.6) | Make.com scenario webhook |
 
-Never commit `.env.local` or expose `SUPABASE_SECRET_KEY` to the client. Legacy `anon` and `service_role` keys are deprecated; see [Understanding API keys](https://supabase.com/docs/guides/getting-started/api-keys).
+Never commit `.env.local` or expose `SUPABASE_SECRET_KEY` in the browser. See [Understanding API keys](https://supabase.com/docs/guides/getting-started/api-keys).
 
 Template: [`.env.example`](.env.example).
 
@@ -109,9 +68,9 @@ Template: [`.env.example`](.env.example).
 
 ```
 supabase/
-  config.toml      # Local stack config (auth redirects, DB version)
-  migrations/      # SQL migrations (from task 1.2)
-  seed.sql         # Seed data (from task 1.6)
+  migrations/      # SQL migrations — run in order via SQL Editor
+  seed.sql         # Seed data (task 1.6)
+  config.toml      # Optional reference (not required without CLI)
 internal-docs/     # PRD and task list
 web/               # Next.js app (task 1.8)
 ```
