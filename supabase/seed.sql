@@ -51,7 +51,7 @@ from public.leagues l
 join public.seasons s on s.id = l.season_id and s.name = '2025-26'
 cross join (
   values
-    ('Honor', 'honor'),
+    ('Honor Division', 'honor'),
     ('1st Division', 'first'),
     ('2nd Division A', 'second'),
     ('2nd Division B', 'second'),
@@ -74,7 +74,7 @@ from public.divisions d
 join public.leagues l on l.id = d.league_id
 cross join (
   values
-    ('Honor', 3),
+    ('Honor Division', 3),
     ('1st Division', 2),
     ('2nd Division A', null::int),
     ('2nd Division B', null::int),

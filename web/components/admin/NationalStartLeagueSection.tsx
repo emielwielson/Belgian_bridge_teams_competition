@@ -79,7 +79,7 @@ export function NationalStartLeagueSection({
         />
         <CheckItem
           ok={readiness.calendars.honor.complete}
-          label={`Honor match days: ${readiness.calendars.honor.set}/${readiness.calendars.honor.required}`}
+          label={`Honor Division match days: ${readiness.calendars.honor.set}/${readiness.calendars.honor.required}`}
         />
         <CheckItem
           ok={readiness.calendars.first.complete}

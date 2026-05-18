@@ -28,6 +28,9 @@ import { parseBrusselsToUtc } from "../lib/time/brussels";
 import { generateGroupScheduleInDb } from "../lib/scheduling/generate-group-schedule-db";
 import { ensureStandardVpTable } from "../lib/scoring/standard-vp-bands";
 
+const ROSTER_PLAYERS_PER_TEAM = 4;
+const EXTRA_UNASSIGNED_PLAYERS_PER_CLUB = 3;
+
 function loadEnvFile(name: string) {
   const path = resolve(process.cwd(), name);
   if (!existsSync(path)) return;
@@ -76,6 +79,102 @@ async function upsertMatchDates(
     .from("competition_match_dates")
     .insert(rows);
   if (insertError) throw insertError;
+}
+
+function isStrayNationalDemoGroup(
+  groupName: string,
+  hasHonorDivision: boolean,
+): boolean {
+  if (/template.*group/i.test(groupName)) return true;
+  if (groupName === "VP Template Group" || groupName === "VM Template Group") {
+    return true;
+  }
+  return groupName === "Honor" && hasHonorDivision;
+}
+
+async function cleanupLegacyNationalGroups(
+  supabase: SupabaseClient,
+  seasonId: string,
+) {
+  const { data: league } = await supabase
+    .from("leagues")
+    .select("id")
+    .eq("season_id", seasonId)
+    .eq("scope", "national")
+    .maybeSingle();
+  if (!league) return;
+
+  await supabase
+    .from("divisions")
+    .update({ name: "Honor Division" })
+    .eq("league_id", league.id)
+    .eq("name", "Honor");
+
+  const { data: honorDivision } = await supabase
+    .from("divisions")
+    .select("id")
+    .eq("league_id", league.id)
+    .eq("name", "Honor Division")
+    .maybeSingle();
+
+  if (honorDivision) {
+    await supabase
+      .from("groups")
+      .update({ name: "Honor Division" })
+      .eq("division_id", honorDivision.id)
+      .eq("name", "Honor");
+  }
+
+  const { data: divisions } = await supabase
+    .from("divisions")
+    .select("id")
+    .eq("league_id", league.id);
+  const divisionIds = divisions?.map((d) => d.id) ?? [];
+  if (divisionIds.length === 0) return;
+
+  const { data: groups } = await supabase
+    .from("groups")
+    .select("id, name")
+    .in("division_id", divisionIds);
+  const strayGroupIds =
+    groups
+      ?.filter((g) =>
+        isStrayNationalDemoGroup(g.name, honorDivision != null),
+      )
+      .map((g) => g.id) ?? [];
+  if (strayGroupIds.length === 0) return;
+
+  const { data: strayMatches } = await supabase
+    .from("matches")
+    .select("id")
+    .in("group_id", strayGroupIds);
+  const strayMatchIds = strayMatches?.map((m) => m.id) ?? [];
+  if (strayMatchIds.length > 0) {
+    await supabase.from("rulings").delete().in("match_id", strayMatchIds);
+    await supabase.from("matches").delete().in("id", strayMatchIds);
+  }
+
+  const { data: strayTeams } = await supabase
+    .from("teams")
+    .select("id")
+    .in("group_id", strayGroupIds);
+  const strayTeamIds = strayTeams?.map((t) => t.id) ?? [];
+  if (strayTeamIds.length > 0) {
+    await supabase.from("team_players").delete().in("team_id", strayTeamIds);
+    await supabase.from("teams").delete().in("id", strayTeamIds);
+  }
+
+  const { data: vpTables } = await supabase
+    .from("vp_tables")
+    .select("id")
+    .in("group_id", strayGroupIds);
+  const vpTableIds = vpTables?.map((v) => v.id) ?? [];
+  if (vpTableIds.length > 0) {
+    await supabase.from("vp_table_rows").delete().in("vp_table_id", vpTableIds);
+    await supabase.from("vp_tables").delete().in("id", vpTableIds);
+  }
+
+  await supabase.from("groups").delete().in("id", strayGroupIds);
 }
 
 async function resetNationalDemo(supabase: SupabaseClient, seasonId: string) {
@@ -228,7 +327,8 @@ async function seedDemoPlayers(supabase: SupabaseClient, seasonId: string) {
   for (const club of clubs) {
     const n = demoClubNumber(club.name);
     const teamCount = teamsByClub.get(club.id)?.length ?? 0;
-    const playersNeeded = teamCount * 4;
+    const playersNeeded =
+      teamCount * ROSTER_PLAYERS_PER_TEAM + EXTRA_UNASSIGNED_PLAYERS_PER_CLUB;
     for (let p = 1; p <= playersNeeded; p++) {
       playerRows.push({
         name: `Demo Club ${n} Player ${String(p).padStart(2, "0")}`,
@@ -262,7 +362,9 @@ async function seedDemoPlayers(supabase: SupabaseClient, seasonId: string) {
 
   for (const club of clubs) {
     const n = demoClubNumber(club.name);
-    const playersNeeded = (teamsByClub.get(club.id)?.length ?? 0) * 4;
+    const playersNeeded =
+      (teamsByClub.get(club.id)?.length ?? 0) * ROSTER_PLAYERS_PER_TEAM +
+      EXTRA_UNASSIGNED_PLAYERS_PER_CLUB;
     const { data: currentMemberships } = await supabase
       .from("player_club_memberships")
       .select("player_id")
@@ -300,7 +402,7 @@ async function seedDemoPlayers(supabase: SupabaseClient, seasonId: string) {
     const n = demoClubNumber(club.name);
     const rosterInserts = clubTeams.flatMap((team, teamIdx) =>
       [1, 2, 3, 4].map((slot) => {
-        const playerNum = teamIdx * 4 + slot;
+        const playerNum = teamIdx * ROSTER_PLAYERS_PER_TEAM + slot;
         const memberNumber = `DEMO-C${n}-P${String(playerNum).padStart(2, "0")}`;
         const playerId = playerByMember.get(memberNumber);
         if (!playerId) {
@@ -323,7 +425,7 @@ async function seedDemoPlayers(supabase: SupabaseClient, seasonId: string) {
 
     for (let teamIdx = 0; teamIdx < clubTeams.length; teamIdx++) {
       const team = clubTeams[teamIdx];
-      const captainMember = `DEMO-C${n}-P${String(teamIdx * 4 + 1).padStart(2, "0")}`;
+      const captainMember = `DEMO-C${n}-P${String(teamIdx * ROSTER_PLAYERS_PER_TEAM + 1).padStart(2, "0")}`;
       const captainId = playerByMember.get(captainMember);
       if (!captainId) continue;
       const { error: capError } = await supabase
@@ -445,6 +547,7 @@ async function main() {
 
   console.log(`Season: ${season.name}`);
   await ensureNationalStructure(supabase, season.id);
+  await cleanupLegacyNationalGroups(supabase, season.id);
 
   console.log("Resetting national demo data…");
   await resetNationalDemo(supabase, season.id);
@@ -460,7 +563,7 @@ async function main() {
     "first",
   );
   if (!honorDivisionId || !firstDivisionId) {
-    throw new Error("Honor or 1st Division not found");
+    throw new Error("Honor Division or 1st Division not found");
   }
 
   console.log("Loading match dates…");

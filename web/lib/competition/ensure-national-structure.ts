@@ -159,7 +159,9 @@ export async function resolveNationalScheduleDivisionId(
 export function scheduleKeyForDivisionName(
   divisionName: string,
 ): NationalScheduleKey {
-  if (divisionName === "Honor") return "honor";
+  if (divisionName === "Honor Division" || divisionName === "Honor") {
+    return "honor";
+  }
   if (divisionName === "1st Division") return "first";
   return "default";
 }

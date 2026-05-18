@@ -46,7 +46,7 @@ describe("national-readiness", () => {
   });
 
   it("divisionTeamsComplete ignores existing fixtures", () => {
-    const div = divisionRow("Honor", 8, 84);
+    const div = divisionRow("Honor Division", 8, 84);
     expect(divisionTeamsComplete(div)).toBe(true);
   });
 
@@ -94,14 +94,16 @@ describe("national-readiness", () => {
       structureDivisionCount: 8,
       structureGroupCount: 8,
       calendarRoundCounts: { honor: 0, first: 14, default: 14 },
-      divisions: [divisionRow("Honor", 4, 0)],
+      divisions: [divisionRow("Honor Division", 4, 0)],
     });
 
     expect(result.allTeamsReady).toBe(false);
     expect(result.canStartLeague).toBe(false);
-    expect(result.blockers.some((b) => b.includes("Honor match days"))).toBe(
+    expect(result.blockers.some((b) => b.includes("Honor Division match days"))).toBe(
       true,
     );
-    expect(result.blockers.some((b) => b.includes("Honor: 4/8"))).toBe(true);
+    expect(result.blockers.some((b) => b.includes("Honor Division: 4/8"))).toBe(
+      true,
+    );
   });
 });

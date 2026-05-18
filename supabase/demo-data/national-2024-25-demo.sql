@@ -1,7 +1,7 @@
 -- Demo data: 2024–25 national competition (wipe + reload).
 -- Run in SQL Editor after migrations through 0013.
 -- Removes national matches, teams, and match calendars for the active season, then recreates
--- structure, dates, demo clubs/teams, and rosters (4 players per team).
+-- structure, dates, demo clubs/teams, rosters (4 players per team), and extra unassigned club players.
 -- Schedules: Admin UI or `npm run demo:national` from web/.
 
 do $$
@@ -98,6 +98,133 @@ begin
     and l.season_id = v_season_id
     and l.scope = 'national';
 
+  -- Stray national groups (VP/VM template test groups, legacy duplicate "Honor" group)
+  delete from public.rulings r
+  where r.match_id in (
+    select m.id
+    from public.matches m
+    join public.groups g on g.id = m.group_id
+    join public.divisions d on d.id = g.division_id
+    join public.leagues l on l.id = d.league_id
+    where l.season_id = v_season_id
+      and l.scope = 'national'
+      and (
+        g.name ilike '%template%group%'
+        or g.name in ('VP Template Group', 'VM Template Group')
+        or (
+          g.name = 'Honor'
+          and exists (
+            select 1
+            from public.divisions d2
+            where d2.league_id = l.id
+              and d2.name = 'Honor Division'
+          )
+        )
+      )
+  );
+
+  delete from public.matches m
+  using public.groups g
+  join public.divisions d on d.id = g.division_id
+  join public.leagues l on l.id = d.league_id
+  where m.group_id = g.id
+    and l.season_id = v_season_id
+    and l.scope = 'national'
+    and (
+      g.name ilike '%template%group%'
+      or g.name in ('VP Template Group', 'VM Template Group')
+      or (
+        g.name = 'Honor'
+        and exists (
+          select 1
+          from public.divisions d2
+          where d2.league_id = l.id
+            and d2.name = 'Honor Division'
+        )
+      )
+    );
+
+  delete from public.vp_table_rows vtr
+  using public.vp_tables vt
+  join public.groups g on g.id = vt.group_id
+  join public.divisions d on d.id = g.division_id
+  join public.leagues l on l.id = d.league_id
+  where vtr.vp_table_id = vt.id
+    and l.season_id = v_season_id
+    and l.scope = 'national'
+    and (
+      g.name ilike '%template%group%'
+      or g.name in ('VP Template Group', 'VM Template Group')
+      or (
+        g.name = 'Honor'
+        and exists (
+          select 1
+          from public.divisions d2
+          where d2.league_id = l.id
+            and d2.name = 'Honor Division'
+        )
+      )
+    );
+
+  delete from public.vp_tables vt
+  using public.groups g
+  join public.divisions d on d.id = g.division_id
+  join public.leagues l on l.id = d.league_id
+  where vt.group_id = g.id
+    and l.season_id = v_season_id
+    and l.scope = 'national'
+    and (
+      g.name ilike '%template%group%'
+      or g.name in ('VP Template Group', 'VM Template Group')
+      or (
+        g.name = 'Honor'
+        and exists (
+          select 1
+          from public.divisions d2
+          where d2.league_id = l.id
+            and d2.name = 'Honor Division'
+        )
+      )
+    );
+
+  delete from public.groups g
+  using public.divisions d
+  join public.leagues l on l.id = d.league_id
+  where g.division_id = d.id
+    and l.season_id = v_season_id
+    and l.scope = 'national'
+    and (
+      g.name ilike '%template%group%'
+      or g.name in ('VP Template Group', 'VM Template Group')
+      or (
+        g.name = 'Honor'
+        and exists (
+          select 1
+          from public.divisions d2
+          where d2.league_id = l.id
+            and d2.name = 'Honor Division'
+        )
+      )
+    );
+
+  update public.divisions d
+  set name = 'Honor Division'
+  from public.leagues l
+  where d.league_id = l.id
+    and l.season_id = v_season_id
+    and l.scope = 'national'
+    and d.name = 'Honor';
+
+  update public.groups g
+  set name = 'Honor Division'
+  from public.divisions d
+  join public.leagues l on l.id = d.league_id
+  where g.division_id = d.id
+    and l.season_id = v_season_id
+    and l.scope = 'national'
+    and g.name = 'Honor'
+    and d.name = 'Honor Division';
+
   delete from public.competition_match_dates
   where season_id = v_season_id
     and scope = 'national'
@@ -122,7 +249,7 @@ begin
   select v_league_id, dl.id, spec.division_name
   from (
     values
-      ('Honor', 'honor'),
+      ('Honor Division', 'honor'),
       ('1st Division', 'first'),
       ('2nd Division A', 'second'),
       ('2nd Division B', 'second'),
@@ -142,7 +269,7 @@ begin
   from public.divisions d
   cross join (
     values
-      ('Honor', 3, 21),
+      ('Honor Division', 3, 21),
       ('1st Division', 2, 14),
       ('2nd Division A', null::int, 14),
       ('2nd Division B', null::int, 14),
@@ -165,7 +292,7 @@ begin
   from public.divisions d
   cross join (
     values
-      ('Honor', 3, 21),
+      ('Honor Division', 3, 21),
       ('1st Division', 2, 14),
       ('2nd Division A', null::int, 14),
       ('2nd Division B', null::int, 14),
@@ -181,7 +308,7 @@ begin
 
   select d.id into v_honor_division_id
   from public.divisions d
-  where d.league_id = v_league_id and d.name = 'Honor';
+  where d.league_id = v_league_id and d.name = 'Honor Division';
 
   select d.id into v_first_division_id
   from public.divisions d
@@ -191,7 +318,7 @@ begin
     raise exception 'Failed to create National divisions';
   end if;
 
-  -- Honor: 21 rounds on 7 days (11:00 / 13:50 / 16:40 each day)
+  -- Honor Division: 21 rounds on 7 days (11:00 / 13:50 / 16:40 each day)
   insert into public.competition_match_dates (season_id, scope, region_id, division_id, round, datetime)
   values
     (v_season_id, 'national', null, v_honor_division_id, 1,  ('2024-09-27 11:00'::timestamp at time zone 'Europe/Brussels')),
@@ -278,7 +405,7 @@ begin
     and l.scope = 'national'
   order by g.name, c.name;
 
-  -- Demo players: 4 per national team per club (count teams dynamically)
+  -- Demo players: 4 per national team per club + 3 unassigned per club
   insert into public.players (name, member_number)
   select
     'Demo Club ' || ps.club_num || ' Player ' || lpad(ps.player_num::text, 2, '0'),
@@ -301,7 +428,7 @@ begin
         and l.scope = 'national'
       group by c.id, c.name
     ) dct
-    cross join lateral generate_series(1, dct.team_count * 4) as gs(n)
+    cross join lateral generate_series(1, dct.team_count * 4 + 3) as gs(n)
   ) ps
   where not exists (
     select 1
@@ -404,4 +531,4 @@ where l.scope = 'national'
     select 1 from public.vp_table_rows r where r.vp_table_id = vt.id
   );
 
-select 'national-2024-25-demo reset and loaded (dates, teams, 4 players/team; generate schedules via Admin or npm run demo:national)' as result;
+select 'national-2024-25-demo reset and loaded (dates, teams, 4 players/team + 3 unassigned/club; generate schedules via Admin or npm run demo:national)' as result;

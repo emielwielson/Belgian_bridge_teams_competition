@@ -107,7 +107,7 @@ export function buildNationalReadiness(input: {
     if (!cal.complete) {
       const label =
         key === "honor"
-          ? "Honor"
+          ? "Honor Division"
           : key === "first"
             ? "1st Division"
             : "2nd & 3rd divisions";

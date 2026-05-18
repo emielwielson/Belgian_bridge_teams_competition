@@ -13,7 +13,7 @@ describe("national structure", () => {
   });
 
   it("assigns separate schedules to Honor and 1st Division", () => {
-    const honor = NATIONAL_DIVISIONS.find((d) => d.name === "Honor");
+    const honor = NATIONAL_DIVISIONS.find((d) => d.name === "Honor Division");
     const first = NATIONAL_DIVISIONS.find((d) => d.name === "1st Division");
     expect(honor?.scheduleKey).toBe("honor");
     expect(honor?.maxMatchesPerDay).toBe(3);
@@ -30,6 +30,7 @@ describe("national structure", () => {
   });
 
   it("maps division names to schedule keys", () => {
+    expect(scheduleKeyForDivisionName("Honor Division")).toBe("honor");
     expect(scheduleKeyForDivisionName("Honor")).toBe("honor");
     expect(scheduleKeyForDivisionName("1st Division")).toBe("first");
     expect(scheduleKeyForDivisionName("2nd Division A")).toBe("default");

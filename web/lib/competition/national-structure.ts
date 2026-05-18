@@ -25,7 +25,7 @@ export { NATIONAL_LEAGUE_NAME } from "./league-names";
 
 export const NATIONAL_DIVISIONS: NationalDivisionSpec[] = [
   {
-    name: "Honor",
+    name: "Honor Division",
     divisionLevelCode: "honor",
     maxMatchesPerDay: 3,
     roundCount: 21,
@@ -83,7 +83,7 @@ export const NATIONAL_DIVISIONS: NationalDivisionSpec[] = [
 ];
 
 export const NATIONAL_SCHEDULE_LABELS: Record<NationalScheduleKey, string> = {
-  honor: "Honor (7 match days, slots 11:00 / 13:50 / 16:40)",
+  honor: "Honor Division (7 match days, slots 11:00 / 13:50 / 16:40)",
   first: "1st Division (7 match days, slots 13:00 / 16:00)",
   default: "2nd & 3rd divisions (14 match days at 14:00)",
 };
