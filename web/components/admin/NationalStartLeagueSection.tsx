@@ -65,7 +65,7 @@ export function NationalStartLeagueSection({
   return (
     <section className="card flex flex-col gap-4">
       <div>
-        <h2 className="text-lg font-semibold text-zinc-900">3. Start league</h2>
+        <h2 className="text-lg font-semibold text-zinc-900">Start league</h2>
         <p className="mt-1 text-sm text-zinc-600">
           When match days and teams are complete, generate all fixtures and
           activate the season.

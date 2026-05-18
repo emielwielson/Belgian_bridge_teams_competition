@@ -110,7 +110,7 @@ export function NationalTeamsByDivision({
   return (
     <section className="card flex flex-col gap-4">
       <div>
-        <h2 className="text-lg font-semibold text-zinc-900">2. Teams</h2>
+        <h2 className="text-lg font-semibold text-zinc-900">Teams</h2>
         <p className="mt-1 text-sm text-zinc-600">
           Select a division, then add up to {NATIONAL_TEAMS_PER_GROUP} teams (one
           per club).
