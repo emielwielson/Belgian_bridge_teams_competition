@@ -7,6 +7,7 @@ type MeResponse = {
   user: { id: string; email?: string };
   roles: string[];
   teams?: { id: string; name: string }[];
+  clubs?: { id: string; name: string }[];
 };
 
 export function AuthNavControls() {
@@ -67,6 +68,14 @@ export function AuthNavControls() {
           className="text-zinc-600 hover:text-zinc-900"
         >
           My team
+        </Link>
+      ) : null}
+      {me.clubs?.length === 1 ? (
+        <Link
+          href={`/club-manager/${me.clubs[0].id}`}
+          className="text-zinc-600 hover:text-zinc-900"
+        >
+          My club
         </Link>
       ) : null}
       {hub && (

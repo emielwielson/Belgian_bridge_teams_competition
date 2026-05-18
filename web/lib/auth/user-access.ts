@@ -2,6 +2,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { AuthError } from "./route-auth";
 import { ROLES } from "./roles";
 
+export type ManagedClubSummary = {
+  id: string;
+  name: string;
+};
+
 export async function getManagedClubIds(
   supabase: SupabaseClient,
   userId: string,
@@ -13,6 +18,23 @@ export async function getManagedClubIds(
 
   if (error) throw error;
   return data?.map((row) => row.club_id) ?? [];
+}
+
+export async function loadManagedClubsForUser(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<ManagedClubSummary[]> {
+  const clubIds = await getManagedClubIds(supabase, userId);
+  if (clubIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from("clubs")
+    .select("id, name")
+    .in("id", clubIds)
+    .order("name");
+
+  if (error) throw error;
+  return data ?? [];
 }
 
 export async function assertClubManagerForClub(
