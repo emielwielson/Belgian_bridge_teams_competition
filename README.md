@@ -46,9 +46,11 @@ Migration files live in [`supabase/migrations/`](supabase/migrations/). Apply th
 5. `0005_user_roles.sql`
 6. `0006_auth_helpers.sql`
 7. `0007_policies_roles.sql`
-8. [`supabase/seed.sql`](supabase/seed.sql)
-9. [`supabase/tests/task1_smoke_test.sql`](supabase/tests/task1_smoke_test.sql) — should return `task1_smoke_test passed`
-10. [`supabase/tests/task2_auth_smoke_test.sql`](supabase/tests/task2_auth_smoke_test.sql) — should return `task2_auth_smoke_test passed`
+8. `0008_task3_competition_admin.sql`
+9. [`supabase/seed.sql`](supabase/seed.sql)
+10. [`supabase/tests/task1_smoke_test.sql`](supabase/tests/task1_smoke_test.sql) — should return `task1_smoke_test passed`
+11. [`supabase/tests/task2_auth_smoke_test.sql`](supabase/tests/task2_auth_smoke_test.sql) — should return `task2_auth_smoke_test passed`
+12. [`supabase/tests/task3_schedule_smoke_test.sql`](supabase/tests/task3_schedule_smoke_test.sql) — should return `task3_schedule_smoke_test passed`
 
 After your first Magic Link sign-in, grant yourself admin in the SQL Editor (replace with your `auth.users` id):
 

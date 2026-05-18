@@ -121,17 +121,17 @@ Based on: `internal-docs/prd-belgian-bridge-competition-platform.md`
   - [x] 2.7 Add `lib/auth/route-auth.ts` and use it in all mutating API routes to enforce server-side authorization (FR 70).
   - [x] 2.8 Write `supabase/tests/task2_auth_smoke_test.sql` and `web/middleware.test.ts` for auth and access control.
 
-- [ ] 3.0 Competition administration (structure, clubs, players, teams, scheduling)
-  - [ ] 3.1 Build admin API `api/admin/competition/route.ts` for CRUD on leagues, divisions, and groups within the active season (FR 1–4, 6–8).
-  - [ ] 3.2 Implement club and player management APIs and Club Manager UI: create/edit clubs, players, memberships; enforce one-club-per-season (FR 9–13).
-  - [ ] 3.3 Implement team and roster APIs: assign teams to groups/clubs, set captain and location, manage `team_players`; block duplicate player-team assignment per season (FR 14–16).
-  - [ ] 3.4 Enforce regional league rules: team club region must match league region (FR 19); add DB constraint or trigger.
-  - [ ] 3.5 Implement competition start/lock: block membership changes, roster edits, and match deletion once active (FR 13, 17–18, 24).
-  - [ ] 3.6 Implement `lib/scheduling/rbbf-8-team-template.ts` from PRD appendix §10 (14 rounds, mirrored home/away) with unit tests.
-  - [ ] 3.7 Build schedule generation edge function and `api/admin/competition/groups/[groupId]/generate/route.ts`; assign round pairings and datetimes from admin-provided dates; respect `max_matches_per_day_per_team` (FR 20–26, 51).
-  - [ ] 3.8 Build admin UI (`CompetitionScopePage.tsx`, competition scope pages) for national/regional setup, team assignment, match dates, and generate-schedule action.
-  - [ ] 3.9 Add `api/admin/competition/dates/route.ts` for scope-level match date configuration.
-  - [ ] 3.10 Write `supabase/tests/task3_schedule_smoke_test.sql` for generation output, round uniqueness, and lock behavior.
+- [x] 3.0 Competition administration (structure, clubs, players, teams, scheduling)
+  - [x] 3.1 Build admin API `api/admin/competition/route.ts` for CRUD on leagues, divisions, and groups within the active season (FR 1–4, 6–8).
+  - [x] 3.2 Implement club and player management APIs and Club Manager UI: create/edit clubs, players, memberships; enforce one-club-per-season (FR 9–13).
+  - [x] 3.3 Implement team and roster APIs: assign teams to groups/clubs, set captain and location, manage `team_players`; block duplicate player-team assignment per season (FR 14–16).
+  - [x] 3.4 Enforce regional league rules: team club region must match league region (FR 19); add DB constraint or trigger.
+  - [x] 3.5 Implement competition start/lock: block membership changes, roster edits, and match deletion once active (FR 13, 17–18, 24).
+  - [x] 3.6 Implement `lib/scheduling/rbbf-8-team-template.ts` from PRD appendix §10 (14 rounds, mirrored home/away) with unit tests.
+  - [x] 3.7 Build schedule generation edge function and `api/admin/competition/groups/[groupId]/generate/route.ts`; assign round pairings and datetimes from admin-provided dates; respect `max_matches_per_day_per_team` (FR 20–26, 51).
+  - [x] 3.8 Build admin UI (`CompetitionScopePage.tsx`, competition scope pages) for national/regional setup, team assignment, match dates, and generate-schedule action.
+  - [x] 3.9 Add `api/admin/competition/dates/route.ts` for scope-level match date configuration.
+  - [x] 3.10 Write `supabase/tests/task3_schedule_smoke_test.sql` for generation output, round uniqueness, and lock behavior.
 
 - [ ] 4.0 Match operations (lineups, scoring, VP tables, standings, corrections)
   - [ ] 4.1 Implement `api/matches/[matchId]/players/route.ts` and UI for match lineups: min 4 players per team, unlimited substitutes, non-roster subs allowed (FR 27–31).

@@ -26,7 +26,24 @@ Next.js frontend for the Belgian Bridge Competition Platform.
 
 4. Open [http://localhost:3000](http://localhost:3000), [http://localhost:3000/login](http://localhost:3000/login), and [http://localhost:3000/api/health](http://localhost:3000/api/health).
 
-Apply migrations `0005`–`0007` before testing auth and RLS. See the [root README](../README.md).
+Apply migrations through `0008` before competition admin. See the [root README](../README.md).
+
+Deploy the `schedule-generate-rbbf` Edge Function from [`supabase/functions/schedule-generate-rbbf/`](../supabase/functions/schedule-generate-rbbf/) via the Supabase Dashboard (Edge Functions → deploy). Schedule generation requires it.
+
+## Competition admin (task 3)
+
+| Path | Purpose |
+|------|---------|
+| `/admin/competition` | Scope picker (national / regional) |
+| `/admin/competition/national` | Leagues, groups, dates, teams, generate schedule |
+| `/club-manager` | Assigned clubs and player memberships |
+
+Assign club managers in SQL:
+
+```sql
+insert into public.club_manager_assignments (user_id, club_id)
+values ('<auth.users.id>', '<clubs.id>');
+```
 
 ## Auth routes
 

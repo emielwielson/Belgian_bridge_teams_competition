@@ -27,6 +27,11 @@ export async function requireAuth() {
   return { user, roles, supabase };
 }
 
+export const COMPETITION_ADMIN_ROLES = [
+  "system_admin",
+  "competition_manager",
+] as const;
+
 export async function requireRoles(required: string[]) {
   const ctx = await requireAuth();
   if (!hasAnyRole(ctx.roles, required)) {
