@@ -8,7 +8,7 @@ This project is a mobile-first Progressive Web App (PWA) for managing Belgian br
 - Flanders Regional League
 - Wallonia Regional League
 
-The platform must support end-to-end competition operations for the MVP core flow: setup, team and player management, scheduling, score entry, standings, and operational workflows. This PRD intentionally focuses on the core league flow first, while keeping structural hooks for playoff support and future clients (mobile/native) through explicit API-oriented requirements.
+The platform must support end-to-end competition operations for the MVP core flow: setup, team and player management, scheduling, score entry, standings, and operational workflows. This PRD focuses on the core regular-season league flow, with explicit API-oriented requirements to support future clients (mobile/native).
 
 At this stage, the system assumes **one active season only**. Historical and multi-season workflows are explicitly deferred.
 
@@ -41,126 +41,125 @@ At this stage, the system assumes **one active season only**. Historical and mul
 3. The system must support divisions (Honor, 1st, 2nd, 3rd) with ordering by level.
 4. The system must support the group-level configuration field `max_matches_per_day_per_team` (nullable).
 5. The MVP must support regular-season round-robin operations fully.
-6. The PRD must keep playoff-related schema fields and data structures in scope for compatibility, while full playoff workflow implementation is not required for MVP release.
 
 ### 4.2 Single Active Season Assumption (MVP Simplification)
 
-7. The system must operate under a single active season assumption.
-8. Season-selection UX is out of scope in MVP; all operations implicitly apply to the active season.
-9. Data models may retain season references for forward compatibility, but no multi-season user flows are required.
+6. The system must operate under a single active season assumption.
+7. Season-selection UX is out of scope in MVP; all operations implicitly apply to the active season.
+8. Data models may retain season references for forward compatibility, but no multi-season user flows are required.
 
 ### 4.3 Regions, Clubs, Players, and Membership
 
-10. The system must support regions: `flanders`, `wallonia`.
-11. The system must support clubs with fields: `id`, `name`, `region_id`.
-12. The system must support players with fields: `id`, `name`, `member_number`, `email`.
-13. The system must support player-club membership with one-club-per-season validation (interpreted as one club in active season).
-14. Once competition is active, player-club membership changes must be blocked.
+9. The system must support regions: `flanders`, `wallonia`.
+10. The system must support clubs with fields: `id`, `name`, `region_id`.
+11. The system must support players with fields: `id`, `name`, `member_number`, `email`.
+12. The system must support player-club membership with one-club-per-season validation (interpreted as one club in active season).
+13. Once competition is active, player-club membership changes must be blocked.
 
 ### 4.4 Teams and Team Players
 
-15. The system must support teams with fields: `id`, `group_id`, `club_id`, `name`, `captain_id`, `location`.
-16. Team rosters must be managed through a team-player relation (`team_id`, `player_id`).
-17. A player must not be assigned to multiple teams in the same active season.
-18. Teams and rosters must be locked once competition starts (active state).
-19. Team player removals after competition start must be blocked.
-20. Regional league team assignment must match region rules.
+14. The system must support teams with fields: `id`, `group_id`, `club_id`, `name`, `captain_id`, `location`.
+15. Team rosters must be managed through a team-player relation (`team_id`, `player_id`).
+16. A player must not be assigned to multiple teams in the same active season.
+17. Teams and rosters must be locked once competition starts (active state).
+18. Team player removals after competition start must be blocked.
+19. Regional league team assignment must match region rules.
 
 ### 4.5 Matches and Scheduling
 
-21. The system must store matches with fields:
+20. The system must store matches with fields:
    - `id`, `group_id`, `round`, `datetime` (UTC)
    - `home_team_id`, `away_team_id`
    - `board_count`
    - `imps_home`, `imps_away`
    - `vp_home`, `vp_away`
    - `last_modified_by`, `last_modified_at`
-22. `round` must be required for each match.
-23. The system must enforce one match per team per round within a group.
-24. The system must allow multiple matches per day per team only when permitted by group configuration.
-25. Match deletion must be allowed only before competition start (setup context for active season).
-26. The system must prevent invalid team pairings (same team as home/away, duplicate fixture conflicts in same round/group).
-27. The system must store and expose timestamps in UTC while showing local time in Europe/Brussels in UI.
+21. `round` must be required for each match.
+22. The system must enforce one match per team per round within a group.
+23. The system must allow multiple matches per day per team only when permitted by group configuration.
+24. Match deletion must be allowed only before competition start (setup context for active season).
+25. The system must prevent invalid team pairings (same team as home/away, duplicate fixture conflicts in same round/group).
+26. The system must store and expose timestamps in UTC while showing local time in Europe/Brussels in UI.
 
 ### 4.6 Match Players and Substitutes
 
-28. The system must support match-level player assignments (`match_players`) with:
+27. The system must support match-level player assignments (`match_players`) with:
    - `match_id`, `team_id`, `player_id`, `is_substitute`
-29. Each participating team must register at least 4 players per match.
-30. Substitutes must be allowed without an upper limit.
-31. Substitutes may be non-roster players.
-32. Substitutes may play for multiple teams.
+28. Each participating team must register at least 4 players per match.
+29. Substitutes must be allowed without an upper limit.
+30. Substitutes may be non-roster players.
+31. Substitutes may play for multiple teams.
 
 ### 4.7 Score Entry and Match State
 
-33. Authorized roles for initial score submission must include:
+32. Authorized roles for initial score submission must include:
    - Players from either team in the match
    - Club Managers
    - Competition Managers
    - System Admins
-34. Score entry must have no approval workflow.
-35. First valid score submission must immediately become official.
-36. After initial submission, score edits must be restricted to Competition Managers and System Admins only; when performed, the new edit overwrites the previous official score.
-37. A match must be considered "played" once an official score submission is saved.
-38. The system must log score submission events and admin-initiated score changes; player score edits after first submission must not be stored because they are not allowed.
+33. Score entry must have no approval workflow.
+34. First valid score submission must immediately become official.
+35. After initial submission, score edits must be restricted to Competition Managers and System Admins only; when performed, the new edit overwrites the previous official score.
+36. A match must be considered "played" once an official score submission is saved.
+37. The system must log score submission events and admin-initiated score changes; player score edits after first submission must not be stored because they are not allowed.
 
 ### 4.8 VP Tables and Standings
 
-39. The system must support VP tables scoped to group and board count.
-40. VP table rows must define IMP ranges and mapped `vp_home`, `vp_away`.
-41. Standings must be derived from scored matches only.
-42. Standings must support corrections (manual adjustments/penalties).
-43. Sorting must be:
+38. The system must support VP tables scoped to group and board count.
+39. VP table rows must define IMP ranges and mapped `vp_home`, `vp_away`.
+40. Standings must be derived from scored matches only.
+41. Standings must support corrections (manual adjustments/penalties).
+42. Sorting must be:
    1. `vp_total` descending
    2. `team_name` ascending
-44. Standings must refresh automatically on score entry/edit and correction updates.
+43. Standings must refresh automatically on score entry/edit and correction updates.
 
 ### 4.9 Penalties, Warnings, Rulings, and Files
 
-45. The system must support penalties with date, team, reason, and VP deduction.
-46. The system must support warnings with date, team, and reason.
-47. The system must support rulings with date, match, board, and PDF attachment.
-48. Allowed file types must be PDF and images.
-49. Maximum file size must be 10 MB.
-50. File retention policy must be indefinite (keep forever).
+44. The system must support penalties with date, team, reason, and VP deduction.
+45. The system must support warnings with date, team, and reason.
+46. The system must support rulings with date, match, board, and PDF attachment.
+47. Allowed file types must be PDF and images.
+48. Maximum file size must be 10 MB.
+49. File retention policy must be indefinite (keep forever).
 
 ### 4.10 Match Actions and Requests
 
-51. The system must support postponement workflow:
+50. The system must support postponement workflow:
    - Home captain proposes
    - Away captain approves
    - Competition Manager is notified
-52. The system must support home/away switch only:
+51. The system must support home/away switch only:
    - Before match is played
    - For double round-robin contexts, defined as the fixed 14-round 8-team RBBF schedule template where rounds 8-14 mirror rounds 1-7 with swapped home/away.
-53. The system must support arbiter requests including board reference and image attachment.
-54. Arbiter requests must notify arbiter(s), admins, and captains involved.
+52. The system must support arbiter requests including board reference and image attachment.
+53. Arbiter requests must notify arbiter(s), admins, and captains involved.
 
 ### 4.11 Notifications
 
-55. The system must support email notifications only in v1.
-56. In-app notification center is out of scope for MVP.
-57. Email notifications must cover at minimum postponements, arbiter requests, and key admin workflow events.
+54. The system must support email notifications only in v1.
+55. In-app notification center is out of scope for MVP.
+56. Email notifications must cover at minimum postponements, arbiter requests, and key admin workflow events.
 
 ### 4.12 Logging and Auditability
 
-58. The system must store match logs with `match_id`, `action`, `user_id`, `timestamp`.
-59. The log must always include score submission events and all Competition Manager/System Admin actions that impact competition state.
-60. Logs must be queryable by authorized admin-level roles.
+57. The system must store match logs with `match_id`, `action`, `user_id`, `timestamp`.
+58. The log must always include score submission events and all Competition Manager/System Admin actions that impact competition state.
+59. Logs must be queryable by authorized admin-level roles.
 
 ### 4.13 Authentication and Authorization
 
-61. The system must authenticate users through Supabase Magic Link.
-62. The system must support multi-role assignments per user.
-63. Access control must be role-based across API and UI, not only at UI level.
-64. Non-authenticated users must only access public pages (for MVP: standings and related public competition info).
+60. The system must authenticate users through Supabase Magic Link.
+61. The system must support multi-role assignments per user.
+62. Access control must be role-based across API and UI, not only at UI level.
+63. Non-authenticated users must only access public pages (for MVP: standings and related public competition info).
 
 ### 4.14 UI and PWA
 
-65. The application must be installable as a PWA.
-66. UX must be mobile-first with desktop support.
-67. UI language for MVP must be English only.
-68. Role-based views must include:
+64. The application must be installable as a PWA.
+65. UX must be mobile-first with desktop support.
+66. UI language for MVP must be English only.
+67. Role-based views must include:
    - Public (unauthenticated): standings
    - Player: matches and scoring access where authorized
    - Captain: scheduling and captain workflows
@@ -171,28 +170,13 @@ At this stage, the system assumes **one active season only**. Historical and mul
 
 ### 4.15 API and Future Mobile Readiness
 
-69. Core domain actions (teams, matches, scoring, standings, penalties, requests) must be available via stable API endpoints.
-70. API contracts must be documented and versionable to support future mobile/native client integration.
-71. Business rules (validation and permissions) must be enforced server-side, independent of frontend client.
-
-### 4.16 Playoff Data Compatibility (Non-MVP Execution)
-
-72. Match schema must support playoff flags/fields for forward compatibility:
-   - `is_playoff` (boolean)
-   - `playoff_type` (`title`, `promotion`, `relegation`)
-   - `playoff_round` (`semi`, `final`, `third_place`, `step1`, `step2`)
-   - `leg` (1 or 2)
-   - `parent_match_id`
-73. Match sessions schema must support:
-   - `match_id`
-   - `session_number` (1-6)
-   - `imps_home`, `imps_away`
-74. Full playoff progression logic for Honor and 1st divisions is planned but out of MVP release scope.
+68. Core domain actions (teams, matches, scoring, standings, penalties, requests) must be available via stable API endpoints.
+69. API contracts must be documented and versionable to support future mobile/native client integration.
+70. Business rules (validation and permissions) must be enforced server-side, independent of frontend client.
 
 ## 5. Non-Goals (Out of Scope for MVP)
 
 - Multi-season management (setup/active/finished lifecycle UI and season history).
-- Full playoff orchestration and automatic progression workflows.
 - In-app notification center or push notifications.
 - Reporting/export suite (CSV/PDF exports).
 - Native iOS/Android apps (only API readiness for future clients).
