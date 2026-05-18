@@ -201,13 +201,6 @@ export type ClubTeamDetail = {
   roster: { player_id: string; name: string; member_number: string | null }[];
   roster_editable: boolean;
   available_players: { player_id: string; name: string; member_number: string | null }[];
-  on_other_teams: {
-    player_id: string;
-    name: string;
-    member_number: string | null;
-    team_id: string;
-    team_name: string;
-  }[];
   matches: {
     id: string;
     round: number;
@@ -262,7 +255,6 @@ export async function loadClubTeamDetail(
   const roster_editable = season?.status === "setup";
   let roster: ClubTeamDetail["roster"] = [];
   let available_players: ClubTeamDetail["available_players"] = [];
-  let on_other_teams: ClubTeamDetail["on_other_teams"] = [];
 
   if (season) {
     const { data: rosterRows } = await supabase
@@ -344,19 +336,10 @@ export async function loadClubTeamDetail(
           name: p.name,
           member_number: p.member_number,
         });
-      } else if (assignment.team_id !== teamId) {
-        on_other_teams.push({
-          player_id: p.id,
-          name: p.name,
-          member_number: p.member_number,
-          team_id: assignment.team_id,
-          team_name: assignment.team_name,
-        });
       }
     }
 
     available_players.sort((a, b) => a.name.localeCompare(b.name));
-    on_other_teams.sort((a, b) => a.name.localeCompare(b.name));
   }
 
   const [homeMatches, awayMatches] = await Promise.all([
@@ -419,7 +402,6 @@ export async function loadClubTeamDetail(
     roster,
     roster_editable,
     available_players,
-    on_other_teams,
     matches,
   };
 }

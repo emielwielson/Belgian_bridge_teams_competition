@@ -152,8 +152,7 @@ export function ClubTeamView({ clubId, teamId }: Props) {
           </p>
         ) : (
           <p className="text-sm text-zinc-600">
-            Add club members who are not on a team yet. A player can only be on
-            one team per season.
+            Add unassigned club members to this team.
           </p>
         )}
         {detail.roster.length === 0 ? (
@@ -210,33 +209,9 @@ export function ClubTeamView({ clubId, teamId }: Props) {
               </ul>
             ) : (
               <p className="text-sm text-zinc-500">
-                No unassigned club members. Players already on another team must
-                be removed there first.
+                No unassigned club members available to add.
               </p>
             )}
-            {(detail.on_other_teams ?? []).length > 0 ? (
-              <div className="flex flex-col gap-2">
-                <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-                  On another team
-                </p>
-                <ul className="flex flex-col gap-2 text-sm text-zinc-600">
-                  {(detail.on_other_teams ?? []).map((player) => (
-                    <li
-                      key={player.player_id}
-                      className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-dashed border-zinc-200 px-3 py-2"
-                    >
-                      <span>{player.name}</span>
-                      <Link
-                        href={`/club-manager/${clubId}/teams/${player.team_id}`}
-                        className="text-xs text-zinc-700 hover:underline"
-                      >
-                        On {player.team_name} →
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
           </div>
         ) : null}
       </section>
