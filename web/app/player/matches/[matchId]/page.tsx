@@ -1,8 +1,13 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { HomeAwaySwitchWorkflow } from "@/components/matches/HomeAwaySwitchWorkflow";
 import { PostponeWorkflow } from "@/components/matches/PostponeWorkflow";
 import { MatchLineupEditor } from "@/components/player/MatchLineupEditor";
 import { MatchScoreForm } from "@/components/player/MatchScoreForm";
+import {
+  canAccessHomeAwaySwitchWorkflow,
+  getMatchHomeAwaySwitchState,
+} from "@/lib/competition/home-away-switch";
 import {
   canAccessPostponementWorkflow,
   getMatchPostponementState,
@@ -60,10 +65,16 @@ export default async function PlayerMatchPage({ params }: Props) {
   ]);
   const lineupsComplete = await isLineupComplete(supabase, match);
   const status = matchStatus(match.played_at);
-  const postponementState = await getMatchPostponementState(supabase, matchId);
+  const [postponementState, homeAwaySwitchState] = await Promise.all([
+    getMatchPostponementState(supabase, matchId),
+    getMatchHomeAwaySwitchState(supabase, matchId),
+  ]);
   const showPostpone =
     postponementState != null &&
     canAccessPostponementWorkflow(postponementState);
+  const showHomeAwaySwitch =
+    homeAwaySwitchState != null &&
+    canAccessHomeAwaySwitchWorkflow(homeAwaySwitchState);
 
   const homeLineup = lineup
     .filter((e) => e.team_id === match.home_team_id)
@@ -115,6 +126,16 @@ export default async function PlayerMatchPage({ params }: Props) {
 
       {showPostpone ? (
         <PostponeWorkflow
+          matchId={matchId}
+          homeTeamName={match.home_team.name}
+          awayTeamName={match.away_team.name}
+          homeTeamId={match.home_team_id}
+          awayTeamId={match.away_team_id}
+        />
+      ) : null}
+
+      {showHomeAwaySwitch ? (
+        <HomeAwaySwitchWorkflow
           matchId={matchId}
           homeTeamName={match.home_team.name}
           awayTeamName={match.away_team.name}
