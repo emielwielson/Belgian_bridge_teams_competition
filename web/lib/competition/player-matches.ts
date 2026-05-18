@@ -1,12 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import {
-  COMPETITION_ADMIN_ROLES,
-} from "@/lib/auth/route-auth";
-import { canSubmitScore } from "@/lib/auth/match-access";
-import { hasAnyRole } from "@/lib/auth/roles";
 import { getManagedClubIds } from "@/lib/auth/user-access";
-import { matchStatus } from "@/lib/scoring/match-state";
-import { requireActiveSeason } from "@/lib/competition/season";
 
 export type PlayerMatchSummary = {
   id: string;
@@ -98,9 +91,43 @@ export type ScorableMatchSummary = PlayerMatchSummary & {
   status: "scheduled";
 };
 
+async function resolveUserTeamIds(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<Set<string>> {
+  const teamIdSet = new Set<string>();
+
+  const { data: player } = await supabase
+    .from("players")
+    .select("id")
+    .eq("auth_user_id", userId)
+    .maybeSingle();
+
+  if (player) {
+    const { data: teamRows, error: teamError } = await supabase
+      .from("team_players")
+      .select("team_id")
+      .eq("player_id", player.id);
+    if (teamError) throw teamError;
+    for (const r of teamRows ?? []) teamIdSet.add(r.team_id);
+  }
+
+  const clubIds = await getManagedClubIds(supabase, userId);
+  if (clubIds.length > 0) {
+    const { data: clubTeams, error: clubTeamError } = await supabase
+      .from("teams")
+      .select("id")
+      .in("club_id", clubIds);
+    if (clubTeamError) throw clubTeamError;
+    for (const t of clubTeams ?? []) teamIdSet.add(t.id);
+  }
+
+  return teamIdSet;
+}
+
 async function loadUnplayedMatchRows(
   supabase: SupabaseClient,
-  filter: { teamIds?: string[]; groupIds?: string[] },
+  teamIds: string[],
 ): Promise<
   {
     id: string;
@@ -112,125 +139,41 @@ async function loadUnplayedMatchRows(
     group_id: string;
   }[]
 > {
-  if (filter.groupIds?.length) {
-    const { data, error } = await supabase
+  if (teamIds.length === 0) return [];
+
+  const [homeRes, awayRes] = await Promise.all([
+    supabase
       .from("matches")
       .select(
         "id, round, datetime, played_at, home_team_id, away_team_id, group_id",
       )
-      .in("group_id", filter.groupIds)
-      .is("played_at", null)
-      .order("datetime");
-    if (error) throw error;
-    return data ?? [];
-  }
-
-  if (filter.teamIds?.length) {
-    const [homeRes, awayRes] = await Promise.all([
-      supabase
-        .from("matches")
-        .select(
-          "id, round, datetime, played_at, home_team_id, away_team_id, group_id",
-        )
-        .in("home_team_id", filter.teamIds)
-        .is("played_at", null),
-      supabase
-        .from("matches")
-        .select(
-          "id, round, datetime, played_at, home_team_id, away_team_id, group_id",
-        )
-        .in("away_team_id", filter.teamIds)
-        .is("played_at", null),
-    ]);
-    if (homeRes.error) throw homeRes.error;
-    if (awayRes.error) throw awayRes.error;
-    const byId = new Map<string, (typeof homeRes.data)[number]>();
-    for (const m of homeRes.data ?? []) byId.set(m.id, m);
-    for (const m of awayRes.data ?? []) byId.set(m.id, m);
-    return [...byId.values()];
-  }
-
-  return [];
+      .in("home_team_id", teamIds)
+      .is("played_at", null),
+    supabase
+      .from("matches")
+      .select(
+        "id, round, datetime, played_at, home_team_id, away_team_id, group_id",
+      )
+      .in("away_team_id", teamIds)
+      .is("played_at", null),
+  ]);
+  if (homeRes.error) throw homeRes.error;
+  if (awayRes.error) throw awayRes.error;
+  const byId = new Map<string, (typeof homeRes.data)[number]>();
+  for (const m of homeRes.data ?? []) byId.set(m.id, m);
+  for (const m of awayRes.data ?? []) byId.set(m.id, m);
+  return [...byId.values()];
 }
 
 export async function loadScorableMatchesForUser(
   supabase: SupabaseClient,
   userId: string,
-  roles: string[],
+  _roles: string[],
 ): Promise<ScorableMatchSummary[]> {
-  let raw: Awaited<ReturnType<typeof loadUnplayedMatchRows>> = [];
+  const userTeamIds = await resolveUserTeamIds(supabase, userId);
+  if (userTeamIds.size === 0) return [];
 
-  if (hasAnyRole(roles, [...COMPETITION_ADMIN_ROLES])) {
-    const season = await requireActiveSeason(supabase);
-    const { data: leagues, error: leagueError } = await supabase
-      .from("leagues")
-      .select("id")
-      .eq("season_id", season.id);
-    if (leagueError) throw leagueError;
-
-    const leagueIds = leagues?.map((l) => l.id) ?? [];
-    if (leagueIds.length === 0) return [];
-
-    const { data: divisions, error: divError } = await supabase
-      .from("divisions")
-      .select("id")
-      .in("league_id", leagueIds);
-    if (divError) throw divError;
-
-    const divisionIds = divisions?.map((d) => d.id) ?? [];
-    if (divisionIds.length === 0) return [];
-
-    const { data: groups, error: groupError } = await supabase
-      .from("groups")
-      .select("id")
-      .in("division_id", divisionIds);
-    if (groupError) throw groupError;
-
-    const groupIds = groups?.map((g) => g.id) ?? [];
-    if (groupIds.length === 0) return [];
-
-    raw = await loadUnplayedMatchRows(supabase, { groupIds });
-  } else {
-    const teamIdSet = new Set<string>();
-
-    const { data: player } = await supabase
-      .from("players")
-      .select("id")
-      .eq("auth_user_id", userId)
-      .maybeSingle();
-
-    if (player) {
-      const { data: teamRows, error: teamError } = await supabase
-        .from("team_players")
-        .select("team_id")
-        .eq("player_id", player.id);
-      if (teamError) throw teamError;
-      for (const r of teamRows ?? []) teamIdSet.add(r.team_id);
-    }
-
-    const clubIds = await getManagedClubIds(supabase, userId);
-    if (clubIds.length > 0) {
-      const { data: clubTeams, error: clubTeamError } = await supabase
-        .from("teams")
-        .select("id")
-        .in("club_id", clubIds);
-      if (clubTeamError) throw clubTeamError;
-      for (const t of clubTeams ?? []) teamIdSet.add(t.id);
-    }
-
-    const teamIds = [...teamIdSet];
-    if (teamIds.length === 0) return [];
-
-    raw = await loadUnplayedMatchRows(supabase, { teamIds });
-  }
-
-  const scorableIds: string[] = [];
-  for (const m of raw) {
-    if (matchStatus(m.played_at) !== "scheduled") continue;
-    if (await canSubmitScore(supabase, m.id)) scorableIds.push(m.id);
-  }
-
-  const scorable = raw.filter((m) => scorableIds.includes(m.id));
+  const scorable = await loadUnplayedMatchRows(supabase, [...userTeamIds]);
   if (scorable.length === 0) return [];
 
   const teamIdSet = new Set(

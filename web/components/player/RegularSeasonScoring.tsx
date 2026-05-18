@@ -39,8 +39,12 @@ export function RegularSeasonScoring({ linkedPlayerName }: Props) {
   }, []);
 
   useEffect(() => {
+    if (!linkedPlayerName) {
+      setLoading(false);
+      return;
+    }
     load();
-  }, [load]);
+  }, [load, linkedPlayerName]);
 
   if (!linkedPlayerName) {
     return (
