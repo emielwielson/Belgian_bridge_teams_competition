@@ -4,6 +4,10 @@ import {
   isPublicPath,
   requiredRolesForPath,
 } from "@/lib/auth/middleware-routes";
+import {
+  canAccessClubManagerRoute,
+  isClubManagerPath,
+} from "@/lib/auth/user-access";
 import { hasAnyRole } from "@/lib/auth/roles";
 import { getSupabasePublicEnv } from "@/lib/supabase/env";
 
@@ -53,6 +57,36 @@ export async function middleware(request: NextRequest) {
     .eq("user_id", user.id);
 
   const roles = roleRows?.map((row) => row.role) ?? [];
+
+  if (isClubManagerPath(pathname)) {
+    const allowed = await canAccessClubManagerRoute(
+      supabase,
+      user.id,
+      roles,
+      pathname,
+    );
+    if (!allowed) {
+      const home = request.nextUrl.clone();
+      home.pathname = "/";
+      home.searchParams.set("error", "forbidden");
+      return NextResponse.redirect(home);
+    }
+
+    if (pathname === "/club-manager") {
+      const { data: assignments } = await supabase
+        .from("club_manager_assignments")
+        .select("club_id")
+        .eq("user_id", user.id);
+
+      if (assignments?.length === 1) {
+        const clubUrl = request.nextUrl.clone();
+        clubUrl.pathname = `/club-manager/${assignments[0].club_id}`;
+        return NextResponse.redirect(clubUrl);
+      }
+    }
+
+    return response;
+  }
 
   if (!hasAnyRole(roles, requiredRoles)) {
     const home = request.nextUrl.clone();

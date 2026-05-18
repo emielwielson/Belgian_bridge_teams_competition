@@ -37,6 +37,35 @@ export async function loadManagedClubsForUser(
   return data ?? [];
 }
 
+export function isClubManagerPath(pathname: string): boolean {
+  return pathname === "/club-manager" || pathname.startsWith("/club-manager/");
+}
+
+/** Matches API rules: admins, or a row in club_manager_assignments for the club. */
+export async function canAccessClubManagerRoute(
+  supabase: SupabaseClient,
+  userId: string,
+  roles: string[],
+  pathname: string,
+): Promise<boolean> {
+  if (
+    roles.includes(ROLES.SYSTEM_ADMIN) ||
+    roles.includes(ROLES.COMPETITION_MANAGER)
+  ) {
+    return true;
+  }
+
+  const clubIds = await getManagedClubIds(supabase, userId);
+  const clubPageMatch = pathname.match(/^\/club-manager\/([^/]+)$/);
+  if (clubPageMatch) {
+    return clubIds.includes(clubPageMatch[1]);
+  }
+  if (pathname === "/club-manager") {
+    return clubIds.length > 0;
+  }
+  return false;
+}
+
 export async function assertClubManagerForClub(
   supabase: SupabaseClient,
   userId: string,

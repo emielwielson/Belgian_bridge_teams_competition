@@ -51,8 +51,10 @@ export function AuthNavControls() {
         ? "/player"
         : me.roles.includes("captain")
           ? "/captain"
-          : me.roles.includes("club_manager")
-            ? "/club-manager"
+          : me.roles.includes("club_manager") || (me.clubs?.length ?? 0) > 0
+            ? me.clubs?.length === 1
+              ? `/club-manager/${me.clubs[0].id}`
+              : "/club-manager"
             : me.roles.includes("arbiter")
               ? "/arbiter"
               : null;
@@ -76,6 +78,10 @@ export function AuthNavControls() {
           className="text-zinc-600 hover:text-zinc-900"
         >
           My club
+        </Link>
+      ) : me.clubs && me.clubs.length > 1 ? (
+        <Link href="/club-manager" className="text-zinc-600 hover:text-zinc-900">
+          My clubs
         </Link>
       ) : null}
       {hub && (
