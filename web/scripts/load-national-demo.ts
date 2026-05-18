@@ -158,7 +158,6 @@ async function listNationalGroups(
     .select("id")
     .eq("season_id", seasonId)
     .eq("scope", "national")
-    .eq("name", "National")
     .maybeSingle();
   if (!league) {
     if (options?.required !== false) {

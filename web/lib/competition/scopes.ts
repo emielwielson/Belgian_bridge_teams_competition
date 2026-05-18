@@ -1,3 +1,5 @@
+import { LEAGUE_NAMES, regionalLeagueName } from "./league-names";
+
 export const SCOPES = {
   NATIONAL: "national",
   REGIONAL: "regional",
@@ -25,8 +27,11 @@ export function parseRegionParam(region: string): RegionCode | null {
 }
 
 export function scopeLabel(scope: CompetitionScope, regionCode?: string): string {
-  if (scope === SCOPES.NATIONAL) return "National";
-  return regionCode === REGION_CODES.WALLONIA ? "Wallonia" : "Flanders";
+  if (scope === SCOPES.NATIONAL) return LEAGUE_NAMES.NATIONAL;
+  if (regionCode === REGION_CODES.WALLONIA || regionCode === REGION_CODES.FLANDERS) {
+    return regionalLeagueName(regionCode);
+  }
+  return LEAGUE_NAMES.FLANDERS;
 }
 
 export function adminScopePath(scope: CompetitionScope, regionCode?: string): string {

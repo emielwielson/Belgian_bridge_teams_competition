@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { NATIONAL_LEAGUE_NAME } from "./league-names";
 import {
   NATIONAL_DIVISIONS,
-  NATIONAL_LEAGUE_NAME,
   type NationalScheduleKey,
 } from "./national-structure";
 
@@ -25,18 +25,35 @@ export async function ensureNationalStructure(
     .maybeSingle();
 
   if (!league) {
-    const { data: created, error } = await supabase
+    const { data: legacyNational } = await supabase
       .from("leagues")
-      .insert({
-        season_id: seasonId,
-        scope: "national",
-        region_id: null,
-        name: NATIONAL_LEAGUE_NAME,
-      })
       .select("id")
-      .single();
-    if (error) throw error;
-    league = created;
+      .eq("season_id", seasonId)
+      .eq("scope", "national")
+      .limit(1)
+      .maybeSingle();
+
+    if (legacyNational) {
+      const { error: renameError } = await supabase
+        .from("leagues")
+        .update({ name: NATIONAL_LEAGUE_NAME })
+        .eq("id", legacyNational.id);
+      if (renameError) throw renameError;
+      league = legacyNational;
+    } else {
+      const { data: created, error } = await supabase
+        .from("leagues")
+        .insert({
+          season_id: seasonId,
+          scope: "national",
+          region_id: null,
+          name: NATIONAL_LEAGUE_NAME,
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+      league = created;
+    }
   }
 
   const divisionIds = new Map<string, string>();

@@ -1,5 +1,5 @@
 -- Demo data: 2024–25 national competition (wipe + reload).
--- Run in SQL Editor after migrations through 0011.
+-- Run in SQL Editor after migrations through 0012.
 -- Removes national matches, teams, and match calendars for the active season, then recreates
 -- structure, dates, and demo clubs/teams. Schedules: Admin UI or `npm run demo:national` from web/.
 
@@ -26,7 +26,6 @@ begin
     join public.leagues l on l.id = d.league_id
     where l.season_id = v_season_id
       and l.scope = 'national'
-      and l.name = 'National'
   );
 
   delete from public.matches m
@@ -35,8 +34,7 @@ begin
   join public.leagues l on l.id = d.league_id
   where m.group_id = g.id
     and l.season_id = v_season_id
-    and l.scope = 'national'
-    and l.name = 'National';
+    and l.scope = 'national';
 
   delete from public.team_players tp
   where tp.team_id in (
@@ -47,7 +45,6 @@ begin
     join public.leagues l on l.id = d.league_id
     where l.season_id = v_season_id
       and l.scope = 'national'
-      and l.name = 'National'
   );
 
   delete from public.penalties p
@@ -59,7 +56,6 @@ begin
     join public.leagues l on l.id = d.league_id
     where l.season_id = v_season_id
       and l.scope = 'national'
-      and l.name = 'National'
   );
 
   delete from public.warnings w
@@ -71,7 +67,6 @@ begin
     join public.leagues l on l.id = d.league_id
     where l.season_id = v_season_id
       and l.scope = 'national'
-      and l.name = 'National'
   );
 
   delete from public.teams t
@@ -80,8 +75,7 @@ begin
   join public.leagues l on l.id = d.league_id
   where t.group_id = g.id
     and l.season_id = v_season_id
-    and l.scope = 'national'
-    and l.name = 'National';
+    and l.scope = 'national';
 
   delete from public.competition_match_dates
   where season_id = v_season_id
@@ -95,14 +89,13 @@ begin
     select 1 from public.leagues l
     where l.season_id = v_season_id
       and l.scope = 'national'
-      and l.name = 'National'
   );
 
   select l.id into v_league_id
   from public.leagues l
   where l.season_id = v_season_id
     and l.scope = 'national'
-    and l.name = 'National';
+  limit 1;
 
   insert into public.divisions (league_id, division_level_id, name)
   select v_league_id, dl.id, spec.division_name
@@ -262,7 +255,6 @@ begin
   ) c
   where l.season_id = v_season_id
     and l.scope = 'national'
-    and l.name = 'National'
   order by g.name, c.name;
 end $$;
 

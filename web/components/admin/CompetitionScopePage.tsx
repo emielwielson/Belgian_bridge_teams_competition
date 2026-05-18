@@ -99,19 +99,23 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
     await load();
   }
 
-  async function createLeague() {
-    const name = prompt("League name");
-    if (!name) return;
-    await fetch("/api/admin/competition", {
-      method: "POST",
+  async function ensureRegionalLeague() {
+    if (!regionCode) return;
+    setMessage(null);
+    const res = await fetch("/api/admin/competition", {
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        type: "league",
-        name,
-        scope,
-        region_id: scope === SCOPES.REGIONAL ? regionId : null,
+        action: "ensure_regional_league",
+        regionCode,
       }),
     });
+    const body = await res.json();
+    if (!res.ok) {
+      setMessage(body.error ?? "Failed to set up regional league");
+      return;
+    }
+    setMessage(`${scopeLabel(scope, regionCode)} league is ready.`);
     await load();
   }
 
@@ -268,10 +272,10 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
         ) : (
           <button
             type="button"
-            onClick={createLeague}
+            onClick={ensureRegionalLeague}
             className="btn-secondary"
           >
-            Add league
+            Set up {scopeLabel(scope, regionCode)} league
           </button>
         )}
         {seasonStatus === "setup" && (

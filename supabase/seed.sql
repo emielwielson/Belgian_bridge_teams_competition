@@ -20,7 +20,7 @@ where not exists (
   select 1 from public.seasons where name = '2025-26'
 );
 
--- National competition structure (one group per division)
+-- Three leagues per season: National, Flanders, Wallonia
 insert into public.leagues (season_id, scope, region_id, name)
 select s.id, 'national', null, 'National'
 from public.seasons s
@@ -28,9 +28,21 @@ where s.name = '2025-26'
   and not exists (
     select 1
     from public.leagues l
+    where l.season_id = s.id and l.scope = 'national'
+  );
+
+insert into public.leagues (season_id, scope, region_id, name)
+select s.id, 'regional', r.id, r.name
+from public.seasons s
+cross join public.regions r
+where s.name = '2025-26'
+  and r.code in ('flanders', 'wallonia')
+  and not exists (
+    select 1
+    from public.leagues l
     where l.season_id = s.id
-      and l.scope = 'national'
-      and l.name = 'National'
+      and l.scope = 'regional'
+      and l.region_id = r.id
   );
 
 insert into public.divisions (league_id, division_level_id, name)

@@ -1,6 +1,13 @@
 import { COMPETITION_ADMIN_ROLES, requireRoles } from "@/lib/auth/route-auth";
 import { ensureNationalStructure } from "@/lib/competition/ensure-national-structure";
+import { ensureRegionalLeague } from "@/lib/competition/ensure-regional-league";
+import { canonicalLeagueName } from "@/lib/competition/league-names";
 import { requireActiveSeason } from "@/lib/competition/season";
+import {
+  parseRegionParam,
+  SCOPES,
+  type RegionCode,
+} from "@/lib/competition/scopes";
 import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
 
 export async function GET() {
@@ -73,12 +80,34 @@ export async function POST(request: Request) {
     const body = await request.json();
 
     if (body.type === "league") {
+      const scope = body.scope === SCOPES.REGIONAL ? SCOPES.REGIONAL : SCOPES.NATIONAL;
+      let regionCode: RegionCode | undefined;
+      if (scope === SCOPES.REGIONAL) {
+        if (!body.region_id) {
+          return jsonError("region_id required for regional league", 400);
+        }
+        const { data: region } = await supabase
+          .from("regions")
+          .select("code")
+          .eq("id", body.region_id)
+          .single();
+        regionCode = parseRegionParam(region?.code ?? "") ?? undefined;
+        if (!regionCode) return jsonError("Invalid region", 400);
+      }
+      const expectedName = canonicalLeagueName(scope, regionCode);
+      if (body.name !== expectedName) {
+        return jsonError(
+          `League name must be "${expectedName}" for this scope`,
+          400,
+        );
+      }
+
       const { data, error } = await supabase
         .from("leagues")
         .insert({
           season_id: season.id,
-          name: body.name,
-          scope: body.scope,
+          name: expectedName,
+          scope,
           region_id: body.region_id ?? null,
         })
         .select()
@@ -129,6 +158,18 @@ export async function PATCH(request: Request) {
     if (body.action === "ensure_national_structure") {
       const season = await requireActiveSeason(supabase);
       const result = await ensureNationalStructure(supabase, season.id);
+      return jsonOk({ ensured: true, ...result });
+    }
+
+    if (body.action === "ensure_regional_league") {
+      const season = await requireActiveSeason(supabase);
+      const regionCode = parseRegionParam(body.regionCode ?? "");
+      if (!regionCode) return jsonError("Invalid regionCode", 400);
+      const result = await ensureRegionalLeague(
+        supabase,
+        season.id,
+        regionCode,
+      );
       return jsonOk({ ensured: true, ...result });
     }
 

@@ -68,8 +68,13 @@ declare
 begin
   select g.id into v_group_id
   from public.groups g
-  where g.name = 'VP Template Group'
+  join public.divisions d on d.id = g.division_id
+  where d.name = 'Honor' and g.name = 'Honor'
   limit 1;
+
+  if v_group_id is null then
+    raise exception 'Honor group not found — run seed.sql first';
+  end if;
 
   insert into public.clubs (name, region_id)
   select 'Smoke Test Club', r.id

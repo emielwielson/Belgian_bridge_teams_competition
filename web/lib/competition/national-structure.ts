@@ -21,7 +21,7 @@ export const NATIONAL_SCHEDULE_ROUND_COUNTS: Record<NationalScheduleKey, number>
     default: 14,
   };
 
-export const NATIONAL_LEAGUE_NAME = "National";
+export { NATIONAL_LEAGUE_NAME } from "./league-names";
 
 export const NATIONAL_DIVISIONS: NationalDivisionSpec[] = [
   {
