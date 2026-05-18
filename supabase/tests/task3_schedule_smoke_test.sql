@@ -161,4 +161,56 @@ end $$;
 
 rollback;
 
+-- 3) Regional odd-team validation (7 teams, 14 dates)
+begin;
+
+do $$
+declare
+  v_season_id uuid;
+  v_region_id uuid;
+  v_league_id uuid;
+  v_division_id uuid;
+  v_group_id uuid;
+  v_club_id uuid;
+begin
+  select id into v_season_id from public.seasons where is_active = true limit 1;
+  select id into v_region_id from public.regions where code = 'flanders' limit 1;
+
+  insert into public.leagues (season_id, scope, region_id, name)
+  values (v_season_id, 'regional', v_region_id, 'Task3 Regional Smoke')
+  returning id into v_league_id;
+
+  insert into public.divisions (league_id, division_level_id, name)
+  select v_league_id, dl.id, 'Regional Smoke Div'
+  from public.division_levels dl where dl.code = 'second'
+  returning id into v_division_id;
+
+  insert into public.groups (division_id, name, round_robin_count, round_count)
+  values (v_division_id, 'Regional Smoke G', 2, 14)
+  returning id into v_group_id;
+
+  select id into v_club_id from public.clubs where region_id = v_region_id limit 1;
+
+  for i in 1..7 loop
+    insert into public.teams (group_id, club_id, name)
+    values (v_group_id, v_club_id, 'Regional Smoke ' || i);
+  end loop;
+
+  for i in 1..14 loop
+    insert into public.competition_match_dates (season_id, scope, region_id, division_id, round, datetime)
+    values (
+      v_season_id, 'regional', v_region_id, null, i,
+      timestamptz '2024-09-01 12:00:00+00' + (i || ' days')::interval
+    );
+  end loop;
+
+  perform public.validate_group_schedule_generation(v_group_id);
+
+  if public.compute_group_round_count(7, 2) <> 14 then
+    raise exception 'compute_group_round_count(7,2) should be 14';
+  end if;
+end $$;
+
+rollback;
+
 select 'task3_schedule_smoke_test passed' as result;

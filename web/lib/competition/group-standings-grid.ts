@@ -24,6 +24,13 @@ export type GroupMatchRow = {
   played_at: string | null;
 };
 
+export type GroupByeRoundRow = {
+  round: number;
+  team_id: string;
+  vp: number;
+  awarded_at: string | null;
+};
+
 export type GridCell = {
   vp: number | null;
   isHome: boolean;
@@ -76,9 +83,39 @@ function buildRoundColumns(matches: GroupMatchRow[]): RoundColumn[] {
 export function buildGroupStandingsGrid(
   standings: StandingsTeamRow[],
   matches: GroupMatchRow[],
+  byeRounds: GroupByeRoundRow[] = [],
 ): GroupStandingsGridData {
-  const rounds = buildRoundColumns(matches);
-  const hasMatches = matches.length > 0;
+  const byeByTeamRound = new Map<string, GroupByeRoundRow>();
+  for (const bye of byeRounds) {
+    byeByTeamRound.set(`${bye.team_id}:${bye.round}`, bye);
+  }
+
+  const roundDatetimes = new Map<number, string[]>();
+  for (const match of matches) {
+    const list = roundDatetimes.get(match.round) ?? [];
+    list.push(match.datetime);
+    roundDatetimes.set(match.round, list);
+  }
+  for (const bye of byeRounds) {
+    if (!roundDatetimes.has(bye.round)) {
+      roundDatetimes.set(bye.round, []);
+    }
+  }
+  const syntheticMatches: GroupMatchRow[] = [...roundDatetimes.keys()]
+    .sort((a, b) => a - b)
+    .filter((round) => !matches.some((m) => m.round === round))
+    .map((round) => ({
+      id: `bye-round-${round}`,
+      round,
+      datetime: new Date(0).toISOString(),
+      home_team_id: "",
+      away_team_id: "",
+      vp_home: null,
+      vp_away: null,
+      played_at: null,
+    }));
+  const rounds = buildRoundColumns([...matches, ...syntheticMatches]);
+  const hasMatches = matches.length > 0 || byeRounds.length > 0;
 
   const cellMaps = new Map<string, Map<number, GridCell>>();
 
@@ -126,9 +163,35 @@ export function buildGroupStandingsGrid(
     matchId: null,
   };
 
+  for (const bye of byeRounds) {
+    if (!bye.awarded_at) continue;
+    let teamCells = cellMaps.get(bye.team_id);
+    if (!teamCells) {
+      teamCells = new Map();
+      cellMaps.set(bye.team_id, teamCells);
+    }
+    teamCells.set(bye.round, {
+      vp: Number(bye.vp),
+      isHome: false,
+      pairingClass: null,
+      matchId: null,
+    });
+  }
+
   const rows: GridRow[] = standings.map((team, index) => {
     const teamCells = cellMaps.get(team.team_id);
-    const cells = rounds.map(({ round }) => teamCells?.get(round) ?? emptyCell);
+    const cells = rounds.map(({ round }) => {
+      const bye = byeByTeamRound.get(`${team.team_id}:${round}`);
+      if (bye && !bye.awarded_at) {
+        return {
+          vp: null,
+          isHome: false,
+          pairingClass: null,
+          matchId: null,
+        };
+      }
+      return teamCells?.get(round) ?? emptyCell;
+    });
     return {
       rank: index + 1,
       teamId: team.team_id,

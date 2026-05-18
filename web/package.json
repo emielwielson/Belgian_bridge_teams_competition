@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "demo:national": "npx tsx scripts/load-national-demo.ts"
+    "demo:national": "npx tsx scripts/load-national-demo.ts",
+    "demo:flanders": "npx tsx scripts/load-flanders-demo.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

@@ -1,6 +1,7 @@
 import { COMPETITION_ADMIN_ROLES, requireRoles } from "@/lib/auth/route-auth";
-import { invokeEdgeFunction } from "@/lib/http/edge-function";
 import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
+import { generateGroupScheduleInDb } from "@/lib/scheduling/generate-group-schedule-db";
+
 type Params = { params: Promise<{ groupId: string }> };
 
 export async function POST(request: Request, { params }: Params) {
@@ -8,22 +9,15 @@ export async function POST(request: Request, { params }: Params) {
     const { groupId } = await params;
     const { supabase } = await requireRoles([...COMPETITION_ADMIN_ROLES]);
 
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    if (!session?.access_token) {
-      return jsonError("No session token", 401);
-    }
-
     const body = await request.json().catch(() => ({}));
-    const result = await invokeEdgeFunction<{
-      matchesCreated: number;
-      rounds: number;
-    }>("schedule-generate-rbbf", {
+    const boardCount =
+      typeof body.boardCount === "number" ? body.boardCount : 24;
+
+    const result = await generateGroupScheduleInDb(
+      supabase,
       groupId,
-      boardCount: body.boardCount ?? 24,
-    }, session.access_token);
+      boardCount,
+    );
 
     return jsonOk(result);
   } catch (err) {

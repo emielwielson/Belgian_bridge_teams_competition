@@ -7,6 +7,7 @@ const PUBLIC_EXACT = new Set([
   "/api/health",
   "/api/auth/me",
   "/api/auth/signout",
+  "/api/cron/award-bye-scores",
 ]);
 
 const PUBLIC_PREFIXES = ["/api/public/", "/standings", "/teams"];

@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { GroupMatchRow } from "./group-standings-grid";
+import type { GroupByeRoundRow, GroupMatchRow } from "./group-standings-grid";
 import { LEAGUE_NAMES, type LeagueName } from "./league-names";
 import { sortDivisionsByCanonicalName } from "./sort-divisions";
 
@@ -41,6 +41,7 @@ export type GroupStandingsContext = {
 
 export type GroupStandingsFullContext = GroupStandingsContext & {
   matches: GroupMatchRow[];
+  byeRounds: GroupByeRoundRow[];
 };
 
 const LEAGUE_PICKER_ORDER: LeagueName[] = [
@@ -262,8 +263,17 @@ export async function loadGroupStandingsFull(
 
   if (matchesError) throw matchesError;
 
+  const { data: byeRounds, error: byeError } = await supabase
+    .from("group_bye_rounds")
+    .select("round, team_id, vp, awarded_at")
+    .eq("group_id", groupId)
+    .order("round");
+
+  if (byeError) throw byeError;
+
   return {
     ...context,
     matches: (matches ?? []) as GroupMatchRow[],
+    byeRounds: (byeRounds ?? []) as GroupByeRoundRow[],
   };
 }

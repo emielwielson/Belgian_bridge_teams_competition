@@ -11,6 +11,7 @@ import {
 import { CompetitionManagement } from "./CompetitionManagement";
 import { NationalCompetitionSetup } from "./NationalCompetitionSetup";
 import { PenaltyManagement } from "./PenaltyManagement";
+import { RegionalGroupScheduleSettings } from "./RegionalGroupScheduleSettings";
 
 type DivisionLevel = { id: string; code: string; name: string };
 type Group = {
@@ -18,6 +19,8 @@ type Group = {
   name: string;
   status: string;
   max_matches_per_day_per_team: number | null;
+  round_count: number;
+  round_robin_count: number;
 };
 type Division = { id: string; name: string; league_id: string; groups: Group[] };
 type League = {
@@ -173,7 +176,9 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
       setMessage(body.error ?? "Generation failed");
       return;
     }
-    setMessage(`Created ${body.matchesCreated} matches.`);
+    const byeNote =
+      body.byesCreated > 0 ? `, ${body.byesCreated} bye rounds` : "";
+    setMessage(`Created ${body.matchesCreated} matches${byeNote}.`);
   }
 
   async function activateSeason() {
@@ -296,8 +301,25 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
       {selectedGroupId && (
         <section className="card">
           <h2 className="font-semibold text-zinc-900">
-            Teams ({teams.length}/8 for RBBF)
+            Teams ({teams.length}
+            {teams.length === 8 ? ", RBBF template" : ""})
           </h2>
+          {(() => {
+            const selectedGroup = leagues
+              .flatMap((l) => l.divisions)
+              .flatMap((d) => d.groups)
+              .find((g) => g.id === selectedGroupId);
+            if (!selectedGroup) return null;
+            return (
+              <RegionalGroupScheduleSettings
+                groupId={selectedGroup.id}
+                teamCount={teams.length}
+                roundRobinCount={selectedGroup.round_robin_count ?? 2}
+                roundCount={selectedGroup.round_count ?? 14}
+                onUpdated={load}
+              />
+            );
+          })()}
           <ul className="mt-2 space-y-1 text-sm text-zinc-800">
             {teams.map((t) => (
               <li key={t.id} className="flex flex-wrap items-center gap-2">

@@ -16,8 +16,8 @@ export default async function GroupStandingsPage({ params }: Props) {
     notFound();
   }
 
-  const { group, division, league, standings, matches } = data;
-  const grid = buildGroupStandingsGrid(standings, matches);
+  const { group, division, league, standings, matches, byeRounds } = data;
+  const grid = buildGroupStandingsGrid(standings, matches, byeRounds);
 
   return (
     <main className="page-container-full flex min-h-0 flex-1 flex-col gap-4 sm:gap-6">

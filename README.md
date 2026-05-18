@@ -91,11 +91,27 @@ cd web && npm install && npm run dev
 
 See [`web/README.md`](web/README.md). Health check: `http://localhost:3000/api/health`
 
+## Demo data (optional)
+
+After migrations and seed, you can load sample competition data:
+
+| Competition | SQL Editor | Full load (teams + schedules) |
+|-------------|------------|--------------------------------|
+| National | [`supabase/demo-data/national-2024-25-demo.sql`](supabase/demo-data/national-2024-25-demo.sql) | `cd web && npm run demo:national` |
+| Flanders | [`supabase/demo-data/flanders-2024-25-demo.sql`](supabase/demo-data/flanders-2024-25-demo.sql) | `cd web && npm run demo:flanders` |
+
+Both need `SUPABASE_SECRET_KEY` in `web/.env.local`. The npm scripts generate schedules for all regional groups (RBBF template for 8 teams, generic round-robin otherwise).
+
+**Regional bye VP (odd team counts):** resting teams receive 12 VP after each match day. Run automation against `POST /api/cron/award-bye-scores` with header `x-award-bye-secret` (set `AWARD_BYE_SCORES_SECRET` in `web/.env.local`), or the Supabase edge function `award-bye-scores`. See [internal-docs/regional-bye-automation.md](internal-docs/regional-bye-automation.md).
+
+Apply migration [`0018_regional_round_robin_byes.sql`](supabase/migrations/0018_regional_round_robin_byes.sql) before loading regional demo data.
+
 ## Repository layout
 
 ```
 supabase/
   migrations/      # SQL migrations — run in order via SQL Editor
+  demo-data/       # Optional national / Flanders demo SQL
   seed.sql         # Seed data (task 1.6)
   config.toml      # Optional reference (not required without CLI)
 internal-docs/     # PRD and task list

@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { getRbbfRoundPairingsForCount } from "./template.ts";
+import { buildRoundRobinSchedule } from "./round-robin.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -46,28 +47,13 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { data: teams, error: teamsError } = await supabase
-      .from("teams")
-      .select("id")
-      .eq("group_id", groupId)
-      .order("created_at");
-
-    if (teamsError || !teams || teams.length !== 8) {
-      return new Response(
-        JSON.stringify({ error: "Group must have exactly 8 teams" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
-    }
-
     const { data: groupRow, error: groupError } = await supabase
       .from("groups")
       .select(
         `
         id,
         round_count,
+        round_robin_count,
         division:divisions (
           league:leagues (season_id, scope, region_id)
         )
@@ -83,7 +69,26 @@ Deno.serve(async (req) => {
       });
     }
 
-    const roundCount = groupRow.round_count ?? 14;
+    const { data: teams, error: teamsError } = await supabase
+      .from("teams")
+      .select("id")
+      .eq("group_id", groupId)
+      .order("created_at");
+
+    if (teamsError || !teams || teams.length < 2) {
+      return new Response(
+        JSON.stringify({ error: "Group must have at least 2 teams" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    const teamIds = teams.map((t) => t.id as string);
+    const teamCount = teamIds.length;
+    const roundCount = (groupRow.round_count as number) ?? 14;
+    const roundRobinCount = (groupRow.round_robin_count as number) ?? 2;
 
     const division = Array.isArray(groupRow.division)
       ? groupRow.division[0]
@@ -145,32 +150,74 @@ Deno.serve(async (req) => {
       );
     }
 
-    const slotToTeamId = new Map(
-      teams.map((t, i) => [i + 1, t.id as string]),
-    );
     const dateByRound = new Map(
       dates.map((d) => [d.round as number, d.datetime as string]),
     );
 
     const matchRows: Record<string, unknown>[] = [];
-    const allRounds = getRbbfRoundPairingsForCount(roundCount);
+    const byeRows: { group_id: string; round: number; team_id: string; vp: number }[] =
+      [];
 
-    allRounds.forEach((pairings, index) => {
-      const round = index + 1;
-      const datetime = dateByRound.get(round);
-      if (!datetime) return;
+    const useRbbf =
+      league.scope === "national" ||
+      (league.scope === "regional" && teamCount === 8);
 
-      for (const p of pairings) {
-        matchRows.push({
-          group_id: groupId,
-          round,
-          datetime,
-          home_team_id: slotToTeamId.get(p.home),
-          away_team_id: slotToTeamId.get(p.away),
-          board_count: boardCount,
-        });
+    if (useRbbf) {
+      if (teamCount !== 8) {
+        return new Response(
+          JSON.stringify({ error: "RBBF schedule requires exactly 8 teams" }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
-    });
+
+      const slotToTeamId = new Map(teamIds.map((id, i) => [i + 1, id]));
+      const allRounds = getRbbfRoundPairingsForCount(roundCount);
+
+      allRounds.forEach((pairings, index) => {
+        const round = index + 1;
+        const datetime = dateByRound.get(round);
+        if (!datetime) return;
+
+        for (const p of pairings) {
+          matchRows.push({
+            group_id: groupId,
+            round,
+            datetime,
+            home_team_id: slotToTeamId.get(p.home),
+            away_team_id: slotToTeamId.get(p.away),
+            board_count: boardCount,
+          });
+        }
+      });
+    } else {
+      const plans = buildRoundRobinSchedule(teamIds, roundRobinCount);
+      for (const plan of plans) {
+        const datetime = dateByRound.get(plan.round);
+        if (!datetime) continue;
+
+        for (const p of plan.pairings) {
+          matchRows.push({
+            group_id: groupId,
+            round: plan.round,
+            datetime,
+            home_team_id: p.homeTeamId,
+            away_team_id: p.awayTeamId,
+            board_count: boardCount,
+          });
+        }
+        if (plan.byeTeamId) {
+          byeRows.push({
+            group_id: groupId,
+            round: plan.round,
+            team_id: plan.byeTeamId,
+            vp: 12,
+          });
+        }
+      }
+    }
 
     const { error: insertError } = await supabase
       .from("matches")
@@ -183,10 +230,23 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (byeRows.length > 0) {
+      const { error: byeError } = await supabase
+        .from("group_bye_rounds")
+        .insert(byeRows);
+      if (byeError) {
+        return new Response(JSON.stringify({ error: byeError.message }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     return new Response(
       JSON.stringify({
         matchesCreated: matchRows.length,
         rounds: roundCount,
+        byesCreated: byeRows.length,
       }),
       {
         status: 200,

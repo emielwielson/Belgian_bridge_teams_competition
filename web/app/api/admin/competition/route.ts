@@ -47,7 +47,7 @@ export async function GET() {
         ? await supabase
             .from("groups")
             .select(
-              "id, name, status, division_id, max_matches_per_day_per_team",
+              "id, name, status, division_id, max_matches_per_day_per_team, round_count, round_robin_count",
             )
             .in("division_id", divisionIds)
         : { data: [], error: null };
@@ -132,12 +132,15 @@ export async function POST(request: Request) {
     }
 
     if (body.type === "group") {
+      const roundRobinCount =
+        typeof body.round_robin_count === "number" ? body.round_robin_count : 2;
       const { data, error } = await supabase
         .from("groups")
         .insert({
           division_id: body.division_id,
           name: body.name,
           max_matches_per_day_per_team: body.max_matches_per_day_per_team ?? null,
+          round_robin_count: roundRobinCount,
         })
         .select()
         .single();
@@ -243,11 +246,22 @@ export async function PATCH(request: Request) {
       if (body.max_matches_per_day_per_team !== undefined) {
         patch.max_matches_per_day_per_team = body.max_matches_per_day_per_team;
       }
+      if (body.round_robin_count !== undefined) {
+        patch.round_robin_count = body.round_robin_count;
+      }
       const { error } = await supabase
         .from("groups")
         .update(patch)
         .eq("id", body.id);
       if (error) return jsonError(error.message, 400);
+
+      if (body.round_robin_count !== undefined) {
+        const { error: syncError } = await supabase.rpc("sync_group_round_count", {
+          p_group_id: body.id,
+        });
+        if (syncError) return jsonError(syncError.message, 400);
+      }
+
       return jsonOk({ updated: true });
     }
 
