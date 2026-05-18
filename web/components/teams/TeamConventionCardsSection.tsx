@@ -1,8 +1,65 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { ConventionCardListItem } from "@/lib/competition/convention-card-queries";
 import { formatBrussels } from "@/lib/time/brussels";
+
+const CONVENTION_CARD_ACCEPT =
+  "application/pdf,image/jpeg,image/png,image/webp";
+
+type ConventionCardFileInputProps = {
+  id: string;
+  file: File | null;
+  onFileChange: (file: File | null) => void;
+  hint: string;
+};
+
+function ConventionCardFileInput({
+  id,
+  file,
+  onFileChange,
+  hint,
+}: ConventionCardFileInputProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function clearFile() {
+    onFileChange(null);
+    if (inputRef.current) {
+      inputRef.current.value = "";
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-1 text-sm">
+      <span className="text-zinc-600">{hint}</span>
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          ref={inputRef}
+          id={id}
+          type="file"
+          accept={CONVENTION_CARD_ACCEPT}
+          onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
+          className="sr-only"
+        />
+        <label htmlFor={id} className="btn-secondary cursor-pointer px-3 py-1.5">
+          Choose file
+        </label>
+        <span className="text-zinc-600">
+          {file ? file.name : "No file chosen"}
+        </span>
+        {file ? (
+          <button
+            type="button"
+            onClick={clearFile}
+            className="text-sm text-zinc-500 hover:text-zinc-800 hover:underline"
+          >
+            Clear
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
 
 type Props = {
   teamId: string;
@@ -19,7 +76,9 @@ export function TeamConventionCardsSection({
   const [message, setMessage] = useState<string | null>(null);
   const [uploadName, setUploadName] = useState("");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadFileInputKey, setUploadFileInputKey] = useState(0);
   const [uploading, setUploading] = useState(false);
+  const uploadReady = Boolean(uploadName.trim() && uploadFile);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editFile, setEditFile] = useState<File | null>(null);
@@ -49,6 +108,7 @@ export function TeamConventionCardsSection({
     setCards(body.cards);
     setUploadName("");
     setUploadFile(null);
+    setUploadFileInputKey((k) => k + 1);
     setMessage(null);
   }
 
@@ -145,19 +205,12 @@ export function TeamConventionCardsSection({
                       className="rounded-lg border border-zinc-300 px-3 py-2"
                     />
                   </label>
-                  <label className="flex flex-col gap-1">
-                    <span className="text-zinc-600">
-                      Replace file (optional)
-                    </span>
-                    <input
-                      type="file"
-                      accept="application/pdf,image/jpeg,image/png,image/webp"
-                      onChange={(e) =>
-                        setEditFile(e.target.files?.[0] ?? null)
-                      }
-                      className="text-sm"
-                    />
-                  </label>
+                  <ConventionCardFileInput
+                    id={`convention-card-edit-file-${card.id}`}
+                    file={editFile}
+                    onFileChange={setEditFile}
+                    hint="Replace file (optional)"
+                  />
                   <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
@@ -231,19 +284,17 @@ export function TeamConventionCardsSection({
               placeholder="e.g. 2024–25 system"
             />
           </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-zinc-600">Document (PDF or image, max 10 MB)</span>
-            <input
-              type="file"
-              accept="application/pdf,image/jpeg,image/png,image/webp"
-              onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
-              className="text-sm"
-            />
-          </label>
+          <ConventionCardFileInput
+            key={uploadFileInputKey}
+            id="convention-card-upload-file"
+            file={uploadFile}
+            onFileChange={setUploadFile}
+            hint="Document (PDF or image, max 10 MB)"
+          />
           <button
             type="submit"
-            disabled={uploading}
-            className="btn-primary w-fit"
+            disabled={uploading || !uploadReady}
+            className="btn-primary w-fit disabled:cursor-not-allowed disabled:bg-zinc-400 disabled:opacity-100 hover:disabled:bg-zinc-400"
           >
             {uploading ? "Uploading…" : "Upload convention card"}
           </button>
