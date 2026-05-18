@@ -1,6 +1,7 @@
 /**
- * Load 2024–25 national demo match dates, ensure structure, seed demo teams,
- * and generate RBBF schedules for all national groups (service role).
+ * Reset and load 2024–25 national demo: wipes national matches/teams/dates for the
+ * active season, ensures structure, reloads match dates and demo teams, and generates
+ * RBBF schedules for all national groups (service role).
  *
  * Usage (from web/):
  *   npm run demo:national
@@ -76,7 +77,82 @@ async function upsertMatchDates(
   if (insertError) throw insertError;
 }
 
-async function listNationalGroups(supabase: SupabaseClient, seasonId: string) {
+async function resetNationalDemo(supabase: SupabaseClient, seasonId: string) {
+  const { error: datesError } = await supabase
+    .from("competition_match_dates")
+    .delete()
+    .eq("season_id", seasonId)
+    .eq("scope", "national")
+    .is("region_id", null);
+  if (datesError) throw datesError;
+
+  const groups = await listNationalGroups(supabase, seasonId, {
+    required: false,
+  });
+  if (groups.length === 0) return;
+
+  const groupIds = groups.map((g) => g.id);
+
+  const { data: teams, error: teamsError } = await supabase
+    .from("teams")
+    .select("id")
+    .in("group_id", groupIds);
+  if (teamsError) throw teamsError;
+  const teamIds = teams?.map((t) => t.id) ?? [];
+
+  const { data: matches, error: matchesError } = await supabase
+    .from("matches")
+    .select("id")
+    .in("group_id", groupIds);
+  if (matchesError) throw matchesError;
+  const matchIds = matches?.map((m) => m.id) ?? [];
+
+  if (matchIds.length > 0) {
+    const { error: rulingsError } = await supabase
+      .from("rulings")
+      .delete()
+      .in("match_id", matchIds);
+    if (rulingsError) throw rulingsError;
+
+    const { error: deleteMatchesError } = await supabase
+      .from("matches")
+      .delete()
+      .in("group_id", groupIds);
+    if (deleteMatchesError) throw deleteMatchesError;
+  }
+
+  if (teamIds.length > 0) {
+    const { error: rosterError } = await supabase
+      .from("team_players")
+      .delete()
+      .in("team_id", teamIds);
+    if (rosterError) throw rosterError;
+
+    const { error: penaltiesError } = await supabase
+      .from("penalties")
+      .delete()
+      .in("team_id", teamIds);
+    if (penaltiesError) throw penaltiesError;
+
+    const { error: warningsError } = await supabase
+      .from("warnings")
+      .delete()
+      .in("team_id", teamIds);
+    if (warningsError) throw warningsError;
+  }
+
+  const { error: deleteTeamsError } = await supabase
+    .from("teams")
+    .delete()
+    .in("group_id", groupIds);
+  if (deleteTeamsError) throw deleteTeamsError;
+}
+
+async function listNationalGroups(
+  supabase: SupabaseClient,
+  seasonId: string,
+  options?: { required?: boolean },
+) {
   const { data: league } = await supabase
     .from("leagues")
     .select("id")
@@ -84,7 +160,12 @@ async function listNationalGroups(supabase: SupabaseClient, seasonId: string) {
     .eq("scope", "national")
     .eq("name", "National")
     .maybeSingle();
-  if (!league) throw new Error("National league not found");
+  if (!league) {
+    if (options?.required !== false) {
+      throw new Error("National league not found");
+    }
+    return [];
+  }
 
   const { data: divisions, error: divError } = await supabase
     .from("divisions")
@@ -138,12 +219,6 @@ async function seedDemoTeams(supabase: SupabaseClient, seasonId: string) {
   const groups = await listNationalGroups(supabase, seasonId);
 
   for (const group of groups) {
-    const { count } = await supabase
-      .from("teams")
-      .select("id", { count: "exact", head: true })
-      .eq("group_id", group.id);
-    if ((count ?? 0) >= 8) continue;
-
     for (const club of clubs) {
       const { error } = await supabase.from("teams").insert({
         group_id: group.id,
@@ -185,6 +260,9 @@ async function main() {
   console.log(`Season: ${season.name}`);
   await ensureNationalStructure(supabase, season.id);
 
+  console.log("Resetting national demo data…");
+  await resetNationalDemo(supabase, season.id);
+
   const honorDivisionId = await resolveNationalScheduleDivisionId(
     supabase,
     season.id,
@@ -207,7 +285,9 @@ async function main() {
   console.log("Seeding demo teams…");
   await seedDemoTeams(supabase, season.id);
 
-  const groups = await listNationalGroups(supabase, season.id);
+  const groups = await listNationalGroups(supabase, season.id, {
+    required: true,
+  });
 
   console.log("Generating schedules…");
   for (const group of groups) {
@@ -226,7 +306,7 @@ async function main() {
       continue;
     }
     if ((matchCount ?? 0) > 0) {
-      console.log(`  Skip ${group.name}: already has matches`);
+      console.warn(`  Skip ${group.name}: unexpected existing matches`);
       continue;
     }
 

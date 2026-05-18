@@ -1,6 +1,7 @@
--- Demo data: 2024–25 national match dates (+ optional demo clubs/teams).
--- Run in SQL Editor after migrations through 0010 (creates national structure if missing).
--- Schedule fixtures: use Admin UI "Generate schedule" per group, or `npm run demo:national` from web/.
+-- Demo data: 2024–25 national competition (wipe + reload).
+-- Run in SQL Editor after migrations through 0011.
+-- Removes national matches, teams, and match calendars for the active season, then recreates
+-- structure, dates, and demo clubs/teams. Schedules: Admin UI or `npm run demo:national` from web/.
 
 do $$
 declare
@@ -14,6 +15,78 @@ begin
   if v_season_id is null then
     raise exception 'No active season — run seed.sql first';
   end if;
+
+  -- Reset national demo data for this season (safe if National league does not exist yet)
+  delete from public.rulings r
+  where r.match_id in (
+    select m.id
+    from public.matches m
+    join public.groups g on g.id = m.group_id
+    join public.divisions d on d.id = g.division_id
+    join public.leagues l on l.id = d.league_id
+    where l.season_id = v_season_id
+      and l.scope = 'national'
+      and l.name = 'National'
+  );
+
+  delete from public.matches m
+  using public.groups g
+  join public.divisions d on d.id = g.division_id
+  join public.leagues l on l.id = d.league_id
+  where m.group_id = g.id
+    and l.season_id = v_season_id
+    and l.scope = 'national'
+    and l.name = 'National';
+
+  delete from public.team_players tp
+  where tp.team_id in (
+    select t.id
+    from public.teams t
+    join public.groups g on g.id = t.group_id
+    join public.divisions d on d.id = g.division_id
+    join public.leagues l on l.id = d.league_id
+    where l.season_id = v_season_id
+      and l.scope = 'national'
+      and l.name = 'National'
+  );
+
+  delete from public.penalties p
+  where p.team_id in (
+    select t.id
+    from public.teams t
+    join public.groups g on g.id = t.group_id
+    join public.divisions d on d.id = g.division_id
+    join public.leagues l on l.id = d.league_id
+    where l.season_id = v_season_id
+      and l.scope = 'national'
+      and l.name = 'National'
+  );
+
+  delete from public.warnings w
+  where w.team_id in (
+    select t.id
+    from public.teams t
+    join public.groups g on g.id = t.group_id
+    join public.divisions d on d.id = g.division_id
+    join public.leagues l on l.id = d.league_id
+    where l.season_id = v_season_id
+      and l.scope = 'national'
+      and l.name = 'National'
+  );
+
+  delete from public.teams t
+  using public.groups g
+  join public.divisions d on d.id = g.division_id
+  join public.leagues l on l.id = d.league_id
+  where t.group_id = g.id
+    and l.season_id = v_season_id
+    and l.scope = 'national'
+    and l.name = 'National';
+
+  delete from public.competition_match_dates
+  where season_id = v_season_id
+    and scope = 'national'
+    and region_id is null;
 
   -- Ensure National league + 8 divisions + groups (idempotent)
   insert into public.leagues (season_id, scope, region_id, name)
@@ -104,16 +177,6 @@ begin
     raise exception 'Failed to create National divisions';
   end if;
 
-  delete from public.competition_match_dates
-  where season_id = v_season_id
-    and scope = 'national'
-    and region_id is null
-    and (
-      division_id is not distinct from v_honor_division_id
-      or division_id is not distinct from v_first_division_id
-      or division_id is null
-    );
-
   -- Honor: 21 rounds on 7 days (11:00 / 13:50 / 16:40 each day)
   insert into public.competition_match_dates (season_id, scope, region_id, division_id, round, datetime)
   values
@@ -200,10 +263,7 @@ begin
   where l.season_id = v_season_id
     and l.scope = 'national'
     and l.name = 'National'
-    and not exists (
-      select 1 from public.teams t where t.group_id = g.id
-    )
   order by g.name, c.name;
 end $$;
 
-select 'national-2024-25-demo loaded (dates + demo teams; generate schedules via Admin or npm run demo:national)' as result;
+select 'national-2024-25-demo reset and loaded (dates + demo teams; generate schedules via Admin or npm run demo:national)' as result;
