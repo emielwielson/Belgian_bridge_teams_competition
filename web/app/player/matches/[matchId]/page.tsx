@@ -10,7 +10,7 @@ import { loadTeamRoster } from "@/lib/competition/player-matches";
 import { getUserRoles } from "@/lib/auth/session";
 import { hasAnyRole } from "@/lib/auth/roles";
 import { COMPETITION_ADMIN_ROLES } from "@/lib/auth/route-auth";
-import { getMatchLineup } from "@/lib/scoring/match-operations";
+import { getMatchLineup, isLineupComplete } from "@/lib/scoring/match-operations";
 import { matchStatus } from "@/lib/scoring/match-state";
 import { formatBrussels } from "@/lib/time/brussels";
 import { createSessionClient } from "@/lib/supabase/server-client";
@@ -42,6 +42,7 @@ export default async function PlayerMatchPage({ params }: Props) {
   const roles = await getUserRoles(supabase, user.id);
   const isAdmin = hasAnyRole(roles, [...COMPETITION_ADMIN_ROLES]);
   const canEdit = match.played_at == null;
+  const lineupsComplete = await isLineupComplete(supabase, match);
   const status = matchStatus(match.played_at);
 
   const homeLineup = lineup
@@ -117,6 +118,7 @@ export default async function PlayerMatchPage({ params }: Props) {
         initialVpAway={match.vp_away}
         playedAt={match.played_at}
         isAdmin={isAdmin}
+        lineupsComplete={lineupsComplete}
       />
     </main>
   );

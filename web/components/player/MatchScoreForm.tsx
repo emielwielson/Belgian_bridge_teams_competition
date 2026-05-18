@@ -12,6 +12,7 @@ type Props = {
   initialVpAway: number | null;
   playedAt: string | null;
   isAdmin: boolean;
+  lineupsComplete: boolean;
 };
 
 export function MatchScoreForm({
@@ -23,6 +24,7 @@ export function MatchScoreForm({
   initialVpAway,
   playedAt: initialPlayedAt,
   isAdmin,
+  lineupsComplete,
 }: Props) {
   const [impsHome, setImpsHome] = useState(
     initialImpsHome != null ? String(initialImpsHome) : "",
@@ -37,8 +39,19 @@ export function MatchScoreForm({
   const [error, setError] = useState<string | null>(null);
 
   const locked = playedAt != null;
-  const canSubmit = !locked;
+  const canSubmit = !locked && lineupsComplete;
   const canAdminEdit = locked && isAdmin;
+
+  if (!locked && !lineupsComplete) {
+    return (
+      <section className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+        <h3 className="text-sm font-semibold text-zinc-900">Submit score</h3>
+        <p className="mt-2 text-sm text-amber-800">
+          Save both team lineups above first (at least 4 players per team).
+        </p>
+      </section>
+    );
+  }
 
   async function submit(method: "POST" | "PATCH") {
     setSaving(true);

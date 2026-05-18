@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { ClubSubCandidate } from "@/lib/competition/player-matches";
 import { AddSubPicker } from "./AddSubPicker";
@@ -57,6 +58,7 @@ export function MatchLineupEditor({
   );
   const [subs, setSubs] = useState<SubEntry[]>(() => subsFromLineup(initialLineup));
   const [pickerOpen, setPickerOpen] = useState(false);
+  const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -115,6 +117,7 @@ export function MatchLineupEditor({
       const body = await res.json();
       if (!res.ok) throw new Error(body.error ?? "Failed to save lineup");
       setMessage(`Saved ${teamName} lineup (${players.length} players)`);
+      router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Save failed");
     } finally {

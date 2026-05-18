@@ -118,6 +118,17 @@ export async function countLineupByTeam(
   return counts;
 }
 
+export async function isLineupComplete(
+  supabase: SupabaseClient,
+  match: Pick<MatchContext, "id" | "home_team_id" | "away_team_id">,
+): Promise<boolean> {
+  const counts = await countLineupByTeam(supabase, match.id);
+  return (
+    (counts.get(match.home_team_id) ?? 0) >= MIN_PLAYERS_PER_TEAM &&
+    (counts.get(match.away_team_id) ?? 0) >= MIN_PLAYERS_PER_TEAM
+  );
+}
+
 export async function assertLineupComplete(
   supabase: SupabaseClient,
   match: MatchContext,

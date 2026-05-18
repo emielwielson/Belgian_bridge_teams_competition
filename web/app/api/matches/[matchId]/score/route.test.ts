@@ -1,11 +1,14 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { GET, POST, PATCH } from "./route";
 
-vi.mock("@/lib/auth/route-auth", () => ({
-  COMPETITION_ADMIN_ROLES: ["system_admin", "competition_manager"],
-  requireAuth: vi.fn(),
-  requireRoles: vi.fn(),
-}));
+vi.mock("@/lib/auth/route-auth", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/auth/route-auth")>();
+  return {
+    ...actual,
+    requireAuth: vi.fn(),
+    requireRoles: vi.fn(),
+  };
+});
 
 vi.mock("@/lib/auth/match-access", () => ({
   loadMatchContext: vi.fn(),
@@ -14,9 +17,13 @@ vi.mock("@/lib/auth/match-access", () => ({
   assertCanAdminEditScore: vi.fn(),
 }));
 
-vi.mock("@/lib/scoring/match-operations", () => ({
-  submitMatchScore: vi.fn(),
-}));
+vi.mock("@/lib/scoring/match-operations", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/scoring/match-operations")>();
+  return {
+    ...actual,
+    submitMatchScore: vi.fn(),
+  };
+});
 
 vi.mock("@/lib/competition/revalidate-standings", () => ({
   revalidateStandingsForGroup: vi.fn(),
@@ -90,6 +97,20 @@ describe("POST /api/matches/[matchId]/score", () => {
       vp_away: 0,
       played_at: "2025-01-02T12:00:00Z",
     });
+  });
+
+  it("returns 400 when lineups are incomplete", async () => {
+    vi.mocked(submitMatchScore).mockRejectedValue(
+      new Error("Home must have at least 4 players registered (has 0)"),
+    );
+    const res = await POST(
+      new Request("http://x", {
+        method: "POST",
+        body: JSON.stringify({ imps_home: 10, imps_away: 5 }),
+      }),
+      { params: Promise.resolve({ matchId: "match-1" }) },
+    );
+    expect(res.status).toBe(400);
   });
 
   it("submits score and returns match", async () => {

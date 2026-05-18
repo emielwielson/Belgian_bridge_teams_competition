@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   LineupValidationError,
+  isLineupComplete,
   validateLineupPayload,
 } from "./match-operations";
 
@@ -41,6 +42,39 @@ function mockSupabase(options: {
   });
   return { from } as never;
 }
+
+describe("isLineupComplete", () => {
+  it("is true when both teams have at least 4 players", async () => {
+    const supabase = {
+      from: () => ({
+        select: () => ({
+          eq: () =>
+            Promise.resolve({
+              data: [
+                { team_id: "home-1" },
+                { team_id: "home-1" },
+                { team_id: "home-1" },
+                { team_id: "home-1" },
+                { team_id: "away-1" },
+                { team_id: "away-1" },
+                { team_id: "away-1" },
+                { team_id: "away-1" },
+              ],
+              error: null,
+            }),
+        }),
+      }),
+    } as never;
+
+    await expect(
+      isLineupComplete(supabase, {
+        id: "match-1",
+        home_team_id: "home-1",
+        away_team_id: "away-1",
+      }),
+    ).resolves.toBe(true);
+  });
+});
 
 describe("validateLineupPayload", () => {
   it("accepts roster starters and club subs not on roster", async () => {
