@@ -8,24 +8,37 @@ type Props = {
 
 export function DivisionStandingsBlock({ division }: Props) {
   const showGroupNames = division.groups.length > 1;
+  const fullStandingsGroup =
+    division.groups.length === 1 ? division.groups[0] : null;
 
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-lg font-semibold text-zinc-900">{division.name}</h2>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-lg font-semibold text-zinc-900">{division.name}</h2>
+        {fullStandingsGroup ? (
+          <Link
+            href={`/standings/group/${fullStandingsGroup.id}`}
+            className="btn-secondary shrink-0 px-3 py-1.5 text-sm"
+          >
+            Full standings
+          </Link>
+        ) : null}
+      </div>
       {division.groups.length === 0 ? (
         <StandingsTable rows={[]} />
       ) : (
         division.groups.map((group) => (
           <div key={group.id} className="flex flex-col gap-2">
             {showGroupNames ? (
-              <h3 className="text-sm font-medium text-zinc-600">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-sm font-medium text-zinc-600">{group.name}</h3>
                 <Link
                   href={`/standings/group/${group.id}`}
-                  className="hover:text-zinc-900"
+                  className="btn-secondary shrink-0 px-3 py-1.5 text-sm"
                 >
-                  {group.name}
+                  Full standings
                 </Link>
-              </h3>
+              </div>
             ) : null}
             <StandingsTable rows={group.standings} />
           </div>
