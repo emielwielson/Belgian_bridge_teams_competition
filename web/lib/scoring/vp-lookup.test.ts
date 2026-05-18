@@ -1,11 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { findVpBand, type VpTableRow } from "./vp-lookup";
+import { findVpBand } from "./vp-lookup";
+import { STANDARD_24_BOARD_VP_BANDS } from "./standard-vp-bands";
 
-const demoBands: VpTableRow[] = [
-  { imp_min: -999, imp_max: -50, vp_home: 0, vp_away: 24 },
-  { imp_min: -49, imp_max: 0, vp_home: 12, vp_away: 12 },
-  { imp_min: 1, imp_max: 999, vp_home: 24, vp_away: 0 },
-];
+const demoBands = STANDARD_24_BOARD_VP_BANDS;
 
 describe("findVpBand", () => {
   it("maps large home loss to 0-24 VP", () => {
@@ -18,6 +15,10 @@ describe("findVpBand", () => {
 
   it("maps home win to 24-0 VP", () => {
     expect(findVpBand(demoBands, 50, 0)).toEqual({ vpHome: 24, vpAway: 0 });
+  });
+
+  it("maps net IMP 20 to 24-0 VP", () => {
+    expect(findVpBand(demoBands, 30, 10)).toEqual({ vpHome: 24, vpAway: 0 });
   });
 
   it("throws when no band matches", () => {

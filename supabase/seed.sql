@@ -90,25 +90,31 @@ where l.name = 'National'
     where g.division_id = d.id and g.name = d.name
   );
 
--- VP sample table on Honor group (verify against competition rules before production)
+-- Standard VP table per national group, 24 boards (verify against RBBF rules before production)
 insert into public.vp_tables (group_id, board_count, name)
 select g.id, 24, 'Standard 24 boards'
 from public.groups g
 join public.divisions d on d.id = g.division_id
-where d.name = 'Honor' and g.name = 'Honor'
+join public.leagues l on l.id = d.league_id
+where l.name = 'National'
+  and l.scope = 'national'
 on conflict (group_id, board_count) do nothing;
 
 insert into public.vp_table_rows (vp_table_id, imp_min, imp_max, vp_home, vp_away)
 select vt.id, bands.imp_min, bands.imp_max, bands.vp_home, bands.vp_away
 from public.vp_tables vt
 join public.groups g on g.id = vt.group_id
-join public.divisions d on d.id = g.division_id and d.name = 'Honor'
+join public.divisions d on d.id = g.division_id
+join public.leagues l on l.id = d.league_id
 cross join (
   values
     (-999::numeric, -50::numeric, 0::numeric, 24::numeric),
     (-49::numeric, 0::numeric, 12::numeric, 12::numeric),
     (1::numeric, 999::numeric, 24::numeric, 0::numeric)
 ) as bands(imp_min, imp_max, vp_home, vp_away)
-where not exists (
-  select 1 from public.vp_table_rows r where r.vp_table_id = vt.id
-);
+where l.name = 'National'
+  and l.scope = 'national'
+  and vt.board_count = 24
+  and not exists (
+    select 1 from public.vp_table_rows r where r.vp_table_id = vt.id
+  );

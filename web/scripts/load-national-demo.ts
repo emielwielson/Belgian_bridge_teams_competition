@@ -26,6 +26,7 @@ import {
 } from "../lib/competition/ensure-national-structure";
 import { parseBrusselsToUtc } from "../lib/time/brussels";
 import { generateGroupScheduleInDb } from "../lib/scheduling/generate-group-schedule-db";
+import { ensureStandardVpTable } from "../lib/scoring/standard-vp-bands";
 
 function loadEnvFile(name: string) {
   const path = resolve(process.cwd(), name);
@@ -476,6 +477,11 @@ async function main() {
   const groups = await listNationalGroups(supabase, season.id, {
     required: true,
   });
+
+  console.log("Ensuring VP tables (24 boards)…");
+  for (const group of groups) {
+    await ensureStandardVpTable(supabase, group.id);
+  }
 
   console.log("Generating schedules…");
   for (const group of groups) {
