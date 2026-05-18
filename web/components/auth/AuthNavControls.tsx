@@ -44,20 +44,9 @@ export function AuthNavControls() {
     );
   }
 
-  const hub =
-    me.roles.includes("system_admin") || me.roles.includes("competition_manager")
-      ? "/admin"
-      : me.roles.includes("player")
-        ? "/player"
-        : me.roles.includes("captain")
-          ? "/captain"
-          : me.roles.includes("club_manager") || (me.clubs?.length ?? 0) > 0
-            ? me.clubs?.length === 1
-              ? `/club-manager/${me.clubs[0].id}`
-              : "/club-manager"
-            : me.roles.includes("arbiter")
-              ? "/arbiter"
-              : null;
+  const showAdminDashboard =
+    me.roles.includes("system_admin") ||
+    me.roles.includes("competition_manager");
 
   return (
     <nav className="flex flex-wrap items-center gap-3 text-sm">
@@ -84,11 +73,11 @@ export function AuthNavControls() {
           My clubs
         </Link>
       ) : null}
-      {hub && (
-        <Link href={hub} className="text-zinc-600 hover:text-zinc-900">
+      {showAdminDashboard ? (
+        <Link href="/admin" className="text-zinc-600 hover:text-zinc-900">
           Dashboard
         </Link>
-      )}
+      ) : null}
       <span className="text-zinc-500">{me.user.email}</span>
       <form action="/api/auth/signout" method="post">
         <button
