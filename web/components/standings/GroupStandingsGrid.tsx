@@ -33,14 +33,14 @@ export function GroupStandingsGrid({ grid }: Props) {
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex min-h-0 w-full flex-1 flex-col gap-2">
       {!hasMatches ? (
         <p className="text-sm text-zinc-500">
           Round columns appear after the match schedule is generated.
         </p>
       ) : null}
-      <div className="overflow-x-auto rounded-lg border border-zinc-200">
-        <table className="min-w-full border-collapse text-sm">
+      <div className="w-full min-w-0 flex-1 overflow-x-auto rounded-lg border border-zinc-200 bg-white">
+        <table className="w-full min-w-max border-collapse text-sm">
           <thead>
             <tr className="border-b border-zinc-200">
               <th className={`${stickyHead} left-0 w-10`}>#</th>
@@ -53,12 +53,12 @@ export function GroupStandingsGrid({ grid }: Props) {
               {rounds.map((col) => (
                 <th
                   key={col.round}
-                  className="min-w-[4.75rem] px-2 py-2 text-right font-medium text-zinc-500"
+                  className="min-w-[3.25rem] px-1 py-1.5 text-right font-medium text-zinc-500"
                 >
-                  <span className="block whitespace-nowrap text-xs leading-tight">
+                  <span className="block whitespace-nowrap text-[11px] leading-tight tabular-nums">
                     {col.dateLabel}
                   </span>
-                  <span className="block whitespace-nowrap text-xs leading-tight tabular-nums">
+                  <span className="block whitespace-nowrap text-[11px] leading-tight tabular-nums">
                     {col.timeLabel}
                   </span>
                 </th>
@@ -85,7 +85,7 @@ export function GroupStandingsGrid({ grid }: Props) {
                   <td
                     key={rounds[index]?.round ?? index}
                     className={[
-                      "px-2 py-1.5 text-right tabular-nums",
+                      "px-1 py-1.5 text-right tabular-nums",
                       cell.pairingClass ?? "",
                     ]
                       .filter(Boolean)

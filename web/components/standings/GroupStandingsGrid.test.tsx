@@ -6,8 +6,8 @@ import { GroupStandingsGrid } from "./GroupStandingsGrid";
 const sampleGrid: GroupStandingsGridData = {
   hasMatches: true,
   rounds: [
-    { round: 1, dateLabel: "4 Oct 2024", timeLabel: "14:00" },
-    { round: 2, dateLabel: "11 Oct 2024", timeLabel: "14:00" },
+    { round: 1, dateLabel: "04/10/24", timeLabel: "14:00" },
+    { round: 2, dateLabel: "11/10/24", timeLabel: "14:00" },
   ],
   rows: [
     {
@@ -40,8 +40,8 @@ describe("GroupStandingsGrid", () => {
 
   it("renders round headers and team rows", () => {
     render(<GroupStandingsGrid grid={sampleGrid} />);
-    expect(screen.getByText("4 Oct 2024")).toBeInTheDocument();
-    expect(screen.getByText("11 Oct 2024")).toBeInTheDocument();
+    expect(screen.getByText("04/10/24")).toBeInTheDocument();
+    expect(screen.getByText("11/10/24")).toBeInTheDocument();
     expect(screen.getByText("Alpha")).toBeInTheDocument();
     expect(screen.getByText("20")).toBeInTheDocument();
     expect(screen.getByText("14")).toBeInTheDocument();

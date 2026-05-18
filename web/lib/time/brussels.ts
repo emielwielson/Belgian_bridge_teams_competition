@@ -8,7 +8,7 @@ export function formatBrussels(isoUtc: string): string {
   }).format(new Date(isoUtc));
 }
 
-/** Date and time parts for standings round column headers. */
+/** Date and time parts for standings round column headers (compact DD/MM/YY). */
 export function formatBrusselsRoundHeader(isoUtc: string): {
   date: string;
   time: string;
@@ -17,9 +17,9 @@ export function formatBrusselsRoundHeader(isoUtc: string): {
   return {
     date: new Intl.DateTimeFormat("en-GB", {
       timeZone: BRUSSELS,
-      day: "numeric",
-      month: "short",
-      year: "numeric",
+      day: "2-digit",
+      month: "2-digit",
+      year: "2-digit",
     }).format(d),
     time: new Intl.DateTimeFormat("en-GB", {
       timeZone: BRUSSELS,

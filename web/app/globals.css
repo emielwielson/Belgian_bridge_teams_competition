@@ -57,6 +57,10 @@
     @apply mx-auto w-full max-w-3xl flex-1 px-4 py-8 text-zinc-900;
   }
 
+  .page-container-full {
+    @apply mx-auto w-full max-w-none flex-1 px-3 py-6 text-zinc-900 sm:px-4 sm:py-8;
+  }
+
   .card {
     @apply rounded-xl border border-zinc-200 bg-white p-4 text-zinc-900 shadow-sm;
   }
