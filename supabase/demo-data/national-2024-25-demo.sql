@@ -1,7 +1,8 @@
 -- Demo data: 2024–25 national competition (wipe + reload).
--- Run in SQL Editor after migrations through 0012.
+-- Run in SQL Editor after migrations through 0013.
 -- Removes national matches, teams, and match calendars for the active season, then recreates
--- structure, dates, and demo clubs/teams. Schedules: Admin UI or `npm run demo:national` from web/.
+-- structure, dates, demo clubs/teams, and rosters (4 players per team).
+-- Schedules: Admin UI or `npm run demo:national` from web/.
 
 do $$
 declare
@@ -46,6 +47,26 @@ begin
     where l.season_id = v_season_id
       and l.scope = 'national'
   );
+
+  update public.teams t
+  set captain_id = null
+  from public.groups g
+  join public.divisions d on d.id = g.division_id
+  join public.leagues l on l.id = d.league_id
+  join public.clubs c on c.id = t.club_id
+  where t.group_id = g.id
+    and l.season_id = v_season_id
+    and l.scope = 'national'
+    and c.name like 'Demo Club %';
+
+  delete from public.player_club_memberships pcm
+  using public.players p
+  where pcm.player_id = p.id
+    and pcm.season_id = v_season_id
+    and p.member_number ~ '^DEMO-C[0-9]+-P[0-9]+$';
+
+  delete from public.players p
+  where p.member_number ~ '^DEMO-C[0-9]+-P[0-9]+$';
 
   delete from public.penalties p
   where p.team_id in (
@@ -256,6 +277,99 @@ begin
   where l.season_id = v_season_id
     and l.scope = 'national'
   order by g.name, c.name;
+
+  -- Demo players: 4 per national team per club (count teams dynamically)
+  insert into public.players (name, member_number)
+  select
+    'Demo Club ' || ps.club_num || ' Player ' || lpad(ps.player_num::text, 2, '0'),
+    'DEMO-C' || ps.club_num || '-P' || lpad(ps.player_num::text, 2, '0')
+  from (
+    select
+      dct.club_num,
+      gs.n as player_num
+    from (
+      select
+        (regexp_match(c.name, '^Demo Club (\d+)$'))[1]::int as club_num,
+        count(t.id)::int as team_count
+      from public.clubs c
+      join public.teams t on t.club_id = c.id
+      join public.groups g on g.id = t.group_id
+      join public.divisions d on d.id = g.division_id
+      join public.leagues l on l.id = d.league_id
+      where c.name like 'Demo Club %'
+        and l.season_id = v_season_id
+        and l.scope = 'national'
+      group by c.id, c.name
+    ) dct
+    cross join lateral generate_series(1, dct.team_count * 4) as gs(n)
+  ) ps
+  where not exists (
+    select 1
+    from public.players pl
+    where pl.member_number =
+      'DEMO-C' || ps.club_num || '-P' || lpad(ps.player_num::text, 2, '0')
+  );
+
+  insert into public.player_club_memberships (player_id, club_id, season_id)
+  select pl.id, cl.id, v_season_id
+  from public.players pl
+  join public.clubs cl
+    on cl.name = 'Demo Club ' || (regexp_match(pl.member_number, '^DEMO-C(\d+)-'))[1]
+  where pl.member_number ~ '^DEMO-C[0-9]+-P[0-9]+$'
+    and not exists (
+      select 1
+      from public.player_club_memberships pcm
+      where pcm.player_id = pl.id
+        and pcm.season_id = v_season_id
+    );
+
+  insert into public.team_players (team_id, player_id, season_id)
+  select
+    ct.team_id,
+    pl.id,
+    v_season_id
+  from (
+    select
+      t.id as team_id,
+      t.club_id,
+      row_number() over (partition by t.club_id order by g.name, t.name) as team_idx
+    from public.teams t
+    join public.groups g on g.id = t.group_id
+    join public.divisions d on d.id = g.division_id
+    join public.leagues l on l.id = d.league_id
+    join public.clubs c on c.id = t.club_id
+    where l.season_id = v_season_id
+      and l.scope = 'national'
+      and c.name like 'Demo Club %'
+  ) ct
+  join public.clubs c on c.id = ct.club_id
+  cross join generate_series(1, 4) as slot(n)
+  join public.players pl
+    on pl.member_number =
+      'DEMO-C'
+      || (regexp_match(c.name, '^Demo Club (\d+)$'))[1]
+      || '-P'
+      || lpad(((ct.team_idx - 1) * 4 + slot.n)::text, 2, '0');
+
+  -- First roster player is captain per team
+  update public.teams t
+  set captain_id = tp.player_id
+  from (
+    select distinct on (tp.team_id)
+      tp.team_id,
+      tp.player_id
+    from public.team_players tp
+    order by tp.team_id, tp.created_at
+  ) tp
+  join public.groups g on g.id = t.group_id
+  join public.divisions d on d.id = g.division_id
+  join public.leagues l on l.id = d.league_id
+  join public.clubs c on c.id = t.club_id
+  where t.id = tp.team_id
+    and l.season_id = v_season_id
+    and l.scope = 'national'
+    and c.name like 'Demo Club %'
+    and t.captain_id is null;
 end $$;
 
-select 'national-2024-25-demo reset and loaded (dates + demo teams; generate schedules via Admin or npm run demo:national)' as result;
+select 'national-2024-25-demo reset and loaded (dates, teams, 4 players/team; generate schedules via Admin or npm run demo:national)' as result;

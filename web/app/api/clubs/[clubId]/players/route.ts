@@ -66,6 +66,51 @@ export async function POST(request: Request, { params }: Params) {
   }
 }
 
+export async function PATCH(request: Request, { params }: Params) {
+  try {
+    const { clubId } = await params;
+    const { user, roles, supabase } = await requireAuth();
+    await assertClubManagerForClub(supabase, user.id, roles, clubId);
+
+    const body = await request.json();
+    const playerId = body.player_id as string | undefined;
+    if (!playerId) {
+      return jsonError("player_id is required", 400);
+    }
+
+    const season = await requireActiveSeason(supabase);
+    const { data: membership, error: membershipError } = await supabase
+      .from("player_club_memberships")
+      .select("id")
+      .eq("club_id", clubId)
+      .eq("player_id", playerId)
+      .eq("season_id", season.id)
+      .maybeSingle();
+
+    if (membershipError) return jsonError(membershipError.message, 500);
+    if (!membership) {
+      return jsonError("Player is not a member of this club", 403);
+    }
+
+    const authUserId =
+      body.auth_user_id === null || body.auth_user_id === ""
+        ? null
+        : (body.auth_user_id as string);
+
+    const { data, error } = await supabase
+      .from("players")
+      .update({ auth_user_id: authUserId })
+      .eq("id", playerId)
+      .select("id, name, auth_user_id")
+      .single();
+
+    if (error) return jsonError(error.message, 400);
+    return jsonOk({ player: data });
+  } catch (err) {
+    return jsonFromError(err);
+  }
+}
+
 export async function DELETE(request: Request, { params }: Params) {
   try {
     const { clubId } = await params;

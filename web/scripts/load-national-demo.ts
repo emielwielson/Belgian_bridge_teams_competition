@@ -128,6 +128,12 @@ async function resetNationalDemo(supabase: SupabaseClient, seasonId: string) {
       .in("team_id", teamIds);
     if (rosterError) throw rosterError;
 
+    const { error: captainError } = await supabase
+      .from("teams")
+      .update({ captain_id: null })
+      .in("id", teamIds);
+    if (captainError) throw captainError;
+
     const { error: penaltiesError } = await supabase
       .from("penalties")
       .delete()
@@ -141,11 +147,191 @@ async function resetNationalDemo(supabase: SupabaseClient, seasonId: string) {
     if (warningsError) throw warningsError;
   }
 
+  await deleteDemoPlayers(supabase, seasonId);
+
   const { error: deleteTeamsError } = await supabase
     .from("teams")
     .delete()
     .in("group_id", groupIds);
   if (deleteTeamsError) throw deleteTeamsError;
+}
+
+function demoClubNumber(clubName: string): number {
+  const match = /^Demo Club (\d+)$/.exec(clubName);
+  if (!match) throw new Error(`Invalid demo club name: ${clubName}`);
+  return Number(match[1]);
+}
+
+async function deleteDemoPlayers(
+  supabase: SupabaseClient,
+  seasonId: string,
+) {
+  const { data: demoPlayers, error: findError } = await supabase
+    .from("players")
+    .select("id")
+    .like("member_number", "DEMO-C%");
+  if (findError) throw findError;
+
+  const playerIds = demoPlayers?.map((p) => p.id) ?? [];
+  if (playerIds.length === 0) return;
+
+  const { error: membershipError } = await supabase
+    .from("player_club_memberships")
+    .delete()
+    .eq("season_id", seasonId)
+    .in("player_id", playerIds);
+  if (membershipError) throw membershipError;
+
+  const { error: playerError } = await supabase
+    .from("players")
+    .delete()
+    .in("id", playerIds);
+  if (playerError) throw playerError;
+}
+
+async function seedDemoPlayers(supabase: SupabaseClient, seasonId: string) {
+  const { data: clubs, error: clubsError } = await supabase
+    .from("clubs")
+    .select("id, name")
+    .like("name", "Demo Club %")
+    .order("name")
+    .limit(8);
+  if (clubsError) throw clubsError;
+  if (!clubs?.length) return;
+
+  const groups = await listNationalGroups(supabase, seasonId);
+  if (groups.length === 0) return;
+
+  const { data: teams, error: teamsError } = await supabase
+    .from("teams")
+    .select("id, club_id, group_id")
+    .in(
+      "group_id",
+      groups.map((g) => g.id),
+    )
+    .in(
+      "club_id",
+      clubs.map((c) => c.id),
+    );
+  if (teamsError) throw teamsError;
+
+  const groupName = new Map(groups.map((g) => [g.id, g.name]));
+  const teamsByClub = new Map<string, NonNullable<typeof teams>>();
+  for (const team of teams ?? []) {
+    const list = teamsByClub.get(team.club_id) ?? [];
+    list.push(team);
+    teamsByClub.set(team.club_id, list);
+  }
+
+  const playerRows: { name: string; member_number: string }[] = [];
+  for (const club of clubs) {
+    const n = demoClubNumber(club.name);
+    const teamCount = teamsByClub.get(club.id)?.length ?? 0;
+    const playersNeeded = teamCount * 4;
+    for (let p = 1; p <= playersNeeded; p++) {
+      playerRows.push({
+        name: `Demo Club ${n} Player ${String(p).padStart(2, "0")}`,
+        member_number: `DEMO-C${n}-P${String(p).padStart(2, "0")}`,
+      });
+    }
+  }
+
+  const { data: existing, error: existingError } = await supabase
+    .from("players")
+    .select("member_number")
+    .like("member_number", "DEMO-C%");
+  if (existingError) throw existingError;
+
+  const existingSet = new Set(existing?.map((p) => p.member_number) ?? []);
+  const missing = playerRows.filter((p) => !existingSet.has(p.member_number));
+  if (missing.length > 0) {
+    const { error: insertError } = await supabase.from("players").insert(missing);
+    if (insertError) throw insertError;
+  }
+
+  const { data: allPlayers, error: playersError } = await supabase
+    .from("players")
+    .select("id, member_number")
+    .like("member_number", "DEMO-C%");
+  if (playersError) throw playersError;
+
+  const playerByMember = new Map(
+    (allPlayers ?? []).map((p) => [p.member_number, p.id]),
+  );
+
+  for (const club of clubs) {
+    const n = demoClubNumber(club.name);
+    const playersNeeded = (teamsByClub.get(club.id)?.length ?? 0) * 4;
+    const { data: currentMemberships } = await supabase
+      .from("player_club_memberships")
+      .select("player_id")
+      .eq("club_id", club.id)
+      .eq("season_id", seasonId);
+
+    const memberIds = new Set(currentMemberships?.map((m) => m.player_id) ?? []);
+    const membershipInserts = [];
+    for (let p = 1; p <= playersNeeded; p++) {
+      const memberNumber = `DEMO-C${n}-P${String(p).padStart(2, "0")}`;
+      const playerId = playerByMember.get(memberNumber);
+      if (!playerId || memberIds.has(playerId)) continue;
+      membershipInserts.push({
+        player_id: playerId,
+        club_id: club.id,
+        season_id: seasonId,
+      });
+    }
+    if (membershipInserts.length > 0) {
+      const { error } = await supabase
+        .from("player_club_memberships")
+        .insert(membershipInserts);
+      if (error) throw error;
+    }
+  }
+
+  for (const club of clubs) {
+    const clubTeams = teamsByClub.get(club.id) ?? [];
+    clubTeams.sort((a, b) =>
+      (groupName.get(a.group_id) ?? "").localeCompare(
+        groupName.get(b.group_id) ?? "",
+      ),
+    );
+
+    const n = demoClubNumber(club.name);
+    const rosterInserts = clubTeams.flatMap((team, teamIdx) =>
+      [1, 2, 3, 4].map((slot) => {
+        const playerNum = teamIdx * 4 + slot;
+        const memberNumber = `DEMO-C${n}-P${String(playerNum).padStart(2, "0")}`;
+        const playerId = playerByMember.get(memberNumber);
+        if (!playerId) {
+          throw new Error(`Missing demo player ${memberNumber}`);
+        }
+        return {
+          team_id: team.id,
+          player_id: playerId,
+          season_id: seasonId,
+        };
+      }),
+    );
+
+    if (rosterInserts.length > 0) {
+      const { error: rosterError } = await supabase
+        .from("team_players")
+        .insert(rosterInserts);
+      if (rosterError) throw rosterError;
+    }
+
+    for (let teamIdx = 0; teamIdx < clubTeams.length; teamIdx++) {
+      const team = clubTeams[teamIdx];
+      const captainMember = `DEMO-C${n}-P${String(teamIdx * 4 + 1).padStart(2, "0")}`;
+      const captainId = playerByMember.get(captainMember);
+      if (!captainId) continue;
+      const { error: capError } = await supabase
+        .from("teams")
+        .update({ captain_id: captainId })
+        .eq("id", team.id);
+      if (capError) throw capError;
+    }
+  }
 }
 
 async function listNationalGroups(
@@ -283,6 +469,9 @@ async function main() {
 
   console.log("Seeding demo teams…");
   await seedDemoTeams(supabase, season.id);
+
+  console.log("Seeding demo players (4 per team)…");
+  await seedDemoPlayers(supabase, season.id);
 
   const groups = await listNationalGroups(supabase, season.id, {
     required: true,
