@@ -36,7 +36,7 @@ function tabComplete(tab: SetupTab, readiness: NationalReadiness | null): boolea
     );
   }
   if (tab === "teams") {
-    return readiness.divisions.every((d) => d.complete);
+    return readiness.allTeamsReady;
   }
   return readiness.canStartLeague;
 }

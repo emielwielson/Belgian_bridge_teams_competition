@@ -53,8 +53,8 @@ describe("startNationalLeague", () => {
       canStartLeague: true,
       blockers: [],
       divisions: [
-        { name: "Honor", groupId: "g1" },
-        { name: "1st Division", groupId: "g2" },
+        { name: "Honor", groupId: "g1", scheduleComplete: false },
+        { name: "1st Division", groupId: "g2", scheduleComplete: true },
       ],
     });
 
@@ -91,7 +91,7 @@ describe("startNationalLeague", () => {
     const result = await startNationalLeague({ from } as never, "season-1");
 
     expect(ensureNationalStructure).toHaveBeenCalled();
-    expect(generateGroupScheduleInDb).toHaveBeenCalledTimes(2);
+    expect(generateGroupScheduleInDb).toHaveBeenCalledTimes(1);
     expect(result.activated).toBe(true);
     expect(result.schedules).toHaveLength(2);
   });

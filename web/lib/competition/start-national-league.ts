@@ -27,6 +27,10 @@ export async function startNationalLeague(
     if (!div.groupId) {
       throw new Error(`${div.name}: group missing`);
     }
+    if (div.scheduleComplete) {
+      schedules.push({ divisionName: div.name, matchesCreated: 0 });
+      continue;
+    }
     const result = await generateGroupScheduleInDb(
       supabase,
       div.groupId,

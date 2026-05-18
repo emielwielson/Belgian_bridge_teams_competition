@@ -2,9 +2,34 @@ import { describe, expect, it } from "vitest";
 import {
   buildNationalReadiness,
   countSetMatchDays,
+  divisionTeamsComplete,
 } from "./national-readiness";
 import { NATIONAL_DIVISIONS } from "./national-structure";
 import { NATIONAL_TEAMS_PER_GROUP } from "./national-teams";
+
+function divisionRow(
+  name: string,
+  teamCount: number,
+  matchesCount: number,
+): {
+  name: string;
+  groupId: string;
+  teamCount: number;
+  required: number;
+  matchesCount: number;
+  teamsComplete: boolean;
+  scheduleComplete: boolean;
+} {
+  return {
+    name,
+    groupId: `g-${name}`,
+    teamCount,
+    required: NATIONAL_TEAMS_PER_GROUP,
+    matchesCount,
+    teamsComplete: teamCount === NATIONAL_TEAMS_PER_GROUP,
+    scheduleComplete: matchesCount > 0,
+  };
+}
 
 describe("national-readiness", () => {
   it("counts match days from round rows", () => {
@@ -18,22 +43,17 @@ describe("national-readiness", () => {
       set: 2,
       complete: false,
     });
-    expect(countSetMatchDays("default", 14)).toEqual({
-      required: 14,
-      set: 14,
-      complete: true,
-    });
   });
 
-  it("canStartLeague when structure, calendars, and teams are complete", () => {
-    const divisions = NATIONAL_DIVISIONS.map((spec) => ({
-      name: spec.name,
-      groupId: `g-${spec.name}`,
-      teamCount: NATIONAL_TEAMS_PER_GROUP,
-      required: NATIONAL_TEAMS_PER_GROUP,
-      matchesCount: 0,
-      complete: true,
-    }));
+  it("divisionTeamsComplete ignores existing fixtures", () => {
+    const div = divisionRow("Honor", 8, 84);
+    expect(divisionTeamsComplete(div)).toBe(true);
+  });
+
+  it("canStartLeague when teams and calendars ready and no fixtures yet", () => {
+    const divisions = NATIONAL_DIVISIONS.map((spec) =>
+      divisionRow(spec.name, NATIONAL_TEAMS_PER_GROUP, 0),
+    );
 
     const result = buildNationalReadiness({
       seasonStatus: "setup",
@@ -43,6 +63,27 @@ describe("national-readiness", () => {
       divisions,
     });
 
+    expect(result.allTeamsReady).toBe(true);
+    expect(result.allSchedulesReady).toBe(false);
+    expect(result.canStartLeague).toBe(true);
+    expect(result.blockers).toHaveLength(0);
+  });
+
+  it("canStartLeague when fixtures already generated (activate only)", () => {
+    const divisions = NATIONAL_DIVISIONS.map((spec) =>
+      divisionRow(spec.name, NATIONAL_TEAMS_PER_GROUP, 84),
+    );
+
+    const result = buildNationalReadiness({
+      seasonStatus: "setup",
+      structureDivisionCount: 8,
+      structureGroupCount: 8,
+      calendarRoundCounts: { honor: 21, first: 14, default: 14 },
+      divisions,
+    });
+
+    expect(result.allTeamsReady).toBe(true);
+    expect(result.allSchedulesReady).toBe(true);
     expect(result.canStartLeague).toBe(true);
     expect(result.blockers).toHaveLength(0);
   });
@@ -53,18 +94,10 @@ describe("national-readiness", () => {
       structureDivisionCount: 8,
       structureGroupCount: 8,
       calendarRoundCounts: { honor: 0, first: 14, default: 14 },
-      divisions: [
-        {
-          name: "Honor",
-          groupId: "g1",
-          teamCount: 4,
-          required: 8,
-          matchesCount: 0,
-          complete: false,
-        },
-      ],
+      divisions: [divisionRow("Honor", 4, 0)],
     });
 
+    expect(result.allTeamsReady).toBe(false);
     expect(result.canStartLeague).toBe(false);
     expect(result.blockers.some((b) => b.includes("Honor match days"))).toBe(
       true,

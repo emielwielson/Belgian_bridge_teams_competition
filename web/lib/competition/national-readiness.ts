@@ -23,7 +23,8 @@ export type DivisionReadiness = {
   teamCount: number;
   required: number;
   matchesCount: number;
-  complete: boolean;
+  teamsComplete: boolean;
+  scheduleComplete: boolean;
 };
 
 export type NationalReadiness = {
@@ -31,6 +32,8 @@ export type NationalReadiness = {
   structureReady: boolean;
   calendars: Record<NationalScheduleKey, CalendarReadiness>;
   divisions: DivisionReadiness[];
+  allTeamsReady: boolean;
+  allSchedulesReady: boolean;
   canStartLeague: boolean;
   blockers: string[];
 };
@@ -58,12 +61,8 @@ export function countSetMatchDays(
   };
 }
 
-function divisionIsReady(div: DivisionReadiness): boolean {
-  return (
-    div.groupId !== null &&
-    div.teamCount === div.required &&
-    div.matchesCount === 0
-  );
+export function divisionTeamsComplete(div: DivisionReadiness): boolean {
+  return div.groupId !== null && div.teamCount === div.required;
 }
 
 export function buildNationalReadiness(input: {
@@ -82,6 +81,14 @@ export function buildNationalReadiness(input: {
   const structureReady =
     input.structureDivisionCount >= NATIONAL_DIVISIONS.length &&
     input.structureGroupCount >= NATIONAL_DIVISIONS.length;
+
+  const allTeamsReady =
+    input.divisions.length === NATIONAL_DIVISIONS.length &&
+    input.divisions.every(divisionTeamsComplete);
+
+  const allSchedulesReady =
+    input.divisions.length === NATIONAL_DIVISIONS.length &&
+    input.divisions.every((d) => d.scheduleComplete);
 
   const blockers: string[] = [];
 
@@ -111,32 +118,40 @@ export function buildNationalReadiness(input: {
   }
 
   for (const div of input.divisions) {
-    if (divisionIsReady(div)) continue;
+    if (divisionTeamsComplete(div)) continue;
     if (!div.groupId) {
       blockers.push(`${div.name}: group missing.`);
-    } else if (div.teamCount !== div.required) {
+    } else {
       blockers.push(`${div.name}: ${div.teamCount}/${div.required} teams.`);
-    } else if (div.matchesCount > 0) {
-      blockers.push(`${div.name}: schedule already generated.`);
     }
   }
 
-  const allDivisionsReady =
-    input.divisions.length === NATIONAL_DIVISIONS.length &&
-    input.divisions.every(divisionIsReady);
+  if (allTeamsReady && !allSchedulesReady) {
+    const missing = input.divisions.filter((d) => !d.scheduleComplete);
+    if (missing.length > 0 && missing.length < input.divisions.length) {
+      for (const div of missing) {
+        blockers.push(`${div.name}: fixtures not generated yet.`);
+      }
+    }
+  }
+
   const allCalendarsReady = SCHEDULE_KEYS.every((k) => calendars[k].complete);
 
   const canStartLeague =
     input.seasonStatus === "setup" &&
     structureReady &&
     allCalendarsReady &&
-    allDivisionsReady;
+    allTeamsReady &&
+    (allSchedulesReady ||
+      input.divisions.every((d) => d.matchesCount === 0));
 
   return {
     seasonStatus: input.seasonStatus,
     structureReady,
     calendars,
     divisions: input.divisions,
+    allTeamsReady,
+    allSchedulesReady,
     canStartLeague,
     blockers,
   };
@@ -149,7 +164,8 @@ function emptyDivisions(): DivisionReadiness[] {
     teamCount: 0,
     required: NATIONAL_TEAMS_PER_GROUP,
     matchesCount: 0,
-    complete: false,
+    teamsComplete: false,
+    scheduleComplete: false,
   }));
 }
 
@@ -255,9 +271,10 @@ export async function fetchNationalReadiness(
       teamCount,
       required: NATIONAL_TEAMS_PER_GROUP,
       matchesCount,
-      complete: false,
+      teamsComplete: false,
+      scheduleComplete: matchesCount > 0,
     };
-    row.complete = divisionIsReady(row);
+    row.teamsComplete = divisionTeamsComplete(row);
     divisions.push(row);
   }
 

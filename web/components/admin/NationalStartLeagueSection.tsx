@@ -20,14 +20,14 @@ export function NationalStartLeagueSection({
 
   const isSetup = readiness?.seasonStatus === "setup";
   const canStart = readiness?.canStartLeague ?? false;
+  const schedulesExist = readiness?.allSchedulesReady ?? false;
 
   async function handleStart() {
     if (!canStart) return;
-    if (
-      !confirm(
-        "Generate fixtures for all 8 divisions and start the league? Rosters will be locked after this.",
-      )
-    ) {
+    const confirmMessage = schedulesExist
+      ? "Activate the national league? Fixtures are already generated; rosters will be locked."
+      : "Generate fixtures for all 8 divisions and start the league? Rosters will be locked after this.";
+    if (!confirm(confirmMessage)) {
       return;
     }
     setStarting(true);
@@ -92,10 +92,14 @@ export function NationalStartLeagueSection({
         {readiness.divisions.map((d) => (
           <CheckItem
             key={d.name}
-            ok={d.complete}
+            ok={d.teamsComplete}
             label={`${d.name}: ${d.teamCount}/${d.required} teams`}
           />
         ))}
+        <CheckItem
+          ok={readiness.allSchedulesReady}
+          label="Fixtures generated for all divisions"
+        />
       </ul>
 
       {readiness.blockers.length > 0 && !canStart && (
