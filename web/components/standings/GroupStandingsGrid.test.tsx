@@ -16,8 +16,8 @@ const sampleGrid: GroupStandingsGridData = {
       teamName: "Alpha",
       vpTotal: 20,
       cells: [
-        { vp: 14, isHome: true, pairingClass: "bg-sky-100" },
-        { vp: null, isHome: false, pairingClass: "bg-amber-100" },
+        { vp: 14, isHome: true, pairingClass: "bg-sky-100", matchId: "m1" },
+        { vp: null, isHome: false, pairingClass: "bg-amber-100", matchId: null },
       ],
     },
     {
@@ -26,8 +26,8 @@ const sampleGrid: GroupStandingsGridData = {
       teamName: "Bravo",
       vpTotal: 12,
       cells: [
-        { vp: 6, isHome: false, pairingClass: "bg-sky-100" },
-        { vp: 10, isHome: true, pairingClass: "bg-amber-100" },
+        { vp: 6, isHome: false, pairingClass: "bg-sky-100", matchId: null },
+        { vp: 10, isHome: true, pairingClass: "bg-amber-100", matchId: "m2" },
       ],
     },
   ],
@@ -49,7 +49,16 @@ describe("GroupStandingsGrid", () => {
 
   it("shows home icon only for home cells", () => {
     render(<GroupStandingsGrid grid={sampleGrid} />);
-    expect(screen.getAllByLabelText("Home")).toHaveLength(2);
+    expect(screen.getAllByLabelText("Score match")).toHaveLength(2);
+  });
+
+  it("links home icons to the match scoring page", () => {
+    render(<GroupStandingsGrid grid={sampleGrid} />);
+    const links = screen.getAllByRole("link", { name: "Score match" });
+    expect(links.map((l) => l.getAttribute("href"))).toEqual([
+      "/player/matches/m1",
+      "/player/matches/m2",
+    ]);
   });
 
   it("applies pairing background classes to round cells", () => {

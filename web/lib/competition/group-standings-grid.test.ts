@@ -46,8 +46,10 @@ describe("buildGroupStandingsGrid", () => {
     const bravo = grid.rows.find((r) => r.teamId === "t2")!;
     expect(alpha.cells[0].vp).toBe(14);
     expect(alpha.cells[0].isHome).toBe(true);
+    expect(alpha.cells[0].matchId).toBe("m-1");
     expect(bravo.cells[0].vp).toBe(6);
     expect(bravo.cells[0].isHome).toBe(false);
+    expect(bravo.cells[0].matchId).toBeNull();
   });
 
   it("leaves VP null when match is not scored", () => {

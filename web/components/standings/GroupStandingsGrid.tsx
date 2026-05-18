@@ -1,17 +1,19 @@
+import Link from "next/link";
 import type { GroupStandingsGridData } from "@/lib/competition/group-standings-grid";
 
 type Props = {
   grid: GroupStandingsGridData;
 };
 
-function HomeIcon() {
+function HomeIcon({ linked }: { linked?: boolean }) {
   return (
     <svg
-      aria-label="Home"
-      role="img"
+      aria-hidden={linked}
+      aria-label={linked ? undefined : "Home"}
+      role={linked ? undefined : "img"}
       viewBox="0 0 20 20"
       fill="currentColor"
-      className="h-3.5 w-3.5 shrink-0 text-zinc-500"
+      className="h-3.5 w-3.5 shrink-0"
     >
       <path d="M10.707 2.293a1 1 0 0 0-1.414 0l-7 7A1 1 0 0 0 3 11h1v6a1 1 0 0 0 1 1h3v-4h4v4h3a1 1 0 0 0 1-1v-6h1a1 1 0 0 0 .707-1.707l-7-7Z" />
     </svg>
@@ -92,7 +94,19 @@ export function GroupStandingsGrid({ grid }: Props) {
                       .join(" ")}
                   >
                     <div className="flex items-center justify-end gap-1">
-                      {cell.isHome ? <HomeIcon /> : null}
+                      {cell.isHome && cell.matchId ? (
+                        <Link
+                          href={`/player/matches/${cell.matchId}`}
+                          className="inline-flex rounded text-zinc-500 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-1"
+                          aria-label="Score match"
+                        >
+                          <HomeIcon linked />
+                        </Link>
+                      ) : cell.isHome ? (
+                        <span className="inline-flex text-zinc-500">
+                          <HomeIcon />
+                        </span>
+                      ) : null}
                       {cell.vp != null ? (
                         <span>{cell.vp}</span>
                       ) : null}

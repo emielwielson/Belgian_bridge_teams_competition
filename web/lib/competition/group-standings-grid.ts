@@ -28,6 +28,8 @@ export type GridCell = {
   vp: number | null;
   isHome: boolean;
   pairingClass: string | null;
+  /** Home fixture in this round; links to match scoring. */
+  matchId: string | null;
 };
 
 export type RoundColumn = {
@@ -98,21 +100,31 @@ export function buildGroupStandingsGrid(
       const homeVp = scored ? match.vp_home : null;
       const awayVp = scored ? match.vp_away : null;
 
-      const setCell = (teamId: string, vp: number | null, isHome: boolean) => {
+      const setCell = (
+        teamId: string,
+        vp: number | null,
+        isHome: boolean,
+        matchId: string | null,
+      ) => {
         let teamCells = cellMaps.get(teamId);
         if (!teamCells) {
           teamCells = new Map();
           cellMaps.set(teamId, teamCells);
         }
-        teamCells.set(round, { vp, isHome, pairingClass });
+        teamCells.set(round, { vp, isHome, pairingClass, matchId });
       };
 
-      setCell(match.home_team_id, homeVp, true);
-      setCell(match.away_team_id, awayVp, false);
+      setCell(match.home_team_id, homeVp, true, match.id);
+      setCell(match.away_team_id, awayVp, false, null);
     });
   }
 
-  const emptyCell: GridCell = { vp: null, isHome: false, pairingClass: null };
+  const emptyCell: GridCell = {
+    vp: null,
+    isHome: false,
+    pairingClass: null,
+    matchId: null,
+  };
 
   const rows: GridRow[] = standings.map((team, index) => {
     const teamCells = cellMaps.get(team.team_id);
