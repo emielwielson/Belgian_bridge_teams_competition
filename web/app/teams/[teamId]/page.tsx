@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { TeamConventionCardsSection } from "@/components/teams/TeamConventionCardsSection";
 import { TeamInfoSection } from "@/components/teams/TeamInfoSection";
 import { TeamMatchesList } from "@/components/teams/TeamMatchesList";
 import { TeamRosterList } from "@/components/teams/TeamRosterList";
+import { canManageTeamConventionCards } from "@/lib/auth/team-access";
+import { listConventionCards } from "@/lib/competition/convention-card-queries";
 import { loadTeamDetail } from "@/lib/competition/team-queries";
 import { createSessionClient } from "@/lib/supabase/server-client";
 
@@ -16,6 +19,16 @@ export default async function TeamPage({ params }: Props) {
   if (!detail) {
     notFound();
   }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const canManageConventionCards = user
+    ? await canManageTeamConventionCards(supabase, teamId)
+    : false;
+
+  const conventionCards = await listConventionCards(supabase, teamId);
 
   const { team, captain, club, group, division, league, roster, matches } =
     detail;
@@ -51,9 +64,13 @@ export default async function TeamPage({ params }: Props) {
 
       <TeamRosterList roster={roster} captainId={team.captain_id} />
 
-      <TeamMatchesList teamName={team.name} matches={matches} />
+      <TeamConventionCardsSection
+        teamId={team.id}
+        initialCards={conventionCards}
+        canManage={canManageConventionCards}
+      />
 
-      {/* Convention cards upload — planned follow-up */}
+      <TeamMatchesList teamName={team.name} matches={matches} />
     </main>
   );
 }

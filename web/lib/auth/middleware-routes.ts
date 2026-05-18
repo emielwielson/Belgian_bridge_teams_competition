@@ -26,6 +26,9 @@ export function isPublicPath(pathname: string): boolean {
   if (pathname === "/api/standings" || pathname.startsWith("/api/standings/")) {
     return true;
   }
+  if (/^\/api\/teams\/[^/]+\/convention-cards/.test(pathname)) {
+    return true;
+  }
   return PUBLIC_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );

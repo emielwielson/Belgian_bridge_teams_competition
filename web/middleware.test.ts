@@ -20,6 +20,10 @@ describe("isPublicPath", () => {
     expect(isPublicPath("/standings")).toBe(true);
     expect(isPublicPath("/standings/group-1")).toBe(true);
     expect(isPublicPath("/teams/team-1")).toBe(true);
+    expect(isPublicPath("/api/teams/team-1/convention-cards")).toBe(true);
+    expect(
+      isPublicPath("/api/teams/team-1/convention-cards/card-1/download"),
+    ).toBe(true);
   });
 
   it("denies protected dashboards", () => {
