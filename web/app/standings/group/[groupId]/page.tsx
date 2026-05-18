@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { StandingsTable } from "@/components/standings/StandingsTable";
-import { loadGroupStandings } from "@/lib/competition/standings-queries";
+import { GroupStandingsGrid } from "@/components/standings/GroupStandingsGrid";
+import { buildGroupStandingsGrid } from "@/lib/competition/group-standings-grid";
+import { loadGroupStandingsFull } from "@/lib/competition/standings-queries";
 import { createSessionClient } from "@/lib/supabase/server-client";
 
 type Props = { params: Promise<{ groupId: string }> };
@@ -9,13 +10,14 @@ type Props = { params: Promise<{ groupId: string }> };
 export default async function GroupStandingsPage({ params }: Props) {
   const { groupId } = await params;
   const supabase = await createSessionClient();
-  const data = await loadGroupStandings(supabase, groupId);
+  const data = await loadGroupStandingsFull(supabase, groupId);
 
   if (!data) {
     notFound();
   }
 
-  const { group, division, league, standings } = data;
+  const { group, division, league, standings, matches } = data;
+  const grid = buildGroupStandingsGrid(standings, matches);
 
   return (
     <main className="page-container flex flex-col gap-6">
@@ -31,7 +33,7 @@ export default async function GroupStandingsPage({ params }: Props) {
           {[league.name, division.name].join(" · ")}
         </p>
       </header>
-      <StandingsTable rows={standings} />
+      <GroupStandingsGrid grid={grid} />
     </main>
   );
 }

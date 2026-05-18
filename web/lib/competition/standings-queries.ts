@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { GroupMatchRow } from "./group-standings-grid";
 import { LEAGUE_NAMES, type LeagueName } from "./league-names";
 import { sortDivisionsByCanonicalName } from "./sort-divisions";
 
@@ -36,6 +37,10 @@ export type GroupStandingsContext = {
   division: { id: string; name: string };
   league: { id: string; name: string };
   standings: Omit<StandingsRow, "group_id">[];
+};
+
+export type GroupStandingsFullContext = GroupStandingsContext & {
+  matches: GroupMatchRow[];
 };
 
 const LEAGUE_PICKER_ORDER: LeagueName[] = [
@@ -226,5 +231,29 @@ export async function loadGroupStandings(
       team_name,
       vp_total,
     })),
+  };
+}
+
+export async function loadGroupStandingsFull(
+  supabase: SupabaseClient,
+  groupId: string,
+): Promise<GroupStandingsFullContext | null> {
+  const context = await loadGroupStandings(supabase, groupId);
+  if (!context) return null;
+
+  const { data: matches, error: matchesError } = await supabase
+    .from("matches")
+    .select(
+      "id, round, datetime, home_team_id, away_team_id, vp_home, vp_away, played_at",
+    )
+    .eq("group_id", groupId)
+    .order("round")
+    .order("datetime");
+
+  if (matchesError) throw matchesError;
+
+  return {
+    ...context,
+    matches: (matches ?? []) as GroupMatchRow[],
   };
 }

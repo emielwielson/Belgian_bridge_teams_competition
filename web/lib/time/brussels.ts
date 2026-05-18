@@ -8,6 +8,28 @@ export function formatBrussels(isoUtc: string): string {
   }).format(new Date(isoUtc));
 }
 
+/** Date and time parts for standings round column headers. */
+export function formatBrusselsRoundHeader(isoUtc: string): {
+  date: string;
+  time: string;
+} {
+  const d = new Date(isoUtc);
+  return {
+    date: new Intl.DateTimeFormat("en-GB", {
+      timeZone: BRUSSELS,
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    }).format(d),
+    time: new Intl.DateTimeFormat("en-GB", {
+      timeZone: BRUSSELS,
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(d),
+  };
+}
+
 /** Parse local Brussels datetime string to UTC ISO (YYYY-MM-DDTHH:mm). */
 export function parseBrusselsToUtc(localValue: string): string {
   const [datePart, timePart = "00:00"] = localValue.split("T");
