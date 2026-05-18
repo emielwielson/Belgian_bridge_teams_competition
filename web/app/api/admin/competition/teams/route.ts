@@ -3,7 +3,9 @@ import {
   assertNationalGroupCanAddTeam,
   NATIONAL_TEAMS_PER_GROUP,
 } from "@/lib/competition/national-teams";
+import { isNationalGroup } from "@/lib/competition/national-teams";
 import { requireActiveSeason } from "@/lib/competition/season";
+import { requireSeasonInSetup } from "@/lib/competition/season-setup";
 import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
 
 export async function GET(request: Request) {
@@ -87,6 +89,11 @@ export async function POST(request: Request) {
       return jsonOk({ removed: true });
     }
 
+    const season = await requireActiveSeason(supabase);
+    if (await isNationalGroup(supabase, body.group_id)) {
+      requireSeasonInSetup(season);
+    }
+
     try {
       await assertNationalGroupCanAddTeam(supabase, body.group_id);
     } catch (err) {
@@ -142,6 +149,17 @@ export async function DELETE(request: Request) {
     const body = await request.json();
     const teamId = body.id as string | undefined;
     if (!teamId) return jsonError("id required", 400);
+
+    const { data: team } = await supabase
+      .from("teams")
+      .select("group_id")
+      .eq("id", teamId)
+      .maybeSingle();
+
+    const season = await requireActiveSeason(supabase);
+    if (team?.group_id && (await isNationalGroup(supabase, team.group_id))) {
+      requireSeasonInSetup(season);
+    }
 
     const [{ count: homeCount }, { count: awayCount }] = await Promise.all([
       supabase

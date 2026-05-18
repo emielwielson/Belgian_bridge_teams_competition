@@ -12,6 +12,7 @@ import {
 import type { NationalScheduleKey } from "@/lib/competition/national-structure";
 import { resolveRegionId } from "@/lib/competition/queries";
 import { requireActiveSeason } from "@/lib/competition/season";
+import { requireSeasonInSetup } from "@/lib/competition/season-setup";
 import { parseScopeParam, SCOPES } from "@/lib/competition/scopes";
 import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
 import { parseBrusselsToUtc } from "@/lib/time/brussels";
@@ -87,6 +88,7 @@ export async function PUT(request: Request) {
   try {
     const { supabase } = await requireRoles([...COMPETITION_ADMIN_ROLES]);
     const season = await requireActiveSeason(supabase);
+    requireSeasonInSetup(season);
     const body = await request.json();
     const scope = parseScopeParam(body.scope ?? "");
     if (!scope) return jsonError("Invalid scope", 400);

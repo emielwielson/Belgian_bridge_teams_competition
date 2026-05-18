@@ -1,0 +1,286 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  applyMatchDatesDivisionFilter,
+  nationalMatchDatesDivisionId,
+} from "./match-dates-query";
+import { NATIONAL_MATCH_DAY_COUNTS } from "./national-match-schedule";
+import {
+  NATIONAL_DIVISIONS,
+  type NationalScheduleKey,
+} from "./national-structure";
+import { NATIONAL_LEAGUE_NAME } from "./league-names";
+import { NATIONAL_TEAMS_PER_GROUP } from "./national-teams";
+
+export type CalendarReadiness = {
+  required: number;
+  set: number;
+  complete: boolean;
+};
+
+export type DivisionReadiness = {
+  name: string;
+  groupId: string | null;
+  teamCount: number;
+  required: number;
+  matchesCount: number;
+  complete: boolean;
+};
+
+export type NationalReadiness = {
+  seasonStatus: string;
+  structureReady: boolean;
+  calendars: Record<NationalScheduleKey, CalendarReadiness>;
+  divisions: DivisionReadiness[];
+  canStartLeague: boolean;
+  blockers: string[];
+};
+
+const SCHEDULE_KEYS: NationalScheduleKey[] = ["honor", "first", "default"];
+
+function slotsPerDay(scheduleKey: NationalScheduleKey): number {
+  return scheduleKey === "honor" ? 3 : scheduleKey === "first" ? 2 : 1;
+}
+
+export function countSetMatchDays(
+  scheduleKey: NationalScheduleKey,
+  roundCount: number,
+): CalendarReadiness {
+  const required = NATIONAL_MATCH_DAY_COUNTS[scheduleKey];
+  const expectedRounds = required * slotsPerDay(scheduleKey);
+  const set =
+    roundCount >= expectedRounds
+      ? required
+      : Math.floor(roundCount / slotsPerDay(scheduleKey));
+  return {
+    required,
+    set: Math.min(set, required),
+    complete: roundCount >= expectedRounds,
+  };
+}
+
+function divisionIsReady(div: DivisionReadiness): boolean {
+  return (
+    div.groupId !== null &&
+    div.teamCount === div.required &&
+    div.matchesCount === 0
+  );
+}
+
+export function buildNationalReadiness(input: {
+  seasonStatus: string;
+  structureDivisionCount: number;
+  structureGroupCount: number;
+  calendarRoundCounts: Record<NationalScheduleKey, number>;
+  divisions: DivisionReadiness[];
+}): NationalReadiness {
+  const calendars = {
+    honor: countSetMatchDays("honor", input.calendarRoundCounts.honor),
+    first: countSetMatchDays("first", input.calendarRoundCounts.first),
+    default: countSetMatchDays("default", input.calendarRoundCounts.default),
+  };
+
+  const structureReady =
+    input.structureDivisionCount >= NATIONAL_DIVISIONS.length &&
+    input.structureGroupCount >= NATIONAL_DIVISIONS.length;
+
+  const blockers: string[] = [];
+
+  if (input.seasonStatus !== "setup") {
+    blockers.push("Season is no longer in setup.");
+  }
+
+  if (!structureReady) {
+    blockers.push(
+      "National structure is incomplete (need 8 divisions with groups).",
+    );
+  }
+
+  for (const key of SCHEDULE_KEYS) {
+    const cal = calendars[key];
+    if (!cal.complete) {
+      const label =
+        key === "honor"
+          ? "Honor"
+          : key === "first"
+            ? "1st Division"
+            : "2nd & 3rd divisions";
+      blockers.push(
+        `${label} match days: ${cal.set}/${cal.required} complete.`,
+      );
+    }
+  }
+
+  for (const div of input.divisions) {
+    if (divisionIsReady(div)) continue;
+    if (!div.groupId) {
+      blockers.push(`${div.name}: group missing.`);
+    } else if (div.teamCount !== div.required) {
+      blockers.push(`${div.name}: ${div.teamCount}/${div.required} teams.`);
+    } else if (div.matchesCount > 0) {
+      blockers.push(`${div.name}: schedule already generated.`);
+    }
+  }
+
+  const allDivisionsReady =
+    input.divisions.length === NATIONAL_DIVISIONS.length &&
+    input.divisions.every(divisionIsReady);
+  const allCalendarsReady = SCHEDULE_KEYS.every((k) => calendars[k].complete);
+
+  const canStartLeague =
+    input.seasonStatus === "setup" &&
+    structureReady &&
+    allCalendarsReady &&
+    allDivisionsReady;
+
+  return {
+    seasonStatus: input.seasonStatus,
+    structureReady,
+    calendars,
+    divisions: input.divisions,
+    canStartLeague,
+    blockers,
+  };
+}
+
+function emptyDivisions(): DivisionReadiness[] {
+  return NATIONAL_DIVISIONS.map((spec) => ({
+    name: spec.name,
+    groupId: null,
+    teamCount: 0,
+    required: NATIONAL_TEAMS_PER_GROUP,
+    matchesCount: 0,
+    complete: false,
+  }));
+}
+
+export async function fetchNationalReadiness(
+  supabase: SupabaseClient,
+  seasonId: string,
+): Promise<NationalReadiness> {
+  const { data: season } = await supabase
+    .from("seasons")
+    .select("status")
+    .eq("id", seasonId)
+    .single();
+
+  const seasonStatus = season?.status ?? "setup";
+
+  const { data: league } = await supabase
+    .from("leagues")
+    .select("id")
+    .eq("season_id", seasonId)
+    .eq("scope", "national")
+    .eq("name", NATIONAL_LEAGUE_NAME)
+    .maybeSingle();
+
+  if (!league) {
+    return buildNationalReadiness({
+      seasonStatus,
+      structureDivisionCount: 0,
+      structureGroupCount: 0,
+      calendarRoundCounts: { honor: 0, first: 0, default: 0 },
+      divisions: emptyDivisions(),
+    });
+  }
+
+  const { data: divisionsData } = await supabase
+    .from("divisions")
+    .select("id, name")
+    .eq("league_id", league.id);
+
+  const divisionIds = divisionsData?.map((d) => d.id) ?? [];
+
+  const { data: groups } =
+    divisionIds.length > 0
+      ? await supabase
+          .from("groups")
+          .select("id, name, division_id")
+          .in("division_id", divisionIds)
+      : { data: [] };
+
+  const calendarRoundCounts: Record<NationalScheduleKey, number> = {
+    honor: 0,
+    first: 0,
+    default: 0,
+  };
+
+  for (const key of SCHEDULE_KEYS) {
+    const divisionId = await nationalMatchDatesDivisionId(
+      supabase,
+      seasonId,
+      key,
+    );
+    let datesQuery = supabase
+      .from("competition_match_dates")
+      .select("id", { count: "exact", head: true })
+      .eq("season_id", seasonId)
+      .eq("scope", "national")
+      .is("region_id", null);
+
+    datesQuery = applyMatchDatesDivisionFilter(datesQuery, divisionId);
+    const { count } = await datesQuery;
+    calendarRoundCounts[key] = count ?? 0;
+  }
+
+  const groupByDivisionName = new Map<string, { id: string }>();
+  for (const g of groups ?? []) {
+    const div = divisionsData?.find((d) => d.id === g.division_id);
+    if (div) groupByDivisionName.set(div.name, { id: g.id });
+  }
+
+  const divisions: DivisionReadiness[] = [];
+
+  for (const spec of NATIONAL_DIVISIONS) {
+    const group = groupByDivisionName.get(spec.name);
+    let teamCount = 0;
+    let matchesCount = 0;
+
+    if (group) {
+      const { count: teams } = await supabase
+        .from("teams")
+        .select("id", { count: "exact", head: true })
+        .eq("group_id", group.id);
+      teamCount = teams ?? 0;
+
+      const { count: matches } = await supabase
+        .from("matches")
+        .select("id", { count: "exact", head: true })
+        .eq("group_id", group.id);
+      matchesCount = matches ?? 0;
+    }
+
+    const row: DivisionReadiness = {
+      name: spec.name,
+      groupId: group?.id ?? null,
+      teamCount,
+      required: NATIONAL_TEAMS_PER_GROUP,
+      matchesCount,
+      complete: false,
+    };
+    row.complete = divisionIsReady(row);
+    divisions.push(row);
+  }
+
+  return buildNationalReadiness({
+    seasonStatus,
+    structureDivisionCount: divisionsData?.length ?? 0,
+    structureGroupCount: groups?.length ?? 0,
+    calendarRoundCounts,
+    divisions,
+  });
+}
+
+export class NationalNotReadyError extends Error {
+  readonly status = 400;
+
+  constructor(public blockers: string[]) {
+    super(blockers.join(" "));
+    this.name = "NationalNotReadyError";
+  }
+}
+
+export function assertCanStartNationalLeague(readiness: NationalReadiness): void {
+  if (!readiness.canStartLeague) {
+    throw new NationalNotReadyError(readiness.blockers);
+  }
+}

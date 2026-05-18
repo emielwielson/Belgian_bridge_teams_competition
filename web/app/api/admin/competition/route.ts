@@ -8,6 +8,7 @@ import {
   SCOPES,
   type RegionCode,
 } from "@/lib/competition/scopes";
+import { startNationalLeague } from "@/lib/competition/start-national-league";
 import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
 
 export async function GET() {
@@ -171,6 +172,18 @@ export async function PATCH(request: Request) {
         regionCode,
       );
       return jsonOk({ ensured: true, ...result });
+    }
+
+    if (body.action === "start_national_league") {
+      const season = await requireActiveSeason(supabase);
+      const boardCount =
+        typeof body.boardCount === "number" ? body.boardCount : 24;
+      const result = await startNationalLeague(
+        supabase,
+        season.id,
+        boardCount,
+      );
+      return jsonOk(result);
     }
 
     if (body.action === "activate_season") {

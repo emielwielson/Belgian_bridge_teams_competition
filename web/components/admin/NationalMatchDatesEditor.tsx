@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   collapseRoundsToMatchDays,
-  expandMatchDaysToRounds,
   formatSlotTimesLabel,
   NATIONAL_MATCH_DAY_COUNTS,
 } from "@/lib/competition/national-match-schedule";
@@ -14,9 +13,17 @@ type Props = {
   scope: CompetitionScope;
   scheduleKey: NationalScheduleKey;
   title?: string;
+  readOnly?: boolean;
+  onSaved?: () => void;
 };
 
-export function NationalMatchDatesEditor({ scope, scheduleKey, title }: Props) {
+export function NationalMatchDatesEditor({
+  scope,
+  scheduleKey,
+  title,
+  readOnly = false,
+  onSaved,
+}: Props) {
   const matchDayCount = NATIONAL_MATCH_DAY_COUNTS[scheduleKey];
   const slotLabel = formatSlotTimesLabel(scheduleKey);
 
@@ -26,7 +33,10 @@ export function NationalMatchDatesEditor({ scope, scheduleKey, title }: Props) {
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function loadDates() {
+  const setCount = matchDays.filter((d) => d.length > 0).length;
+  const complete = setCount >= matchDayCount;
+
+  const loadDates = useCallback(async () => {
     const params = new URLSearchParams({ scope, schedule: scheduleKey });
     const res = await fetch(`/api/admin/competition/dates?${params}`);
     if (!res.ok) return;
@@ -38,7 +48,11 @@ export function NationalMatchDatesEditor({ scope, scheduleKey, title }: Props) {
     const loaded = (body.dates ?? []) as { round: number; datetime: string }[];
     if (loaded.length === 0) return;
     setMatchDays(collapseRoundsToMatchDays(scheduleKey, loaded));
-  }
+  }, [scope, scheduleKey]);
+
+  useEffect(() => {
+    void loadDates();
+  }, [loadDates]);
 
   async function saveDates() {
     setLoading(true);
@@ -56,17 +70,20 @@ export function NationalMatchDatesEditor({ scope, scheduleKey, title }: Props) {
     }
     setMessage("Match days saved.");
     await loadDates();
+    onSaved?.();
   }
 
   return (
-    <section className="card flex flex-col gap-4">
+    <div className="flex flex-col gap-4 rounded-lg border border-zinc-200 bg-zinc-50/50 p-4">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold text-zinc-900">
+        <h3 className="text-base font-semibold text-zinc-900">
           {title ?? `Match days (${matchDayCount})`}
-        </h2>
-        <button type="button" onClick={loadDates} className="link-back">
-          Reload
-        </button>
+        </h3>
+        <span
+          className={`text-sm font-medium ${complete ? "text-green-700" : "text-zinc-500"}`}
+        >
+          {setCount}/{matchDayCount} days
+        </span>
       </div>
       <p className="text-sm text-zinc-600">
         Pick match days only (Europe/Brussels). Start times are fixed: {slotLabel}.
@@ -80,6 +97,7 @@ export function NationalMatchDatesEditor({ scope, scheduleKey, title }: Props) {
             <input
               type="date"
               value={day}
+              disabled={readOnly}
               onChange={(e) =>
                 setMatchDays((prev) =>
                   prev.map((d, i) => (i === index ? e.target.value : d)),
@@ -90,19 +108,21 @@ export function NationalMatchDatesEditor({ scope, scheduleKey, title }: Props) {
           </li>
         ))}
       </ul>
-      <button
-        type="button"
-        disabled={loading}
-        onClick={saveDates}
-        className="btn-primary w-fit"
-      >
-        {loading ? "Saving…" : "Save match days"}
-      </button>
+      {!readOnly && (
+        <button
+          type="button"
+          disabled={loading}
+          onClick={saveDates}
+          className="btn-primary w-fit"
+        >
+          {loading ? "Saving…" : "Save match days"}
+        </button>
+      )}
       {message && (
         <p className="text-sm text-zinc-700" role="status">
           {message}
         </p>
       )}
-    </section>
+    </div>
   );
 }
