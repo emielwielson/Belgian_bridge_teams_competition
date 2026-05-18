@@ -57,16 +57,16 @@ begin
   where t.group_id = g.id
     and l.season_id = v_season_id
     and l.scope = 'national'
-    and c.name like 'Demo Club %';
+
 
   delete from public.player_club_memberships pcm
   using public.players p
   where pcm.player_id = p.id
     and pcm.season_id = v_season_id
-    and p.member_number ~ '^DEMO-C[0-9]+-P[0-9]+$';
+    and p.member_number ~ '^DEMO-(C|N)[0-9]+-P[0-9]+$';
 
   delete from public.players p
-  where p.member_number ~ '^DEMO-C[0-9]+-P[0-9]+$';
+  where p.member_number ~ '^DEMO-(C|N)[0-9]+-P[0-9]+$';
 
   delete from public.penalties p
   where p.team_id in (
@@ -379,124 +379,213 @@ begin
     (v_season_id, 'national', null, null, 13, ('2025-02-14 14:00'::timestamp at time zone 'Europe/Brussels')),
     (v_season_id, 'national', null, null, 14, ('2025-02-28 14:00'::timestamp at time zone 'Europe/Brussels'));
 
-  -- Demo clubs (8) and 8 teams per national group
+  -- Clubs and teams from last season (see demo-national-data.ts)
   select id into v_region_id from public.regions where code = 'flanders' limit 1;
 
+  create temp table national_demo_teams (
+    division_name text not null,
+    team_name text not null
+  ) on commit drop;
+
+  insert into national_demo_teams (division_name, team_name)
+  values
+    ('Honor Division', 'Riviera 121'),
+    ('Honor Division', 'BBC 321'),
+    ('Honor Division', 'BBC 121'),
+    ('Honor Division', 'BBC 221'),
+    ('Honor Division', 'UAE 121'),
+    ('Honor Division', 'BBC 421'),
+    ('Honor Division', 'Cercle-Perron 121'),
+    ('Honor Division', 'Pieterman 121'),
+    ('1st Division', 'Riviera 214'),
+    ('1st Division', 'Sandeman 114'),
+    ('1st Division', 'Riviera 314'),
+    ('1st Division', 'Cercle-Perron 214'),
+    ('1st Division', 'Squeeze 114'),
+    ('1st Division', 'BBC 514'),
+    ('1st Division', 'UAE 214'),
+    ('1st Division', 'Genk 114'),
+    ('2nd Division A', 'Pieterman 214'),
+    ('2nd Division A', 'Cercle-Perron 314'),
+    ('2nd Division A', 'Waregem 114'),
+    ('2nd Division A', 'Charleroi 114'),
+    ('2nd Division A', 'Riviera 414'),
+    ('2nd Division A', 'Forum 114'),
+    ('2nd Division A', 'Squeeze 214'),
+    ('2nd Division A', 'Westrand 114'),
+    ('2nd Division B', 'Boeckenberg 114'),
+    ('2nd Division B', 'Cercle-Perron 414'),
+    ('2nd Division B', 'Cercle-Perron 514'),
+    ('2nd Division B', 'Lier 114'),
+    ('2nd Division B', 'DUA 114'),
+    ('2nd Division B', 'Geel 114'),
+    ('2nd Division B', 'Riviera 514'),
+    ('2nd Division B', 'Verviers 114'),
+    ('3rd Division A', 'Knokke 114'),
+    ('3rd Division A', 'Witte Beer 214'),
+    ('3rd Division A', 'Forum 214'),
+    ('3rd Division A', 'Waasmunster 114'),
+    ('3rd Division A', 'Witte Beer 114'),
+    ('3rd Division A', 'Bridgeclub Roeselare 114'),
+    ('3rd Division A', 'Eeklo 114'),
+    ('3rd Division A', 'Westrand 214'),
+    ('3rd Division B', 'Argayon 114'),
+    ('3rd Division B', 'Sandeman 214'),
+    ('3rd Division B', 'Pieterman 314'),
+    ('3rd Division B', 'Namur 214'),
+    ('3rd Division B', 'UAE 314'),
+    ('3rd Division B', 'Wilg & Donk 114'),
+    ('3rd Division B', 'Riviera 614'),
+    ('3rd Division B', 'BBC 814'),
+    ('3rd Division C', 'Namur 114'),
+    ('3rd Division C', 'BBC 614'),
+    ('3rd Division C', 'Cercle-Perron 614'),
+    ('3rd Division C', 'Charleroi 214'),
+    ('3rd Division C', 'Cercle-Perron 714'),
+    ('3rd Division C', 'B.C. Mons 114'),
+    ('3rd Division C', 'Smohain 114'),
+    ('3rd Division C', 'BBC 914'),
+    ('3rd Division D', 'BBC 714'),
+    ('3rd Division D', 'Lier 214'),
+    ('3rd Division D', 'Pieterman 414'),
+    ('3rd Division D', 'Cercle-Perron 814'),
+    ('3rd Division D', 'Zennebridge 114'),
+    ('3rd Division D', 'Aarschot 114'),
+    ('3rd Division D', 'Retiese 114'),
+    ('3rd Division D', 'Riviera 714');
+
   insert into public.clubs (name, region_id)
-  select 'Demo Club ' || i, v_region_id
-  from generate_series(1, 8) as i
+  select distinct
+    regexp_replace(ndt.team_name, '\s+\d{3}$', ''),
+    v_region_id
+  from national_demo_teams ndt
   where not exists (
-    select 1 from public.clubs c where c.name = 'Demo Club ' || i
+    select 1
+    from public.clubs c
+    where c.name = regexp_replace(ndt.team_name, '\s+\d{3}$', '')
+      and c.region_id = v_region_id
   );
 
   insert into public.teams (group_id, club_id, name)
-  select g.id, c.id, c.name || ' — ' || g.name
-  from public.groups g
-  join public.divisions d on d.id = g.division_id
-  join public.leagues l on l.id = d.league_id
-  cross join lateral (
-    select id, name
-    from public.clubs
-    where name like 'Demo Club %'
-    order by name
-    limit 8
-  ) c
-  where l.season_id = v_season_id
-    and l.scope = 'national'
-  order by g.name, c.name;
+  select g.id, c.id, ndt.team_name
+  from national_demo_teams ndt
+  join public.divisions d on d.league_id = v_league_id
+    and d.name = ndt.division_name
+  join public.groups g on g.division_id = d.id and g.name = d.name
+  join public.clubs c on c.region_id = v_region_id
+    and c.name = regexp_replace(ndt.team_name, '\s+\d{3}$', '');
 
-  -- Demo players: 4 per national team per club + 3 unassigned per club
   insert into public.players (name, member_number)
   select
-    'Demo Club ' || ps.club_num || ' Player ' || lpad(ps.player_num::text, 2, '0'),
-    'DEMO-C' || ps.club_num || '-P' || lpad(ps.player_num::text, 2, '0')
+    nc.club_name || ' Player ' || lpad(ps.player_num::text, 2, '0'),
+    'DEMO-N' || lpad(nc.club_num::text, 3, '0') || '-P' || lpad(ps.player_num::text, 2, '0')
   from (
     select
-      dct.club_num,
-      gs.n as player_num
-    from (
-      select
-        (regexp_match(c.name, '^Demo Club (\d+)$'))[1]::int as club_num,
-        count(t.id)::int as team_count
-      from public.clubs c
-      join public.teams t on t.club_id = c.id
-      join public.groups g on g.id = t.group_id
-      join public.divisions d on d.id = g.division_id
-      join public.leagues l on l.id = d.league_id
-      where c.name like 'Demo Club %'
-        and l.season_id = v_season_id
-        and l.scope = 'national'
-      group by c.id, c.name
-    ) dct
-    cross join lateral generate_series(1, dct.team_count * 4 + 3) as gs(n)
-  ) ps
+      c.name as club_name,
+      row_number() over (order by c.name) as club_num,
+      count(t.id)::int as team_count
+    from public.clubs c
+    join public.teams t on t.club_id = c.id
+    join public.groups g on g.id = t.group_id
+    join public.divisions d on d.id = g.division_id
+    join public.leagues l on l.id = d.league_id
+    where l.season_id = v_season_id
+      and l.scope = 'national'
+    group by c.id, c.name
+  ) nc
+  cross join lateral generate_series(1, nc.team_count * 4 + 3) as ps(player_num)
   where not exists (
     select 1
-    from public.players pl
-    where pl.member_number =
-      'DEMO-C' || ps.club_num || '-P' || lpad(ps.player_num::text, 2, '0')
+    from public.players p
+    where p.member_number = 'DEMO-N' || lpad(nc.club_num::text, 3, '0') || '-P' || lpad(ps.player_num::text, 2, '0')
   );
 
   insert into public.player_club_memberships (player_id, club_id, season_id)
-  select pl.id, cl.id, v_season_id
-  from public.players pl
-  join public.clubs cl
-    on cl.name = 'Demo Club ' || (regexp_match(pl.member_number, '^DEMO-C(\d+)-'))[1]
-  where pl.member_number ~ '^DEMO-C[0-9]+-P[0-9]+$'
-    and not exists (
-      select 1
-      from public.player_club_memberships pcm
-      where pcm.player_id = pl.id
-        and pcm.season_id = v_season_id
-    );
+  select p.id, nc.club_id, v_season_id
+  from (
+    select
+      c.id as club_id,
+      row_number() over (order by c.name) as club_num,
+      count(t.id)::int as team_count
+    from public.clubs c
+    join public.teams t on t.club_id = c.id
+    join public.groups g on g.id = t.group_id
+    join public.divisions d on d.id = g.division_id
+    join public.leagues l on l.id = d.league_id
+    where l.season_id = v_season_id
+      and l.scope = 'national'
+    group by c.id, c.name
+  ) nc
+  cross join lateral generate_series(1, nc.team_count * 4 + 3) as ps(player_num)
+  join public.players p on p.member_number =
+    'DEMO-N' || lpad(nc.club_num::text, 3, '0') || '-P' || lpad(ps.player_num::text, 2, '0')
+  where not exists (
+    select 1
+    from public.player_club_memberships pcm
+    where pcm.player_id = p.id
+      and pcm.club_id = nc.club_id
+      and pcm.season_id = v_season_id
+  );
 
   insert into public.team_players (team_id, player_id, season_id)
   select
-    ct.team_id,
-    pl.id,
+    tr.team_id,
+    p.id,
     v_season_id
   from (
     select
       t.id as team_id,
       t.club_id,
-      row_number() over (partition by t.club_id order by g.name, t.name) as team_idx
+      row_number() over (
+        partition by t.club_id
+        order by d.name, t.name
+      ) as team_idx,
+      nc.club_num
     from public.teams t
     join public.groups g on g.id = t.group_id
     join public.divisions d on d.id = g.division_id
     join public.leagues l on l.id = d.league_id
-    join public.clubs c on c.id = t.club_id
+    join (
+      select c.id as club_id, row_number() over (order by c.name) as club_num
+      from public.clubs c
+      where c.region_id = v_region_id
+    ) nc on nc.club_id = t.club_id
     where l.season_id = v_season_id
       and l.scope = 'national'
-      and c.name like 'Demo Club %'
-  ) ct
-  join public.clubs c on c.id = ct.club_id
-  cross join generate_series(1, 4) as slot(n)
-  join public.players pl
-    on pl.member_number =
-      'DEMO-C'
-      || (regexp_match(c.name, '^Demo Club (\d+)$'))[1]
-      || '-P'
-      || lpad(((ct.team_idx - 1) * 4 + slot.n)::text, 2, '0');
+  ) tr
+  cross join lateral generate_series(1, 4) as slot(n)
+  join public.players p on p.member_number =
+    'DEMO-N' || lpad(tr.club_num::text, 3, '0') || '-P' ||
+    lpad(((tr.team_idx - 1) * 4 + slot.n)::text, 2, '0');
 
-  -- First roster player is captain per team
   update public.teams t
-  set captain_id = tp.player_id
+  set captain_id = p.id
   from (
-    select distinct on (tp.team_id)
-      tp.team_id,
-      tp.player_id
-    from public.team_players tp
-    order by tp.team_id, tp.created_at
-  ) tp
-  join public.groups g on g.id = t.group_id
-  join public.divisions d on d.id = g.division_id
-  join public.leagues l on l.id = d.league_id
-  join public.clubs c on c.id = t.club_id
-  where t.id = tp.team_id
-    and l.season_id = v_season_id
-    and l.scope = 'national'
-    and c.name like 'Demo Club %'
-    and t.captain_id is null;
+    select
+      t.id as team_id,
+      row_number() over (
+        partition by t.club_id
+        order by d.name, t.name
+      ) as team_idx,
+      nc.club_num
+    from public.teams t
+    join public.groups g on g.id = t.group_id
+    join public.divisions d on d.id = g.division_id
+    join public.leagues l on l.id = d.league_id
+    join (
+      select c.id as club_id, row_number() over (order by c.name) as club_num
+      from public.clubs c
+      where c.region_id = v_region_id
+    ) nc on nc.club_id = t.club_id
+    where l.season_id = v_season_id
+      and l.scope = 'national'
+  ) tr
+  join public.players p on p.member_number =
+    'DEMO-N' || lpad(tr.club_num::text, 3, '0') || '-P' ||
+    lpad(((tr.team_idx - 1) * 4 + 1)::text, 2, '0')
+  where t.id = tr.team_id;
+
+
 end $$;
 
 -- Standard VP tables (24 boards) for every national group
@@ -531,4 +620,4 @@ where l.scope = 'national'
     select 1 from public.vp_table_rows r where r.vp_table_id = vt.id
   );
 
-select 'national-2024-25-demo reset and loaded (dates, teams, 4 players/team + 3 unassigned/club; generate schedules via Admin or npm run demo:national)' as result;
+select 'national-2024-25-demo reset and loaded (last-season teams, 4 players/team + 3 unassigned/club; generate schedules via Admin or npm run demo:national)' as result;
