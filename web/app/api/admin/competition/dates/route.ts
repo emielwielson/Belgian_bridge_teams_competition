@@ -1,9 +1,23 @@
 import { COMPETITION_ADMIN_ROLES, requireRoles } from "@/lib/auth/route-auth";
+import {
+  applyMatchDatesDivisionFilter,
+  nationalMatchDatesDivisionId,
+} from "@/lib/competition/match-dates-query";
+import type { NationalScheduleKey } from "@/lib/competition/national-structure";
 import { resolveRegionId } from "@/lib/competition/queries";
 import { requireActiveSeason } from "@/lib/competition/season";
-import { parseRegionParam, parseScopeParam, SCOPES } from "@/lib/competition/scopes";
+import { parseScopeParam, SCOPES } from "@/lib/competition/scopes";
 import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
 import { parseBrusselsToUtc } from "@/lib/time/brussels";
+
+function parseNationalScheduleKey(
+  value: string | null | undefined,
+): NationalScheduleKey | null {
+  if (value === "honor" || value === "first" || value === "default") {
+    return value;
+  }
+  return null;
+}
 
 export async function GET(request: Request) {
   try {
@@ -27,6 +41,19 @@ export async function GET(request: Request) {
       scope === SCOPES.NATIONAL
         ? datesQuery.is("region_id", null)
         : datesQuery.eq("region_id", regionId!);
+
+    if (scope === SCOPES.NATIONAL) {
+      const scheduleKey =
+        parseNationalScheduleKey(searchParams.get("schedule")) ?? "default";
+      const divisionId = await nationalMatchDatesDivisionId(
+        supabase,
+        season.id,
+        scheduleKey,
+      );
+      datesQuery = applyMatchDatesDivisionFilter(datesQuery, divisionId);
+    } else {
+      datesQuery = datesQuery.is("division_id", null);
+    }
 
     const { data, error } = await datesQuery;
 
@@ -56,17 +83,36 @@ export async function PUT(request: Request) {
       return jsonError("Exactly 14 round datetimes required", 400);
     }
 
-    await supabase
+    let divisionId: string | null = null;
+    if (scope === SCOPES.NATIONAL) {
+      const scheduleKey =
+        parseNationalScheduleKey(body.schedule) ?? "default";
+      divisionId = await nationalMatchDatesDivisionId(
+        supabase,
+        season.id,
+        scheduleKey,
+      );
+    }
+
+    let deleteQuery = supabase
       .from("competition_match_dates")
       .delete()
       .eq("season_id", season.id)
-      .eq("scope", scope)
-      .is("region_id", scope === SCOPES.NATIONAL ? null : regionId);
+      .eq("scope", scope);
+
+    deleteQuery =
+      scope === SCOPES.NATIONAL
+        ? deleteQuery.is("region_id", null)
+        : deleteQuery.eq("region_id", regionId!);
+
+    deleteQuery = applyMatchDatesDivisionFilter(deleteQuery, divisionId);
+    await deleteQuery;
 
     const rows = rounds.map((r) => ({
       season_id: season.id,
       scope,
       region_id: scope === SCOPES.NATIONAL ? null : regionId,
+      division_id: divisionId,
       round: r.round,
       datetime: r.datetime.includes("T")
         ? parseBrusselsToUtc(r.datetime)

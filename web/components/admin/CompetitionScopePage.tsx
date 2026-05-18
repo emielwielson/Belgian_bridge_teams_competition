@@ -3,11 +3,29 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
+  NATIONAL_DIVISIONS,
+  NATIONAL_SCHEDULE_LABELS,
+  type NationalScheduleKey,
+} from "@/lib/competition/national-structure";
+import {
   SCOPES,
   scopeLabel,
   type CompetitionScope,
 } from "@/lib/competition/scopes";
 import { CompetitionManagement } from "./CompetitionManagement";
+
+const NATIONAL_SCHEDULE_KEYS: NationalScheduleKey[] = [
+  "honor",
+  "first",
+  "default",
+];
+
+function sortNationalDivisions(divisions: Division[]): Division[] {
+  const order = new Map(NATIONAL_DIVISIONS.map((d, i) => [d.name, i]));
+  return [...divisions].sort(
+    (a, b) => (order.get(a.name) ?? 99) - (order.get(b.name) ?? 99),
+  );
+}
 
 type DivisionLevel = { id: string; code: string; name: string };
 type Group = {
@@ -62,6 +80,22 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
       .then((r) => r.json())
       .then((b) => setClubs(b.clubs ?? []));
   }, [load, regionId]);
+
+  async function ensureNationalStructure() {
+    setMessage(null);
+    const res = await fetch("/api/admin/competition", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "ensure_national_structure" }),
+    });
+    const body = await res.json();
+    if (!res.ok) {
+      setMessage(body.error ?? "Failed to set up national structure");
+      return;
+    }
+    setMessage("National structure is ready.");
+    await load();
+  }
 
   async function createLeague() {
     const name = prompt("League name");
@@ -177,16 +211,37 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
         <p className="rounded-lg bg-zinc-100 px-3 py-2 text-sm text-zinc-800">{message}</p>
       )}
 
-      <CompetitionManagement scope={scope} regionCode={regionCode} />
+      {scope === SCOPES.NATIONAL ? (
+        NATIONAL_SCHEDULE_KEYS.map((key) => (
+          <CompetitionManagement
+            key={key}
+            scope={scope}
+            scheduleKey={key}
+            title={`Match dates — ${NATIONAL_SCHEDULE_LABELS[key]}`}
+          />
+        ))
+      ) : (
+        <CompetitionManagement scope={scope} regionCode={regionCode} />
+      )}
 
       <section className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={createLeague}
-          className="btn-secondary"
-        >
-          Add league
-        </button>
+        {scope === SCOPES.NATIONAL ? (
+          <button
+            type="button"
+            onClick={ensureNationalStructure}
+            className="btn-secondary"
+          >
+            Set up national structure
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={createLeague}
+            className="btn-secondary"
+          >
+            Add league
+          </button>
+        )}
         {seasonStatus === "setup" && (
           <button
             type="button"
@@ -204,23 +259,27 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
           className="card"
         >
           <h2 className="font-semibold text-zinc-900">{league.name}</h2>
-          <button
-            type="button"
-            className="mt-2 text-sm font-medium text-zinc-700 underline hover:text-zinc-900"
-            onClick={() => createDivision(league.id)}
-          >
-            Add division
-          </button>
-          {league.divisions.map((division) => (
+          {scope !== SCOPES.NATIONAL && (
+            <button
+              type="button"
+              className="mt-2 text-sm font-medium text-zinc-700 underline hover:text-zinc-900"
+              onClick={() => createDivision(league.id)}
+            >
+              Add division
+            </button>
+          )}
+          {sortNationalDivisions(league.divisions).map((division) => (
             <div key={division.id} className="mt-4 border-t pt-3">
               <h3 className="text-sm font-medium text-zinc-900">{division.name}</h3>
-              <button
-                type="button"
-                className="mt-1 text-sm font-medium text-zinc-700 underline hover:text-zinc-900"
-                onClick={() => createGroup(division.id)}
-              >
-                Add group
-              </button>
+              {scope !== SCOPES.NATIONAL && (
+                <button
+                  type="button"
+                  className="mt-1 text-sm font-medium text-zinc-700 underline hover:text-zinc-900"
+                  onClick={() => createGroup(division.id)}
+                >
+                  Add group
+                </button>
+              )}
               <ul className="mt-2 flex flex-col gap-2">
                 {division.groups.map((group) => (
                   <li
@@ -235,6 +294,11 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
                       {group.name}
                     </button>
                     <span className="text-xs text-zinc-500">{group.status}</span>
+                    {group.max_matches_per_day_per_team != null && (
+                      <span className="text-xs text-zinc-500">
+                        max {group.max_matches_per_day_per_team}/day
+                      </span>
+                    )}
                     <button
                       type="button"
                       className="text-xs font-medium text-zinc-700 underline"

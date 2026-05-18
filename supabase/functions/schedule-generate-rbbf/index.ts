@@ -82,11 +82,24 @@ Deno.serve(async (req) => {
       });
     }
 
-    const league = (groupRow.division as { league: {
-      season_id: string;
-      scope: string;
-      region_id: string | null;
-    } }).league;
+    const league = (groupRow.division as {
+      league: {
+        season_id: string;
+        scope: string;
+        region_id: string | null;
+      };
+    }).league;
+
+    const { data: datesDivisionId, error: resolveDatesError } =
+      await supabase.rpc("resolve_group_match_dates_division_id", {
+        p_group_id: groupId,
+      });
+    if (resolveDatesError) {
+      return new Response(JSON.stringify({ error: resolveDatesError.message }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     let datesQuery = supabase
       .from("competition_match_dates")
@@ -99,6 +112,11 @@ Deno.serve(async (req) => {
       league.scope === "national"
         ? datesQuery.is("region_id", null)
         : datesQuery.eq("region_id", league.region_id!);
+
+    datesQuery =
+      datesDivisionId == null
+        ? datesQuery.is("division_id", null)
+        : datesQuery.eq("division_id", datesDivisionId);
 
     const { data: dates, error: datesError } = await datesQuery;
     if (datesError || !dates || dates.length < 14) {

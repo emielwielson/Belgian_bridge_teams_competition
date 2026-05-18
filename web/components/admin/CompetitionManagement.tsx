@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toDatetimeLocalValue } from "@/lib/time/brussels";
+import type { NationalScheduleKey } from "@/lib/competition/national-structure";
 import type { CompetitionScope } from "@/lib/competition/scopes";
 
 type RoundDate = { round: number; datetime: string };
@@ -9,9 +10,16 @@ type RoundDate = { round: number; datetime: string };
 type Props = {
   scope: CompetitionScope;
   regionCode?: string;
+  scheduleKey?: NationalScheduleKey;
+  title?: string;
 };
 
-export function CompetitionManagement({ scope, regionCode }: Props) {
+export function CompetitionManagement({
+  scope,
+  regionCode,
+  scheduleKey,
+  title,
+}: Props) {
   const [dates, setDates] = useState<RoundDate[]>(
     Array.from({ length: 14 }, (_, i) => ({ round: i + 1, datetime: "" })),
   );
@@ -21,6 +29,7 @@ export function CompetitionManagement({ scope, regionCode }: Props) {
   async function loadDates() {
     const params = new URLSearchParams({ scope });
     if (regionCode) params.set("region", regionCode);
+    if (scheduleKey) params.set("schedule", scheduleKey);
     const res = await fetch(`/api/admin/competition/dates?${params}`);
     if (!res.ok) return;
     const body = await res.json();
@@ -43,7 +52,12 @@ export function CompetitionManagement({ scope, regionCode }: Props) {
     const res = await fetch("/api/admin/competition/dates", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ scope, region: regionCode, rounds: dates }),
+      body: JSON.stringify({
+        scope,
+        region: regionCode,
+        schedule: scheduleKey,
+        rounds: dates,
+      }),
     });
     setLoading(false);
     if (!res.ok) {
@@ -59,7 +73,7 @@ export function CompetitionManagement({ scope, regionCode }: Props) {
     <section className="card flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-lg font-semibold text-zinc-900">
-          Match dates (14 rounds)
+          {title ?? "Match dates (14 rounds)"}
         </h2>
         <button type="button" onClick={loadDates} className="link-back">
           Reload

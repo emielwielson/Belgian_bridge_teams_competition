@@ -1,4 +1,5 @@
 import { COMPETITION_ADMIN_ROLES, requireRoles } from "@/lib/auth/route-auth";
+import { ensureNationalStructure } from "@/lib/competition/ensure-national-structure";
 import { requireActiveSeason } from "@/lib/competition/season";
 import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
 
@@ -124,6 +125,12 @@ export async function PATCH(request: Request) {
   try {
     const { supabase } = await requireRoles([...COMPETITION_ADMIN_ROLES]);
     const body = await request.json();
+
+    if (body.action === "ensure_national_structure") {
+      const season = await requireActiveSeason(supabase);
+      const result = await ensureNationalStructure(supabase, season.id);
+      return jsonOk({ ensured: true, ...result });
+    }
 
     if (body.action === "activate_season") {
       const season = await requireActiveSeason(supabase);
