@@ -16,6 +16,7 @@ export function ClubTeamView({ clubId, teamId }: Props) {
   const [message, setMessage] = useState<string | null>(null);
   const [location, setLocation] = useState("");
   const [captainId, setCaptainId] = useState<string>("");
+  const [addPlayerId, setAddPlayerId] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -68,7 +69,13 @@ export function ClubTeamView({ clubId, teamId }: Props) {
       setMessage(err.error ?? "Failed to add player");
       return;
     }
+    setAddPlayerId("");
     await load();
+  }
+
+  async function addSelectedToRoster() {
+    if (!addPlayerId) return;
+    await addToRoster(addPlayerId);
   }
 
   async function removeFromRoster(playerId: string) {
@@ -190,23 +197,34 @@ export function ClubTeamView({ clubId, teamId }: Props) {
           <div className="mt-4 flex flex-col gap-4 border-t border-zinc-100 pt-4">
             <h3 className="text-sm font-medium text-zinc-900">Add from club</h3>
             {detail.available_players.length > 0 ? (
-              <ul className="flex flex-col gap-2">
-                {detail.available_players.map((player) => (
-                  <li
-                    key={player.player_id}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-zinc-100 px-3 py-2 text-sm"
+              <div className="flex flex-wrap items-end gap-2">
+                <label className="flex min-w-[12rem] flex-1 flex-col gap-1 text-sm">
+                  <span className="sr-only">Player</span>
+                  <select
+                    value={addPlayerId}
+                    onChange={(e) => setAddPlayerId(e.target.value)}
+                    className="rounded-lg border border-zinc-300 px-3 py-2"
                   >
-                    <span className="text-zinc-900">{player.name}</span>
-                    <button
-                      type="button"
-                      onClick={() => addToRoster(player.player_id)}
-                      className="btn-secondary py-1 text-xs"
-                    >
-                      Add to team
-                    </button>
-                  </li>
-                ))}
-              </ul>
+                    <option value="">Select a player…</option>
+                    {detail.available_players.map((player) => (
+                      <option key={player.player_id} value={player.player_id}>
+                        {player.name}
+                        {player.member_number
+                          ? ` (${player.member_number})`
+                          : ""}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  onClick={addSelectedToRoster}
+                  disabled={!addPlayerId}
+                  className="btn-secondary"
+                >
+                  Add to team
+                </button>
+              </div>
             ) : (
               <p className="text-sm text-zinc-500">
                 No unassigned club members available to add.
