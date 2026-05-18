@@ -206,3 +206,43 @@ export async function loadTeamDetail(
     matches,
   };
 }
+
+export type PlayerTeamSummary = {
+  id: string;
+  name: string;
+};
+
+/** Teams the linked player belongs to in the active season (at most one per season rules). */
+export async function loadTeamsForUser(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<PlayerTeamSummary[]> {
+  const { data: player } = await supabase
+    .from("players")
+    .select("id")
+    .eq("auth_user_id", userId)
+    .maybeSingle();
+
+  if (!player) return [];
+
+  const season = await getActiveSeason(supabase);
+  if (!season) return [];
+
+  const { data: rows, error } = await supabase
+    .from("team_players")
+    .select("team:teams(id, name)")
+    .eq("player_id", player.id)
+    .eq("season_id", season.id);
+
+  if (error) throw error;
+
+  const teams: PlayerTeamSummary[] = [];
+  for (const row of rows ?? []) {
+    const team = unwrapOne(
+      row.team as { id: string; name: string } | { id: string; name: string }[] | null,
+    );
+    if (team) teams.push({ id: team.id, name: team.name });
+  }
+
+  return teams.sort((a, b) => a.name.localeCompare(b.name));
+}

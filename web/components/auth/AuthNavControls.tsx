@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 type MeResponse = {
   user: { id: string; email?: string };
   roles: string[];
+  teams?: { id: string; name: string }[];
 };
 
 export function AuthNavControls() {
@@ -60,6 +61,14 @@ export function AuthNavControls() {
       <Link href="/standings" className="text-zinc-600 hover:text-zinc-900">
         Standings
       </Link>
+      {me.teams?.length === 1 ? (
+        <Link
+          href={`/teams/${me.teams[0].id}`}
+          className="text-zinc-600 hover:text-zinc-900"
+        >
+          My team
+        </Link>
+      ) : null}
       {hub && (
         <Link href={hub} className="text-zinc-600 hover:text-zinc-900">
           Dashboard

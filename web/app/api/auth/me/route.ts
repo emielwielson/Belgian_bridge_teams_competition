@@ -1,6 +1,7 @@
-import { createSessionClient } from "@/lib/supabase/server-client";
 import { getUserRoles } from "@/lib/auth/session";
+import { loadTeamsForUser } from "@/lib/competition/team-queries";
 import { jsonError, jsonOk } from "@/lib/http/api-response";
+import { createSessionClient } from "@/lib/supabase/server-client";
 
 export async function GET() {
   const supabase = await createSessionClient();
@@ -13,9 +14,13 @@ export async function GET() {
     return jsonError("Unauthorized", 401);
   }
 
-  const roles = await getUserRoles(supabase, user.id);
+  const [roles, teams] = await Promise.all([
+    getUserRoles(supabase, user.id),
+    loadTeamsForUser(supabase, user.id),
+  ]);
   return jsonOk({
     user: { id: user.id, email: user.email },
     roles,
+    teams,
   });
 }

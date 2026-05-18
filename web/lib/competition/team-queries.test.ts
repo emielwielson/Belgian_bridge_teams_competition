@@ -1,5 +1,55 @@
 import { describe, expect, it } from "vitest";
-import { mapRawMatchToTeamMatchRow } from "./team-queries";
+import { loadTeamsForUser, mapRawMatchToTeamMatchRow } from "./team-queries";
+
+describe("loadTeamsForUser", () => {
+  it("returns teams for linked player in active season", async () => {
+    const supabase = {
+      from: (table: string) => {
+        if (table === "players") {
+          return {
+            select: () => ({
+              eq: () => ({
+                maybeSingle: () =>
+                  Promise.resolve({ data: { id: "player-1" }, error: null }),
+              }),
+            }),
+          };
+        }
+        if (table === "seasons") {
+          return {
+            select: () => ({
+              eq: () => ({
+                maybeSingle: () =>
+                  Promise.resolve({
+                    data: { id: "season-1", name: "2024-25", status: "active", is_active: true },
+                    error: null,
+                  }),
+              }),
+            }),
+          };
+        }
+        if (table === "team_players") {
+          return {
+            select: () => ({
+              eq: () => ({
+                eq: () =>
+                  Promise.resolve({
+                    data: [{ team: { id: "team-1", name: "Alpha" } }],
+                    error: null,
+                  }),
+              }),
+            }),
+          };
+        }
+        throw new Error(`unexpected table ${table}`);
+      },
+    } as never;
+
+    await expect(loadTeamsForUser(supabase, "user-1")).resolves.toEqual([
+      { id: "team-1", name: "Alpha" },
+    ]);
+  });
+});
 
 describe("mapRawMatchToTeamMatchRow", () => {
   const teamNames = new Map([
