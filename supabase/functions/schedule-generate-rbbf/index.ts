@@ -1,5 +1,5 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { getRbbfRoundPairings } from "./template.ts";
+import { createClient } from "@supabase/supabase-js";
+import { getRbbfRoundPairings } from "./template";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -82,13 +82,24 @@ Deno.serve(async (req) => {
       });
     }
 
-    const league = (groupRow.division as {
-      league: {
-        season_id: string;
-        scope: string;
-        region_id: string | null;
-      };
-    }).league;
+    const division = Array.isArray(groupRow.division)
+      ? groupRow.division[0]
+      : groupRow.division;
+    const leagueRow = division?.league;
+    const league = (Array.isArray(leagueRow) ? leagueRow[0] : leagueRow) as
+      | {
+          season_id: string;
+          scope: string;
+          region_id: string | null;
+        }
+      | undefined;
+
+    if (!league) {
+      return new Response(JSON.stringify({ error: "Group league not found" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const { data: datesDivisionId, error: resolveDatesError } =
       await supabase.rpc("resolve_group_match_dates_division_id", {
