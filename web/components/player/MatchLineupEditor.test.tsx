@@ -2,6 +2,10 @@ import { cleanup, render, screen, fireEvent } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MatchLineupEditor } from "./MatchLineupEditor";
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: vi.fn() }),
+}));
+
 vi.mock("./AddSubPicker", () => ({
   AddSubPicker: ({
     onSelect,

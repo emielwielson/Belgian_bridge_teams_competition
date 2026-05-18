@@ -38,6 +38,16 @@ describe("GroupStandingsGrid", () => {
     cleanup();
   });
 
+  it("links team names to the team page", () => {
+    render(<GroupStandingsGrid grid={sampleGrid} />);
+    const alphaLink = screen.getByRole("link", { name: "Alpha" });
+    expect(alphaLink).toHaveAttribute("href", "/teams/t1");
+    expect(screen.getByRole("link", { name: "Bravo" })).toHaveAttribute(
+      "href",
+      "/teams/t2",
+    );
+  });
+
   it("renders round headers and team rows", () => {
     render(<GroupStandingsGrid grid={sampleGrid} />);
     expect(screen.getByText("04/10/24")).toBeInTheDocument();

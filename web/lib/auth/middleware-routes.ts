@@ -9,7 +9,7 @@ const PUBLIC_EXACT = new Set([
   "/api/auth/signout",
 ]);
 
-const PUBLIC_PREFIXES = ["/api/public/", "/standings"];
+const PUBLIC_PREFIXES = ["/api/public/", "/standings", "/teams"];
 
 const ROLE_ROUTES: { prefix: string; roles: string[] }[] = [
   { prefix: "/admin", roles: [ROLES.SYSTEM_ADMIN, ROLES.COMPETITION_MANAGER] },

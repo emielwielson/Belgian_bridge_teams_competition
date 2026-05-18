@@ -76,7 +76,12 @@ export function GroupStandingsGrid({ grid }: Props) {
                   {row.rank}
                 </td>
                 <td className={`${stickyCell} left-10 font-medium`}>
-                  {row.teamName}
+                  <Link
+                    href={`/teams/${row.teamId}`}
+                    className="hover:text-emerald-800 hover:underline"
+                  >
+                    {row.teamName}
+                  </Link>
                 </td>
                 <td
                   className={`${stickyCell} left-[10.25rem] text-right tabular-nums`}

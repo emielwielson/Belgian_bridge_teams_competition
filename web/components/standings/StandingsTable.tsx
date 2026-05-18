@@ -1,4 +1,7 @@
+import Link from "next/link";
+
 export type StandingsTableRow = {
+  team_id?: string;
   team_name: string;
   vp_total: number;
 };
@@ -27,9 +30,23 @@ export function StandingsTable({
       </thead>
       <tbody>
         {rows.map((row, index) => (
-          <tr key={row.team_name} className="border-b border-zinc-100">
+          <tr
+            key={row.team_id ?? row.team_name}
+            className="border-b border-zinc-100"
+          >
             <td className="py-2 pr-4 text-zinc-500">{index + 1}</td>
-            <td className="py-2 pr-4 font-medium">{row.team_name}</td>
+            <td className="py-2 pr-4 font-medium">
+              {row.team_id ? (
+                <Link
+                  href={`/teams/${row.team_id}`}
+                  className="hover:text-emerald-800 hover:underline"
+                >
+                  {row.team_name}
+                </Link>
+              ) : (
+                row.team_name
+              )}
+            </td>
             <td className="py-2 text-right tabular-nums">{row.vp_total}</td>
           </tr>
         ))}
