@@ -1,9 +1,13 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { GET, PUT } from "./route";
 
-vi.mock("@/lib/auth/route-auth", () => ({
-  requireAuth: vi.fn(),
-}));
+vi.mock("@/lib/auth/route-auth", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/auth/route-auth")>();
+  return {
+    ...actual,
+    requireAuth: vi.fn(),
+  };
+});
 
 vi.mock("@/lib/auth/match-access", () => ({
   loadMatchContext: vi.fn(),
@@ -11,10 +15,19 @@ vi.mock("@/lib/auth/match-access", () => ({
   assertCanViewMatchOps: vi.fn(),
 }));
 
-vi.mock("@/lib/scoring/match-operations", () => ({
-  getMatchLineup: vi.fn(),
-  replaceMatchLineup: vi.fn(),
+vi.mock("@/lib/competition/season", () => ({
+  requireActiveSeason: vi.fn(),
 }));
+
+vi.mock("@/lib/scoring/match-operations", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/scoring/match-operations")>();
+  return {
+    ...actual,
+    getMatchLineup: vi.fn(),
+    replaceMatchLineup: vi.fn(),
+    validateLineupPayload: vi.fn(),
+  };
+});
 
 import { requireAuth } from "@/lib/auth/route-auth";
 import {
@@ -22,9 +35,12 @@ import {
   assertCanEditLineup,
   assertCanViewMatchOps,
 } from "@/lib/auth/match-access";
+import { requireActiveSeason } from "@/lib/competition/season";
 import {
   getMatchLineup,
   replaceMatchLineup,
+  validateLineupPayload,
+  LineupValidationError,
 } from "@/lib/scoring/match-operations";
 
 const baseMatch = {
@@ -63,6 +79,13 @@ describe("PUT /api/matches/[matchId]/players", () => {
     vi.mocked(loadMatchContext).mockResolvedValue(baseMatch);
     vi.mocked(assertCanEditLineup).mockResolvedValue(undefined);
     vi.mocked(replaceMatchLineup).mockResolvedValue([lineupRow]);
+    vi.mocked(requireActiveSeason).mockResolvedValue({
+      id: "season-1",
+      name: "2025-26",
+      status: "active",
+      is_active: true,
+    });
+    vi.mocked(validateLineupPayload).mockResolvedValue(undefined);
   });
 
   it("replaces team lineup", async () => {
@@ -83,6 +106,24 @@ describe("PUT /api/matches/[matchId]/players", () => {
       "home-1",
       [{ player_id: "p-1", is_substitute: false }],
     );
+  });
+
+  it("returns 400 when lineup validation fails", async () => {
+    vi.mocked(validateLineupPayload).mockRejectedValue(
+      new LineupValidationError("Substitute must be a club member not on the team roster"),
+    );
+    const res = await PUT(
+      new Request("http://x", {
+        method: "PUT",
+        body: JSON.stringify({
+          team_id: "home-1",
+          players: [{ player_id: "p1", is_substitute: true }],
+        }),
+      }),
+      { params: Promise.resolve({ matchId: "match-1" }) },
+    );
+    expect(res.status).toBe(400);
+    expect(replaceMatchLineup).not.toHaveBeenCalled();
   });
 
   it("rejects invalid team_id", async () => {

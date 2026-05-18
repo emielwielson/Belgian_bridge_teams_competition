@@ -4,9 +4,11 @@ import {
   assertCanViewMatchOps,
   loadMatchContext,
 } from "@/lib/auth/match-access";
+import { requireActiveSeason } from "@/lib/competition/season";
 import {
   getMatchLineup,
   replaceMatchLineup,
+  validateLineupPayload,
   type LineupPlayerInput,
 } from "@/lib/scoring/match-operations";
 import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
@@ -69,14 +71,29 @@ export async function PUT(request: Request, { params }: Params) {
       return jsonError("team_id must be home or away for this match", 400);
     }
 
+    const clubId =
+      teamId === match.home_team_id
+        ? match.home_team.club_id
+        : match.away_team.club_id;
+    const season = await requireActiveSeason(supabase);
+    const normalized = players.map((p) => ({
+      player_id: p.player_id,
+      is_substitute: Boolean(p.is_substitute),
+    }));
+
+    await validateLineupPayload(
+      supabase,
+      teamId,
+      clubId,
+      season.id,
+      normalized,
+    );
+
     const lineup = await replaceMatchLineup(
       supabase,
       matchId,
       teamId,
-      players.map((p) => ({
-        player_id: p.player_id,
-        is_substitute: Boolean(p.is_substitute),
-      })),
+      normalized,
     );
 
     return jsonOk({

@@ -212,6 +212,56 @@ export async function loadScorableMatchesForUser(
     }));
 }
 
+export type ClubSubCandidate = {
+  id: string;
+  name: string;
+  member_number: string | null;
+};
+
+/** Club members in the active season who are not on the team roster (FR 30). */
+export async function loadClubSubCandidates(
+  supabase: SupabaseClient,
+  clubId: string,
+  teamId: string,
+  seasonId: string,
+): Promise<ClubSubCandidate[]> {
+  const { data: rosterRows, error: rosterError } = await supabase
+    .from("team_players")
+    .select("player_id")
+    .eq("team_id", teamId)
+    .eq("season_id", seasonId);
+
+  if (rosterError) throw rosterError;
+
+  const rosterIds = new Set(rosterRows?.map((r) => r.player_id) ?? []);
+
+  const { data: memberships, error } = await supabase
+    .from("player_club_memberships")
+    .select("player:players(id, name, member_number)")
+    .eq("club_id", clubId)
+    .eq("season_id", seasonId);
+
+  if (error) throw error;
+
+  const players = (memberships ?? [])
+    .map(
+      (row) =>
+        row.player as {
+          id: string;
+          name: string;
+          member_number: string | null;
+        } | null,
+    )
+    .filter(
+      (
+        p,
+      ): p is { id: string; name: string; member_number: string | null } =>
+        p != null && !rosterIds.has(p.id),
+    );
+
+  return players.sort((a, b) => a.name.localeCompare(b.name));
+}
+
 export async function loadTeamRoster(
   supabase: SupabaseClient,
   teamId: string,

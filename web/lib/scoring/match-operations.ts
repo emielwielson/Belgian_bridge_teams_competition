@@ -17,6 +17,80 @@ export type MatchLineupEntry = {
 
 const MIN_PLAYERS_PER_TEAM = 4;
 
+export class LineupValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "LineupValidationError";
+  }
+}
+
+export async function validateLineupPayload(
+  supabase: SupabaseClient,
+  teamId: string,
+  clubId: string,
+  seasonId: string,
+  players: LineupPlayerInput[],
+): Promise<void> {
+  if (players.length < MIN_PLAYERS_PER_TEAM) {
+    throw new LineupValidationError(
+      `At least ${MIN_PLAYERS_PER_TEAM} players are required`,
+    );
+  }
+
+  const playerIds = players.map((p) => p.player_id);
+  if (new Set(playerIds).size !== playerIds.length) {
+    throw new LineupValidationError("Duplicate players in lineup");
+  }
+
+  const { data: rosterRows, error: rosterError } = await supabase
+    .from("team_players")
+    .select("player_id")
+    .eq("team_id", teamId)
+    .eq("season_id", seasonId);
+
+  if (rosterError) throw rosterError;
+
+  const rosterIds = new Set(rosterRows?.map((r) => r.player_id) ?? []);
+
+  for (const entry of players) {
+    if (!entry.is_substitute) {
+      if (!rosterIds.has(entry.player_id)) {
+        throw new LineupValidationError(
+          "Lineup players must be on the team roster",
+        );
+      }
+    } else if (rosterIds.has(entry.player_id)) {
+      throw new LineupValidationError(
+        "Substitute must be a club member not on the team roster",
+      );
+    }
+  }
+
+  const subIds = players
+    .filter((p) => p.is_substitute)
+    .map((p) => p.player_id);
+
+  if (subIds.length === 0) return;
+
+  const { data: memberships, error: memberError } = await supabase
+    .from("player_club_memberships")
+    .select("player_id")
+    .eq("club_id", clubId)
+    .eq("season_id", seasonId)
+    .in("player_id", subIds);
+
+  if (memberError) throw memberError;
+
+  const memberIds = new Set(memberships?.map((m) => m.player_id) ?? []);
+  for (const id of subIds) {
+    if (!memberIds.has(id)) {
+      throw new LineupValidationError(
+        "Substitute must be a member of the team's club",
+      );
+    }
+  }
+}
+
 export async function getMatchLineup(
   supabase: SupabaseClient,
   matchId: string,
