@@ -199,7 +199,15 @@ export type ClubTeamDetail = {
   };
   season: { id: string; name: string; status: string } | null;
   roster: { player_id: string; name: string; member_number: string | null }[];
+  roster_editable: boolean;
   available_players: { player_id: string; name: string; member_number: string | null }[];
+  on_other_teams: {
+    player_id: string;
+    name: string;
+    member_number: string | null;
+    team_id: string;
+    team_name: string;
+  }[];
   matches: {
     id: string;
     round: number;
@@ -251,8 +259,10 @@ export async function loadClubTeamDetail(
   const league = division ? unwrapOne(division.league as { name: string }) : null;
 
   const season = await getActiveSeason(supabase);
+  const roster_editable = season?.status === "setup";
   let roster: ClubTeamDetail["roster"] = [];
   let available_players: ClubTeamDetail["available_players"] = [];
+  let on_other_teams: ClubTeamDetail["on_other_teams"] = [];
 
   if (season) {
     const { data: rosterRows } = await supabase
@@ -286,36 +296,67 @@ export async function loadClubTeamDetail(
       .eq("club_id", clubId)
       .eq("season_id", season.id);
 
-    const { data: seasonAssignments } = await supabase
-      .from("team_players")
-      .select("player_id")
-      .eq("season_id", season.id);
+    const { data: clubTeams } = await supabase
+      .from("teams")
+      .select("id, name")
+      .eq("club_id", clubId);
 
-    const assignedElsewhere = new Set(
-      (seasonAssignments ?? [])
-        .filter((r) => !roster.some((x) => x.player_id === r.player_id))
-        .map((r) => r.player_id),
-    );
+    const clubTeamIds = clubTeams?.map((t) => t.id) ?? [];
+    const assignmentByPlayer = new Map<
+      string,
+      { team_id: string; team_name: string }
+    >();
+
+    if (clubTeamIds.length > 0) {
+      const { data: clubAssignments } = await supabase
+        .from("team_players")
+        .select("player_id, team_id, team:teams(id, name)")
+        .in("team_id", clubTeamIds)
+        .eq("season_id", season.id);
+
+      for (const row of clubAssignments ?? []) {
+        const team = unwrapOne(row.team as { id: string; name: string } | null);
+        if (team) {
+          assignmentByPlayer.set(row.player_id, {
+            team_id: team.id,
+            team_name: team.name,
+          });
+        }
+      }
+    }
+
     const onRoster = new Set(roster.map((r) => r.player_id));
 
-    available_players = (memberships ?? [])
-      .map((m) => {
-        const p = unwrapOne(
-          m.player as {
-            id: string;
-            name: string;
-            member_number: string | null;
-          } | null,
-        );
-        if (!p || onRoster.has(p.id) || assignedElsewhere.has(p.id)) return null;
-        return {
+    for (const m of memberships ?? []) {
+      const p = unwrapOne(
+        m.player as {
+          id: string;
+          name: string;
+          member_number: string | null;
+        } | null,
+      );
+      if (!p || onRoster.has(p.id)) continue;
+
+      const assignment = assignmentByPlayer.get(p.id);
+      if (!assignment) {
+        available_players.push({
           player_id: p.id,
           name: p.name,
           member_number: p.member_number,
-        };
-      })
-      .filter((p): p is NonNullable<typeof p> => p != null)
-      .sort((a, b) => a.name.localeCompare(b.name));
+        });
+      } else if (assignment.team_id !== teamId) {
+        on_other_teams.push({
+          player_id: p.id,
+          name: p.name,
+          member_number: p.member_number,
+          team_id: assignment.team_id,
+          team_name: assignment.team_name,
+        });
+      }
+    }
+
+    available_players.sort((a, b) => a.name.localeCompare(b.name));
+    on_other_teams.sort((a, b) => a.name.localeCompare(b.name));
   }
 
   const [homeMatches, awayMatches] = await Promise.all([
@@ -376,7 +417,9 @@ export async function loadClubTeamDetail(
       ? { id: season.id, name: season.name, status: season.status }
       : null,
     roster,
+    roster_editable,
     available_players,
+    on_other_teams,
     matches,
   };
 }

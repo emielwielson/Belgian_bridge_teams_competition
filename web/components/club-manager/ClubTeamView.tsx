@@ -37,7 +37,7 @@ export function ClubTeamView({ clubId, teamId }: Props) {
     load();
   }, [load]);
 
-  const seasonLocked = detail?.season?.status !== "setup";
+  const rosterEditable = detail?.roster_editable ?? false;
 
   async function saveTeamSettings() {
     const res = await fetch(`/api/clubs/${clubId}/teams/${teamId}`, {
@@ -146,11 +146,16 @@ export function ClubTeamView({ clubId, teamId }: Props) {
 
       <section className="card flex flex-col gap-3">
         <h2 className="text-sm font-semibold text-zinc-900">Roster</h2>
-        {seasonLocked ? (
+        {!rosterEditable ? (
           <p className="text-sm text-zinc-600">
             Roster changes are locked while the season is active.
           </p>
-        ) : null}
+        ) : (
+          <p className="text-sm text-zinc-600">
+            Add club members who are not on a team yet. A player can only be on
+            one team per season.
+          </p>
+        )}
         {detail.roster.length === 0 ? (
           <p className="text-sm text-zinc-500">No players on this team yet.</p>
         ) : (
@@ -168,7 +173,7 @@ export function ClubTeamView({ clubId, teamId }: Props) {
                     </span>
                   ) : null}
                 </span>
-                {!seasonLocked ? (
+                {rosterEditable ? (
                   <button
                     type="button"
                     onClick={() => removeFromRoster(player.player_id)}
@@ -182,26 +187,56 @@ export function ClubTeamView({ clubId, teamId }: Props) {
           </ul>
         )}
 
-        {!seasonLocked && detail.available_players.length > 0 ? (
-          <div className="mt-2 flex flex-col gap-2 border-t border-zinc-100 pt-4">
-            <p className="text-sm font-medium text-zinc-900">Add from club</p>
-            <ul className="flex flex-col gap-2">
-              {detail.available_players.map((player) => (
-                <li
-                  key={player.player_id}
-                  className="flex flex-wrap items-center justify-between gap-2 text-sm"
-                >
-                  <span className="text-zinc-900">{player.name}</span>
-                  <button
-                    type="button"
-                    onClick={() => addToRoster(player.player_id)}
-                    className="btn-secondary py-1 text-xs"
+        {rosterEditable ? (
+          <div className="mt-4 flex flex-col gap-4 border-t border-zinc-100 pt-4">
+            <h3 className="text-sm font-medium text-zinc-900">Add from club</h3>
+            {detail.available_players.length > 0 ? (
+              <ul className="flex flex-col gap-2">
+                {detail.available_players.map((player) => (
+                  <li
+                    key={player.player_id}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-zinc-100 px-3 py-2 text-sm"
                   >
-                    Add to team
-                  </button>
-                </li>
-              ))}
-            </ul>
+                    <span className="text-zinc-900">{player.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => addToRoster(player.player_id)}
+                      className="btn-secondary py-1 text-xs"
+                    >
+                      Add to team
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-zinc-500">
+                No unassigned club members. Players already on another team must
+                be removed there first.
+              </p>
+            )}
+            {(detail.on_other_teams ?? []).length > 0 ? (
+              <div className="flex flex-col gap-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                  On another team
+                </p>
+                <ul className="flex flex-col gap-2 text-sm text-zinc-600">
+                  {(detail.on_other_teams ?? []).map((player) => (
+                    <li
+                      key={player.player_id}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-dashed border-zinc-200 px-3 py-2"
+                    >
+                      <span>{player.name}</span>
+                      <Link
+                        href={`/club-manager/${clubId}/teams/${player.team_id}`}
+                        className="text-xs text-zinc-700 hover:underline"
+                      >
+                        On {player.team_name} →
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </div>
         ) : null}
       </section>
