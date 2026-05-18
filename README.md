@@ -42,7 +42,10 @@ brew install supabase/tap/supabase
      - Redirect URLs: `http://localhost:3000/auth/callback` (add production URLs when deployed)
    - **Providers:** enable **Email** (Magic Link / OTP)
 
-5. Copy API keys from **Project Settings → API** into `.env.local` (hosted section below).
+5. Copy API keys from **Project Settings → [API Keys](https://supabase.com/dashboard/project/_/settings/api-keys)** into `.env.local`:
+   - **Publishable key** (`sb_publishable_...`) → `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+   - **Secret key** (`sb_secret_...`) → `SUPABASE_SECRET_KEY`  
+   Do not use the legacy **anon** / **service_role** JWT keys.
 
 After migrations exist (task 1.2+), apply them to the cloud project:
 
@@ -66,8 +69,18 @@ Ensure `major_version` in [`supabase/config.toml`](supabase/config.toml) matches
 
    ```bash
    cp .env.example .env.local
-   # Edit NEXT_PUBLIC_SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY
    ```
+
+   Print env-style output with this repo’s variable names:
+
+   ```bash
+   supabase status -o env \
+     --override-name api.url=NEXT_PUBLIC_SUPABASE_URL \
+     --override-name api.publishable_key=NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY \
+     --override-name api.secret_key=SUPABASE_SECRET_KEY
+   ```
+
+   If your CLI still shows legacy `ANON_KEY` / `SERVICE_ROLE_KEY`, map them to `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` and `SUPABASE_SECRET_KEY` in `.env.local`, or create publishable/secret keys in the Dashboard for hosted use.
 
 4. Open Studio at the URL shown in `supabase status` (default `http://127.0.0.1:54323`).
 
@@ -81,14 +94,14 @@ Ensure `major_version` in [`supabase/config.toml`](supabase/config.toml) matches
 
 | Variable | Used by | Local source | Hosted source |
 |----------|---------|--------------|---------------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Browser, Next.js | `http://127.0.0.1:54321` from `supabase status` | Dashboard → API → Project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Browser, Next.js | `supabase status` → anon key | Dashboard → API → anon `public` key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Server only (API routes, migrations) | `supabase status` → service_role key | Dashboard → API → `service_role` key |
+| `NEXT_PUBLIC_SUPABASE_URL` | Browser, Next.js | `http://127.0.0.1:54321` from `supabase status` | Dashboard → API Keys → Project URL |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Browser, Next.js | `supabase status` → publishable key (`sb_publishable_...`) | Dashboard → API Keys → **Publishable key** |
+| `SUPABASE_SECRET_KEY` | Server only (API routes, admin scripts) | `supabase status` → secret key (`sb_secret_...`) | Dashboard → API Keys → **Secret key** |
 | `SUPABASE_PROJECT_REF` | CLI (`link`, `db push`) | N/A | Dashboard → General → Reference ID |
 | `DATABASE_URL` | Optional direct SQL / tools | `postgresql://postgres:postgres@127.0.0.1:54322/postgres` | Dashboard → Database → connection string |
 | `MAKE_WEBHOOK_URL` | Email notifications (task 5.6) | N/A | Make.com scenario webhook |
 
-Never commit `.env.local` or expose `SUPABASE_SERVICE_ROLE_KEY` to the client.
+Never commit `.env.local` or expose `SUPABASE_SECRET_KEY` to the client. Legacy `anon` and `service_role` keys are deprecated; see [Understanding API keys](https://supabase.com/docs/guides/getting-started/api-keys).
 
 Template: [`.env.example`](.env.example).
 

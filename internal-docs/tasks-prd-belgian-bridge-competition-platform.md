@@ -30,7 +30,7 @@ Based on: `internal-docs/prd-belgian-bridge-competition-platform.md`
 - `web/public/sw.js` - Service worker for installable PWA.
 - `web/middleware.ts` - Locale routing and authenticated route protection.
 - `web/middleware.test.ts` - Tests for middleware auth redirects.
-- `web/lib/supabase/env.ts` - Validated Supabase environment variables.
+- `web/lib/supabase/env.ts` - Validated Supabase environment variables (`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`).
 - `web/lib/supabase/browser-client.ts` - Browser Supabase client.
 - `web/lib/supabase/server-client.ts` - Server Supabase client for RSC and route handlers.
 - `web/lib/auth/roles.ts` - Role constants and helpers.
