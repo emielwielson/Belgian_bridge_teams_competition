@@ -43,8 +43,19 @@ Migration files live in [`supabase/migrations/`](supabase/migrations/). Apply th
 2. `0002_constraints_and_indexes.sql`
 3. `0003_scoring_standings_audit.sql`
 4. `0004_competition_lifecycle.sql`
-5. [`supabase/seed.sql`](supabase/seed.sql)
-6. [`supabase/tests/task1_smoke_test.sql`](supabase/tests/task1_smoke_test.sql) — should return `task1_smoke_test passed`
+5. `0005_user_roles.sql`
+6. `0006_auth_helpers.sql`
+7. `0007_policies_roles.sql`
+8. [`supabase/seed.sql`](supabase/seed.sql)
+9. [`supabase/tests/task1_smoke_test.sql`](supabase/tests/task1_smoke_test.sql) — should return `task1_smoke_test passed`
+10. [`supabase/tests/task2_auth_smoke_test.sql`](supabase/tests/task2_auth_smoke_test.sql) — should return `task2_auth_smoke_test passed`
+
+After your first Magic Link sign-in, grant yourself admin in the SQL Editor (replace with your `auth.users` id):
+
+```sql
+insert into public.user_roles (user_id, role)
+values ('<your-auth-users-id>', 'system_admin');
+```
 
 For each step, open **SQL Editor** → **New query**, paste the file contents, and run.
 

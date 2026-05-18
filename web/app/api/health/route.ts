@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { getSupabasePublicEnv } from "@/lib/supabase/env";
-import { createServerClient } from "@/lib/supabase/server-client";
+import { createServiceClient } from "@/lib/supabase/server-client";
 
 export async function GET() {
   try {
     getSupabasePublicEnv();
 
-    const supabase = createServerClient();
+    const supabase = createServiceClient();
     const { error } = await supabase.from("regions").select("id").limit(1);
 
     if (error) {

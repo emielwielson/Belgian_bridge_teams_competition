@@ -111,15 +111,15 @@ Based on: `internal-docs/prd-belgian-bridge-competition-platform.md`
   - [x] 1.7 Write `supabase/tests/task1_smoke_test.sql` verifying schema creation, FK integrity, and core uniqueness constraints.
   - [x] 1.8 Scaffold Next.js app under `web/` (App Router, TypeScript, Tailwind) with base layout and health check route.
 
-- [ ] 2.0 Authentication, roles, and authorization
-  - [ ] 2.1 Enable Supabase Magic Link auth and configure redirect URLs for local and production.
-  - [ ] 2.2 Create `user_roles` (or equivalent) table supporting multi-role assignment per user: Player, Captain, Club Manager, Arbiter, Competition Manager, System Admin (FR 60–61).
-  - [ ] 2.3 Implement SQL helpers to resolve current user roles and permissions (migration `0005_auth_helpers.sql`).
-  - [ ] 2.4 Add RLS policies in `0004_policies_roles.sql` for all core tables: public read for standings-related data; write access scoped by role and team/club membership (FR 62–63).
-  - [ ] 2.5 Build login flow: `LoginForm.tsx`, `[locale]/login/page.tsx`, `auth/callback/route.ts`, `api/auth/me`, `api/auth/signout`.
-  - [ ] 2.6 Implement `middleware.ts` to protect admin and role-specific routes; allow unauthenticated access only to public standings routes (FR 63).
-  - [ ] 2.7 Add `lib/auth/route-auth.ts` and use it in all mutating API routes to enforce server-side authorization (FR 70).
-  - [ ] 2.8 Write `supabase/tests/task2_auth_smoke_test.sql` and `web/middleware.test.ts` for auth and access control.
+- [x] 2.0 Authentication, roles, and authorization
+  - [x] 2.1 Enable Supabase Magic Link auth and configure redirect URLs for local and production.
+  - [x] 2.2 Create `user_roles` (or equivalent) table supporting multi-role assignment per user: Player, Captain, Club Manager, Arbiter, Competition Manager, System Admin (FR 60–61).
+  - [x] 2.3 Implement SQL helpers to resolve current user roles and permissions (migration `0006_auth_helpers.sql`).
+  - [x] 2.4 Add RLS policies in `0007_policies_roles.sql` for all core tables: public read for standings-related data; write access scoped by role and team/club membership (FR 62–63).
+  - [x] 2.5 Build login flow: `LoginForm.tsx`, `login/page.tsx`, `auth/callback/route.ts`, `api/auth/me`, `api/auth/signout`.
+  - [x] 2.6 Implement `middleware.ts` to protect admin and role-specific routes; allow unauthenticated access only to public standings routes (FR 63).
+  - [x] 2.7 Add `lib/auth/route-auth.ts` and use it in all mutating API routes to enforce server-side authorization (FR 70).
+  - [x] 2.8 Write `supabase/tests/task2_auth_smoke_test.sql` and `web/middleware.test.ts` for auth and access control.
 
 - [ ] 3.0 Competition administration (structure, clubs, players, teams, scheduling)
   - [ ] 3.1 Build admin API `api/admin/competition/route.ts` for CRUD on leagues, divisions, and groups within the active season (FR 1–4, 6–8).
