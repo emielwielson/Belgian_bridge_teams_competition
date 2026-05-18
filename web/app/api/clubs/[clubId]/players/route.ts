@@ -1,5 +1,9 @@
-import { requireAuth } from "@/lib/auth/route-auth";
+import {
+  COMPETITION_ADMIN_ROLES,
+  requireAuth,
+} from "@/lib/auth/route-auth";
 import { assertClubManagerForClub } from "@/lib/auth/user-access";
+import { hasAnyRole } from "@/lib/auth/roles";
 import { requireActiveSeason } from "@/lib/competition/season";
 import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
 
@@ -33,9 +37,15 @@ export async function POST(request: Request, { params }: Params) {
     const season = await requireActiveSeason(supabase);
     const body = await request.json();
 
-    let playerId = body.player_id as string | undefined;
-
+    const playerId = body.player_id as string | undefined;
     if (!playerId) {
+      const isAdmin = hasAnyRole(roles, [...COMPETITION_ADMIN_ROLES]);
+      if (!isAdmin) {
+        return jsonError(
+          "player_id is required; club managers cannot create new players",
+          403,
+        );
+      }
       const { data: player, error: playerError } = await supabase
         .from("players")
         .insert({
@@ -46,7 +56,20 @@ export async function POST(request: Request, { params }: Params) {
         .select("id")
         .single();
       if (playerError) return jsonError(playerError.message, 400);
-      playerId = player.id;
+      const newPlayerId = player.id;
+
+      const { data, error } = await supabase
+        .from("player_club_memberships")
+        .insert({
+          player_id: newPlayerId,
+          club_id: clubId,
+          season_id: season.id,
+        })
+        .select("id, player_id")
+        .single();
+
+      if (error) return jsonError(error.message, 400);
+      return jsonOk({ membership: data }, { status: 201 });
     }
 
     const { data, error } = await supabase

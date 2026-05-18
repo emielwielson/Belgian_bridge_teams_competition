@@ -30,22 +30,6 @@ export function ClubOverviewView({ clubId }: Props) {
     load();
   }, [load]);
 
-  async function addPlayer() {
-    const name = prompt("Player name");
-    if (!name) return;
-    const res = await fetch(`/api/clubs/${clubId}/players`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
-    });
-    if (!res.ok) {
-      const err = await res.json();
-      setMessage(err.error ?? "Failed to add player");
-      return;
-    }
-    await load();
-  }
-
   if (loading) {
     return <p className="text-sm text-zinc-600">Loading…</p>;
   }
@@ -121,19 +105,10 @@ export function ClubOverviewView({ clubId }: Props) {
       </section>
 
       <section className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold text-zinc-900">Players</h2>
-          <button
-            type="button"
-            onClick={addPlayer}
-            disabled={seasonLocked}
-            className="btn-primary"
-          >
-            Add player
-          </button>
-        </div>
+        <h2 className="text-sm font-semibold text-zinc-900">Players</h2>
         <p className="text-sm text-zinc-600">
-          Membership and roster changes are blocked once the season is active.
+          Players are registered by the competition administrator. Roster changes
+          are blocked once the season is active.
         </p>
         {overview.players.length === 0 ? (
           <p className="text-sm text-zinc-500">No players registered yet.</p>
