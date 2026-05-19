@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { TeamMatchRow } from "@/lib/competition/team-queries";
 import { formatBrussels } from "@/lib/time/brussels";
 
@@ -17,10 +18,11 @@ export function TeamMatchesList({ teamName, matches }: Props) {
       ) : (
         <ul className="mt-3 flex flex-col gap-3">
           {matches.map((match) => (
-            <li
-              key={match.id}
-              className="rounded-md border border-zinc-100 px-3 py-3 text-sm"
-            >
+            <li key={match.id}>
+              <Link
+                href={`/matches/${match.id}`}
+                className="block rounded-md border border-zinc-100 px-3 py-3 text-sm transition-colors hover:border-zinc-300 hover:bg-zinc-50"
+              >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="font-medium text-zinc-900">
                   Round {match.round}
@@ -54,6 +56,7 @@ export function TeamMatchesList({ teamName, matches }: Props) {
                   VP {match.teamVp} – {match.opponentVp}
                 </p>
               ) : null}
+              </Link>
             </li>
           ))}
         </ul>

@@ -41,5 +41,13 @@ describe("TeamMatchesList", () => {
     expect(screen.getByText(/Home vs/)).toBeInTheDocument();
     expect(screen.getByText(/Away at/)).toBeInTheDocument();
     expect(screen.getByText(/VP 14 – 10/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Round 1/ })).toHaveAttribute(
+      "href",
+      "/matches/m1",
+    );
+    expect(screen.getByRole("link", { name: /Round 2/ })).toHaveAttribute(
+      "href",
+      "/matches/m2",
+    );
   });
 });
