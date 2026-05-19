@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
+import { FilePickerField } from "@/components/files/FilePickerField";
 import type { MatchArbiterRequestsState } from "@/lib/competition/arbiter-request";
 
 type Props = {
@@ -8,6 +9,7 @@ type Props = {
 };
 
 export function ArbiterRequestWorkflow({ matchId }: Props) {
+  const fileInputId = useId();
   const [state, setState] = useState<MatchArbiterRequestsState | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -16,6 +18,9 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
   const [board, setBoard] = useState("1");
   const [description, setDescription] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [fileInputKey, setFileInputKey] = useState(0);
+  const [uploadedPath, setUploadedPath] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -41,40 +46,60 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
     void load();
   }, [load]);
 
+  async function handleFileChange(next: File | null) {
+    setFile(next);
+    setUploadedPath(null);
+    setError(null);
+    setMessage(null);
+
+    if (!next) return;
+
+    setUploading(true);
+    try {
+      const uploadData = new FormData();
+      uploadData.append("file", next);
+      uploadData.append("purpose", "arbiter_request");
+      uploadData.append("matchId", matchId);
+      const uploadRes = await fetch("/api/files/upload", {
+        method: "POST",
+        body: uploadData,
+      });
+      const uploadBody = await uploadRes.json();
+      if (!uploadRes.ok) {
+        throw new Error(uploadBody.error ?? "Upload failed");
+      }
+      setUploadedPath(uploadBody.path as string);
+      setMessage("Attachment uploaded. You can submit the request.");
+    } catch (err) {
+      setFile(null);
+      setFileInputKey((k) => k + 1);
+      setError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!description.trim()) {
       setError("Description is required");
       return;
     }
+    if (!uploadedPath) {
+      setError("Upload an attachment before submitting");
+      return;
+    }
     setBusy(true);
     setError(null);
     setMessage(null);
     try {
-      let imagePath: string | null = null;
-      if (file) {
-        const uploadData = new FormData();
-        uploadData.append("file", file);
-        uploadData.append("purpose", "arbiter_request");
-        uploadData.append("matchId", matchId);
-        const uploadRes = await fetch("/api/files/upload", {
-          method: "POST",
-          body: uploadData,
-        });
-        const uploadBody = await uploadRes.json();
-        if (!uploadRes.ok) {
-          throw new Error(uploadBody.error ?? "Upload failed");
-        }
-        imagePath = uploadBody.path as string;
-      }
-
       const res = await fetch(`/api/matches/${matchId}/arbiter-requests`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           board: Number(board),
           description: description.trim(),
-          image_path: imagePath,
+          image_path: uploadedPath,
         }),
       });
       const body = await res.json();
@@ -84,6 +109,8 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
       setState(body.state);
       setDescription("");
       setFile(null);
+      setUploadedPath(null);
+      setFileInputKey((k) => k + 1);
       setMessage(
         "Arbiter request submitted. Arbiters were notified by email.",
       );
@@ -93,6 +120,12 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
       setBusy(false);
     }
   }
+
+  const canSubmit =
+    Boolean(uploadedPath) &&
+    Boolean(description.trim()) &&
+    !busy &&
+    !uploading;
 
   if (loading) {
     return (
@@ -108,7 +141,8 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
     <section className="card">
       <h2 className="font-semibold text-zinc-900">Arbiter request</h2>
       <p className="mt-1 text-xs text-zinc-500">
-        Request a ruling from the arbiter for a specific board (optional photo).
+        Request a ruling for a specific board. Upload a photo or PDF (max 10
+        MB), then submit.
       </p>
 
       {state.can_submit ? (
@@ -134,19 +168,21 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
               placeholder="Describe the situation…"
             />
           </label>
-          <label className="block text-xs font-medium text-zinc-600">
-            Photo (optional)
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp,application/pdf"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-              className="mt-1 w-full text-sm"
-            />
-          </label>
+          <FilePickerField
+            key={fileInputKey}
+            id={fileInputId}
+            file={file}
+            onFileChange={handleFileChange}
+            hint="Attachment (PDF or image, required)"
+            disabled={uploading || busy}
+          />
+          {uploading ? (
+            <p className="text-sm text-zinc-600">Uploading attachment…</p>
+          ) : null}
           <button
             type="submit"
-            disabled={busy}
-            className="btn-primary text-sm disabled:opacity-50"
+            disabled={!canSubmit}
+            className="btn-primary text-sm disabled:cursor-not-allowed disabled:bg-zinc-400 disabled:opacity-100 hover:disabled:bg-zinc-400"
           >
             {busy ? "Submitting…" : "Submit to arbiter"}
           </button>
@@ -171,7 +207,7 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
             </li>
           ))}
         </ul>
-      ) : (
+      ) : state.can_submit ? null : (
         <p className="mt-3 text-sm text-zinc-600">No arbiter requests yet.</p>
       )}
 

@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { ArbiterRequestWorkflow } from "@/components/matches/ArbiterRequestWorkflow";
-import { HomeAwaySwitchWorkflow } from "@/components/matches/HomeAwaySwitchWorkflow";
+import { MatchSecondaryWorkflows } from "@/components/matches/MatchSecondaryWorkflows";
 import { PostponeWorkflow } from "@/components/matches/PostponeWorkflow";
 import { MatchLineupEditor } from "@/components/player/MatchLineupEditor";
 import { MatchScoreForm } from "@/components/player/MatchScoreForm";
@@ -202,19 +201,23 @@ export async function MatchDetailView({
         />
       ) : null}
 
-      {showArbiterRequests ? (
-        <ArbiterRequestWorkflow matchId={matchId} />
-      ) : null}
-
-      {showHomeAwaySwitch && homeAwaySwitchState ? (
-        <HomeAwaySwitchWorkflow
-          key={matchId}
+      {showArbiterRequests || showHomeAwaySwitch ? (
+        <MatchSecondaryWorkflows
           matchId={matchId}
-          homeTeamName={match.home_team.name}
-          awayTeamName={match.away_team.name}
-          homeTeamId={match.home_team_id}
-          awayTeamId={match.away_team_id}
-          initialState={homeAwaySwitchState}
+          showArbiter={showArbiterRequests}
+          showHomeAwaySwitch={showHomeAwaySwitch}
+          homeAwaySwitch={
+            showHomeAwaySwitch && homeAwaySwitchState
+              ? {
+                  matchId,
+                  homeTeamName: match.home_team.name,
+                  awayTeamName: match.away_team.name,
+                  homeTeamId: match.home_team_id,
+                  awayTeamId: match.away_team_id,
+                  initialState: homeAwaySwitchState,
+                }
+              : null
+          }
         />
       ) : null}
 
