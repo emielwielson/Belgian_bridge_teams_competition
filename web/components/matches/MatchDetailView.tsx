@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArbiterRequestWorkflow } from "@/components/matches/ArbiterRequestWorkflow";
 import { HomeAwaySwitchWorkflow } from "@/components/matches/HomeAwaySwitchWorkflow";
 import { PostponeWorkflow } from "@/components/matches/PostponeWorkflow";
 import { MatchLineupEditor } from "@/components/player/MatchLineupEditor";
@@ -15,6 +16,10 @@ import {
   canAccessPostponementWorkflow,
   getMatchPostponementState,
 } from "@/lib/competition/postponement";
+import {
+  canAccessArbiterRequestWorkflow,
+  getMatchArbiterRequestsState,
+} from "@/lib/competition/arbiter-request";
 import {
   getMatchHomeAwaySwitchState,
   shouldShowHomeAwaySwitchSection,
@@ -86,6 +91,7 @@ export async function MatchDetailView({
 
   let postponementState = null;
   let homeAwaySwitchState = null;
+  let arbiterRequestsState = null;
   if (userId) {
     postponementState = await getMatchPostponementState(supabase, matchId);
     try {
@@ -95,6 +101,14 @@ export async function MatchDetailView({
       );
     } catch {
       // Migration 0022 not applied yet.
+    }
+    try {
+      arbiterRequestsState = await getMatchArbiterRequestsState(
+        supabase,
+        matchId,
+      );
+    } catch {
+      // Migration 0026 not applied yet.
     }
   }
 
@@ -106,6 +120,10 @@ export async function MatchDetailView({
     canOps &&
     homeAwaySwitchState != null &&
     shouldShowHomeAwaySwitchSection(homeAwaySwitchState);
+  const showArbiterRequests =
+    canOps &&
+    arbiterRequestsState != null &&
+    canAccessArbiterRequestWorkflow(arbiterRequestsState);
 
   const homeLineup = lineup
     .filter((e) => e.team_id === match.home_team_id)
@@ -182,6 +200,10 @@ export async function MatchDetailView({
           homeTeamId={match.home_team_id}
           awayTeamId={match.away_team_id}
         />
+      ) : null}
+
+      {showArbiterRequests ? (
+        <ArbiterRequestWorkflow matchId={matchId} />
       ) : null}
 
       {showHomeAwaySwitch && homeAwaySwitchState ? (

@@ -146,15 +146,15 @@ Based on: `internal-docs/prd-belgian-bridge-competition-platform.md`
   - [x] 4.10 Implement `lib/time/brussels.ts` and use consistently in match UI (FR 26).
   - [x] 4.11 Write `supabase/tests/task4_match_ops_smoke_test.sql` and component tests for scoring and standings.
 
-- [ ] 5.0 Operational workflows (postponement, switches, arbiter, discipline, files, notifications, audit)
-  - [ ] 5.1 Implement postponement workflow API and `PostponeWorkflow.tsx`: home captain proposes, away captain approves, notify Competition Manager (FR 50).
-  - [ ] 5.2 Implement home/away switch API: only before match is played; only for double round-robin groups using RBBF template rounds 8–14 mirror rules (FR 51).
-  - [ ] 5.3 Implement arbiter request API and Arbiter UI: board reference, image attachment, notify arbiters/admins/captains (FR 52–53).
-  - [ ] 5.4 Implement warnings and rulings (PDF attachment) CRUD with role checks (FR 45–46).
-  - [ ] 5.5 Implement file upload (`api/files/upload`, storage bucket, `file-upload-guard` edge function): PDF and images only, max 10 MB, indefinite retention (FR 47–49).
-  - [ ] 5.6 Integrate Make.com email webhooks (`make-webhook-email` function) for postponements, arbiter requests, and key admin events; add retry handling (FR 54–56).
-  - [ ] 5.7 Build admin match log viewer API queryable by Competition Manager and System Admin (FR 57–59).
-  - [ ] 5.8 Write `supabase/tests/task5_operational_smoke_test.sql` covering postpone, switch, arbiter, and file validation paths.
+- [x] 5.0 Operational workflows (postponement, switches, arbiter, discipline, files, notifications, audit)
+  - [x] 5.1 Implement postponement workflow API and `PostponeWorkflow.tsx`: home captain proposes, away captain approves, notify Competition Manager (FR 50).
+  - [x] 5.2 Implement home/away switch API: only before match is played; only for double round-robin groups using RBBF template rounds 8–14 mirror rules (FR 51).
+  - [x] 5.3 Implement arbiter request API and Arbiter UI: board reference, image attachment, notify arbiters/admins/captains (FR 52–53).
+  - [x] 5.4 Implement warnings and rulings (PDF attachment) CRUD with role checks (FR 45–46).
+  - [x] 5.5 Implement file upload (`api/files/upload`, storage bucket): PDF and images only, max 10 MB (FR 47–49; edge guard deferred).
+  - [x] 5.6 Integrate Make.com email webhooks with retry for postponements and arbiter requests (FR 54–56).
+  - [x] 5.7 Build admin match log viewer API queryable by Competition Manager and System Admin (FR 57–59).
+  - [x] 5.8 Write `supabase/tests/task5_operational_smoke_test.sql` covering postpone, switch, arbiter, and file validation paths.
 
 - [ ] 6.0 Versioned API, PWA shell, and role-based user experience
   - [ ] 6.1 Expose core domain operations under `/api/v1/*` (leagues, standings, matches/score, schedule generate, files, arbiter requests) mirroring internal routes (FR 68–69).

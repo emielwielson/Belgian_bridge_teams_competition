@@ -10,8 +10,11 @@ import {
 } from "@/lib/competition/scopes";
 import { CompetitionManagement } from "./CompetitionManagement";
 import { NationalCompetitionSetup } from "./NationalCompetitionSetup";
+import { MatchLogViewer } from "./MatchLogViewer";
 import { PenaltyManagement } from "./PenaltyManagement";
+import { RulingManagement } from "./RulingManagement";
 import { RegionalGroupScheduleSettings } from "./RegionalGroupScheduleSettings";
+import { WarningManagement } from "./WarningManagement";
 
 type DivisionLevel = { id: string; code: string; name: string };
 type Group = {
@@ -339,12 +342,20 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
         </section>
       )}
 
-      {scope === SCOPES.NATIONAL && (
-        <PenaltyManagement
-          groupId={selectedGroupId}
-          teams={teams.map((t) => ({ id: t.id, name: t.name }))}
-        />
-      )}
+      {selectedGroupId ? (
+        <>
+          <PenaltyManagement
+            groupId={selectedGroupId}
+            teams={teams.map((t) => ({ id: t.id, name: t.name }))}
+          />
+          <WarningManagement
+            groupId={selectedGroupId}
+            teams={teams.map((t) => ({ id: t.id, name: t.name }))}
+          />
+          <RulingManagement groupId={selectedGroupId} />
+          <MatchLogViewer groupId={selectedGroupId} />
+        </>
+      ) : null}
     </main>
   );
 }

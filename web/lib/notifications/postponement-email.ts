@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServiceClient } from "@/lib/supabase/server-client";
 import { formatBrussels } from "@/lib/time/brussels";
+import { sendMakeWebhook } from "./make-webhook";
 
 export type PostponementProposedEmailContext = {
   matchId: string;
@@ -146,37 +147,27 @@ export async function sendPostponementProposedEmail(
   homeTeamId: string,
   awayTeamId: string,
 ): Promise<void> {
-  const webhookUrl = process.env.MAKE_WEBHOOK_URL;
-  if (!webhookUrl) return;
-
   const cc = await loadPostponementProposedCc(homeTeamId, awayTeamId);
   if (cc.length === 0) return;
 
   const { subject, bodyText, bodyHtml } = buildProposedEmailContent(ctx);
   const matchUrl = matchPostponementUrl(ctx.matchId);
 
-  try {
-    await fetch(webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        type: "postponement_proposed",
-        subject,
-        body_text: bodyText,
-        body_html: bodyHtml,
-        cc,
-        match_id: ctx.matchId,
-        match_url: matchUrl,
-        round: ctx.round,
-        home_team_name: ctx.homeTeamName,
-        away_team_name: ctx.awayTeamName,
-        proposing_team_name: ctx.proposingTeamName,
-        previous_datetime: ctx.previousDatetime,
-        proposed_datetime: ctx.proposedDatetime,
-        notified_at: new Date().toISOString(),
-      }),
-    });
-  } catch {
-    // Retry handling deferred to task 5.6
-  }
+  await sendMakeWebhook(
+    {
+      subject,
+      body_text: bodyText,
+      body_html: bodyHtml,
+      cc,
+      match_id: ctx.matchId,
+      match_url: matchUrl,
+      round: ctx.round,
+      home_team_name: ctx.homeTeamName,
+      away_team_name: ctx.awayTeamName,
+      proposing_team_name: ctx.proposingTeamName,
+      previous_datetime: ctx.previousDatetime,
+      proposed_datetime: ctx.proposedDatetime,
+    },
+    { eventType: "postponement_proposed" },
+  );
 }

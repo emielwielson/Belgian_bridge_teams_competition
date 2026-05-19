@@ -63,6 +63,8 @@ For each step, open **SQL Editor** → **New query**, paste the file contents, a
 
 Optional: use **Database** → **Migrations** in the Dashboard if you prefer its migration UI.
 
+**Task 5 (operational workflows):** apply through `0026_arbiter_requests.sql` (includes `0021`–`0025` for postponement, home/away switch, operational file storage, warnings/rulings audit, arbiter requests). Then run [`supabase/tests/task5_operational_smoke_test.sql`](supabase/tests/task5_operational_smoke_test.sql). Assign the `arbiter` role in `user_roles` for users who should use `/arbiter`. Storage bucket: `operational-files` (private; uploads via `/api/files/upload`).
+
 VP template rows in the seed use sample IMP bands — verify against your competition rules before production.
 
 [`supabase/config.toml`](supabase/config.toml) is kept as reference for local/auth defaults only; you do not need the CLI to run the project.
