@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { MatchSecondaryWorkflows } from "@/components/matches/MatchSecondaryWorkflows";
-import { PostponeWorkflow } from "@/components/matches/PostponeWorkflow";
 import { MatchLineupEditor } from "@/components/player/MatchLineupEditor";
 import { MatchScoreForm } from "@/components/player/MatchScoreForm";
 import {
@@ -191,21 +190,22 @@ export async function MatchDetailView({
         ) : null}
       </header>
 
-      {showPostpone ? (
-        <PostponeWorkflow
-          matchId={matchId}
-          homeTeamName={match.home_team.name}
-          awayTeamName={match.away_team.name}
-          homeTeamId={match.home_team_id}
-          awayTeamId={match.away_team_id}
-        />
-      ) : null}
-
-      {showArbiterRequests || showHomeAwaySwitch ? (
+      {showPostpone || showArbiterRequests || showHomeAwaySwitch ? (
         <MatchSecondaryWorkflows
           matchId={matchId}
+          showPostpone={showPostpone}
           showArbiter={showArbiterRequests}
           showHomeAwaySwitch={showHomeAwaySwitch}
+          postpone={
+            showPostpone
+              ? {
+                  homeTeamName: match.home_team.name,
+                  awayTeamName: match.away_team.name,
+                  homeTeamId: match.home_team_id,
+                  awayTeamId: match.away_team_id,
+                }
+              : null
+          }
           homeAwaySwitch={
             showHomeAwaySwitch && homeAwaySwitchState
               ? {
