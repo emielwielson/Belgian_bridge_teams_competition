@@ -3,6 +3,10 @@ import { assertClubManagerForClub } from "@/lib/auth/user-access";
 import { loadClubTeamDetail } from "@/lib/competition/club-manager-queries";
 import { requireActiveSeason } from "@/lib/competition/season";
 import { requireSeasonInSetup } from "@/lib/competition/season-setup";
+import {
+  assertCaptainIsClubMember,
+  parseCaptainId,
+} from "@/lib/competition/team-captain";
 import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
 
 type Params = { params: Promise<{ clubId: string; teamId: string }> };
@@ -42,11 +46,19 @@ export async function PATCH(request: Request, { params }: Params) {
     const body = await request.json();
     const updates: { captain_id?: string | null } = {};
 
-    if ("captain_id" in body) {
-      updates.captain_id =
-        body.captain_id === "" || body.captain_id == null
-          ? null
-          : String(body.captain_id);
+    const captainId = parseCaptainId(body);
+    if (captainId !== undefined) {
+      if (captainId === null) {
+        updates.captain_id = null;
+      } else {
+        const season = await requireActiveSeason(supabase);
+        await assertCaptainIsClubMember(supabase, {
+          clubId,
+          playerId: captainId,
+          seasonId: season.id,
+        });
+        updates.captain_id = captainId;
+      }
     }
 
     if (Object.keys(updates).length === 0) {

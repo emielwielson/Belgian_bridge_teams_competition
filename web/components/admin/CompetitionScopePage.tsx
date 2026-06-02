@@ -14,6 +14,7 @@ import { MatchLogViewer } from "./MatchLogViewer";
 import { PenaltyManagement } from "./PenaltyManagement";
 import { RulingManagement } from "./RulingManagement";
 import { RegionalGroupScheduleSettings } from "./RegionalGroupScheduleSettings";
+import { TeamsSetupPanel } from "./TeamsSetupPanel";
 import { WarningManagement } from "./WarningManagement";
 
 type DivisionLevel = { id: string; code: string; name: string };
@@ -45,9 +46,7 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
   const [divisionLevels, setDivisionLevels] = useState<DivisionLevel[]>([]);
   const [seasonStatus, setSeasonStatus] = useState("setup");
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
-  const [teams, setTeams] = useState<
-    { id: string; name: string; club_id: string; roster: unknown[] }[]
-  >([]);
+  const [teams, setTeams] = useState<{ id: string; name: string }[]>([]);
   const [clubs, setClubs] = useState<{ id: string; name: string }[]>([]);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -121,48 +120,37 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
     await load();
   }
 
-  async function loadTeams(groupId: string) {
-    setSelectedGroupId(groupId);
+  const refreshTeamsForGroup = useCallback(async (groupId: string) => {
     const res = await fetch(`/api/admin/competition/teams?groupId=${groupId}`);
     const body = await res.json();
-    setTeams(body.teams ?? []);
+    setTeams(
+      (body.teams ?? []).map((t: { id: string; name: string }) => ({
+        id: t.id,
+        name: t.name,
+      })),
+    );
+  }, []);
+
+  function selectGroup(groupId: string) {
+    setSelectedGroupId(groupId);
+    void refreshTeamsForGroup(groupId);
   }
 
-  async function addTeam(groupId: string) {
-    const clubId = clubs[0]?.id;
-    if (!clubId) {
-      setMessage("Create a club first");
-      return;
+  const selectedGroupContext = (() => {
+    if (!selectedGroupId) return null;
+    for (const league of leagues) {
+      for (const division of league.divisions) {
+        const group = division.groups.find((g) => g.id === selectedGroupId);
+        if (group) {
+          return {
+            group,
+            divisionLabel: `${division.name} — ${group.name}`,
+          };
+        }
+      }
     }
-    const name = prompt("Team name");
-    if (!name) return;
-    const res = await fetch("/api/admin/competition/teams", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ group_id: groupId, club_id: clubId, name }),
-    });
-    if (!res.ok) {
-      const body = await res.json();
-      setMessage(body.error ?? "Failed to add team");
-      return;
-    }
-    await loadTeams(groupId);
-  }
-
-  async function removeTeam(teamId: string, groupId: string) {
-    if (!confirm("Remove this team from the group?")) return;
-    const res = await fetch("/api/admin/competition/teams", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: teamId }),
-    });
-    const body = await res.json();
-    if (!res.ok) {
-      setMessage(body.error ?? "Failed to remove team");
-      return;
-    }
-    await loadTeams(groupId);
-  }
+    return null;
+  })();
 
   async function generateSchedule(groupId: string) {
     setMessage(null);
@@ -269,7 +257,7 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
                     <button
                       type="button"
                       className="font-medium text-zinc-900 underline hover:text-zinc-700"
-                      onClick={() => loadTeams(group.id)}
+                      onClick={() => selectGroup(group.id)}
                     >
                       {group.name}
                     </button>
@@ -279,13 +267,6 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
                         max {group.max_matches_per_day_per_team}/day
                       </span>
                     )}
-                    <button
-                      type="button"
-                      className="text-xs font-medium text-zinc-700 underline"
-                      onClick={() => addTeam(group.id)}
-                    >
-                      Add team
-                    </button>
                     <button
                       type="button"
                       className="text-xs font-medium text-zinc-700 underline"
@@ -301,44 +282,26 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
         </section>
       ))}
 
-      {selectedGroupId && (
-        <section className="card">
+      {selectedGroupId && selectedGroupContext && (
+        <section className="card flex flex-col gap-4">
           <h2 className="font-semibold text-zinc-900">
-            Teams ({teams.length}
+            Teams — {selectedGroupContext.divisionLabel} ({teams.length}
             {teams.length === 8 ? ", RBBF template" : ""})
           </h2>
-          {(() => {
-            const selectedGroup = leagues
-              .flatMap((l) => l.divisions)
-              .flatMap((d) => d.groups)
-              .find((g) => g.id === selectedGroupId);
-            if (!selectedGroup) return null;
-            return (
-              <RegionalGroupScheduleSettings
-                groupId={selectedGroup.id}
-                teamCount={teams.length}
-                roundRobinCount={selectedGroup.round_robin_count ?? 2}
-                roundCount={selectedGroup.round_count ?? 14}
-                onUpdated={load}
-              />
-            );
-          })()}
-          <ul className="mt-2 space-y-1 text-sm text-zinc-800">
-            {teams.map((t) => (
-              <li key={t.id} className="flex flex-wrap items-center gap-2">
-                <span>
-                  {t.name} — roster: {t.roster?.length ?? 0}
-                </span>
-                <button
-                  type="button"
-                  className="text-xs font-medium text-red-700 underline"
-                  onClick={() => removeTeam(t.id, selectedGroupId)}
-                >
-                  Remove
-                </button>
-              </li>
-            ))}
-          </ul>
+          <RegionalGroupScheduleSettings
+            groupId={selectedGroupContext.group.id}
+            teamCount={teams.length}
+            roundRobinCount={selectedGroupContext.group.round_robin_count ?? 2}
+            roundCount={selectedGroupContext.group.round_count ?? 14}
+            onUpdated={load}
+          />
+          <TeamsSetupPanel
+            groupId={selectedGroupId}
+            divisionLabel={selectedGroupContext.divisionLabel}
+            clubs={clubs}
+            readOnly={seasonStatus !== "setup"}
+            onTeamsChanged={() => refreshTeamsForGroup(selectedGroupId)}
+          />
         </section>
       )}
 

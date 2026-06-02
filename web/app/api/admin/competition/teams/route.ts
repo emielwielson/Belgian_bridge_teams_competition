@@ -1,13 +1,23 @@
 import { COMPETITION_ADMIN_ROLES, requireRoles } from "@/lib/auth/route-auth";
-import {
-  assertNationalGroupCanAddTeam,
-  NATIONAL_TEAMS_PER_GROUP,
-} from "@/lib/competition/national-teams";
+import { assertNationalGroupCanAddTeam } from "@/lib/competition/national-teams";
 import { isNationalGroup } from "@/lib/competition/national-teams";
 import { requireActiveSeason } from "@/lib/competition/season";
 import { requireSeasonInSetup } from "@/lib/competition/season-setup";
 import { teamLocationFromClub } from "@/lib/competition/team-location";
+import {
+  assertCaptainIsClubMember,
+  parseCaptainId,
+  validateTeamCreateBody,
+} from "@/lib/competition/team-captain";
 import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
+
+function unwrapCaptain(raw: unknown): { id: string; name: string; member_number: string | null } | null {
+  if (!raw) return null;
+  const row = Array.isArray(raw) ? raw[0] : raw;
+  if (!row || typeof row !== "object") return null;
+  const p = row as { id: string; name: string; member_number: string | null };
+  return p.id ? p : null;
+}
 
 export async function GET(request: Request) {
   try {
@@ -18,7 +28,7 @@ export async function GET(request: Request) {
     const { data: teams, error } = await supabase
       .from("teams")
       .select(
-        "id, name, club_id, captain_id, club:clubs(id, name, region_id, location)",
+        "id, name, club_id, captain_id, club:clubs(id, name, region_id, location), captain:players(id, name, member_number)",
       )
       .eq("group_id", groupId)
       .order("name");
@@ -57,10 +67,11 @@ export async function GET(request: Request) {
         const club = Array.isArray(rawClub)
           ? (rawClub[0] as { location?: string | null } | undefined)
           : (rawClub as { location?: string | null } | null);
-        const { club: _club, ...rest } = t;
+        const { club: _club, captain: _captain, ...rest } = t;
         return {
           ...rest,
           location: teamLocationFromClub(club),
+          captain: unwrapCaptain(t.captain),
           roster: rosters[t.id] ?? [],
         };
       }),
@@ -103,8 +114,10 @@ export async function POST(request: Request) {
       requireSeasonInSetup(season);
     }
 
+    const createInput = validateTeamCreateBody(body);
+
     try {
-      await assertNationalGroupCanAddTeam(supabase, body.group_id);
+      await assertNationalGroupCanAddTeam(supabase, createInput.group_id);
     } catch (err) {
       return jsonError(
         err instanceof Error ? err.message : "Cannot add team",
@@ -112,13 +125,19 @@ export async function POST(request: Request) {
       );
     }
 
+    await assertCaptainIsClubMember(supabase, {
+      clubId: createInput.club_id,
+      playerId: createInput.captain_id,
+      seasonId: season.id,
+    });
+
     const { data, error } = await supabase
       .from("teams")
       .insert({
-        group_id: body.group_id,
-        club_id: body.club_id,
-        name: body.name,
-        captain_id: body.captain_id ?? null,
+        group_id: createInput.group_id,
+        club_id: createInput.club_id,
+        name: createInput.name,
+        captain_id: createInput.captain_id,
       })
       .select()
       .single();
@@ -134,14 +153,44 @@ export async function PATCH(request: Request) {
   try {
     const { supabase } = await requireRoles([...COMPETITION_ADMIN_ROLES]);
     const body = await request.json();
-    const patch: Record<string, unknown> = {};
-    if (body.name !== undefined) patch.name = body.name;
-    if (body.captain_id !== undefined) patch.captain_id = body.captain_id;
+    const teamId = typeof body.id === "string" ? body.id : "";
+    if (!teamId) return jsonError("id required", 400);
 
-    const { error } = await supabase
+    const { data: team, error: teamError } = await supabase
       .from("teams")
-      .update(patch)
-      .eq("id", body.id);
+      .select("id, club_id")
+      .eq("id", teamId)
+      .maybeSingle();
+
+    if (teamError) return jsonError(teamError.message, 500);
+    if (!team) return jsonError("Team not found", 404);
+
+    const patch: Record<string, unknown> = {};
+    if (body.name !== undefined) {
+      const name = typeof body.name === "string" ? body.name.trim() : "";
+      if (!name) return jsonError("Team name is required", 400);
+      patch.name = name;
+    }
+
+    const captainId = parseCaptainId(body);
+    if (captainId !== undefined) {
+      if (captainId === null) {
+        return jsonError("captain_id is required", 400);
+      }
+      const season = await requireActiveSeason(supabase);
+      await assertCaptainIsClubMember(supabase, {
+        clubId: team.club_id,
+        playerId: captainId,
+        seasonId: season.id,
+      });
+      patch.captain_id = captainId;
+    }
+
+    if (Object.keys(patch).length === 0) {
+      return jsonError("No fields to update", 400);
+    }
+
+    const { error } = await supabase.from("teams").update(patch).eq("id", teamId);
 
     if (error) return jsonError(error.message, 400);
     return jsonOk({ updated: true });
