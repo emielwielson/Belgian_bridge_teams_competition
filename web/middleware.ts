@@ -1,5 +1,4 @@
 import { createServerClient } from "@supabase/ssr";
-import createMiddleware from "next-intl/middleware";
 import { NextResponse, type NextRequest } from "next/server";
 import {
   isPublicPath,
@@ -11,42 +10,54 @@ import {
 } from "@/lib/auth/user-access";
 import { hasAnyRole } from "@/lib/auth/roles";
 import { getSupabasePublicEnv } from "@/lib/supabase/env";
-import { routing } from "./i18n/routing";
+import { defaultLocale, isLocale, type Locale } from "./i18n/config";
 
-const intlMiddleware = createMiddleware(routing);
+const LOCALE_COOKIE = "NEXT_LOCALE";
 
-const localeCookieName = "NEXT_LOCALE";
+function localeFromAcceptLanguage(header: string | null): Locale | null {
+  if (!header) return null;
+  for (const part of header.split(",")) {
+    const tag = part.split(";")[0]?.trim().toLowerCase();
+    if (!tag) continue;
+    if (tag.startsWith("nl")) return "nl";
+    if (tag.startsWith("fr")) return "fr";
+    if (tag.startsWith("en")) return "en";
+  }
+  return null;
+}
 
-function copyIntlCookies(from: NextResponse, to: NextResponse) {
-  const localeCookie = from.cookies.get(localeCookieName);
-  if (!localeCookie) {
+/** Persist detected locale in a cookie without URL rewrites. */
+function applyLocaleCookie(request: NextRequest, response: NextResponse) {
+  const existing = request.cookies.get(LOCALE_COOKIE)?.value;
+  if (existing && isLocale(existing)) {
     return;
   }
 
-  const cookieOptions =
-    typeof routing.localeCookie === "object"
-      ? Object.fromEntries(
-          Object.entries(routing.localeCookie).filter(([key]) => key !== "name"),
-        )
-      : {};
+  const detected =
+    localeFromAcceptLanguage(request.headers.get("accept-language")) ??
+    defaultLocale;
 
-  to.cookies.set(localeCookieName, localeCookie.value, {
+  response.cookies.set(LOCALE_COOKIE, detected, {
     path: "/",
-    ...cookieOptions,
+    sameSite: "lax",
+    maxAge: 60 * 60 * 24 * 365,
   });
 }
 
 export async function middleware(request: NextRequest) {
-  const intlResponse = intlMiddleware(request);
   const { pathname } = request.nextUrl;
 
   if (isPublicPath(pathname)) {
-    return intlResponse;
+    const response = NextResponse.next();
+    applyLocaleCookie(request, response);
+    return response;
   }
 
   const requiredRoles = requiredRolesForPath(pathname);
   if (!requiredRoles) {
-    return intlResponse;
+    const response = NextResponse.next();
+    applyLocaleCookie(request, response);
+    return response;
   }
 
   let response = NextResponse.next({ request });
@@ -75,7 +86,7 @@ export async function middleware(request: NextRequest) {
     loginUrl.pathname = "/login";
     loginUrl.searchParams.set("next", pathname);
     const redirect = NextResponse.redirect(loginUrl);
-    copyIntlCookies(intlResponse, redirect);
+    applyLocaleCookie(request, redirect);
     return redirect;
   }
 
@@ -98,7 +109,7 @@ export async function middleware(request: NextRequest) {
       home.pathname = "/";
       home.searchParams.set("error", "forbidden");
       const redirect = NextResponse.redirect(home);
-      copyIntlCookies(intlResponse, redirect);
+      applyLocaleCookie(request, redirect);
       return redirect;
     }
 
@@ -112,17 +123,17 @@ export async function middleware(request: NextRequest) {
         const clubUrl = request.nextUrl.clone();
         clubUrl.pathname = `/club-manager/${assignments[0].club_id}`;
         const redirect = NextResponse.redirect(clubUrl);
-        copyIntlCookies(intlResponse, redirect);
+        applyLocaleCookie(request, redirect);
         return redirect;
       }
     }
 
-    copyIntlCookies(intlResponse, response);
+    applyLocaleCookie(request, response);
     return response;
   }
 
   if (pathname.startsWith("/player/matches/")) {
-    copyIntlCookies(intlResponse, response);
+    applyLocaleCookie(request, response);
     return response;
   }
 
@@ -131,11 +142,11 @@ export async function middleware(request: NextRequest) {
     home.pathname = "/";
     home.searchParams.set("error", "forbidden");
     const redirect = NextResponse.redirect(home);
-    copyIntlCookies(intlResponse, redirect);
+    applyLocaleCookie(request, redirect);
     return redirect;
   }
 
-  copyIntlCookies(intlResponse, response);
+  applyLocaleCookie(request, response);
   return response;
 }
 

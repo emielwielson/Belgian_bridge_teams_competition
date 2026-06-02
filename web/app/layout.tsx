@@ -46,7 +46,7 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col bg-zinc-50 text-zinc-900 antialiased">
-        <NextIntlClientProvider messages={messages}>
+        <NextIntlClientProvider locale={locale} messages={messages}>
           <header className="border-b border-zinc-200 bg-white shadow-sm">
             <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-3">
               <Link href="/" className="text-sm font-semibold text-zinc-900">
