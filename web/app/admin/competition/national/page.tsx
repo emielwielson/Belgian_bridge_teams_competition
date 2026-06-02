@@ -1,6 +1,5 @@
-import { CompetitionScopePage } from "@/components/admin/CompetitionScopePage";
-import { SCOPES } from "@/lib/competition/scopes";
+import { NationalCompetitionSetup } from "@/components/admin/NationalCompetitionSetup";
 
 export default function NationalCompetitionPage() {
-  return <CompetitionScopePage scope={SCOPES.NATIONAL} />;
+  return <NationalCompetitionSetup />;
 }

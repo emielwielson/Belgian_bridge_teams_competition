@@ -1,10 +1,6 @@
-import { CompetitionScopePage } from "@/components/admin/CompetitionScopePage";
+import { RegionalCompetitionSetup } from "@/components/admin/RegionalCompetitionSetup";
 import { createServiceClient } from "@/lib/supabase/server-client";
-import {
-  parseRegionParam,
-  SCOPES,
-  type RegionCode,
-} from "@/lib/competition/scopes";
+import { parseRegionParam, type RegionCode } from "@/lib/competition/scopes";
 import { notFound } from "next/navigation";
 
 type Props = { params: Promise<{ region: string }> };
@@ -24,8 +20,7 @@ export default async function RegionalCompetitionPage({ params }: Props) {
   if (!data) notFound();
 
   return (
-    <CompetitionScopePage
-      scope={SCOPES.REGIONAL}
+    <RegionalCompetitionSetup
       regionCode={regionCode as RegionCode}
       regionId={data.id}
     />

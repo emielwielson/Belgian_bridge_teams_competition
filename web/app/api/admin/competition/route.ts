@@ -3,12 +3,14 @@ import { ensureNationalStructure } from "@/lib/competition/ensure-national-struc
 import { ensureRegionalLeague } from "@/lib/competition/ensure-regional-league";
 import { canonicalLeagueName } from "@/lib/competition/league-names";
 import { requireActiveSeason } from "@/lib/competition/season";
+import { requireSeasonInSetup } from "@/lib/competition/season-setup";
 import {
   parseRegionParam,
   SCOPES,
   type RegionCode,
 } from "@/lib/competition/scopes";
 import { startNationalLeague } from "@/lib/competition/start-national-league";
+import { startRegionalLeague } from "@/lib/competition/start-regional-league";
 import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
 import { ErrorCodes } from "@/lib/http/error-codes";
 
@@ -189,6 +191,23 @@ export async function PATCH(request: Request) {
       return jsonOk(result);
     }
 
+    if (body.action === "start_regional_league") {
+      const season = await requireActiveSeason(supabase);
+      const regionCode = parseRegionParam(body.regionCode ?? "");
+      if (!regionCode) {
+        return jsonErrorCode(ErrorCodes.api.invalidRegionCode, 400);
+      }
+      const boardCount =
+        typeof body.boardCount === "number" ? body.boardCount : 24;
+      const result = await startRegionalLeague(
+        supabase,
+        season.id,
+        regionCode,
+        boardCount,
+      );
+      return jsonOk(result);
+    }
+
     if (body.action === "activate_season") {
       const season = await requireActiveSeason(supabase);
       const { error } = await supabase
@@ -274,17 +293,43 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const { supabase } = await requireRoles([...COMPETITION_ADMIN_ROLES]);
+    const season = await requireActiveSeason(supabase);
+    requireSeasonInSetup(season);
     const body = await request.json();
 
     if (body.type === "group" && body.id) {
+      const groupId = body.id as string;
       const { count } = await supabase
         .from("matches")
         .select("id", { count: "exact", head: true })
-        .eq("group_id", body.id);
+        .eq("group_id", groupId);
       if ((count ?? 0) > 0) {
         return jsonErrorCode(ErrorCodes.api.cannotDeleteGroupWithMatches, 409);
       }
-      const { error } = await supabase.from("groups").delete().eq("id", body.id);
+
+      const { data: teams } = await supabase
+        .from("teams")
+        .select("id")
+        .eq("group_id", groupId);
+      const teamIds = teams?.map((t) => t.id) ?? [];
+
+      if (teamIds.length > 0) {
+        await supabase.from("penalties").delete().in("team_id", teamIds);
+        await supabase.from("warnings").delete().in("team_id", teamIds);
+        const { error: rosterError } = await supabase
+          .from("team_players")
+          .delete()
+          .in("team_id", teamIds);
+        if (rosterError) return jsonError(rosterError.message, 400);
+
+        const { error: teamsError } = await supabase
+          .from("teams")
+          .delete()
+          .eq("group_id", groupId);
+        if (teamsError) return jsonError(teamsError.message, 400);
+      }
+
+      const { error } = await supabase.from("groups").delete().eq("id", groupId);
       if (error) return jsonError(error.message, 400);
       return jsonOk({ deleted: true });
     }

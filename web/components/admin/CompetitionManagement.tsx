@@ -13,12 +13,16 @@ type Props = {
   scope: CompetitionScope;
   regionCode?: string;
   title?: string;
+  readOnly?: boolean;
+  onSaved?: () => void;
 };
 
 export function CompetitionManagement({
   scope,
   regionCode,
   title,
+  readOnly = false,
+  onSaved,
 }: Props) {
   const t = useTranslations("admin.matchDates");
 
@@ -70,6 +74,7 @@ export function CompetitionManagement({
     }
     setMessage(t("saved"));
     await loadDates();
+    onSaved?.();
   }
 
   return (
@@ -99,6 +104,7 @@ export function CompetitionManagement({
             <input
               type="date"
               value={day}
+              disabled={readOnly}
               onChange={(e) =>
                 setMatchDays((prev) =>
                   prev.map((d, i) => (i === index ? e.target.value : d)),
@@ -109,14 +115,16 @@ export function CompetitionManagement({
           </li>
         ))}
       </ul>
-      <button
-        type="button"
-        disabled={loading}
-        onClick={saveDates}
-        className="btn-primary w-fit"
-      >
-        {loading ? t("saving") : t("saveDates")}
-      </button>
+      {!readOnly && (
+        <button
+          type="button"
+          disabled={loading}
+          onClick={saveDates}
+          className="btn-primary w-fit"
+        >
+          {loading ? t("saving") : t("saveDates")}
+        </button>
+      )}
       {message && (
         <p className="text-sm text-zinc-700" role="status">
           {message}

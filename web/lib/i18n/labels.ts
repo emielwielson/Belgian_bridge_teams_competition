@@ -5,6 +5,14 @@ import {
   type NationalReadiness,
 } from "@/lib/competition/national-readiness";
 import {
+  groupLabel,
+  groupTeamsComplete,
+  groupTeamsStatusLabel,
+  REGIONAL_MIN_TEAMS,
+  type GroupReadiness,
+  type RegionalReadiness,
+} from "@/lib/competition/regional-readiness";
+import {
   NATIONAL_DIVISIONS,
   type NationalScheduleKey,
 } from "@/lib/competition/national-structure";
@@ -165,4 +173,88 @@ function translateDivisionTeamLabel(
     });
   }
   return english;
+}
+
+function translateGroupTeamLabel(
+  group: GroupReadiness,
+  tBlockers: LabelTranslator,
+): string {
+  const english = groupTeamsStatusLabel(group);
+  if (english === "7/8 teams (+ bye)") {
+    return tBlockers("teamsSevenBye");
+  }
+  const eightMatch = english.match(/^(\d+)\/8 teams$/);
+  if (eightMatch) {
+    return tBlockers("teamsCount", { count: Number(eightMatch[1]) });
+  }
+  const genericMatch = english.match(/^(\d+) teams \(min (\d+)\)$/);
+  if (genericMatch) {
+    return tBlockers("teamsGeneric", {
+      count: Number(genericMatch[1]),
+      min: Number(genericMatch[2]),
+    });
+  }
+  return english;
+}
+
+/** Mirror `buildRegionalReadiness` blocker messages in the active locale. */
+export function buildTranslatedRegionalBlockers(
+  readiness: RegionalReadiness,
+  tBlockers: LabelTranslator,
+): string[] {
+  const blockers: string[] = [];
+
+  if (readiness.seasonStatus !== "setup") {
+    blockers.push(tBlockers("seasonNotSetup"));
+  }
+
+  if (!readiness.leagueId) {
+    blockers.push(tBlockers("leagueMissing"));
+  }
+
+  if (!readiness.calendar.complete) {
+    blockers.push(
+      tBlockers("calendarIncomplete", {
+        set: readiness.calendar.set,
+        required: readiness.calendar.required,
+      }),
+    );
+  }
+
+  if (readiness.groups.length === 0) {
+    blockers.push(tBlockers("noGroups"));
+  }
+
+  for (const group of readiness.groups) {
+    if (group.groupReady) continue;
+    const label = groupLabel(group);
+    if (!groupTeamsComplete(group)) {
+      if (
+        group.teamCount >= 7 &&
+        group.teamCount <= 8 &&
+        !group.slotsComplete
+      ) {
+        blockers.push(tBlockers("slotsIncomplete", { label }));
+      } else if (group.teamCount < REGIONAL_MIN_TEAMS) {
+        blockers.push(
+          tBlockers("teamsMin", {
+            label,
+            teamLabel: translateGroupTeamLabel(group, tBlockers),
+            min: REGIONAL_MIN_TEAMS,
+          }),
+        );
+      } else {
+        blockers.push(
+          tBlockers("teamsIncomplete", {
+            label,
+            teamLabel: translateGroupTeamLabel(group, tBlockers),
+          }),
+        );
+      }
+    } else if (!group.datesComplete) {
+      blockers.push(tBlockers("datesIncomplete", { label }));
+    }
+  }
+
+  return blockers;
 }
