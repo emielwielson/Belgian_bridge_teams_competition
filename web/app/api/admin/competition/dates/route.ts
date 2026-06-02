@@ -9,6 +9,12 @@ import {
   formatSlotTimesLabel,
   NATIONAL_MATCH_DAY_COUNTS,
 } from "@/lib/competition/national-match-schedule";
+import {
+  collapseRoundsToRegionalMatchDays,
+  expandRegionalMatchDaysToRounds,
+  REGIONAL_MATCH_DAY_COUNT,
+  REGIONAL_SLOT_TIME,
+} from "@/lib/competition/regional-match-schedule";
 import type { NationalScheduleKey } from "@/lib/competition/national-structure";
 import { resolveRegionId } from "@/lib/competition/queries";
 import { requireActiveSeason } from "@/lib/competition/season";
@@ -79,7 +85,13 @@ export async function GET(request: Request) {
       });
     }
 
-    return jsonOk({ dates: data ?? [] });
+    const matchDays = collapseRoundsToRegionalMatchDays(data ?? []);
+    return jsonOk({
+      dates: data ?? [],
+      matchDays,
+      slotTime: REGIONAL_SLOT_TIME,
+      matchDayCount: REGIONAL_MATCH_DAY_COUNT,
+    });
   } catch (err) {
     return jsonFromError(err);
   }
@@ -124,8 +136,20 @@ export async function PUT(request: Request) {
       } catch (err) {
         return jsonFromError(err);
       }
-    } else if (rounds.length !== 14) {
-      return jsonErrorCode(ErrorCodes.api.exactly14Rounds, 400);
+    } else {
+      const matchDays: string[] = body.matchDays ?? [];
+      if (matchDays.length > 0) {
+        if (matchDays.length !== REGIONAL_MATCH_DAY_COUNT) {
+          return jsonErrorCode(ErrorCodes.api.exactly14Rounds, 400);
+        }
+        try {
+          rounds = expandRegionalMatchDaysToRounds(matchDays);
+        } catch (err) {
+          return jsonFromError(err);
+        }
+      } else if (rounds.length !== REGIONAL_MATCH_DAY_COUNT) {
+        return jsonErrorCode(ErrorCodes.api.exactly14Rounds, 400);
+      }
     }
 
     let deleteQuery = supabase

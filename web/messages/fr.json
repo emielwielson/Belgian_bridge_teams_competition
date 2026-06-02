@@ -428,7 +428,8 @@
     },
     "matchDates": {
       "title": "Dates de rencontre ({roundCount} journées)",
-      "timesBrussels": "Heures en Europe/Brussels",
+      "pickDatesOnly": "Choisissez uniquement les dates (Europe/Brussels). Les rencontres commencent à {slotTime}.",
+      "daysProgress": "{set}/{required} dates",
       "round": "Journée {round}",
       "reload": "Recharger",
       "saveDates": "Enregistrer les dates",

@@ -1,65 +1,54 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { toDatetimeLocalValue } from "@/lib/time/brussels";
 import {
-  NATIONAL_SCHEDULE_ROUND_COUNTS,
-  type NationalScheduleKey,
-} from "@/lib/competition/national-structure";
+  collapseRoundsToRegionalMatchDays,
+  REGIONAL_MATCH_DAY_COUNT,
+  REGIONAL_SLOT_TIME,
+} from "@/lib/competition/regional-match-schedule";
 import type { CompetitionScope } from "@/lib/competition/scopes";
-
-type RoundDate = { round: number; datetime: string };
 
 type Props = {
   scope: CompetitionScope;
   regionCode?: string;
-  scheduleKey?: NationalScheduleKey;
-  roundCount?: number;
   title?: string;
 };
 
 export function CompetitionManagement({
   scope,
   regionCode,
-  scheduleKey,
-  roundCount: roundCountProp,
   title,
 }: Props) {
   const t = useTranslations("admin.matchDates");
 
-  const roundCount =
-    roundCountProp ??
-    (scheduleKey ? NATIONAL_SCHEDULE_ROUND_COUNTS[scheduleKey] : 14);
-
-  const [dates, setDates] = useState<RoundDate[]>(() =>
-    Array.from({ length: roundCount }, (_, i) => ({
-      round: i + 1,
-      datetime: "",
-    })),
+  const [matchDays, setMatchDays] = useState<string[]>(() =>
+    Array.from({ length: REGIONAL_MATCH_DAY_COUNT }, () => ""),
   );
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function loadDates() {
+  const setCount = matchDays.filter((d) => d.length > 0).length;
+  const complete = setCount >= REGIONAL_MATCH_DAY_COUNT;
+
+  const loadDates = useCallback(async () => {
     const params = new URLSearchParams({ scope });
     if (regionCode) params.set("region", regionCode);
-    if (scheduleKey) params.set("schedule", scheduleKey);
     const res = await fetch(`/api/admin/competition/dates?${params}`);
     if (!res.ok) return;
     const body = await res.json();
+    if (body.matchDays?.length) {
+      setMatchDays(body.matchDays);
+      return;
+    }
     const loaded = (body.dates ?? []) as { round: number; datetime: string }[];
     if (loaded.length === 0) return;
-    setDates(
-      Array.from({ length: roundCount }, (_, i) => {
-        const row = loaded.find((d) => d.round === i + 1);
-        return {
-          round: i + 1,
-          datetime: row ? toDatetimeLocalValue(row.datetime) : "",
-        };
-      }),
-    );
-  }
+    setMatchDays(collapseRoundsToRegionalMatchDays(loaded));
+  }, [scope, regionCode]);
+
+  useEffect(() => {
+    void loadDates();
+  }, [loadDates]);
 
   async function saveDates() {
     setLoading(true);
@@ -70,8 +59,7 @@ export function CompetitionManagement({
       body: JSON.stringify({
         scope,
         region: regionCode,
-        schedule: scheduleKey,
-        rounds: dates,
+        matchDays,
       }),
     });
     setLoading(false);
@@ -88,29 +76,32 @@ export function CompetitionManagement({
     <section className="card flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-lg font-semibold text-zinc-900">
-          {title ?? t("title", { roundCount })}
+          {title ?? t("title", { roundCount: REGIONAL_MATCH_DAY_COUNT })}
         </h2>
-        <button type="button" onClick={loadDates} className="link-back">
-          {t("reload")}
-        </button>
+        <span
+          className={`text-sm font-medium ${complete ? "text-green-700" : "text-zinc-500"}`}
+        >
+          {t("daysProgress", {
+            set: setCount,
+            required: REGIONAL_MATCH_DAY_COUNT,
+          })}
+        </span>
       </div>
-      <p className="text-sm text-zinc-600">{t("timesBrussels")}</p>
+      <p className="text-sm text-zinc-600">
+        {t("pickDatesOnly", { slotTime: REGIONAL_SLOT_TIME })}
+      </p>
       <ul className="flex flex-col gap-2">
-        {dates.map((d) => (
-          <li key={d.round} className="flex items-center gap-3">
+        {matchDays.map((day, index) => (
+          <li key={index} className="flex items-center gap-3">
             <span className="w-16 text-sm font-medium text-zinc-700">
-              {t("round", { round: d.round })}
+              {t("round", { round: index + 1 })}
             </span>
             <input
-              type="datetime-local"
-              value={d.datetime}
+              type="date"
+              value={day}
               onChange={(e) =>
-                setDates((prev) =>
-                  prev.map((row) =>
-                    row.round === d.round
-                      ? { ...row, datetime: e.target.value }
-                      : row,
-                  ),
+                setMatchDays((prev) =>
+                  prev.map((d, i) => (i === index ? e.target.value : d)),
                 )
               }
               className="input flex-1"

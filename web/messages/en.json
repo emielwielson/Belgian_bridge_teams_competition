@@ -428,7 +428,8 @@
     },
     "matchDates": {
       "title": "Match dates ({roundCount} rounds)",
-      "timesBrussels": "Times in Europe/Brussels",
+      "pickDatesOnly": "Pick dates only (Europe/Brussels). Matches start at {slotTime}.",
+      "daysProgress": "{set}/{required} dates",
       "round": "Round {round}",
       "reload": "Reload",
       "saveDates": "Save dates",

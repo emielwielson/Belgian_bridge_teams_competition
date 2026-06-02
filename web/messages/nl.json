@@ -428,7 +428,8 @@
     },
     "matchDates": {
       "title": "Wedstrijddata ({roundCount} rondes)",
-      "timesBrussels": "Tijden in Europe/Brussels",
+      "pickDatesOnly": "Kies alleen datums (Europe/Brussels). Wedstrijden starten om {slotTime}.",
+      "daysProgress": "{set}/{required} datums",
       "round": "Ronde {round}",
       "reload": "Herladen",
       "saveDates": "Data opslaan",
