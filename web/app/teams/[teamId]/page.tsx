@@ -4,8 +4,10 @@ import { notFound } from "next/navigation";
 import { TeamConventionCardsSection } from "@/components/teams/TeamConventionCardsSection";
 import { TeamInfoSection } from "@/components/teams/TeamInfoSection";
 import { TeamMatchesList } from "@/components/teams/TeamMatchesList";
-import { TeamRosterList } from "@/components/teams/TeamRosterList";
-import { canManageTeamConventionCards } from "@/lib/auth/team-access";
+import { TeamRosterSection } from "@/components/teams/TeamRosterSection";
+import { canManageTeamConventionCards, canManageTeamRoster } from "@/lib/auth/team-access";
+import { getUserRoles } from "@/lib/auth/session";
+import { getActiveSeason } from "@/lib/competition/season";
 import { listConventionCards } from "@/lib/competition/convention-card-queries";
 import { loadTeamDetail } from "@/lib/competition/team-queries";
 import { createSessionClient } from "@/lib/supabase/server-client";
@@ -28,6 +30,18 @@ export default async function TeamPage({ params }: Props) {
 
   const canManageConventionCards = user
     ? await canManageTeamConventionCards(supabase, teamId)
+    : false;
+
+  const season = await getActiveSeason(supabase);
+  const rosterEditable = season?.status === "setup";
+  const canManageRoster = user
+    ? await canManageTeamRoster(
+        supabase,
+        user.id,
+        await getUserRoles(supabase, user.id),
+        teamId,
+        detail.club.id,
+      )
     : false;
 
   const conventionCards = await listConventionCards(supabase, teamId);
@@ -64,7 +78,13 @@ export default async function TeamPage({ params }: Props) {
         league={league}
       />
 
-      <TeamRosterList roster={roster} captainId={team.captain_id} />
+      <TeamRosterSection
+        teamId={team.id}
+        captainId={team.captain_id}
+        initialRoster={roster}
+        canManageRoster={canManageRoster}
+        rosterEditable={rosterEditable}
+      />
 
       <TeamConventionCardsSection
         teamId={team.id}

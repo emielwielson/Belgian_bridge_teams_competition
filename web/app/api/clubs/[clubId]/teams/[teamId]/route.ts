@@ -4,6 +4,10 @@ import { loadClubTeamDetail } from "@/lib/competition/club-manager-queries";
 import { requireActiveSeason } from "@/lib/competition/season";
 import { requireSeasonInSetup } from "@/lib/competition/season-setup";
 import {
+  addPlayerToTeamRoster,
+  removePlayerFromTeamRoster,
+} from "@/lib/competition/team-roster";
+import {
   assertCaptainIsClubMember,
   parseCaptainId,
 } from "@/lib/competition/team-captain";
@@ -116,22 +120,19 @@ export async function POST(request: Request, { params }: Params) {
     }
 
     if (body.action === "roster_remove") {
-      const { error } = await supabase
-        .from("team_players")
-        .delete()
-        .eq("team_id", teamId)
-        .eq("player_id", playerId)
-        .eq("season_id", season.id);
-      if (error) return jsonError(error.message, 400);
+      await removePlayerFromTeamRoster(supabase, {
+        teamId,
+        playerId,
+        seasonId: season.id,
+      });
       return jsonOk({ removed: true });
     }
 
-    const { error } = await supabase.from("team_players").insert({
-      team_id: teamId,
-      player_id: playerId,
-      season_id: season.id,
+    await addPlayerToTeamRoster(supabase, {
+      teamId,
+      playerId,
+      seasonId: season.id,
     });
-    if (error) return jsonError(error.message, 400);
     return jsonOk({ added: true }, { status: 201 });
   } catch (err) {
     return jsonFromError(err);

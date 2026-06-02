@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getActiveSeason } from "@/lib/competition/season";
 import { teamLocationFromClub } from "@/lib/competition/team-location";
+import { loadTeamRosterState } from "@/lib/competition/team-roster";
 
 export type ClubOverviewPlayer = {
   membership_id: string;
@@ -240,91 +241,11 @@ export async function loadClubTeamDetail(
   const league = division ? unwrapOne<{ name: string }>(division.league) : null;
 
   const season = await getActiveSeason(supabase);
-  const roster_editable = season?.status === "setup";
-  let roster: ClubTeamDetail["roster"] = [];
-  let available_players: ClubTeamDetail["available_players"] = [];
-
-  if (season) {
-    const { data: rosterRows } = await supabase
-      .from("team_players")
-      .select("player_id, player:players(id, name, member_number)")
-      .eq("team_id", teamId)
-      .eq("season_id", season.id);
-
-    roster = (rosterRows ?? [])
-      .map((r) => {
-        const p = unwrapOne<{
-            id: string;
-            name: string;
-            member_number: string | null;
-          }>(r.player);
-        if (!p) return null;
-        return {
-          player_id: p.id,
-          name: p.name,
-          member_number: p.member_number,
-        };
-      })
-      .filter((p): p is NonNullable<typeof p> => p != null)
-      .sort((a, b) => a.name.localeCompare(b.name));
-
-    const { data: memberships } = await supabase
-      .from("player_club_memberships")
-      .select("player_id, player:players(id, name, member_number)")
-      .eq("club_id", clubId)
-      .eq("season_id", season.id);
-
-    const { data: clubTeams } = await supabase
-      .from("teams")
-      .select("id, name")
-      .eq("club_id", clubId);
-
-    const clubTeamIds = clubTeams?.map((t) => t.id) ?? [];
-    const assignmentByPlayer = new Map<
-      string,
-      { team_id: string; team_name: string }
-    >();
-
-    if (clubTeamIds.length > 0) {
-      const { data: clubAssignments } = await supabase
-        .from("team_players")
-        .select("player_id, team_id, team:teams(id, name)")
-        .in("team_id", clubTeamIds)
-        .eq("season_id", season.id);
-
-      for (const row of clubAssignments ?? []) {
-        const team = unwrapOne<{ id: string; name: string }>(row.team);
-        if (team) {
-          assignmentByPlayer.set(row.player_id, {
-            team_id: team.id,
-            team_name: team.name,
-          });
-        }
-      }
-    }
-
-    const onRoster = new Set(roster.map((r) => r.player_id));
-
-    for (const m of memberships ?? []) {
-      const p = unwrapOne<{
-          id: string;
-          name: string;
-          member_number: string | null;
-        }>(m.player);
-      if (!p || onRoster.has(p.id)) continue;
-
-      const assignment = assignmentByPlayer.get(p.id);
-      if (!assignment) {
-        available_players.push({
-          player_id: p.id,
-          name: p.name,
-          member_number: p.member_number,
-        });
-      }
-    }
-
-    available_players.sort((a, b) => a.name.localeCompare(b.name));
-  }
+  const { roster, available_players, roster_editable } = await loadTeamRosterState(
+    supabase,
+    teamId,
+    clubId,
+  );
 
   const [homeMatches, awayMatches] = await Promise.all([
     supabase

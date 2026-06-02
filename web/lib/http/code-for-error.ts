@@ -20,6 +20,7 @@ const AUTH_MESSAGE_TO_CODE: Record<string, ErrorCode> = {
   "Forbidden: not assigned to this club": ErrorCodes.auth.notAssignedClub,
   "Forbidden: cannot manage convention cards for this team":
     ErrorCodes.auth.cannotManageConventionCards,
+  "Forbidden: cannot manage roster for this team": ErrorCodes.api.forbidden,
 };
 
 const MESSAGE_TO_CODE: Record<string, ErrorCode> = {
