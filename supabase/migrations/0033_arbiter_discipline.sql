@@ -106,7 +106,10 @@ create policy rulings_discipline_write on public.rulings
   );
 
 -- Standings: expose match and penalty VP components
-create or replace view public.standings_group as
+-- CREATE OR REPLACE cannot insert columns before vp_total; drop and recreate.
+drop view if exists public.standings_group;
+
+create view public.standings_group as
 with match_vp as (
   select
     m.group_id,
@@ -153,6 +156,10 @@ select
 from public.teams t
 left join match_totals mt on mt.team_id = t.id and mt.group_id = t.group_id
 left join penalty_totals pt on pt.team_id = t.id and pt.group_id = t.group_id;
+
+alter view public.standings_group set (security_invoker = true);
+
+grant select on public.standings_group to anon, authenticated;
 
 -- Resolve arbiter request with required ruling document
 drop function if exists public.arbiter_request_resolve(uuid);
