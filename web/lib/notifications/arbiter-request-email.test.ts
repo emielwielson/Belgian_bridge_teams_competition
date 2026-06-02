@@ -1,0 +1,98 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@/lib/supabase/server-client", () => ({
+  createServiceClient: vi.fn(),
+}));
+
+vi.mock("./make-webhook", () => ({
+  sendMakeWebhook: vi.fn().mockResolvedValue(true),
+}));
+
+import { createServiceClient } from "@/lib/supabase/server-client";
+import { sendMakeWebhook } from "./make-webhook";
+import { sendArbiterRequestResolvedEmail } from "./arbiter-request-email";
+
+function mockServiceClient() {
+  const supabase = {
+    from: (table: string) => {
+      if (table === "user_roles") {
+        return {
+          select: () => ({
+            eq: () =>
+              Promise.resolve({
+                data: [{ user_id: "arbiter-1" }],
+                error: null,
+              }),
+          }),
+        };
+      }
+      if (table === "arbiter_requests") {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: () =>
+                Promise.resolve({
+                  data: { match_id: "m1", board: 7, description: "Slow play dispute" },
+                  error: null,
+                }),
+            }),
+          }),
+        };
+      }
+      if (table === "matches") {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: () =>
+                Promise.resolve({
+                  data: {
+                    round: 5,
+                    home_team: { name: "Home FC" },
+                    away_team: { name: "Away FC" },
+                  },
+                  error: null,
+                }),
+            }),
+          }),
+        };
+      }
+      throw new Error(`unexpected table ${table}`);
+    },
+    auth: {
+      admin: {
+        getUserById: vi.fn().mockResolvedValue({
+          data: { user: { email: "arbiter@example.com" } },
+          error: null,
+        }),
+      },
+    },
+  };
+  vi.mocked(createServiceClient).mockReturnValue(supabase as never);
+}
+
+describe("arbiter-request-email", () => {
+  const env = process.env;
+  beforeEach(() => {
+    process.env = { ...env, NEXT_PUBLIC_APP_URL: "https://app.example.com" };
+    vi.clearAllMocks();
+    mockServiceClient();
+  });
+
+  afterEach(() => {
+    process.env = env;
+  });
+
+  it("sends resolved event payload via make webhook", async () => {
+    await sendArbiterRequestResolvedEmail({ requestId: "req-1" });
+
+    expect(sendMakeWebhook).toHaveBeenCalledWith(
+      expect.objectContaining({
+        request_id: "req-1",
+        match_id: "m1",
+        match_url: "https://app.example.com/matches/m1",
+        login_url: "https://app.example.com/login?next=%2Fmatches%2Fm1",
+      }),
+      expect.objectContaining({ eventType: "arbiter_request_resolved" }),
+    );
+  });
+});

@@ -9,7 +9,10 @@ import {
 } from "@/lib/competition/postponement";
 import { revalidateStandingsForGroup } from "@/lib/competition/revalidate-standings";
 import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
-import { sendPostponementProposedEmail } from "@/lib/notifications/postponement-email";
+import {
+  sendPostponementDecisionEmail,
+  sendPostponementProposedEmail,
+} from "@/lib/notifications/postponement-email";
 import { parseBrusselsToUtc } from "@/lib/time/brussels";
 
 type Params = { params: Promise<{ matchId: string }> };
@@ -112,6 +115,7 @@ export async function PATCH(request: Request, { params }: Params) {
     }
 
     const matchBefore = await loadMatchContext(supabase, matchId);
+    const stateBefore = await getMatchPostponementState(supabase, matchId);
 
     await respondMatchPostponement(
       supabase,
@@ -124,6 +128,28 @@ export async function PATCH(request: Request, { params }: Params) {
     if (action === "approve") {
       await revalidateStandingsForGroup(supabase, matchBefore.group_id);
       revalidatePath(`/matches/${matchId}`);
+    }
+
+    const pending = stateBefore?.pending;
+    if (pending) {
+      const proposingTeamName =
+        pending.proposing_team_id === matchBefore.home_team_id
+          ? matchBefore.home_team.name
+          : matchBefore.away_team.name;
+      void sendPostponementDecisionEmail(
+        {
+          matchId,
+          round: matchBefore.round,
+          homeTeamName: matchBefore.home_team.name,
+          awayTeamName: matchBefore.away_team.name,
+          previousDatetime: matchBefore.datetime,
+          proposedDatetime: pending.proposed_datetime,
+          proposingTeamName,
+          action: action as "approve" | "reject" | "cancel",
+        },
+        matchBefore.home_team_id,
+        matchBefore.away_team_id,
+      );
     }
 
     return jsonOk({ state });

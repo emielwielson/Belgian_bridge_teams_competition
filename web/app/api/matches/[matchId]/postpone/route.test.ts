@@ -30,6 +30,7 @@ vi.mock("@/lib/competition/revalidate-standings", () => ({
 
 vi.mock("@/lib/notifications/postponement-email", () => ({
   sendPostponementProposedEmail: vi.fn(),
+  sendPostponementDecisionEmail: vi.fn(),
 }));
 
 import { requireAuth } from "@/lib/auth/route-auth";
@@ -41,6 +42,7 @@ import {
   canAccessPostponementWorkflow,
 } from "@/lib/competition/postponement";
 import { sendPostponementProposedEmail } from "@/lib/notifications/postponement-email";
+import { sendPostponementDecisionEmail } from "@/lib/notifications/postponement-email";
 
 const baseState = {
   match_id: "match-1",
@@ -160,6 +162,11 @@ describe("/api/matches/[matchId]/postpone", () => {
       expect.anything(),
       "req-1",
       "approve",
+    );
+    expect(sendPostponementDecisionEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "approve" }),
+      "home-1",
+      "away-1",
     );
   });
 });

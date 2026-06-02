@@ -8,6 +8,10 @@ export type ArbiterRequestCreatedEmailContext = {
   description: string;
 };
 
+export type ArbiterRequestResolvedEmailContext = {
+  requestId: string;
+};
+
 async function loadArbiterEmails(): Promise<string[]> {
   const supabase = createServiceClient();
   const { data: roleRows, error: roleError } = await supabase
@@ -110,5 +114,87 @@ export async function sendArbiterRequestCreatedEmail(
       description: ctx.description,
     },
     { eventType: "arbiter_request_created" },
+  );
+}
+
+async function loadArbiterRequestSummary(
+  requestId: string,
+): Promise<{
+  matchId: string;
+  round: number;
+  homeTeamName: string;
+  awayTeamName: string;
+  board: number;
+  description: string;
+} | null> {
+  const supabase = createServiceClient();
+  const { data: row, error } = await supabase
+    .from("arbiter_requests")
+    .select("match_id, board, description")
+    .eq("id", requestId)
+    .maybeSingle();
+  if (error || !row) return null;
+
+  const match = await loadMatchSummary(row.match_id);
+  if (!match) return null;
+
+  return {
+    matchId: row.match_id,
+    round: match.round,
+    homeTeamName: match.homeTeamName,
+    awayTeamName: match.awayTeamName,
+    board: row.board,
+    description: row.description,
+  };
+}
+
+export async function sendArbiterRequestResolvedEmail(
+  ctx: ArbiterRequestResolvedEmailContext,
+): Promise<void> {
+  const cc = await loadArbiterEmails();
+  if (cc.length === 0) return;
+
+  const summary = await loadArbiterRequestSummary(ctx.requestId);
+  if (!summary) return;
+
+  const baseUrl = getAppBaseUrl();
+  const matchUrl = `${baseUrl}/matches/${summary.matchId}`;
+  const loginUrl = `${baseUrl}/login?next=${encodeURIComponent(`/matches/${summary.matchId}`)}`;
+  const inboxUrl = `${baseUrl}/arbiter`;
+  const matchLine = `Round ${summary.round}: ${summary.homeTeamName} vs ${summary.awayTeamName}`;
+
+  const subject = `Arbiter request resolved: ${matchLine}, board ${summary.board}`;
+  const bodyText = [
+    "An arbiter request has been resolved.",
+    "",
+    matchLine,
+    `Board: ${summary.board}`,
+    `Description: ${summary.description}`,
+    "",
+    `Arbiter inbox: ${inboxUrl}`,
+    `Match: ${matchUrl}`,
+    `Login first: ${loginUrl}`,
+  ].join("\n");
+  const bodyHtml = [
+    "<p>An arbiter request has been resolved.</p>",
+    `<p><strong>${matchLine}</strong><br>Board: ${summary.board}<br>${summary.description}</p>`,
+    `<p><a href="${inboxUrl}">Open arbiter inbox</a> · <a href="${matchUrl}">View match</a><br><a href="${loginUrl}">Login first</a></p>`,
+  ].join("");
+
+  await sendMakeWebhook(
+    {
+      subject,
+      body_text: bodyText,
+      body_html: bodyHtml,
+      cc,
+      match_id: summary.matchId,
+      match_url: matchUrl,
+      login_url: loginUrl,
+      arbiter_inbox_url: inboxUrl,
+      request_id: ctx.requestId,
+      board: summary.board,
+      description: summary.description,
+    },
+    { eventType: "arbiter_request_resolved" },
   );
 }

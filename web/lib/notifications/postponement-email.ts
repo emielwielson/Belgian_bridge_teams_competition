@@ -13,6 +13,19 @@ export type PostponementProposedEmailContext = {
   proposingTeamName: string;
 };
 
+export type PostponementDecision = "approve" | "reject" | "cancel";
+
+export type PostponementDecisionEmailContext = {
+  matchId: string;
+  round: number;
+  homeTeamName: string;
+  awayTeamName: string;
+  previousDatetime: string;
+  proposedDatetime: string;
+  proposingTeamName: string;
+  action: PostponementDecision;
+};
+
 function unwrapOne<T>(value: T | T[] | null): T | null {
   if (value == null) return null;
   return Array.isArray(value) ? (value[0] ?? null) : value;
@@ -169,5 +182,75 @@ export async function sendPostponementProposedEmail(
       proposed_datetime: ctx.proposedDatetime,
     },
     { eventType: "postponement_proposed" },
+  );
+}
+
+/** Sends postponement decision email via Make.com (CC: both captains + competition managers). */
+export async function sendPostponementDecisionEmail(
+  ctx: PostponementDecisionEmailContext,
+  homeTeamId: string,
+  awayTeamId: string,
+): Promise<void> {
+  const cc = await loadPostponementProposedCc(homeTeamId, awayTeamId);
+  if (cc.length === 0) return;
+
+  const matchUrl = matchPostponementUrl(ctx.matchId);
+  const loginUrl = loginThenMatchUrl(ctx.matchId);
+  const previous = formatBrussels(ctx.previousDatetime);
+  const proposed = formatBrussels(ctx.proposedDatetime);
+
+  const actionLabelByAction: Record<PostponementDecision, string> = {
+    approve: "approved",
+    reject: "rejected",
+    cancel: "cancelled",
+  };
+  const eventTypeByAction: Record<
+    PostponementDecision,
+    "postponement_approved" | "postponement_rejected" | "postponement_cancelled"
+  > = {
+    approve: "postponement_approved",
+    reject: "postponement_rejected",
+    cancel: "postponement_cancelled",
+  };
+  const actionLabel = actionLabelByAction[ctx.action];
+
+  const subject = `Reschedule request ${actionLabel}: ${ctx.homeTeamName} vs ${ctx.awayTeamName} (round ${ctx.round})`;
+  const bodyText = [
+    `${ctx.proposingTeamName} reschedule request was ${actionLabel}.`,
+    "",
+    `Round ${ctx.round}: ${ctx.homeTeamName} vs ${ctx.awayTeamName}`,
+    `Current date: ${previous}`,
+    `Proposed date: ${proposed}`,
+    "",
+    `Open match: ${matchUrl}`,
+    `Login first: ${loginUrl}`,
+  ].join("\n");
+
+  const bodyHtml = [
+    `<p><strong>${ctx.proposingTeamName}</strong> reschedule request was ${actionLabel}.</p>`,
+    `<p><strong>Round ${ctx.round}:</strong> ${ctx.homeTeamName} vs ${ctx.awayTeamName}<br>`,
+    `Current date: ${previous}<br>`,
+    `Proposed date: ${proposed}</p>`,
+    `<p><a href="${matchUrl}">Open match</a><br><a href="${loginUrl}">Login first</a></p>`,
+  ].join("");
+
+  await sendMakeWebhook(
+    {
+      subject,
+      body_text: bodyText,
+      body_html: bodyHtml,
+      cc,
+      match_id: ctx.matchId,
+      match_url: matchUrl,
+      login_url: loginUrl,
+      round: ctx.round,
+      home_team_name: ctx.homeTeamName,
+      away_team_name: ctx.awayTeamName,
+      proposing_team_name: ctx.proposingTeamName,
+      previous_datetime: ctx.previousDatetime,
+      proposed_datetime: ctx.proposedDatetime,
+      action: actionLabel,
+    },
+    { eventType: eventTypeByAction[ctx.action] },
   );
 }

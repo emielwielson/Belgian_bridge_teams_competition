@@ -1,7 +1,32 @@
+export const MAKE_WEBHOOK_EVENT_TYPES = [
+  "arbiter_request_created",
+  "arbiter_request_resolved",
+  "home_away_switch_proposed",
+  "home_away_switch_approved",
+  "home_away_switch_rejected",
+  "home_away_switch_cancelled",
+  "postponement_proposed",
+  "postponement_approved",
+  "postponement_rejected",
+  "postponement_cancelled",
+] as const;
+
+export type MakeWebhookEventType = (typeof MAKE_WEBHOOK_EVENT_TYPES)[number];
+
 export type MakeWebhookPayload = Record<string, unknown>;
 
+export type MakeRequestLifecyclePayload = {
+  subject: string;
+  body_text: string;
+  body_html: string;
+  cc: string[];
+  match_id: string;
+  match_url: string;
+  login_url: string;
+} & MakeWebhookPayload;
+
 export type SendMakeWebhookOptions = {
-  eventType: string;
+  eventType: MakeWebhookEventType;
   maxAttempts?: number;
   baseDelayMs?: number;
 };

@@ -28,6 +28,11 @@ vi.mock("@/lib/competition/revalidate-standings", () => ({
   revalidateStandingsForGroup: vi.fn(),
 }));
 
+vi.mock("@/lib/notifications/home-away-switch-email", () => ({
+  sendHomeAwaySwitchProposedEmail: vi.fn(),
+  sendHomeAwaySwitchDecisionEmail: vi.fn(),
+}));
+
 import { requireAuth } from "@/lib/auth/route-auth";
 import { loadMatchContext } from "@/lib/auth/match-access";
 import {
@@ -38,6 +43,10 @@ import {
 } from "@/lib/competition/home-away-switch";
 import { revalidateStandingsForGroup } from "@/lib/competition/revalidate-standings";
 import { revalidatePath } from "next/cache";
+import {
+  sendHomeAwaySwitchDecisionEmail,
+  sendHomeAwaySwitchProposedEmail,
+} from "@/lib/notifications/home-away-switch-email";
 
 const baseState = {
   match_id: "match-1",
@@ -108,6 +117,7 @@ describe("/api/matches/[matchId]/switch-home-away", () => {
   });
 
   it("POST proposes home/away switch", async () => {
+    vi.mocked(loadMatchContext).mockResolvedValue(baseMatch);
     vi.mocked(proposeMatchHomeAwaySwitch).mockResolvedValue("req-1");
     vi.mocked(getMatchHomeAwaySwitchState).mockResolvedValue({
       ...baseState,
@@ -133,15 +143,30 @@ describe("/api/matches/[matchId]/switch-home-away", () => {
       "match-1",
       "home-1",
     );
+    expect(sendHomeAwaySwitchProposedEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ requestingTeamName: "Home FC" }),
+      "home-1",
+      "away-1",
+    );
   });
 
   it("PATCH approve revalidates standings and match page", async () => {
     vi.mocked(loadMatchContext).mockResolvedValue(baseMatch);
-    vi.mocked(getMatchHomeAwaySwitchState).mockResolvedValue({
-      ...baseState,
-      needs_switch: false,
-      hosting_team_id: "away-1",
-    });
+    vi.mocked(getMatchHomeAwaySwitchState)
+      .mockResolvedValueOnce({
+        ...baseState,
+        pending: {
+          id: "req-1",
+          requesting_team_id: "home-1",
+          proposed_by: "user-1",
+          created_at: "2025-01-01T00:00:00.000Z",
+        },
+      })
+      .mockResolvedValueOnce({
+        ...baseState,
+        needs_switch: false,
+        hosting_team_id: "away-1",
+      });
 
     const res = await PATCH(
       new Request("http://x", {
@@ -161,5 +186,10 @@ describe("/api/matches/[matchId]/switch-home-away", () => {
       "group-1",
     );
     expect(revalidatePath).toHaveBeenCalledWith("/matches/match-1");
+    expect(sendHomeAwaySwitchDecisionEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "approve" }),
+      "home-1",
+      "away-1",
+    );
   });
 });
