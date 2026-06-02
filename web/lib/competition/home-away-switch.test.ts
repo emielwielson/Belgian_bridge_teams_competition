@@ -15,6 +15,7 @@ function baseState(
     played_at: null,
     home_team_id: "h1",
     away_team_id: "a1",
+    hosting_team_id: "h1",
     captain_teams: ["h1"],
     needs_switch: true,
     is_mirror_round: true,
@@ -30,12 +31,12 @@ function baseState(
 }
 
 describe("shouldShowHomeAwaySwitchSection", () => {
-  it("returns false when not a mirror round", () => {
+  it("returns true for unscored non-mirror matches too", () => {
     expect(
       shouldShowHomeAwaySwitchSection(
         baseState({ is_mirror_round: false, round: 3 }),
       ),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it("returns true for unscored mirror-round matches", () => {

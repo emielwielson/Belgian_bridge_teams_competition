@@ -18,6 +18,7 @@ export type MatchHomeAwaySwitchState = {
   played_at: string | null;
   home_team_id: string;
   away_team_id: string;
+  hosting_team_id: string;
   captain_teams: string[];
   needs_switch: boolean;
   is_mirror_round: boolean;
@@ -69,6 +70,7 @@ function parseState(raw: unknown): MatchHomeAwaySwitchState | null {
     played_at: o.played_at != null ? String(o.played_at) : null,
     home_team_id: String(o.home_team_id),
     away_team_id: String(o.away_team_id),
+    hosting_team_id: String(o.hosting_team_id ?? o.home_team_id),
     captain_teams: captainTeams,
     needs_switch: Boolean(o.needs_switch),
     is_mirror_round: Boolean(o.is_mirror_round),
@@ -123,7 +125,7 @@ export function shouldShowHomeAwaySwitchSection(
   state: MatchHomeAwaySwitchState | null,
 ): boolean {
   if (!state) return false;
-  return state.is_mirror_round && state.played_at == null;
+  return state.played_at == null;
 }
 
 /** Client/API may load switch state (not only when captain actions exist). */

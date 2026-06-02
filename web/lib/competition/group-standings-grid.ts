@@ -19,6 +19,7 @@ export type GroupMatchRow = {
   datetime: string;
   home_team_id: string;
   away_team_id: string;
+  hosting_team_id?: string | null;
   vp_home: number | null;
   vp_away: number | null;
   played_at: string | null;
@@ -141,6 +142,7 @@ export function buildGroupStandingsGrid(
 
       const homeVp = scored ? match.vp_home : null;
       const awayVp = scored ? match.vp_away : null;
+      const hostTeamId = match.hosting_team_id ?? match.home_team_id;
 
       const matchDateLabel = formatBrusselsRoundHeader(match.datetime).date;
       const roundDateLabel = roundDateLabelByRound.get(round);
@@ -167,8 +169,18 @@ export function buildGroupStandingsGrid(
         });
       };
 
-      setCell(match.home_team_id, homeVp, true, match.id);
-      setCell(match.away_team_id, awayVp, false, null);
+      setCell(
+        match.home_team_id,
+        homeVp,
+        hostTeamId === match.home_team_id,
+        hostTeamId === match.home_team_id ? match.id : null,
+      );
+      setCell(
+        match.away_team_id,
+        awayVp,
+        hostTeamId === match.away_team_id,
+        hostTeamId === match.away_team_id ? match.id : null,
+      );
     });
   }
 

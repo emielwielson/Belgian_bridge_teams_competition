@@ -65,6 +65,7 @@ describe("mapRawMatchToTeamMatchRow", () => {
         datetime: "2025-01-15T13:00:00Z",
         home_team_id: "home-1",
         away_team_id: "away-1",
+        hosting_team_id: "home-1",
         vp_home: 14,
         vp_away: 10,
         played_at: "2025-01-15T18:00:00Z",
@@ -88,6 +89,7 @@ describe("mapRawMatchToTeamMatchRow", () => {
         datetime: "2025-01-22T13:00:00Z",
         home_team_id: "home-1",
         away_team_id: "away-1",
+        hosting_team_id: "home-1",
         vp_home: 8,
         vp_away: 16,
         played_at: null,
@@ -101,5 +103,27 @@ describe("mapRawMatchToTeamMatchRow", () => {
     expect(row.status).toBe("scheduled");
     expect(row.teamVp).toBe(16);
     expect(row.opponentVp).toBe(8);
+  });
+
+  it("uses hosting_team_id for home indicator without changing VP side mapping", () => {
+    const row = mapRawMatchToTeamMatchRow(
+      {
+        id: "m3",
+        round: 5,
+        datetime: "2025-01-29T13:00:00Z",
+        home_team_id: "home-1",
+        away_team_id: "away-1",
+        hosting_team_id: "away-1",
+        vp_home: 11,
+        vp_away: 9,
+        played_at: "2025-01-29T18:00:00Z",
+      },
+      "away-1",
+      teamNames,
+    );
+
+    expect(row.isHome).toBe(true);
+    expect(row.teamVp).toBe(9);
+    expect(row.opponentVp).toBe(11);
   });
 });

@@ -20,6 +20,7 @@ function match(overrides: Partial<GroupMatchRow> & Pick<GroupMatchRow, "round">)
     datetime: "2024-10-04T12:00:00.000Z",
     home_team_id: "t1",
     away_team_id: "t2",
+    hosting_team_id: "t1",
     vp_home: 12,
     vp_away: 8,
     played_at: "2024-10-05T12:00:00.000Z",
@@ -51,6 +52,18 @@ describe("buildGroupStandingsGrid", () => {
     expect(bravo.cells[0].vp).toBe(6);
     expect(bravo.cells[0].isHome).toBe(false);
     expect(bravo.cells[0].matchId).toBeNull();
+  });
+
+  it("moves home flag and match link to away side when hosting_team_id switches", () => {
+    const matches = [match({ round: 1, hosting_team_id: "t2" })];
+    const grid = buildGroupStandingsGrid(teams, matches);
+    const alpha = grid.rows.find((r) => r.teamId === "t1")!;
+    const bravo = grid.rows.find((r) => r.teamId === "t2")!;
+
+    expect(alpha.cells[0].isHome).toBe(false);
+    expect(alpha.cells[0].matchId).toBeNull();
+    expect(bravo.cells[0].isHome).toBe(true);
+    expect(bravo.cells[0].matchId).toBe("m-1");
   });
 
   it("leaves VP null when match is not scored", () => {

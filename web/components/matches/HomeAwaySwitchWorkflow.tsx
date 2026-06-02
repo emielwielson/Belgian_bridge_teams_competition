@@ -90,7 +90,7 @@ export function HomeAwaySwitchWorkflow({
     const body = (await res.json()) as { state: MatchHomeAwaySwitchState };
     setState(body.state);
     if (action === "approve") {
-      setMessage("Home and away teams swapped for this return leg.");
+      setMessage("Host switched to the other team for this match.");
       router.refresh();
     } else if (action === "reject") {
       setMessage("Home/away switch request rejected.");
@@ -103,11 +103,11 @@ export function HomeAwaySwitchWorkflow({
     <section className="card flex flex-col gap-4">
       <div>
         <h2 className="text-sm font-semibold text-zinc-900">
-          Home/away for return leg
+          Home/away switch
         </h2>
         <p className="mt-1 text-sm text-zinc-600">
-          On return legs (rounds 8–14), captains can agree to swap which team is
-          listed as home. The other captain must approve.
+          Captains can request switching which team is marked as host for this
+          match. The other captain must approve.
         </p>
       </div>
 

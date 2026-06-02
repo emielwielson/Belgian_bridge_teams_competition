@@ -45,6 +45,7 @@ const baseState = {
   played_at: null,
   home_team_id: "home-1",
   away_team_id: "away-1",
+  hosting_team_id: "home-1",
   captain_teams: ["home-1"],
   needs_switch: true,
   is_mirror_round: true,
@@ -95,16 +96,15 @@ describe("/api/matches/[matchId]/switch-home-away", () => {
     expect(body.state.can_propose).toBe(true);
   });
 
-  it("GET returns 403 when match is not a mirror leg", async () => {
+  it("GET still allows switch workflow on non-mirror matches", async () => {
     vi.mocked(getMatchHomeAwaySwitchState).mockResolvedValue({
       ...baseState,
       is_mirror_round: false,
     });
-    vi.mocked(canAccessHomeAwaySwitchWorkflow).mockReturnValue(false);
     const res = await GET(new Request("http://x"), {
       params: Promise.resolve({ matchId: "match-1" }),
     });
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(200);
   });
 
   it("POST proposes home/away switch", async () => {
@@ -140,8 +140,7 @@ describe("/api/matches/[matchId]/switch-home-away", () => {
     vi.mocked(getMatchHomeAwaySwitchState).mockResolvedValue({
       ...baseState,
       needs_switch: false,
-      home_team_id: "away-1",
-      away_team_id: "home-1",
+      hosting_team_id: "away-1",
     });
 
     const res = await PATCH(

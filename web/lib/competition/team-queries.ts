@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getActiveSeason } from "@/lib/competition/season";
 import { teamLocationFromClub } from "@/lib/competition/team-location";
 import { matchStatus, type MatchStatus } from "@/lib/scoring/match-state";
+import type { PostgrestError } from "@supabase/supabase-js";
 
 export type TeamRosterPlayer = {
   id: string;
@@ -42,10 +43,20 @@ type RawMatch = {
   datetime: string;
   home_team_id: string;
   away_team_id: string;
+  hosting_team_id: string | null;
   vp_home: number | null;
   vp_away: number | null;
   played_at: string | null;
 };
+
+function isMissingHostingTeamIdColumn(error: PostgrestError | null): boolean {
+  if (!error) return false;
+  return (
+    error.code === "42703" &&
+    typeof error.message === "string" &&
+    error.message.includes("hosting_team_id")
+  );
+}
 
 function unwrapOne<T>(value: T | T[] | null | undefined): T | null {
   if (value == null) return null;
@@ -57,8 +68,9 @@ export function mapRawMatchToTeamMatchRow(
   teamId: string,
   teamNames: Map<string, string>,
 ): TeamMatchRow {
-  const isHome = match.home_team_id === teamId;
-  const opponentId = isHome ? match.away_team_id : match.home_team_id;
+  const isScoringHome = match.home_team_id === teamId;
+  const isHome = (match.hosting_team_id ?? match.home_team_id) === teamId;
+  const opponentId = isScoringHome ? match.away_team_id : match.home_team_id;
   return {
     id: match.id,
     round: match.round,
@@ -69,8 +81,8 @@ export function mapRawMatchToTeamMatchRow(
       name: teamNames.get(opponentId) ?? "Opponent",
     },
     status: matchStatus(match.played_at),
-    teamVp: isHome ? match.vp_home : match.vp_away,
-    opponentVp: isHome ? match.vp_away : match.vp_home,
+    teamVp: isScoringHome ? match.vp_home : match.vp_away,
+    opponentVp: isScoringHome ? match.vp_away : match.vp_home,
   };
 }
 
@@ -154,14 +166,25 @@ export async function loadTeamDetail(
       .sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  const { data: matchRows, error: matchesError } = await supabase
+  let { data: matchRows, error: matchesError } = await supabase
     .from("matches")
     .select(
-      "id, round, datetime, home_team_id, away_team_id, vp_home, vp_away, played_at",
+      "id, round, datetime, home_team_id, away_team_id, hosting_team_id, vp_home, vp_away, played_at",
     )
     .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
     .order("round")
     .order("datetime");
+
+  if (isMissingHostingTeamIdColumn(matchesError)) {
+    const fallback = await supabase
+      .from("matches")
+      .select("id, round, datetime, home_team_id, away_team_id, vp_home, vp_away, played_at")
+      .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
+      .order("round")
+      .order("datetime");
+    matchRows = fallback.data;
+    matchesError = fallback.error;
+  }
 
   if (matchesError) throw matchesError;
 

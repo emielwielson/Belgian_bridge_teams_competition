@@ -36,6 +36,16 @@ begin
   ) then
     raise exception 'match_home_away_switch_requests table missing';
   end if;
+
+  if not exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'matches'
+      and column_name = 'hosting_team_id'
+  ) then
+    raise exception 'matches.hosting_team_id column missing';
+  end if;
 end;
 $$;
 

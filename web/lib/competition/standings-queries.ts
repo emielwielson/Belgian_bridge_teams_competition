@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import type { GroupByeRoundRow, GroupMatchRow } from "./group-standings-grid";
 import { LEAGUE_NAMES, type LeagueName } from "./league-names";
 import { sortDivisionsByCanonicalName } from "./sort-divisions";
@@ -52,6 +52,15 @@ const LEAGUE_PICKER_ORDER: LeagueName[] = [
 
 const STANDINGS_SELECT =
   "group_id, team_id, team_name, vp_total" as const;
+
+function isMissingHostingTeamIdColumn(error: PostgrestError | null): boolean {
+  if (!error) return false;
+  return (
+    error.code === "42703" &&
+    typeof error.message === "string" &&
+    error.message.includes("hosting_team_id")
+  );
+}
 
 /** FR 40-43: scored matches + penalty corrections (penalties table) via standings_group view. */
 export async function fetchGroupStandings(
@@ -252,14 +261,25 @@ export async function loadGroupStandingsFull(
   const context = await loadGroupStandings(supabase, groupId);
   if (!context) return null;
 
-  const { data: matches, error: matchesError } = await supabase
+  let { data: matches, error: matchesError } = await supabase
     .from("matches")
     .select(
-      "id, round, datetime, home_team_id, away_team_id, vp_home, vp_away, played_at",
+      "id, round, datetime, home_team_id, away_team_id, hosting_team_id, vp_home, vp_away, played_at",
     )
     .eq("group_id", groupId)
     .order("round")
     .order("datetime");
+
+  if (isMissingHostingTeamIdColumn(matchesError)) {
+    const fallback = await supabase
+      .from("matches")
+      .select("id, round, datetime, home_team_id, away_team_id, vp_home, vp_away, played_at")
+      .eq("group_id", groupId)
+      .order("round")
+      .order("datetime");
+    matches = fallback.data;
+    matchesError = fallback.error;
+  }
 
   if (matchesError) throw matchesError;
 
