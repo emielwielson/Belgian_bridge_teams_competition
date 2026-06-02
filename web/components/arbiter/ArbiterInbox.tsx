@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { FilePickerField } from "@/components/files/FilePickerField";
 import { formatBrussels } from "@/lib/time/brussels";
 
 type InboxRequest = {
@@ -22,6 +23,9 @@ type InboxRequest = {
 
 type ResolveDraft = {
   file: File | null;
+  uploadedPath: string | null;
+  uploading: boolean;
+  fileInputKey: number;
   board: string;
   rulingDate: string;
 };
@@ -29,6 +33,9 @@ type ResolveDraft = {
 function emptyDraft(): ResolveDraft {
   return {
     file: null,
+    uploadedPath: null,
+    uploading: false,
+    fileInputKey: 0,
     board: "",
     rulingDate: new Date().toISOString().slice(0, 10),
   };
@@ -69,19 +76,24 @@ export function ArbiterInbox() {
     }));
   }
 
-  async function resolve(request: InboxRequest) {
-    const draft = resolveDrafts[request.id] ?? emptyDraft();
-    if (!draft.file) {
-      setMessage("Upload an official ruling document before resolving.");
-      return;
-    }
+  async function handleRulingFileChange(
+    request: InboxRequest,
+    next: File | null,
+  ) {
+    const requestId = request.id;
+    const draft = resolveDrafts[requestId] ?? emptyDraft();
 
-    setBusyId(request.id);
-    setMessage(null);
+    updateDraft(requestId, {
+      file: next,
+      uploadedPath: null,
+      uploading: Boolean(next),
+    });
+
+    if (!next) return;
 
     try {
       const uploadData = new FormData();
-      uploadData.append("file", draft.file);
+      uploadData.append("file", next);
       uploadData.append("purpose", "ruling");
       uploadData.append("matchId", request.match_id);
       const uploadRes = await fetch("/api/files/upload", {
@@ -92,7 +104,33 @@ export function ArbiterInbox() {
       if (!uploadRes.ok) {
         throw new Error(uploadBody.error ?? "Failed to upload ruling");
       }
+      updateDraft(requestId, {
+        file: next,
+        uploadedPath: uploadBody.path as string,
+        uploading: false,
+      });
+    } catch (e) {
+      updateDraft(requestId, {
+        file: null,
+        uploadedPath: null,
+        uploading: false,
+        fileInputKey: draft.fileInputKey + 1,
+      });
+      setMessage(e instanceof Error ? e.message : "Failed to upload ruling");
+    }
+  }
 
+  async function resolve(request: InboxRequest) {
+    const draft = resolveDrafts[request.id] ?? emptyDraft();
+    if (!draft.uploadedPath) {
+      setMessage("Upload an official ruling document before resolving.");
+      return;
+    }
+
+    setBusyId(request.id);
+    setMessage(null);
+
+    try {
       const board =
         draft.board.trim() !== "" && Number.isFinite(Number(draft.board))
           ? Number(draft.board)
@@ -104,7 +142,7 @@ export function ArbiterInbox() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            file_path: uploadBody.path,
+            file_path: draft.uploadedPath,
             board,
             ruling_date: draft.rulingDate,
           }),
@@ -152,6 +190,10 @@ export function ArbiterInbox() {
               : "Match";
             const draft = resolveDrafts[r.id] ?? emptyDraft();
             const rulingLink = rulingLinks[r.id];
+            const canResolve =
+              Boolean(draft.uploadedPath) &&
+              !draft.uploading &&
+              busyId !== r.id;
             return (
               <li key={r.id} className="py-4">
                 <div className="flex flex-col gap-4">
@@ -197,20 +239,27 @@ export function ArbiterInbox() {
                       Upload the ruling document (required). Board optional.
                     </p>
                     <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                      <label className="block text-xs font-medium text-zinc-600 sm:col-span-2">
-                        Ruling document
-                        <input
-                          type="file"
-                          accept="application/pdf,image/jpeg,image/png,image/webp"
-                          disabled={busyId === r.id}
-                          onChange={(e) =>
-                            updateDraft(r.id, {
-                              file: e.target.files?.[0] ?? null,
-                            })
+                      <div className="sm:col-span-2">
+                        <FilePickerField
+                          key={draft.fileInputKey}
+                          id={`ruling-file-${r.id}`}
+                          file={draft.file}
+                          onFileChange={(next) =>
+                            void handleRulingFileChange(r, next)
                           }
-                          className="mt-1 block w-full text-sm text-zinc-600"
+                          hint="Official ruling (PDF or image, required, max 10 MB)"
+                          disabled={busyId === r.id || draft.uploading}
                         />
-                      </label>
+                        {draft.uploading ? (
+                          <p className="mt-1 text-xs text-zinc-600">
+                            Uploading ruling…
+                          </p>
+                        ) : draft.uploadedPath ? (
+                          <p className="mt-1 text-xs text-emerald-800">
+                            Ruling uploaded. You can resolve the request.
+                          </p>
+                        ) : null}
+                      </div>
                       <label className="block text-xs font-medium text-zinc-600">
                         Board (optional)
                         <input
@@ -239,9 +288,9 @@ export function ArbiterInbox() {
                     </div>
                     <button
                       type="button"
-                      disabled={busyId === r.id}
+                      disabled={!canResolve}
                       onClick={() => resolve(r)}
-                      className="btn-primary mt-3 text-sm disabled:opacity-50"
+                      className="btn-primary mt-3 text-sm disabled:cursor-not-allowed disabled:bg-zinc-400 disabled:opacity-100 hover:disabled:bg-zinc-400"
                     >
                       {busyId === r.id ? "Resolving…" : "Resolve with ruling"}
                     </button>
