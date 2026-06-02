@@ -50,6 +50,11 @@ export function GroupStandingsGrid({ grid }: Props) {
               <th
                 className={`${stickyHead} left-[10.25rem] w-16 text-right`}
               >
+                Pen.
+              </th>
+              <th
+                className={`${stickyHead} left-[14.5rem] w-16 text-right`}
+              >
                 VP
               </th>
               {rounds.map((col) => (
@@ -84,7 +89,12 @@ export function GroupStandingsGrid({ grid }: Props) {
                   </Link>
                 </td>
                 <td
-                  className={`${stickyCell} left-[10.25rem] text-right tabular-nums`}
+                  className={`${stickyCell} left-[10.25rem] text-right tabular-nums text-zinc-600`}
+                >
+                  {row.penaltyVp > 0 ? `−${row.penaltyVp}` : "0"}
+                </td>
+                <td
+                  className={`${stickyCell} left-[14.5rem] text-right tabular-nums font-medium`}
                 >
                   {row.vpTotal}
                 </td>

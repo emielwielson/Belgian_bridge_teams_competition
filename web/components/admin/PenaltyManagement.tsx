@@ -8,6 +8,7 @@ type Penalty = {
   penalty_date: string;
   reason: string;
   vp_deduction: number;
+  file_path?: string | null;
   team?: { id: string; name: string; group_id: string } | null;
 };
 
@@ -28,6 +29,7 @@ export function PenaltyManagement({ groupId, teams }: Props) {
     penalty_date: new Date().toISOString().slice(0, 10),
     reason: "",
     vp_deduction: "0",
+    file: null as File | null,
   });
 
   const load = useCallback(async () => {
@@ -59,34 +61,58 @@ export function PenaltyManagement({ groupId, teams }: Props) {
       return;
     }
     setMessage(null);
-    const payload = {
-      team_id: form.team_id,
-      penalty_date: form.penalty_date,
-      reason: form.reason,
-      vp_deduction: Number(form.vp_deduction),
-    };
-    const url = editingId
-      ? `/api/admin/penalties/${editingId}`
-      : "/api/admin/penalties";
-    const res = await fetch(url, {
-      method: editingId ? "PATCH" : "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const body = await res.json();
-    if (!res.ok) {
-      setMessage(body.error ?? "Save failed");
-      return;
+    try {
+      let filePath: string | null = null;
+      if (form.file) {
+        const uploadData = new FormData();
+        uploadData.append("file", form.file);
+        uploadData.append("purpose", "penalty");
+        uploadData.append("matchId", form.team_id);
+        uploadData.append("teamId", form.team_id);
+        const uploadRes = await fetch("/api/files/upload", {
+          method: "POST",
+          body: uploadData,
+        });
+        const uploadBody = await uploadRes.json();
+        if (!uploadRes.ok) {
+          throw new Error(uploadBody.error ?? "Upload failed");
+        }
+        filePath = uploadBody.path ?? null;
+      }
+
+      const payload = {
+        team_id: form.team_id,
+        penalty_date: form.penalty_date,
+        reason: form.reason,
+        vp_deduction: Number(form.vp_deduction),
+        ...(filePath ? { file_path: filePath } : {}),
+      };
+      const url = editingId
+        ? `/api/admin/penalties/${editingId}`
+        : "/api/admin/penalties";
+      const res = await fetch(url, {
+        method: editingId ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        setMessage(body.error ?? "Save failed");
+        return;
+      }
+      setEditingId(null);
+      setForm({
+        team_id: teams[0]?.id ?? "",
+        penalty_date: new Date().toISOString().slice(0, 10),
+        reason: "",
+        vp_deduction: "0",
+        file: null,
+      });
+      await load();
+      setMessage(editingId ? "Penalty updated" : "Penalty added");
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : "Save failed");
     }
-    setEditingId(null);
-    setForm({
-      team_id: teams[0]?.id ?? "",
-      penalty_date: new Date().toISOString().slice(0, 10),
-      reason: "",
-      vp_deduction: "0",
-    });
-    await load();
-    setMessage(editingId ? "Penalty updated" : "Penalty added");
   }
 
   async function remove(id: string) {
@@ -108,6 +134,7 @@ export function PenaltyManagement({ groupId, teams }: Props) {
       penalty_date: p.penalty_date,
       reason: p.reason,
       vp_deduction: String(p.vp_deduction),
+      file: null,
     });
   }
 
@@ -175,6 +202,17 @@ export function PenaltyManagement({ groupId, teams }: Props) {
             className="mt-1 w-full rounded-md border border-zinc-300 px-2 py-2 text-sm"
           />
         </label>
+        <label className="block text-xs font-medium text-zinc-600 sm:col-span-2">
+          Document (optional)
+          <input
+            type="file"
+            accept="application/pdf,image/jpeg,image/png,image/webp"
+            onChange={(e) =>
+              setForm((f) => ({ ...f, file: e.target.files?.[0] ?? null }))
+            }
+            className="mt-1 block w-full text-sm text-zinc-600"
+          />
+        </label>
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
@@ -191,6 +229,7 @@ export function PenaltyManagement({ groupId, teams }: Props) {
                 penalty_date: new Date().toISOString().slice(0, 10),
                 reason: "",
                 vp_deduction: "0",
+                file: null,
               });
             }}
             className="btn-secondary text-sm"

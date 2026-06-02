@@ -8,7 +8,47 @@ export type ArbiterRequestCreatedEmailContext = {
 
 export type ArbiterRequestResolvedEmailContext = {
   requestId: string;
+  rulingSignedUrl?: string | null;
 };
+
+async function loadCaptainEmailsForMatch(matchId: string): Promise<string[]> {
+  const supabase = createServiceClient();
+  const { data: match, error: matchError } = await supabase
+    .from("matches")
+    .select("home_team_id, away_team_id")
+    .eq("id", matchId)
+    .maybeSingle();
+  if (matchError || !match) return [];
+
+  const teamIds = [match.home_team_id, match.away_team_id];
+  const { data: teams, error: teamError } = await supabase
+    .from("teams")
+    .select("captain_id, captain:players(auth_user_id)")
+    .in("id", teamIds);
+  if (teamError) throw teamError;
+
+  const emails: string[] = [];
+  for (const team of teams ?? []) {
+    const captain = Array.isArray(team.captain)
+      ? team.captain[0]
+      : team.captain;
+    const authUserId = (captain as { auth_user_id?: string | null } | null)
+      ?.auth_user_id;
+    if (!authUserId) continue;
+    const { data, error } = await supabase.auth.admin.getUserById(authUserId);
+    if (!error && data.user?.email) {
+      emails.push(data.user.email);
+    }
+  }
+
+  const seen = new Set<string>();
+  return emails.filter((e) => {
+    const key = e.trim().toLowerCase();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
 
 async function loadArbiterEmails(): Promise<string[]> {
   const supabase = createServiceClient();
@@ -158,11 +198,16 @@ function legacyDetailLines(summary: {
 export async function sendArbiterRequestResolvedEmail(
   ctx: ArbiterRequestResolvedEmailContext,
 ): Promise<void> {
-  const cc = await loadArbiterEmails();
-  if (cc.length === 0) return;
-
   const summary = await loadArbiterRequestSummary(ctx.requestId);
   if (!summary) return;
+
+  const [arbiterEmails, captainEmails] = await Promise.all([
+    loadArbiterEmails(),
+    loadCaptainEmailsForMatch(summary.matchId),
+  ]);
+
+  const cc = [...new Set([...arbiterEmails, ...captainEmails])];
+  if (cc.length === 0) return;
 
   const baseUrl = getAppBaseUrl();
   const matchUrl = `${baseUrl}/matches/${summary.matchId}`;
@@ -171,12 +216,17 @@ export async function sendArbiterRequestResolvedEmail(
   const matchLine = `Round ${summary.round}: ${summary.homeTeamName} vs ${summary.awayTeamName}`;
   const legacyLines = legacyDetailLines(summary);
 
+  const rulingLine = ctx.rulingSignedUrl
+    ? `Official ruling: ${ctx.rulingSignedUrl}`
+    : null;
+
   const subject = `Arbiter request resolved: ${matchLine}`;
   const bodyText = [
-    "An arbiter request has been resolved.",
+    "An arbiter request has been resolved with an official ruling.",
     "",
     matchLine,
     ...legacyLines,
+    ...(rulingLine ? ["", rulingLine] : []),
     "",
     `Arbiter inbox: ${inboxUrl}`,
     `Match: ${matchUrl}`,
@@ -186,11 +236,16 @@ export async function sendArbiterRequestResolvedEmail(
   const legacyHtml =
     legacyLines.length > 0
       ? `<br>${legacyLines.join("<br>")}`
-      : "<br>See the attachment in the arbiter inbox.";
+      : "";
+
+  const rulingHtml = ctx.rulingSignedUrl
+    ? `<p><a href="${ctx.rulingSignedUrl}">View official ruling (PDF/image)</a></p>`
+    : "";
 
   const bodyHtml = [
-    "<p>An arbiter request has been resolved.</p>",
+    "<p>An arbiter request has been resolved with an official ruling.</p>",
     `<p><strong>${matchLine}</strong>${legacyHtml}</p>`,
+    rulingHtml,
     `<p><a href="${inboxUrl}">Open arbiter inbox</a> · <a href="${matchUrl}">View match</a><br><a href="${loginUrl}">Login first</a></p>`,
   ].join("");
 
@@ -207,6 +262,7 @@ export async function sendArbiterRequestResolvedEmail(
       request_id: ctx.requestId,
       board: summary.board,
       description: summary.description,
+      ruling_url: ctx.rulingSignedUrl ?? null,
     },
     { eventType: "arbiter_request_resolved" },
   );

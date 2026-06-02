@@ -39,6 +39,34 @@ begin
   ) then
     raise exception 'operational-files storage bucket missing';
   end if;
+
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'penalties'
+      and column_name = 'file_path'
+  ) then
+    raise exception 'penalties.file_path column missing';
+  end if;
+
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'standings_group'
+      and column_name = 'penalty_vp'
+  ) then
+    raise exception 'standings_group.penalty_vp column missing';
+  end if;
+
+  if not exists (
+    select 1 from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+      and p.proname = 'arbiter_request_resolve'
+      and pg_get_function_identity_arguments(p.oid) like '%uuid, text%'
+  ) then
+    raise exception 'arbiter_request_resolve(uuid, text, ...) missing';
+  end if;
 end;
 $$;
 

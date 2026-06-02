@@ -12,6 +12,7 @@ type Props = {
   initialVpAway: number | null;
   playedAt: string | null;
   isAdmin: boolean;
+  canEditFinishedScore?: boolean;
   lineupsComplete: boolean;
   /** When false, show read-only score info (no submit form). */
   allowSubmit?: boolean;
@@ -26,6 +27,7 @@ export function MatchScoreForm({
   initialVpAway,
   playedAt: initialPlayedAt,
   isAdmin,
+  canEditFinishedScore = isAdmin,
   lineupsComplete,
   allowSubmit = true,
 }: Props) {
@@ -43,9 +45,9 @@ export function MatchScoreForm({
 
   const locked = playedAt != null;
   const canSubmit = allowSubmit && !locked && lineupsComplete;
-  const canAdminEdit = allowSubmit && locked && isAdmin;
+  const canEditLockedScore = locked && canEditFinishedScore;
 
-  if (!allowSubmit && !locked) {
+  if (!allowSubmit && !locked && !canEditFinishedScore) {
     return (
       <section className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
         <h3 className="text-sm font-semibold text-zinc-900">Score</h3>
@@ -91,7 +93,7 @@ export function MatchScoreForm({
     }
   }
 
-  if (locked && !canAdminEdit) {
+  if (locked && !canEditLockedScore) {
     return (
       <section className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
         <h3 className="text-sm font-semibold text-zinc-900">Official score</h3>
@@ -109,7 +111,7 @@ export function MatchScoreForm({
           </p>
         ) : null}
         <p className="mt-2 text-xs text-zinc-500">
-          Score is locked. Contact a competition manager to change it.
+          Score is locked. Contact an arbiter or competition manager to change it.
         </p>
       </section>
     );
@@ -118,10 +120,10 @@ export function MatchScoreForm({
   return (
     <section className="rounded-lg border border-zinc-200 bg-white p-4">
       <h3 className="text-sm font-semibold text-zinc-900">
-        {canAdminEdit ? "Admin score edit" : "Submit score"}
+        {canEditLockedScore ? "Official score edit" : "Submit score"}
       </h3>
       <p className="mt-1 text-xs text-zinc-500">{boardCount} boards · VP from table</p>
-      {playedAt && canAdminEdit ? (
+      {playedAt && canEditLockedScore ? (
         <p className="mt-1 text-xs text-zinc-500">
           Last scored {formatBrussels(playedAt)}
         </p>
@@ -143,7 +145,7 @@ export function MatchScoreForm({
           {saving ? "Submitting…" : "Submit official score"}
         </button>
       ) : null}
-      {canAdminEdit ? (
+      {canEditLockedScore ? (
         <button
           type="button"
           onClick={() => submit("PATCH")}

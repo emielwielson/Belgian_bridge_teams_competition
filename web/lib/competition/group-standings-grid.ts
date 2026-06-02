@@ -11,6 +11,7 @@ export type StandingsTeamRow = {
   team_id: string;
   team_name: string;
   vp_total: number;
+  penalty_vp?: number;
 };
 
 export type GroupMatchRow = {
@@ -53,6 +54,7 @@ export type GridRow = {
   teamId: string;
   teamName: string;
   vpTotal: number;
+  penaltyVp: number;
   cells: GridCell[];
 };
 
@@ -228,6 +230,7 @@ export function buildGroupStandingsGrid(
       teamId: team.team_id,
       teamName: team.team_name,
       vpTotal: team.vp_total,
+      penaltyVp: team.penalty_vp ?? 0,
       cells,
     };
   });

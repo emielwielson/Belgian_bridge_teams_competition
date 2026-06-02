@@ -13,7 +13,7 @@ type MatchOption = {
 type Ruling = {
   id: string;
   match_id: string;
-  board: number;
+  board: number | null;
   file_path: string;
   ruling_date: string | null;
   signed_url: string | null;
@@ -42,7 +42,7 @@ export function RulingManagement({ groupId }: Props) {
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({
     match_id: "",
-    board: "1",
+    board: "",
     ruling_date: new Date().toISOString().slice(0, 10),
     file: null as File | null,
   });
@@ -115,7 +115,10 @@ export function RulingManagement({ groupId }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           match_id: form.match_id,
-          board: Number(form.board),
+          board:
+            form.board.trim() !== "" && Number.isFinite(Number(form.board))
+              ? Number(form.board)
+              : null,
           file_path: uploadBody.path,
           ruling_date: form.ruling_date,
         }),
@@ -125,7 +128,7 @@ export function RulingManagement({ groupId }: Props) {
 
       setForm({
         match_id: matches[0]?.id ?? "",
-        board: "1",
+        board: "",
         ruling_date: new Date().toISOString().slice(0, 10),
         file: null,
       });
@@ -162,7 +165,7 @@ export function RulingManagement({ groupId }: Props) {
     <section className="card mt-6">
       <h2 className="font-semibold text-zinc-900">Rulings</h2>
       <p className="mt-1 text-xs text-zinc-500">
-        Official rulings per match and board (PDF or image, max 10 MB).
+        Official rulings per match (PDF or image, max 10 MB). Board optional.
       </p>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -184,7 +187,7 @@ export function RulingManagement({ groupId }: Props) {
           </select>
         </label>
         <label className="block text-xs font-medium text-zinc-600">
-          Board
+          Board (optional)
           <input
             type="number"
             min={1}
@@ -245,8 +248,10 @@ export function RulingManagement({ groupId }: Props) {
             rulings.map((r) => {
               const m = r.match;
               const label = m
-                ? `R${m.round}: ${m.home_team?.name ?? "?"} vs ${m.away_team?.name ?? "?"} — board ${r.board}`
-                : `Board ${r.board}`;
+                ? `R${m.round}: ${m.home_team?.name ?? "?"} vs ${m.away_team?.name ?? "?"}${r.board != null ? ` — board ${r.board}` : ""}`
+                : r.board != null
+                  ? `Board ${r.board}`
+                  : "Match ruling";
               return (
                 <li
                   key={r.id}

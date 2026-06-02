@@ -212,7 +212,11 @@ export async function submitMatchScore(
   match: MatchContext,
   userId: string,
   payload: ScorePayload,
-  options: { isAdminEdit: boolean; previous?: ScorePayload & { vpHome: number; vpAway: number } },
+  options: {
+    isAdminEdit: boolean;
+    isArbiterEdit?: boolean;
+    previous?: ScorePayload & { vpHome: number; vpAway: number };
+  },
 ): Promise<SubmittedMatchScore> {
   const { impsHome, impsAway } = payload;
   const { vpHome, vpAway } = await lookupVpForMatch(
@@ -258,7 +262,9 @@ export async function submitMatchScore(
   };
 
   const action = options.isAdminEdit
-    ? `score_admin_edit:${JSON.stringify(logPayload)}`
+    ? options.isArbiterEdit
+      ? `score_arbiter_edit:${JSON.stringify(logPayload)}`
+      : `score_admin_edit:${JSON.stringify(logPayload)}`
     : `score_submitted:${JSON.stringify(logPayload)}`;
 
   await insertMatchLog(supabase, match.id, userId, action);

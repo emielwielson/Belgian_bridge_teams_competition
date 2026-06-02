@@ -48,18 +48,39 @@ function mockServiceClient() {
       }
       if (table === "matches") {
         return {
-          select: () => ({
+          select: (cols: string) => ({
             eq: () => ({
               maybeSingle: () =>
                 Promise.resolve({
-                  data: {
-                    round: 5,
-                    home_team: { name: "Home FC" },
-                    away_team: { name: "Away FC" },
-                  },
+                  data: cols.includes("home_team_id")
+                    ? {
+                        home_team_id: "home-1",
+                        away_team_id: "away-1",
+                      }
+                    : {
+                        round: 5,
+                        home_team: { name: "Home FC" },
+                        away_team: { name: "Away FC" },
+                      },
                   error: null,
                 }),
             }),
+          }),
+        };
+      }
+      if (table === "teams") {
+        return {
+          select: () => ({
+            in: () =>
+              Promise.resolve({
+                data: [
+                  {
+                    captain_id: "cap-1",
+                    captain: { auth_user_id: "captain-user-1" },
+                  },
+                ],
+                error: null,
+              }),
           }),
         };
       }

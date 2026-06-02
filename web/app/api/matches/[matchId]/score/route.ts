@@ -1,14 +1,14 @@
 import {
-  COMPETITION_ADMIN_ROLES,
   requireAuth,
   requireRoles,
 } from "@/lib/auth/route-auth";
 import {
-  assertCanAdminEditScore,
+  assertCanEditFinishedScore,
   assertCanSubmitScore,
   assertCanViewMatchOps,
   loadMatchContext,
 } from "@/lib/auth/match-access";
+import { FINISHED_SCORE_EDIT_ROLES, ROLES } from "@/lib/auth/roles";
 import { revalidateStandingsForGroup } from "@/lib/competition/revalidate-standings";
 import { submitMatchScore } from "@/lib/scoring/match-operations";
 import { matchResponseFields } from "@/lib/scoring/match-state";
@@ -77,9 +77,9 @@ export async function PATCH(request: Request, { params }: Params) {
   try {
     const { matchId } = await params;
     const { user, roles, supabase } = await requireRoles([
-      ...COMPETITION_ADMIN_ROLES,
+      ...FINISHED_SCORE_EDIT_ROLES,
     ]);
-    assertCanAdminEditScore(roles);
+    assertCanEditFinishedScore(roles);
 
     const match = await loadMatchContext(supabase, matchId);
     if (!match.played_at) {
@@ -105,8 +105,14 @@ export async function PATCH(request: Request, { params }: Params) {
           }
         : undefined;
 
+    const isArbiterEdit =
+      roles.includes(ROLES.ARBITER) &&
+      !roles.includes(ROLES.COMPETITION_MANAGER) &&
+      !roles.includes(ROLES.SYSTEM_ADMIN);
+
     const result = await submitMatchScore(supabase, match, user.id, imps, {
       isAdminEdit: true,
+      isArbiterEdit,
       previous,
     });
 

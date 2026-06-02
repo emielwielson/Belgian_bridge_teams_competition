@@ -1,20 +1,71 @@
 import { ARBITER_ACCESS_ROLES } from "@/lib/auth/roles";
 import { requireRoles } from "@/lib/auth/route-auth";
 import { resolveArbiterRequest } from "@/lib/competition/arbiter-request";
-import { jsonFromError, jsonOk } from "@/lib/http/api-response";
+import { createOperationalSignedUrl } from "@/lib/files/operational-file-storage";
+import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
 import { sendArbiterRequestResolvedEmail } from "@/lib/notifications/arbiter-request-email";
+import { createServiceClient } from "@/lib/supabase/server-client";
 
 type Params = { params: Promise<{ requestId: string }> };
 
-export async function POST(_request: Request, { params }: Params) {
+export async function POST(request: Request, { params }: Params) {
   try {
     const { requestId } = await params;
     const { supabase } = await requireRoles([...ARBITER_ACCESS_ROLES]);
 
-    await resolveArbiterRequest(supabase, requestId);
-    void sendArbiterRequestResolvedEmail({ requestId });
+    const body = (await request.json()) as Record<string, unknown>;
+    const filePath = String(body.file_path ?? body.filePath ?? "").trim();
+    if (!filePath) {
+      return jsonError("file_path is required", 400);
+    }
 
-    return jsonOk({ resolved: true });
+    const boardRaw = body.board;
+    const board =
+      boardRaw != null && boardRaw !== "" && Number.isFinite(Number(boardRaw))
+        ? Number(boardRaw)
+        : null;
+    if (board != null && board <= 0) {
+      return jsonError("board must be positive when provided", 400);
+    }
+
+    const rulingDateRaw = body.ruling_date ?? body.rulingDate;
+    const rulingDate =
+      rulingDateRaw != null && String(rulingDateRaw).trim() !== ""
+        ? String(rulingDateRaw).trim()
+        : null;
+
+    const rulingId = await resolveArbiterRequest(supabase, requestId, {
+      filePath,
+      board,
+      rulingDate,
+    });
+
+    const service = createServiceClient();
+    const { data: ruling, error: rulingError } = await supabase
+      .from("rulings")
+      .select("file_path")
+      .eq("id", rulingId)
+      .maybeSingle();
+    if (rulingError) return jsonError(rulingError.message, 500);
+
+    let rulingSignedUrl: string | null = null;
+    if (ruling?.file_path) {
+      try {
+        rulingSignedUrl = await createOperationalSignedUrl(
+          service,
+          ruling.file_path,
+        );
+      } catch {
+        rulingSignedUrl = null;
+      }
+    }
+
+    void sendArbiterRequestResolvedEmail({
+      requestId,
+      rulingSignedUrl,
+    });
+
+    return jsonOk({ resolved: true, rulingId, rulingSignedUrl });
   } catch (err) {
     return jsonFromError(err);
   }

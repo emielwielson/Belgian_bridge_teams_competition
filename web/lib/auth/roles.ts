@@ -15,6 +15,12 @@ export const ARBITER_ACCESS_ROLES = [
   ROLES.COMPETITION_MANAGER,
 ] as const;
 
+/** Roles that may edit scores after a match is played. */
+export const FINISHED_SCORE_EDIT_ROLES = [
+  ...ARBITER_ACCESS_ROLES,
+  ROLES.SYSTEM_ADMIN,
+] as const;
+
 export function hasRole(userRoles: string[], role: string): boolean {
   if (userRoles.includes(ROLES.SYSTEM_ADMIN)) return true;
   return userRoles.includes(role);

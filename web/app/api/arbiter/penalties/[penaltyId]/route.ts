@@ -1,4 +1,5 @@
-import { COMPETITION_ADMIN_ROLES, requireRoles } from "@/lib/auth/route-auth";
+import { ARBITER_ACCESS_ROLES } from "@/lib/auth/roles";
+import { requireRoles } from "@/lib/auth/route-auth";
 import { revalidateStandingsForTeam } from "@/lib/competition/revalidate-standings";
 import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
 
@@ -7,7 +8,7 @@ type Params = { params: Promise<{ penaltyId: string }> };
 export async function PATCH(request: Request, { params }: Params) {
   try {
     const { penaltyId } = await params;
-    const { user, supabase } = await requireRoles([...COMPETITION_ADMIN_ROLES]);
+    const { user, supabase } = await requireRoles([...ARBITER_ACCESS_ROLES]);
     const body = await request.json();
 
     const updates: Record<string, unknown> = {
@@ -54,7 +55,7 @@ export async function PATCH(request: Request, { params }: Params) {
 export async function DELETE(_request: Request, { params }: Params) {
   try {
     const { penaltyId } = await params;
-    const { supabase } = await requireRoles([...COMPETITION_ADMIN_ROLES]);
+    const { supabase } = await requireRoles([...ARBITER_ACCESS_ROLES]);
 
     const { data: existing, error: loadError } = await supabase
       .from("penalties")

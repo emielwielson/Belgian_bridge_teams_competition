@@ -8,6 +8,7 @@ export type StandingsRow = {
   team_id: string;
   team_name: string;
   vp_total: number;
+  penalty_vp?: number;
 };
 
 export type LeagueStandingsGroup = {
@@ -42,6 +43,33 @@ export type GroupStandingsContext = {
 export type GroupStandingsFullContext = GroupStandingsContext & {
   matches: GroupMatchRow[];
   byeRounds: GroupByeRoundRow[];
+  penalties: GroupPenaltyRow[];
+  rulings: GroupRulingRow[];
+};
+
+export type GroupPenaltyRow = {
+  id: string;
+  team_id: string;
+  penalty_date: string;
+  reason: string;
+  vp_deduction: number;
+  file_path: string | null;
+  team: { id: string; name: string } | null;
+};
+
+export type GroupRulingRow = {
+  id: string;
+  match_id: string;
+  board: number | null;
+  ruling_date: string | null;
+  file_path: string;
+  arbiter_request_id: string | null;
+  signed_url: string | null;
+  match: {
+    round: number;
+    home_team: { name: string } | null;
+    away_team: { name: string } | null;
+  } | null;
 };
 
 const LEAGUE_PICKER_ORDER: LeagueName[] = [
@@ -51,7 +79,7 @@ const LEAGUE_PICKER_ORDER: LeagueName[] = [
 ];
 
 const STANDINGS_SELECT =
-  "group_id, team_id, team_name, vp_total" as const;
+  "group_id, team_id, team_name, vp_total, penalty_vp" as const;
 
 function isMissingHostingTeamIdColumn(error: PostgrestError | null): boolean {
   if (!error) return false;
@@ -76,10 +104,11 @@ export async function fetchGroupStandings(
 
   if (error) throw error;
 
-  return (data ?? []).map(({ team_id, team_name, vp_total }) => ({
+  return (data ?? []).map(({ team_id, team_name, vp_total, penalty_vp }) => ({
     team_id,
     team_name,
     vp_total,
+    penalty_vp: Number(penalty_vp ?? 0),
   }));
 }
 
@@ -291,9 +320,68 @@ export async function loadGroupStandingsFull(
 
   if (byeError) throw byeError;
 
+  const { data: teamRows, error: teamsError } = await supabase
+    .from("teams")
+    .select("id")
+    .eq("group_id", groupId);
+  if (teamsError) throw teamsError;
+
+  const teamIds = (teamRows ?? []).map((t) => t.id);
+  let penalties: GroupPenaltyRow[] = [];
+  if (teamIds.length > 0) {
+    const { data: penaltyRows, error: penaltyError } = await supabase
+      .from("penalties")
+      .select(
+        `
+        id,
+        team_id,
+        penalty_date,
+        reason,
+        vp_deduction,
+        file_path,
+        team:teams (id, name)
+      `,
+      )
+      .in("team_id", teamIds)
+      .order("penalty_date", { ascending: false });
+    if (penaltyError) throw penaltyError;
+    penalties = (penaltyRows ?? []) as GroupPenaltyRow[];
+  }
+
+  const matchIds = (matches ?? []).map((m) => m.id);
+  let rulings: GroupRulingRow[] = [];
+  if (matchIds.length > 0) {
+    const { data: rulingRows, error: rulingError } = await supabase
+      .from("rulings")
+      .select(
+        `
+        id,
+        match_id,
+        board,
+        ruling_date,
+        file_path,
+        arbiter_request_id,
+        match:matches (
+          round,
+          home_team:teams!matches_home_team_id_fkey (name),
+          away_team:teams!matches_away_team_id_fkey (name)
+        )
+      `,
+      )
+      .in("match_id", matchIds)
+      .order("ruling_date", { ascending: false });
+    if (rulingError) throw rulingError;
+    rulings = (rulingRows ?? []).map((row) => ({
+      ...row,
+      signed_url: null,
+    })) as GroupRulingRow[];
+  }
+
   return {
     ...context,
     matches: (matches ?? []) as GroupMatchRow[],
     byeRounds: (byeRounds ?? []) as GroupByeRoundRow[],
+    penalties,
+    rulings,
   };
 }

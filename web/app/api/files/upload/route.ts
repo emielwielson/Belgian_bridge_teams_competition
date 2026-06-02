@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { COMPETITION_ADMIN_ROLES, requireAuth } from "@/lib/auth/route-auth";
-import { hasAnyRole } from "@/lib/auth/roles";
+import { ARBITER_ACCESS_ROLES, hasAnyRole } from "@/lib/auth/roles";
 import {
   buildOperationalStoragePath,
   validateOperationalFile,
@@ -20,9 +20,24 @@ async function assertCanUploadForPurpose(
   roles: string[],
 ): Promise<void> {
   if (purpose === "ruling") {
-    if (!hasAnyRole(roles, [...COMPETITION_ADMIN_ROLES])) {
+    if (!hasAnyRole(roles, [...ARBITER_ACCESS_ROLES])) {
       throw new Error("Forbidden");
     }
+    return;
+  }
+
+  if (purpose === "penalty") {
+    if (!hasAnyRole(roles, [...ARBITER_ACCESS_ROLES])) {
+      throw new Error("Forbidden");
+    }
+    const teamId = matchId;
+    const { data: team, error: teamError } = await supabase
+      .from("teams")
+      .select("id")
+      .eq("id", teamId)
+      .maybeSingle();
+    if (teamError) throw teamError;
+    if (!team) throw new Error("Team not found");
     return;
   }
 
@@ -68,18 +83,27 @@ export async function POST(request: Request) {
     }
 
     const purpose = purposeRaw.trim() as OperationalFilePurpose;
-    if (purpose !== "ruling" && purpose !== "arbiter_request") {
-      return jsonError("purpose must be ruling or arbiter_request", 400);
+    if (purpose !== "ruling" && purpose !== "arbiter_request" && purpose !== "penalty") {
+      return jsonError("purpose must be ruling, arbiter_request, or penalty", 400);
     }
 
     const matchId = matchIdRaw.trim();
-    await assertCanUploadForPurpose(supabase, purpose, matchId, roles);
+    const entityId =
+      purpose === "penalty"
+        ? (formData.get("teamId") as string | null)?.trim() ?? matchId
+        : matchId;
+
+    if (purpose === "penalty" && !entityId) {
+      return jsonError("teamId is required for penalty uploads", 400);
+    }
+
+    await assertCanUploadForPurpose(supabase, purpose, entityId, roles);
 
     const validated = validateOperationalFile(file);
     const fileId = randomUUID();
     const storagePath = buildOperationalStoragePath({
       purpose,
-      entityId: matchId,
+      entityId,
       extension: validated.extension,
       fileId,
     });

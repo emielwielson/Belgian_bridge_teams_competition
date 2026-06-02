@@ -16,7 +16,7 @@ const MIME_TO_EXT: Record<string, string> = {
   "image/webp": "webp",
 };
 
-export type OperationalFilePurpose = "ruling" | "arbiter_request";
+export type OperationalFilePurpose = "ruling" | "arbiter_request" | "penalty";
 
 export type ValidatedOperationalFile = {
   mime: string;
@@ -53,6 +53,10 @@ export function buildOperationalStoragePath(params: {
 }): string {
   const id = params.fileId ?? crypto.randomUUID();
   const folder =
-    params.purpose === "ruling" ? "rulings" : "arbiter";
+    params.purpose === "ruling"
+      ? "rulings"
+      : params.purpose === "penalty"
+        ? "penalties"
+        : "arbiter";
   return `${folder}/${params.entityId}/${id}.${params.extension}`;
 }

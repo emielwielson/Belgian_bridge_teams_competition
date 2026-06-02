@@ -1,15 +1,17 @@
 import Link from "next/link";
+import { MatchPenaltyForm } from "@/components/matches/MatchPenaltyForm";
 import { MatchSecondaryWorkflows } from "@/components/matches/MatchSecondaryWorkflows";
 import { MatchLineupEditor } from "@/components/player/MatchLineupEditor";
 import { MatchScoreForm } from "@/components/player/MatchScoreForm";
 import {
   canEditLineupForTeam,
+  canSubmitScore,
   canViewMatchOps,
   userManagesMatchClub,
   type MatchContext,
 } from "@/lib/auth/match-access";
 import { COMPETITION_ADMIN_ROLES } from "@/lib/auth/route-auth";
-import { hasAnyRole } from "@/lib/auth/roles";
+import { ARBITER_ACCESS_ROLES, FINISHED_SCORE_EDIT_ROLES, hasAnyRole } from "@/lib/auth/roles";
 import {
   canAccessPostponementWorkflow,
   getMatchPostponementState,
@@ -49,6 +51,9 @@ export async function MatchDetailView({
   const canOps = userId
     ? await canViewMatchOps(supabase, matchId)
     : false;
+  const canSubmitScoreForMatch = userId
+    ? await canSubmitScore(supabase, matchId)
+    : false;
 
   const lineup = await getMatchLineup(supabase, matchId);
   const [homeRoster, awayRoster] = await Promise.all([
@@ -58,6 +63,12 @@ export async function MatchDetailView({
 
   const isAdmin = userId
     ? hasAnyRole(roles, [...COMPETITION_ADMIN_ROLES])
+    : false;
+  const canEditFinishedScore = userId
+    ? hasAnyRole(roles, [...FINISHED_SCORE_EDIT_ROLES])
+    : false;
+  const canAddPenalty = userId
+    ? hasAnyRole(roles, [...ARBITER_ACCESS_ROLES])
     : false;
   const managesClub =
     userId && canOps
@@ -249,9 +260,17 @@ export async function MatchDetailView({
         initialVpAway={match.vp_away}
         playedAt={match.played_at}
         isAdmin={isAdmin}
+        canEditFinishedScore={canEditFinishedScore}
         lineupsComplete={lineupsComplete}
-        allowSubmit={canOps}
+        allowSubmit={canSubmitScoreForMatch}
       />
+
+      {canAddPenalty ? (
+        <MatchPenaltyForm
+          homeTeam={{ id: match.home_team_id, name: match.home_team.name }}
+          awayTeam={{ id: match.away_team_id, name: match.away_team.name }}
+        />
+      ) : null}
     </main>
   );
 }

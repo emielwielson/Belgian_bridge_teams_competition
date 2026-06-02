@@ -62,12 +62,19 @@ export async function POST(request: Request) {
     const body = await request.json();
 
     const matchId = body.match_id as string | undefined;
-    const board = Number(body.board);
+    const boardRaw = body.board;
+    const board =
+      boardRaw != null && boardRaw !== "" && Number.isFinite(Number(boardRaw))
+        ? Number(boardRaw)
+        : null;
     const filePath = body.file_path as string | undefined;
     const rulingDate = (body.ruling_date as string | undefined) ?? null;
 
-    if (!matchId || !filePath?.trim() || !Number.isInteger(board) || board < 1) {
-      return jsonError("match_id, board (positive int), and file_path are required", 400);
+    if (!matchId || !filePath?.trim()) {
+      return jsonError("match_id and file_path are required", 400);
+    }
+    if (board != null && (!Number.isInteger(board) || board < 1)) {
+      return jsonError("board must be a positive integer when provided", 400);
     }
 
     const seasonMatches = await activeSeasonMatchIds(supabase);
@@ -79,7 +86,7 @@ export async function POST(request: Request) {
       .from("rulings")
       .insert({
         match_id: matchId,
-        board,
+        board: board ?? undefined,
         file_path: filePath.trim(),
         ruling_date: rulingDate ?? undefined,
         created_by: user.id,

@@ -40,4 +40,14 @@ describe("buildOperationalStoragePath", () => {
     });
     expect(path).toBe("arbiter/match-2/xyz.jpg");
   });
+
+  it("builds penalty path under team id", () => {
+    const path = buildOperationalStoragePath({
+      purpose: "penalty",
+      entityId: "team-1",
+      extension: "pdf",
+      fileId: "pen",
+    });
+    expect(path).toBe("penalties/team-1/pen.pdf");
+  });
 });

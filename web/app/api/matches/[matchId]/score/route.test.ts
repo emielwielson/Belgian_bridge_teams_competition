@@ -10,12 +10,17 @@ vi.mock("@/lib/auth/route-auth", async (importOriginal) => {
   };
 });
 
-vi.mock("@/lib/auth/match-access", () => ({
-  loadMatchContext: vi.fn(),
-  assertCanSubmitScore: vi.fn(),
-  assertCanViewMatchOps: vi.fn(),
-  assertCanAdminEditScore: vi.fn(),
-}));
+vi.mock("@/lib/auth/match-access", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/auth/match-access")>();
+  return {
+    ...actual,
+    loadMatchContext: vi.fn(),
+    assertCanSubmitScore: vi.fn(),
+    assertCanViewMatchOps: vi.fn(),
+    assertCanAdminEditScore: vi.fn(),
+    assertCanEditFinishedScore: vi.fn(),
+  };
+});
 
 vi.mock("@/lib/scoring/match-operations", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/scoring/match-operations")>();
@@ -35,6 +40,7 @@ import {
   assertCanSubmitScore,
   assertCanViewMatchOps,
   assertCanAdminEditScore,
+  assertCanEditFinishedScore,
 } from "@/lib/auth/match-access";
 import { submitMatchScore } from "@/lib/scoring/match-operations";
 
@@ -170,7 +176,7 @@ describe("PATCH /api/matches/[matchId]/score", () => {
       { params: Promise.resolve({ matchId: "match-1" }) },
     );
     expect(res.status).toBe(200);
-    expect(assertCanAdminEditScore).toHaveBeenCalled();
+    expect(assertCanEditFinishedScore).toHaveBeenCalled();
     expect(submitMatchScore).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ played_at: "2025-01-02T12:00:00Z" }),

@@ -86,11 +86,20 @@ export async function createArbiterRequest(
 export async function resolveArbiterRequest(
   supabase: SupabaseClient,
   requestId: string,
-): Promise<void> {
-  const { error } = await supabase.rpc("arbiter_request_resolve", {
+  params: {
+    filePath: string;
+    board?: number | null;
+    rulingDate?: string | null;
+  },
+): Promise<string> {
+  const { data, error } = await supabase.rpc("arbiter_request_resolve", {
     p_request_id: requestId,
+    p_ruling_file_path: params.filePath,
+    p_board: params.board ?? null,
+    p_ruling_date: params.rulingDate ?? undefined,
   });
   if (error) throw error;
+  return String(data);
 }
 
 export type OpenArbiterInboxItem = {

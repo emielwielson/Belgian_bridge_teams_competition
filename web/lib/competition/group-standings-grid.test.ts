@@ -139,6 +139,15 @@ describe("buildGroupStandingsGrid", () => {
     expect(grid.rows[0].vpTotal).toBe(20);
   });
 
+  it("includes penalty VP on grid rows", () => {
+    const teamsWithPenalty: StandingsTeamRow[] = [
+      { team_id: "t1", team_name: "Alpha", vp_total: 18, penalty_vp: 2 },
+    ];
+    const grid = buildGroupStandingsGrid(teamsWithPenalty, []);
+    expect(grid.rows[0].penaltyVp).toBe(2);
+    expect(grid.rows[0].vpTotal).toBe(18);
+  });
+
   it("applyAccessibleMatchLinks keeps matchId only for allowed fixtures", () => {
     const matches = [
       match({ round: 1, id: "m1" }),

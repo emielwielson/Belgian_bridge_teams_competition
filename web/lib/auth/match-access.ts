@@ -3,7 +3,7 @@ import {
   AuthError,
   COMPETITION_ADMIN_ROLES,
 } from "./route-auth";
-import { hasAnyRole } from "./roles";
+import { FINISHED_SCORE_EDIT_ROLES, hasAnyRole } from "./roles";
 import { resolveUserTeamIds } from "@/lib/competition/player-matches";
 import { getManagedClubIds } from "./user-access";
 
@@ -166,9 +166,13 @@ export async function assertCanSubmitScore(
 }
 
 export function assertCanAdminEditScore(roles: string[]): void {
-  if (!hasAnyRole(roles, [...COMPETITION_ADMIN_ROLES])) {
+  assertCanEditFinishedScore(roles);
+}
+
+export function assertCanEditFinishedScore(roles: string[]): void {
+  if (!hasAnyRole(roles, [...FINISHED_SCORE_EDIT_ROLES])) {
     throw new AuthError(
-      "Forbidden: only competition managers can edit official scores",
+      "Forbidden: only arbiters or competition managers can edit official scores",
       403,
     );
   }
