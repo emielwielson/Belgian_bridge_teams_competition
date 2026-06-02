@@ -11,10 +11,6 @@ import { CompetitionManagement } from "./CompetitionManagement";
 import { RegionalStartLeagueSection } from "./RegionalStartLeagueSection";
 import { RegionalStructureSetup } from "./RegionalStructureSetup";
 import { RegionalTeamsSetup } from "./RegionalTeamsSetup";
-import { MatchLogViewer } from "./MatchLogViewer";
-import { PenaltyManagement } from "./PenaltyManagement";
-import { RulingManagement } from "./RulingManagement";
-import { WarningManagement } from "./WarningManagement";
 
 type SetupTab = "dates" | "structure" | "teams" | "start";
 
@@ -60,12 +56,6 @@ export function RegionalCompetitionSetup({ regionCode, regionId }: Props) {
   const [divisionLevels, setDivisionLevels] = useState<DivisionLevel[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [structureLoading, setStructureLoading] = useState(true);
-  const [disciplineGroupId, setDisciplineGroupId] = useState<string | null>(
-    null,
-  );
-  const [disciplineTeams, setDisciplineTeams] = useState<
-    { id: string; name: string }[]
-  >([]);
 
   const scopeTitle = translateRegionalScopeTitle(regionCode, t);
 
@@ -123,38 +113,6 @@ export function RegionalCompetitionSetup({ regionCode, regionId }: Props) {
     void init();
   }, [regionCode, loadAll, tTabs]);
 
-  useEffect(() => {
-    if (readiness?.seasonStatus === "setup") return;
-    const groups = readiness?.groups ?? [];
-    if (groups.length === 0) {
-      setDisciplineGroupId(null);
-      return;
-    }
-    if (
-      !disciplineGroupId ||
-      !groups.some((g) => g.groupId === disciplineGroupId)
-    ) {
-      setDisciplineGroupId(groups[0].groupId);
-    }
-  }, [readiness, disciplineGroupId]);
-
-  useEffect(() => {
-    if (!disciplineGroupId) {
-      setDisciplineTeams([]);
-      return;
-    }
-    fetch(`/api/admin/competition/teams?groupId=${disciplineGroupId}`)
-      .then((r) => r.json())
-      .then((b) =>
-        setDisciplineTeams(
-          (b.teams ?? []).map((row: { id: string; name: string }) => ({
-            id: row.id,
-            name: row.name,
-          })),
-        ),
-      );
-  }, [disciplineGroupId]);
-
   async function startLeague() {
     const res = await fetch("/api/admin/competition", {
       method: "PATCH",
@@ -172,7 +130,6 @@ export function RegionalCompetitionSetup({ regionCode, regionId }: Props) {
   }
 
   const readOnly = readiness?.seasonStatus !== "setup";
-  const showDuringSeason = readiness != null && readiness.seasonStatus !== "setup";
 
   const filteredLeagues = leagues.map((league) => ({
     ...league,
@@ -310,44 +267,6 @@ export function RegionalCompetitionSetup({ regionCode, regionId }: Props) {
           </div>
         )}
       </div>
-
-      {showDuringSeason && (readiness?.groups.length ?? 0) > 0 && (
-        <section className="flex flex-col gap-4 border-t border-zinc-200 pt-6">
-          <h2 className="text-lg font-semibold text-zinc-900">
-            {tTabs("duringSeason")}
-          </h2>
-          <label className="flex flex-col gap-1">
-            <span className="text-sm font-medium text-zinc-700">
-              {t("nationalDiscipline.divisionGroup")}
-            </span>
-            <select
-              value={disciplineGroupId ?? ""}
-              onChange={(e) => setDisciplineGroupId(e.target.value)}
-              className="input max-w-md"
-            >
-              {readiness?.groups.map((g) => (
-                <option key={g.groupId} value={g.groupId}>
-                  {g.divisionName} — {g.groupName}
-                </option>
-              ))}
-            </select>
-          </label>
-          {disciplineGroupId && (
-            <>
-              <PenaltyManagement
-                groupId={disciplineGroupId}
-                teams={disciplineTeams}
-              />
-              <WarningManagement
-                groupId={disciplineGroupId}
-                teams={disciplineTeams}
-              />
-              <RulingManagement groupId={disciplineGroupId} />
-              <MatchLogViewer groupId={disciplineGroupId} />
-            </>
-          )}
-        </section>
-      )}
     </main>
   );
 }

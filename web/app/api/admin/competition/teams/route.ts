@@ -9,6 +9,7 @@ import {
   parseCaptainId,
   validateTeamCreateBody,
 } from "@/lib/competition/team-captain";
+import { ensureCaptainOnTeamRoster } from "@/lib/competition/team-roster";
 import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
 import { ErrorCodes } from "@/lib/http/error-codes";
 
@@ -142,6 +143,12 @@ export async function POST(request: Request) {
 
     if (error) return jsonError(error.message, 400);
 
+    await ensureCaptainOnTeamRoster(supabase, {
+      teamId: data.id,
+      captainId: createInput.captain_id,
+      seasonId: season.id,
+    });
+
     await supabase.rpc("sync_group_round_count", {
       p_group_id: createInput.group_id,
     });
@@ -176,6 +183,7 @@ export async function PATCH(request: Request) {
     }
 
     const captainId = parseCaptainId(body);
+    let rosterCaptainId: string | undefined;
     if (captainId !== undefined) {
       if (captainId === null) {
         return jsonErrorCode(ErrorCodes.api.captainIdRequired, 400);
@@ -187,6 +195,7 @@ export async function PATCH(request: Request) {
         seasonId: season.id,
       });
       patch.captain_id = captainId;
+      rosterCaptainId = captainId;
     }
 
     if (Object.keys(patch).length === 0) {
@@ -196,6 +205,16 @@ export async function PATCH(request: Request) {
     const { error } = await supabase.from("teams").update(patch).eq("id", teamId);
 
     if (error) return jsonError(error.message, 400);
+
+    if (rosterCaptainId) {
+      const season = await requireActiveSeason(supabase);
+      await ensureCaptainOnTeamRoster(supabase, {
+        teamId,
+        captainId: rosterCaptainId,
+        seasonId: season.id,
+      });
+    }
+
     return jsonOk({ updated: true });
   } catch (err) {
     return jsonFromError(err);

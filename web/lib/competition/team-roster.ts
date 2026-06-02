@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { TeamValidationError } from "@/lib/competition/team-captain";
 import { getActiveSeason, requireActiveSeason } from "@/lib/competition/season";
 
 export type RosterPlayer = {
@@ -121,6 +122,43 @@ export async function addPlayerToTeamRoster(
   });
 
   if (error) throw error;
+}
+
+/** Captains must be on the team roster (My team, lineup, roster management). */
+export async function ensureCaptainOnTeamRoster(
+  supabase: SupabaseClient,
+  params: { teamId: string; captainId: string; seasonId: string },
+): Promise<void> {
+  const { data: onThisTeam, error: onTeamError } = await supabase
+    .from("team_players")
+    .select("team_id")
+    .eq("team_id", params.teamId)
+    .eq("player_id", params.captainId)
+    .eq("season_id", params.seasonId)
+    .maybeSingle();
+
+  if (onTeamError) throw onTeamError;
+  if (onThisTeam) return;
+
+  const { data: elsewhere, error: elsewhereError } = await supabase
+    .from("team_players")
+    .select("team_id")
+    .eq("player_id", params.captainId)
+    .eq("season_id", params.seasonId)
+    .maybeSingle();
+
+  if (elsewhereError) throw elsewhereError;
+  if (elsewhere) {
+    throw new TeamValidationError(
+      "Captain is already on another team this season; remove them from that roster first",
+    );
+  }
+
+  await addPlayerToTeamRoster(supabase, {
+    teamId: params.teamId,
+    playerId: params.captainId,
+    seasonId: params.seasonId,
+  });
 }
 
 export async function removePlayerFromTeamRoster(

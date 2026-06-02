@@ -31,6 +31,14 @@ vi.mock("@/lib/competition/national-teams", () => ({
   assertNationalGroupCanAddTeam: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock("@/lib/competition/team-roster", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/competition/team-roster")>();
+  return {
+    ...actual,
+    ensureCaptainOnTeamRoster: vi.fn().mockResolvedValue(undefined),
+  };
+});
+
 describe("POST /api/admin/competition/teams", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -127,9 +135,11 @@ describe("POST /api/admin/competition/teams", () => {
       return {};
     });
 
+    const rpc = vi.fn().mockResolvedValue({ error: null });
+
     const { requireRoles } = await import("@/lib/auth/route-auth");
     vi.mocked(requireRoles).mockResolvedValue({
-      supabase: { from } as never,
+      supabase: { from, rpc } as never,
       user: { id: "u1" } as never,
       roles: ["competition_manager"],
     });
@@ -148,6 +158,17 @@ describe("POST /api/admin/competition/teams", () => {
     expect(res.status).toBe(201);
     const body = await res.json();
     expect(body.team.captain_id).toBe("p1");
+    const { ensureCaptainOnTeamRoster } = await import(
+      "@/lib/competition/team-roster"
+    );
+    expect(ensureCaptainOnTeamRoster).toHaveBeenCalledWith(
+      expect.objectContaining({ from }),
+      {
+        teamId: "t1",
+        captainId: "p1",
+        seasonId: "season-1",
+      },
+    );
   });
 });
 

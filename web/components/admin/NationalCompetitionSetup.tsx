@@ -9,7 +9,6 @@ import { translateScheduleLabel } from "@/lib/i18n/labels";
 import type { NationalScheduleKey } from "@/lib/competition/national-structure";
 import { NationalMatchDatesEditor } from "./NationalMatchDatesEditor";
 import { NationalStartLeagueSection } from "./NationalStartLeagueSection";
-import { NationalDisciplineSection } from "./NationalDisciplineSection";
 import { NationalTeamsByDivision } from "./NationalTeamsByDivision";
 
 const NATIONAL_SCHEDULE_KEYS: NationalScheduleKey[] = [
@@ -18,7 +17,7 @@ const NATIONAL_SCHEDULE_KEYS: NationalScheduleKey[] = [
   "default",
 ];
 
-type SetupTab = "dates" | "teams" | "discipline" | "start";
+type SetupTab = "dates" | "teams" | "start";
 
 function tabComplete(tab: SetupTab, readiness: NationalReadiness | null): boolean {
   if (!readiness) return false;
@@ -48,7 +47,6 @@ export function NationalCompetitionSetup() {
   const tabs: { id: SetupTab; label: string }[] = [
     { id: "dates", label: tTabs("matchDays") },
     { id: "teams", label: tTabs("teams") },
-    { id: "discipline", label: tTabs("discipline") },
     { id: "start", label: tTabs("startLeague") },
   ];
 
@@ -186,17 +184,6 @@ export function NationalCompetitionSetup() {
               readOnly={readOnly}
               onTeamsChanged={loadReadiness}
             />
-          </div>
-        )}
-
-        {activeTab === "discipline" && (
-          <div
-            id="national-tab-discipline"
-            role="tabpanel"
-            aria-labelledby="national-tab-discipline-trigger"
-            className="pt-2"
-          >
-            <NationalDisciplineSection divisions={readiness?.divisions ?? []} />
           </div>
         )}
 

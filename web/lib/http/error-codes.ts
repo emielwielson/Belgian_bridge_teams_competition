@@ -65,6 +65,7 @@ export const ErrorCodes = {
     uploadFailed: "api.uploadFailed",
     penaltyFieldsRequired: "api.penaltyFieldsRequired",
     captainNotClubMember: "api.captainNotClubMember",
+    captainAlreadyOnAnotherTeam: "api.captainAlreadyOnAnotherTeam",
     invalidRequestBody: "api.invalidRequestBody",
     clubIdRequired: "api.clubIdRequired",
     captainIdInvalid: "api.captainIdInvalid",

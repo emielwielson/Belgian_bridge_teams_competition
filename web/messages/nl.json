@@ -392,6 +392,15 @@
   "admin": {
     "title": "Beheer",
     "competitionSetup": "Competitie opzetten",
+    "competitionSetupDescription": "Speeldagen, afdelingen, teams en de competitie starten.",
+    "disciplineHub": "Discipline",
+    "disciplineHubDescription": "Straffen, waarschuwingen en officiële uitspraken per groep.",
+    "auditLogHub": "Auditlog",
+    "auditLogHubDescription": "Geschiedenis van wedstrijdwijzigingen per groep.",
+    "disciplineScopesTitle": "Discipline — kies scope",
+    "auditLogScopesTitle": "Auditlog — kies scope",
+    "backDiscipline": "← Discipline",
+    "backAuditLog": "← Auditlog",
     "scopesTitle": "Competitiescopes",
     "backAdmin": "← Beheer",
     "backScopes": "← Competitiescopes",
@@ -527,6 +536,18 @@
       "needTeams": "Voeg teams toe aan nationale afdelingen vóór u straffen, waarschuwingen en uitspraken beheert.",
       "divisionGroup": "Afdeling / groep",
       "option": "{name} ({teamCount} teams)"
+    },
+    "disciplinePage": {
+      "title": "Discipline",
+      "description": "Beheer straffen, waarschuwingen en uitspraken voor de geselecteerde groep.",
+      "group": "Groep",
+      "loadingGroups": "Groepen laden…",
+      "noGroups": "Nog geen groepen beschikbaar. Stel afdelingen en teams in via",
+      "competitionSetupLink": "competitie opzetten"
+    },
+    "auditLogPage": {
+      "title": "Auditlog",
+      "description": "Bekijk de geschiedenis van wedstrijdwijzigingen voor de geselecteerde groep."
     },
     "startLeague": {
       "loading": "Gereedheid laden…",
@@ -855,6 +876,7 @@
       "uploadFailed": "Upload mislukt",
       "penaltyFieldsRequired": "team_id, penalty_date en reason zijn verplicht",
       "captainNotClubMember": "Kapitein moet lid zijn van de club van het team",
+      "captainAlreadyOnAnotherTeam": "De kapitein staat al op een ander team dit seizoen; verwijder hem eerst van die selectie",
       "invalidRequestBody": "Ongeldig verzoek",
       "clubIdRequired": "club_id is verplicht",
       "captainIdInvalid": "captain_id moet een geldige speler-id zijn",

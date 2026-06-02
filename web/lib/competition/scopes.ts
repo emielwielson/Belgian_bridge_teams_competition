@@ -38,3 +38,19 @@ export function adminScopePath(scope: CompetitionScope, regionCode?: string): st
   if (scope === SCOPES.NATIONAL) return "/admin/competition/national";
   return `/admin/competition/regional/${regionCode ?? REGION_CODES.FLANDERS}`;
 }
+
+export function adminDisciplinePath(
+  scope: CompetitionScope,
+  regionCode?: string,
+): string {
+  if (scope === SCOPES.NATIONAL) return "/admin/discipline/national";
+  return `/admin/discipline/regional/${regionCode ?? REGION_CODES.FLANDERS}`;
+}
+
+export function adminAuditLogPath(
+  scope: CompetitionScope,
+  regionCode?: string,
+): string {
+  if (scope === SCOPES.NATIONAL) return "/admin/audit-log/national";
+  return `/admin/audit-log/regional/${regionCode ?? REGION_CODES.FLANDERS}`;
+}

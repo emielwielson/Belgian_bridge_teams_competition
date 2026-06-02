@@ -392,6 +392,15 @@
   "admin": {
     "title": "Administration",
     "competitionSetup": "Configuration de la compétition",
+    "competitionSetupDescription": "Journées, divisions, équipes et démarrage de la ligue.",
+    "disciplineHub": "Discipline",
+    "disciplineHubDescription": "Pénalités, avertissements et décisions officielles par groupe.",
+    "auditLogHub": "Journal d'audit",
+    "auditLogHubDescription": "Historique des modifications de rencontres par groupe.",
+    "disciplineScopesTitle": "Discipline — choisir le périmètre",
+    "auditLogScopesTitle": "Journal d'audit — choisir le périmètre",
+    "backDiscipline": "← Discipline",
+    "backAuditLog": "← Journal d'audit",
     "scopesTitle": "Périmètres de compétition",
     "backAdmin": "← Administration",
     "backScopes": "← Périmètres",
@@ -527,6 +536,18 @@
       "needTeams": "Ajoutez des équipes aux divisions nationales avant de gérer les pénalités, avertissements et décisions.",
       "divisionGroup": "Division / groupe",
       "option": "{name} ({teamCount} équipes)"
+    },
+    "disciplinePage": {
+      "title": "Discipline",
+      "description": "Gérez les pénalités, avertissements et décisions pour le groupe sélectionné.",
+      "group": "Groupe",
+      "loadingGroups": "Chargement des groupes…",
+      "noGroups": "Aucun groupe disponible. Configurez divisions et équipes dans la",
+      "competitionSetupLink": "configuration de la compétition"
+    },
+    "auditLogPage": {
+      "title": "Journal d'audit",
+      "description": "Consultez l'historique des modifications de rencontres pour le groupe sélectionné."
     },
     "startLeague": {
       "loading": "Chargement de l'état de préparation…",
@@ -855,6 +876,7 @@
       "uploadFailed": "Échec du téléversement",
       "penaltyFieldsRequired": "team_id, penalty_date et reason sont obligatoires",
       "captainNotClubMember": "Le capitaine doit être membre du club de l'équipe",
+      "captainAlreadyOnAnotherTeam": "Le capitaine est déjà sur une autre équipe cette saison ; retirez-le d'abord de cet effectif",
       "invalidRequestBody": "Corps de requête invalide",
       "clubIdRequired": "club_id est obligatoire",
       "captainIdInvalid": "captain_id doit être un identifiant de joueur valide",

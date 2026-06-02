@@ -5,6 +5,7 @@ import { requireActiveSeason } from "@/lib/competition/season";
 import { requireSeasonInSetup } from "@/lib/competition/season-setup";
 import {
   addPlayerToTeamRoster,
+  ensureCaptainOnTeamRoster,
   removePlayerFromTeamRoster,
 } from "@/lib/competition/team-roster";
 import {
@@ -77,6 +78,16 @@ export async function PATCH(request: Request, { params }: Params) {
       .eq("club_id", clubId);
 
     if (error) return jsonError(error.message, 400);
+
+    if (updates.captain_id) {
+      const season = await requireActiveSeason(supabase);
+      await ensureCaptainOnTeamRoster(supabase, {
+        teamId,
+        captainId: updates.captain_id,
+        seasonId: season.id,
+      });
+    }
+
     return jsonOk({ updated: true });
   } catch (err) {
     return jsonFromError(err);

@@ -55,6 +55,8 @@ const MESSAGE_TO_CODE: Record<string, ErrorCode> = {
   "Team name is required": ErrorCodes.api.teamNameRequired,
   "captain_id is required": ErrorCodes.api.captainIdRequired,
   "captain_id must be a valid player id": ErrorCodes.api.captainIdInvalid,
+  "Captain is already on another team this season; remove them from that roster first":
+    ErrorCodes.api.captainAlreadyOnAnotherTeam,
   "Season is active; setup changes are locked": ErrorCodes.api.seasonSetupLocked,
 };
 

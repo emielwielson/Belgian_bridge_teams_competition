@@ -392,6 +392,15 @@
   "admin": {
     "title": "Admin",
     "competitionSetup": "Competition setup",
+    "competitionSetupDescription": "Match days, divisions, teams, and starting the league.",
+    "disciplineHub": "Discipline",
+    "disciplineHubDescription": "Penalties, warnings, and official rulings per group.",
+    "auditLogHub": "Audit log",
+    "auditLogHubDescription": "Match change history and operational actions per group.",
+    "disciplineScopesTitle": "Discipline — choose scope",
+    "auditLogScopesTitle": "Audit log — choose scope",
+    "backDiscipline": "← Discipline",
+    "backAuditLog": "← Audit log",
     "scopesTitle": "Competition scopes",
     "backAdmin": "← Admin",
     "backScopes": "← Scopes",
@@ -527,6 +536,18 @@
       "needTeams": "Add teams to national divisions before managing penalties, warnings, and rulings.",
       "divisionGroup": "Division / group",
       "option": "{name} ({teamCount} teams)"
+    },
+    "disciplinePage": {
+      "title": "Discipline",
+      "description": "Manage penalties, warnings, and rulings for the selected group.",
+      "group": "Group",
+      "loadingGroups": "Loading groups…",
+      "noGroups": "No groups available yet. Set up divisions and teams in",
+      "competitionSetupLink": "competition setup"
+    },
+    "auditLogPage": {
+      "title": "Audit log",
+      "description": "View match change history for the selected group."
     },
     "startLeague": {
       "loading": "Loading readiness…",
@@ -855,6 +876,7 @@
       "uploadFailed": "Upload failed",
       "penaltyFieldsRequired": "team_id, penalty_date, and reason are required",
       "captainNotClubMember": "Captain must be a member of the team's club",
+      "captainAlreadyOnAnotherTeam": "Captain is already on another team this season; remove them from that roster first",
       "invalidRequestBody": "Invalid request body",
       "clubIdRequired": "club_id is required",
       "captainIdInvalid": "captain_id must be a valid player id",
