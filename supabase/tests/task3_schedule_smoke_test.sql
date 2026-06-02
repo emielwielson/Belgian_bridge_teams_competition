@@ -25,11 +25,18 @@ begin
   end if;
 
   if not exists (
+    select 1 from information_schema.tables
+    where table_schema = 'public' and table_name = 'group_skipped_match_rounds'
+  ) then
+    raise exception 'Missing table: group_skipped_match_rounds';
+  end if;
+
+  if not exists (
     select 1 from pg_proc p
     join pg_namespace n on n.oid = p.pronamespace
-    where n.nspname = 'public' and p.proname = 'group_uses_rbbf_template'
+    where n.nspname = 'public' and p.proname = 'group_used_match_rounds'
   ) then
-    raise exception 'Missing function: group_uses_rbbf_template';
+    raise exception 'Missing function: group_used_match_rounds';
   end if;
 end $$;
 
@@ -235,6 +242,65 @@ begin
   if public.compute_group_round_count(7, 2) <> 14 then
     raise exception 'compute_group_round_count(7,2) should be 14';
   end if;
+end $$;
+
+rollback;
+
+-- 4) Regional 4-team group with custom skipped dates
+begin;
+
+do $$
+declare
+  v_season_id uuid;
+  v_region_id uuid;
+  v_league_id uuid;
+  v_division_id uuid;
+  v_group_id uuid;
+  v_club_id uuid;
+  v_used int[];
+begin
+  select id into v_season_id from public.seasons where is_active = true limit 1;
+  select id into v_region_id from public.regions where code = 'flanders' limit 1;
+
+  insert into public.leagues (season_id, scope, region_id, name)
+  values (v_season_id, 'regional', v_region_id, 'Task3 Skip Dates Smoke')
+  returning id into v_league_id;
+
+  insert into public.divisions (league_id, division_level_id, name)
+  select v_league_id, dl.id, 'Skip Dates Div'
+  from public.division_levels dl where dl.code = 'third'
+  returning id into v_division_id;
+
+  insert into public.groups (division_id, name, round_robin_count, round_count)
+  values (v_division_id, 'Skip Dates G', 2, 6)
+  returning id into v_group_id;
+
+  select id into v_club_id from public.clubs where region_id = v_region_id limit 1;
+
+  for i in 1..4 loop
+    insert into public.teams (group_id, club_id, name)
+    values (v_group_id, v_club_id, 'Skip Smoke ' || i);
+  end loop;
+
+  for i in 1..14 loop
+    insert into public.competition_match_dates (season_id, scope, region_id, division_id, round, datetime)
+    values (
+      v_season_id, 'regional', v_region_id, null, i,
+      timestamptz '2024-10-01 12:00:00+00' + (i || ' days')::interval
+    );
+  end loop;
+
+  insert into public.group_skipped_match_rounds (group_id, round)
+  select v_group_id, r
+  from unnest(array[1, 3, 5, 7, 9, 11, 13, 14]) as r;
+
+  v_used := public.group_used_match_rounds(v_group_id);
+
+  if v_used <> array[2, 4, 6, 8, 10, 12] then
+    raise exception 'group_used_match_rounds should return even rounds, got %', v_used;
+  end if;
+
+  perform public.validate_group_schedule_generation(v_group_id);
 end $$;
 
 rollback;

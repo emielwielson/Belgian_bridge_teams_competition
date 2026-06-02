@@ -98,4 +98,23 @@ describe("buildRbbfSchedule", () => {
 
     expect(byes.some((b) => b.round === 6 && b.team_id === "t1")).toBe(true);
   });
+
+  it("stores calendar round numbers from fixture date mapping", () => {
+    const teamIds = Array.from({ length: 8 }, (_, i) => `team-${i + 1}`);
+    const teams = assignTeamSlots(teamIds);
+    const mappedDates = Array.from({ length: 14 }, (_, i) => ({
+      round: (i + 1) * 2,
+      datetime: new Date(Date.UTC(2025, 8, i + 1, 14, 0)).toISOString(),
+    }));
+
+    const { matches } = buildRbbfSchedule(
+      "group-1",
+      teams,
+      mappedDates,
+      24,
+    );
+
+    expect(matches.every((m) => m.round % 2 === 0)).toBe(true);
+    expect(new Set(matches.map((m) => m.round)).size).toBeGreaterThan(1);
+  });
 });

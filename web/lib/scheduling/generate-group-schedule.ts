@@ -115,22 +115,23 @@ export function buildRbbfSchedule(
   const byes: { round: number; team_id: string }[] = [];
 
   allRounds.forEach((pairings: SlotPairing[], index) => {
-    const round = index + 1;
-    const datetime = dateByRound.get(round);
-    if (!datetime) {
-      throw new Error(`Missing datetime for round ${round}`);
+    const fixtureDate = roundDates[index];
+    if (!fixtureDate) {
+      throw new Error(`Missing datetime for fixture round ${index + 1}`);
     }
+    const calendarRound = fixtureDate.round;
+    const datetime = fixtureDate.datetime;
 
     for (const pairing of pairings) {
       const result = resolvePairing(pairing, occupants);
       if (!result) continue;
       if ("byeTeamId" in result) {
-        byes.push({ round, team_id: result.byeTeamId });
+        byes.push({ round: calendarRound, team_id: result.byeTeamId });
         continue;
       }
       matches.push({
         group_id: groupId,
-        round,
+        round: calendarRound,
         datetime,
         home_team_id: result.homeTeamId,
         away_team_id: result.awayTeamId,

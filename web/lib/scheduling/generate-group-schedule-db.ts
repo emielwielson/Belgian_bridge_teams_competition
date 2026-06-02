@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { applyMatchDatesDivisionFilter } from "@/lib/competition/match-dates-query";
+import { fetchGroupFixtureRoundDates } from "@/lib/competition/group-match-rounds";
 import {
   loadSlotAssignmentsForGeneration,
   seedGroupScheduleSlotsIfEmpty,
@@ -19,41 +19,6 @@ type LeagueInfo = {
   region_id: string | null;
 };
 
-async function fetchMatchDates(
-  supabase: SupabaseClient,
-  league: LeagueInfo,
-  groupId: string,
-  roundCount: number,
-): Promise<RoundDate[]> {
-  const { data: datesDivisionId, error: resolveError } = await supabase.rpc(
-    "resolve_group_match_dates_division_id",
-    { p_group_id: groupId },
-  );
-  if (resolveError) throw new Error(resolveError.message);
-
-  let datesQuery = supabase
-    .from("competition_match_dates")
-    .select("round, datetime")
-    .eq("season_id", league.season_id)
-    .eq("scope", league.scope)
-    .order("round");
-
-  datesQuery =
-    league.scope === "national"
-      ? datesQuery.is("region_id", null)
-      : datesQuery.eq("region_id", league.region_id!);
-
-  datesQuery = applyMatchDatesDivisionFilter(datesQuery, datesDivisionId);
-
-  const { data: dates, error: datesError } = await datesQuery;
-  if (datesError) throw new Error(datesError.message);
-  if (!dates || dates.length < roundCount) {
-    throw new Error(`Missing competition match dates (need ${roundCount})`);
-  }
-
-  return dates.map((d) => ({ round: d.round, datetime: d.datetime }));
-}
-
 function buildRegionalGenericMatches(
   groupId: string,
   teamIds: string[],
@@ -61,20 +26,22 @@ function buildRegionalGenericMatches(
   boardCount: number,
   roundRobinCount: number,
 ): { matches: GeneratedMatch[]; byes: { round: number; team_id: string }[] } {
-  const dateByRound = new Map(roundDates.map((d) => [d.round, d.datetime]));
   const plans = buildRoundRobinSchedule(teamIds, roundRobinCount);
   const matches: GeneratedMatch[] = [];
   const byes: { round: number; team_id: string }[] = [];
 
   for (const plan of plans) {
-    const datetime = dateByRound.get(plan.round);
-    if (!datetime) {
-      throw new Error(`Missing datetime for round ${plan.round}`);
+    const fixtureDate = roundDates[plan.round - 1];
+    if (!fixtureDate) {
+      throw new Error(`Missing datetime for fixture round ${plan.round}`);
     }
+    const calendarRound = fixtureDate.round;
+    const datetime = fixtureDate.datetime;
+
     for (const p of plan.pairings) {
       matches.push({
         group_id: groupId,
-        round: plan.round,
+        round: calendarRound,
         datetime,
         home_team_id: p.homeTeamId,
         away_team_id: p.awayTeamId,
@@ -82,7 +49,7 @@ function buildRegionalGenericMatches(
       });
     }
     if (plan.byeTeamId) {
-      byes.push({ round: plan.round, team_id: plan.byeTeamId });
+      byes.push({ round: calendarRound, team_id: plan.byeTeamId });
     }
   }
 
@@ -141,10 +108,10 @@ export async function generateGroupScheduleInDb(
   const teamCount = teamIds.length;
   const roundCount = groupRow.round_count ?? 14;
   const roundRobinCount = groupRow.round_robin_count ?? 2;
-  const roundDates = await fetchMatchDates(
+  const roundDates = await fetchGroupFixtureRoundDates(
     supabase,
-    league,
     groupId,
+    league,
     roundCount,
   );
 
