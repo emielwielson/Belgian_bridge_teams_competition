@@ -182,12 +182,14 @@ Deno.serve(async (req) => {
         if (!datetime) return;
 
         for (const p of pairings) {
+          const homeTeamId = slotToTeamId.get(p.home)!;
           matchRows.push({
             group_id: groupId,
             round,
             datetime,
-            home_team_id: slotToTeamId.get(p.home),
+            home_team_id: homeTeamId,
             away_team_id: slotToTeamId.get(p.away),
+            hosting_team_id: homeTeamId,
             board_count: boardCount,
           });
         }
@@ -205,6 +207,7 @@ Deno.serve(async (req) => {
             datetime,
             home_team_id: p.homeTeamId,
             away_team_id: p.awayTeamId,
+            hosting_team_id: p.homeTeamId,
             board_count: boardCount,
           });
         }

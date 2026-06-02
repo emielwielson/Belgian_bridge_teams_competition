@@ -4,6 +4,28 @@ import {
   usesRbbfTemplate,
   type ScheduleSlotRow,
 } from "@/lib/competition/group-schedule-slots";
+import { RBBF_ROUND_COUNT } from "@/lib/scheduling/rbbf-8-team-template";
+
+async function syncGroupRoundCount(
+  supabase: SupabaseClient,
+  groupId: string,
+): Promise<void> {
+  const { error } = await supabase.rpc("sync_group_round_count", {
+    p_group_id: groupId,
+  });
+  if (error) throw new Error(error.message);
+}
+
+async function requiredGroupRoundCount(
+  supabase: SupabaseClient,
+  groupId: string,
+): Promise<number> {
+  const { data, error } = await supabase.rpc("required_group_round_count", {
+    p_group_id: groupId,
+  });
+  if (error) throw new Error(error.message);
+  return (data as number | null) ?? RBBF_ROUND_COUNT;
+}
 
 export const REGIONAL_CALENDAR_ROUNDS = 14;
 
@@ -194,6 +216,7 @@ export async function loadGroupMatchRoundConfig(
   supabase: SupabaseClient,
   groupId: string,
 ): Promise<GroupMatchRoundConfig> {
+  await syncGroupRoundCount(supabase, groupId);
   const ctx = await loadGroupContext(supabase, groupId);
   const regionalDates = await loadRegionalDates(supabase, groupId, ctx.league);
 
@@ -245,6 +268,7 @@ export async function saveGroupSkippedRounds(
   groupId: string,
   skippedRounds: number[],
 ): Promise<void> {
+  await syncGroupRoundCount(supabase, groupId);
   const ctx = await loadGroupContext(supabase, groupId);
 
   if (!needsSkippedDateSelection(ctx.league.scope, ctx.roundCount, ctx.usesRbbf)) {
@@ -295,8 +319,10 @@ export async function fetchGroupFixtureRoundDates(
   supabase: SupabaseClient,
   groupId: string,
   league: { season_id: string; scope: string; region_id: string | null },
-  roundCount: number,
 ): Promise<{ round: number; datetime: string }[]> {
+  await syncGroupRoundCount(supabase, groupId);
+  const roundCount = await requiredGroupRoundCount(supabase, groupId);
+
   const regionalDates = await loadRegionalDates(supabase, groupId, league);
   const dateByCalendarRound = new Map(
     regionalDates.map((d) => [d.round, d.datetime]),

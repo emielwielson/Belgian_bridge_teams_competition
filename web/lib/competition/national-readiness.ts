@@ -159,13 +159,18 @@ export function buildNationalReadiness(input: {
 
   const allCalendarsReady = SCHEDULE_KEYS.every((k) => calendars[k].complete);
 
+  const schedulesStartable =
+    input.divisions.length === 0 ||
+    input.divisions.every((d) => d.matchesCount === 0) ||
+    input.divisions.every((d) => d.scheduleComplete) ||
+    input.divisions.some((d) => d.scheduleComplete);
+
   const canStartLeague =
     input.seasonStatus === "setup" &&
     structureReady &&
     allCalendarsReady &&
     allTeamsReady &&
-    (allSchedulesReady ||
-      input.divisions.every((d) => d.matchesCount === 0));
+    schedulesStartable;
 
   return {
     seasonStatus: input.seasonStatus,

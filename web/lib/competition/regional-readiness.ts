@@ -68,6 +68,21 @@ export function groupLabel(group: GroupReadiness): string {
   return `${group.divisionName} — ${group.groupName}`;
 }
 
+/** True when start may generate all fixtures, activate, or resume after a partial run. */
+export function schedulesReadyToStartOrResume(groups: GroupReadiness[]): boolean {
+  if (groups.length === 0) return false;
+  if (groups.every((g) => g.matchesCount === 0)) return true;
+  if (groups.every((g) => g.scheduleComplete)) return true;
+  return groups.some((g) => g.scheduleComplete);
+}
+
+export function hasPartialSchedules(groups: GroupReadiness[]): boolean {
+  return (
+    groups.some((g) => g.scheduleComplete) &&
+    !groups.every((g) => g.scheduleComplete)
+  );
+}
+
 export function groupTeamsStatusLabel(group: GroupReadiness): string {
   if (group.teamCount >= REGIONAL_SLOT_TEAM_MIN && group.teamCount <= REGIONAL_SLOT_TEAM_MAX) {
     if (group.teamCount === 7 && group.slotsComplete) {
@@ -141,13 +156,20 @@ export function buildRegionalReadiness(input: {
     }
   }
 
+  const schedulesStartable = schedulesReadyToStartOrResume(groupsWithReady);
+
+  if (allGroupsReady && !schedulesStartable) {
+    blockers.push(
+      "Some groups have fixtures and others do not; delete partial schedules or finish generation.",
+    );
+  }
+
   const canStartLeague =
     input.seasonStatus === "setup" &&
     input.leagueId !== null &&
     calendar.complete &&
     allGroupsReady &&
-    (allSchedulesReady ||
-      groupsWithReady.every((g) => g.matchesCount === 0));
+    schedulesStartable;
 
   return {
     seasonStatus: input.seasonStatus,

@@ -15,6 +15,7 @@ export type GeneratedMatch = {
   datetime: string;
   home_team_id: string;
   away_team_id: string;
+  hosting_team_id: string;
   board_count: number;
 };
 
@@ -135,6 +136,7 @@ export function buildRbbfSchedule(
         datetime,
         home_team_id: result.homeTeamId,
         away_team_id: result.awayTeamId,
+        hosting_team_id: result.homeTeamId,
         board_count: boardCount,
       });
     }

@@ -3,8 +3,10 @@ import {
   buildRegionalReadiness,
   countRegionalCalendarDates,
   groupTeamsComplete,
+  hasPartialSchedules,
   REGIONAL_MIN_TEAMS,
   REGIONAL_SLOT_TEAM_MAX,
+  schedulesReadyToStartOrResume,
   type GroupReadiness,
 } from "./regional-readiness";
 
@@ -119,6 +121,38 @@ describe("regional-readiness", () => {
     expect(
       result.blockers.some((b) => b.includes("at least one division")),
     ).toBe(true);
+  });
+
+  it("canStartLeague when some groups already have fixtures (resume)", () => {
+    const groups = [
+      groupRow({
+        divisionName: "Liga 1",
+        groupName: "A",
+        groupId: "g1",
+        matchesCount: 42,
+        scheduleComplete: true,
+      }),
+      groupRow({
+        divisionName: "Liga 1",
+        groupName: "B",
+        groupId: "g2",
+        matchesCount: 0,
+        scheduleComplete: false,
+      }),
+    ];
+    expect(hasPartialSchedules(groups)).toBe(true);
+    expect(schedulesReadyToStartOrResume(groups)).toBe(true);
+
+    const result = buildRegionalReadiness({
+      seasonStatus: "setup",
+      regionCode: "flanders",
+      leagueId: "league-1",
+      calendarRoundCount: 14,
+      groups,
+    });
+
+    expect(result.canStartLeague).toBe(true);
+    expect(result.allSchedulesReady).toBe(false);
   });
 
   it("accepts small groups with min teams", () => {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { computeRoundCount } from "@/lib/competition/group-round-count";
 import {
   defaultSkippedRounds,
   effectiveTeamCount,
@@ -34,6 +35,22 @@ describe("group-match-rounds", () => {
     expect(needsSkippedDateSelection("regional", 14, false)).toBe(false);
     expect(needsSkippedDateSelection("regional", 6, true)).toBe(false);
     expect(needsSkippedDateSelection("national", 6, false)).toBe(false);
+  });
+
+  it("supports 4-team triple round-robin on 9 regional dates", () => {
+    const roundCount = computeRoundCount(4, 3);
+    expect(roundCount).toBe(9);
+    expect(needsSkippedDateSelection("regional", roundCount, false)).toBe(true);
+    expect(defaultSkippedRounds(roundCount)).toEqual([10, 11, 12, 13, 14]);
+    expect(
+      validateSkippedRounds(roundCount, [10, 11, 12, 13, 14]),
+    ).toBeNull();
+    expect(
+      usedRoundsFromSkipped(roundCount, [10, 11, 12, 13, 14]),
+    ).toHaveLength(9);
+    expect(isSelectionComplete(roundCount, [1, 2, 3, 4, 5, 6, 7, 8, 9])).toBe(
+      true,
+    );
   });
 
   it("effectiveTeamCount treats RBBF as 8", () => {

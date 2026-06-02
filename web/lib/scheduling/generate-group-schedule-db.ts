@@ -12,6 +12,7 @@ import {
   type RoundDate,
 } from "./generate-group-schedule";
 import { buildRoundRobinSchedule } from "./round-robin-schedule";
+import { rbbfFixtureRoundCount } from "./rbbf-8-team-template";
 
 type LeagueInfo = {
   season_id: string;
@@ -45,6 +46,7 @@ function buildRegionalGenericMatches(
         datetime,
         home_team_id: p.homeTeamId,
         away_team_id: p.awayTeamId,
+        hosting_team_id: p.homeTeamId,
         board_count: boardCount,
       });
     }
@@ -106,13 +108,13 @@ export async function generateGroupScheduleInDb(
 
   const teamIds = teamRows.map((t) => t.id);
   const teamCount = teamIds.length;
-  const roundCount = groupRow.round_count ?? 14;
+  const storedRoundCount = groupRow.round_count ?? 14;
   const roundRobinCount = groupRow.round_robin_count ?? 2;
+  const leagueScope = league.scope === "regional" ? "regional" : "national";
   const roundDates = await fetchGroupFixtureRoundDates(
     supabase,
     groupId,
     league,
-    roundCount,
   );
 
   const slotAssignments = await loadSlotAssignmentsForGeneration(
@@ -128,13 +130,20 @@ export async function generateGroupScheduleInDb(
   let matchRows: GeneratedMatch[];
   let byeRows: { round: number; team_id: string }[] = [];
 
+  const usesRbbf =
+    (onRbbfPath && slotAssignments !== null) ||
+    (league.scope === "regional" && teamCount === 8);
+  const rbbfRoundCount = usesRbbf
+    ? rbbfFixtureRoundCount(storedRoundCount, roundRobinCount, leagueScope)
+    : storedRoundCount;
+
   if (onRbbfPath && slotAssignments) {
     const result = buildRbbfSchedule(
       groupId,
       slotAssignments,
       roundDates,
       boardCount,
-      roundCount,
+      rbbfRoundCount,
     );
     matchRows = result.matches;
     byeRows = result.byes;
@@ -149,7 +158,7 @@ export async function generateGroupScheduleInDb(
       teams,
       roundDates,
       boardCount,
-      roundCount,
+      rbbfRoundCount,
     );
     matchRows = result.matches;
     byeRows = result.byes;
@@ -182,7 +191,7 @@ export async function generateGroupScheduleInDb(
 
   return {
     matchesCreated: matchRows.length,
-    rounds: roundCount,
+    rounds: usesRbbf ? rbbfRoundCount : storedRoundCount,
     byesCreated: byeRows.length,
   };
 }

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   getRbbfRoundPairings,
   getRbbfTripleRoundPairings,
+  rbbfFixtureRoundCount,
   RBBF_FIRST_LEG,
   RBBF_ROUND_COUNT,
   RBBF_TEAMS_REQUIRED,
@@ -33,6 +34,14 @@ describe("rbbf-8-team-template", () => {
     const rounds = getRbbfTripleRoundPairings();
     expect(rounds).toHaveLength(RBBF_TRIPLE_ROUND_COUNT);
     expect(rounds.reduce((n, r) => n + r.length, 0)).toBe(84);
+  });
+
+  it("maps stale generic round counts to 14 or 21", () => {
+    expect(rbbfFixtureRoundCount(12, 2)).toBe(14);
+    expect(rbbfFixtureRoundCount(12, 3)).toBe(21);
+    expect(rbbfFixtureRoundCount(14, 2)).toBe(14);
+    expect(rbbfFixtureRoundCount(21, 3, "regional")).toBe(14);
+    expect(rbbfFixtureRoundCount(21, 3, "national")).toBe(21);
   });
 
   it("builds 56 matches for 8 teams", () => {

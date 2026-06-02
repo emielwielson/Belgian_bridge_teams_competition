@@ -76,6 +76,18 @@ export function getRbbfTripleRoundPairings(): SlotPairing[][] {
   return rounds;
 }
 
+/** RBBF template only supports 14 (double) or 21 (triple) fixture rounds. */
+export function rbbfFixtureRoundCount(
+  storedRoundCount: number,
+  roundRobinCount: number,
+  scope: "national" | "regional" = "national",
+): number {
+  if (scope === "regional") return RBBF_ROUND_COUNT;
+  if (storedRoundCount === RBBF_ROUND_COUNT) return RBBF_ROUND_COUNT;
+  if (storedRoundCount === RBBF_TRIPLE_ROUND_COUNT) return RBBF_TRIPLE_ROUND_COUNT;
+  return roundRobinCount >= 3 ? RBBF_TRIPLE_ROUND_COUNT : RBBF_ROUND_COUNT;
+}
+
 export function getRbbfRoundPairingsForCount(roundCount: number): SlotPairing[][] {
   if (roundCount === RBBF_ROUND_COUNT) return getRbbfRoundPairings();
   if (roundCount === RBBF_TRIPLE_ROUND_COUNT) return getRbbfTripleRoundPairings();

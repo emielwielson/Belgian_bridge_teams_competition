@@ -30,6 +30,8 @@ export async function startRegionalLeague(
   const schedules: { label: string; matchesCreated: number }[] = [];
 
   for (const group of readiness.groups) {
+    await supabase.rpc("sync_group_round_count", { p_group_id: group.groupId });
+
     if (group.scheduleComplete) {
       schedules.push({
         label: `${group.divisionName} — ${group.groupName}`,

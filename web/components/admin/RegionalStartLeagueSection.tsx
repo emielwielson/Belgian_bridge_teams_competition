@@ -7,6 +7,7 @@ import { buildTranslatedRegionalBlockers } from "@/lib/i18n/labels";
 import {
   groupLabel,
   groupTeamsStatusLabel,
+  hasPartialSchedules,
 } from "@/lib/competition/regional-readiness";
 
 type Props = {
@@ -35,6 +36,9 @@ export function RegionalStartLeagueSection({
   const isSetup = readiness?.seasonStatus === "setup";
   const canStart = readiness?.canStartLeague ?? false;
   const schedulesExist = readiness?.allSchedulesReady ?? false;
+  const partialSchedules = readiness
+    ? hasPartialSchedules(readiness.groups)
+    : false;
 
   async function handleStart() {
     if (!canStart) return;
@@ -111,7 +115,10 @@ export function RegionalStartLeagueSection({
         {readiness.groups.length > 0 && (
           <CheckItem
             ok={readiness.allSchedulesReady}
-            label={t("fixturesCheck")}
+            pending={partialSchedules}
+            label={
+              partialSchedules ? t("fixturesPartial") : t("fixturesCheck")
+            }
           />
         )}
       </ul>
@@ -133,10 +140,18 @@ export function RegionalStartLeagueSection({
         onClick={handleStart}
         className="btn-danger w-fit disabled:opacity-50"
         title={
-          canStart ? undefined : translatedBlockers[0] ?? t("completeSetupFirst")
+          canStart
+            ? partialSchedules
+              ? t("resumeHint")
+              : undefined
+            : translatedBlockers[0] ?? t("completeSetupFirst")
         }
       >
-        {starting ? t("starting") : t("startButton")}
+        {starting
+          ? t("starting")
+          : partialSchedules
+            ? t("resumeButton")
+            : t("startButton")}
       </button>
 
       {message && (
@@ -148,14 +163,28 @@ export function RegionalStartLeagueSection({
   );
 }
 
-function CheckItem({ ok, label }: { ok: boolean; label: string }) {
+function CheckItem({
+  ok,
+  pending = false,
+  label,
+}: {
+  ok: boolean;
+  pending?: boolean;
+  label: string;
+}) {
   return (
     <li className="flex items-center gap-2">
       <span
-        className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-xs ${ok ? "bg-green-100 text-green-800" : "bg-zinc-200 text-zinc-600"}`}
+        className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-xs ${
+          ok
+            ? "bg-green-100 text-green-800"
+            : pending
+              ? "bg-amber-100 text-amber-800"
+              : "bg-zinc-200 text-zinc-600"
+        }`}
         aria-hidden
       >
-        {ok ? "✓" : "·"}
+        {ok ? "✓" : pending ? "…" : "·"}
       </span>
       {label}
     </li>

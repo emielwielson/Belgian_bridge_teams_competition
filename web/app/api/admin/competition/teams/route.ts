@@ -141,6 +141,11 @@ export async function POST(request: Request) {
       .single();
 
     if (error) return jsonError(error.message, 400);
+
+    await supabase.rpc("sync_group_round_count", {
+      p_group_id: createInput.group_id,
+    });
+
     return jsonOk({ team: data }, { status: 201 });
   } catch (err) {
     return jsonFromError(err);
@@ -233,6 +238,13 @@ export async function DELETE(request: Request) {
 
     const { error } = await supabase.from("teams").delete().eq("id", teamId);
     if (error) return jsonError(error.message, 400);
+
+    if (team?.group_id) {
+      await supabase.rpc("sync_group_round_count", {
+        p_group_id: team.group_id,
+      });
+    }
+
     return jsonOk({ deleted: true });
   } catch (err) {
     return jsonFromError(err);
