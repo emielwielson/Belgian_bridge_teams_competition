@@ -18,11 +18,18 @@ begin
   end if;
 
   if not exists (
+    select 1 from information_schema.tables
+    where table_schema = 'public' and table_name = 'group_schedule_slots'
+  ) then
+    raise exception 'Missing table: group_schedule_slots';
+  end if;
+
+  if not exists (
     select 1 from pg_proc p
     join pg_namespace n on n.oid = p.pronamespace
-    where n.nspname = 'public' and p.proname = 'validate_group_schedule_generation'
+    where n.nspname = 'public' and p.proname = 'group_uses_rbbf_template'
   ) then
-    raise exception 'Missing function: validate_group_schedule_generation';
+    raise exception 'Missing function: group_uses_rbbf_template';
   end if;
 end $$;
 
@@ -90,6 +97,25 @@ begin
 
   perform public.validate_group_schedule_generation(v_group_id);
 
+  -- 8 teams without schedule slots must fail for national
+  begin
+    perform public.validate_group_schedule_generation(v_group_id);
+    raise exception 'validate should fail without schedule slots for national';
+  exception
+    when others then
+      if sqlerrm not like '%schedule slots%' then
+        raise;
+      end if;
+  end;
+
+  -- Fill schedule slots for 8 teams
+  insert into public.group_schedule_slots (group_id, slot, team_id, is_bye)
+  select v_group_id, row_number() over (order by t.created_at), t.id, false
+  from public.teams t
+  where t.group_id = v_group_id;
+
+  perform public.validate_group_schedule_generation(v_group_id);
+
   -- Wrong team count must fail
   begin
     delete from public.teams
@@ -97,10 +123,10 @@ begin
       and id = (select id from public.teams where group_id = v_group_id limit 1);
 
     perform public.validate_group_schedule_generation(v_group_id);
-    raise exception 'validate_group_schedule_generation should fail with 7 teams';
+    raise exception 'validate_group_schedule_generation should fail with 7 teams and no bye slot';
   exception
     when others then
-      if sqlerrm not like '%exactly 8 teams%' then
+      if sqlerrm not like '%bye slot%' and sqlerrm not like '%7 teams%' then
         raise;
       end if;
   end;

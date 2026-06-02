@@ -66,6 +66,25 @@ export function RegionalGroupScheduleSettings({
     onUpdated();
   }
 
+  const usesRbbfPath = teamCount === 7 || teamCount === 8;
+
+  if (usesRbbfPath) {
+    return (
+      <div className="mt-3 rounded border border-zinc-200 bg-zinc-50 p-3 text-sm">
+        <p className="font-medium text-zinc-900">Schedule settings</p>
+        <p className="mt-1 text-zinc-600">
+          {teamCount} teams · 14-round RBBF template (fixed fixture pattern)
+        </p>
+        {teamCount === 7 && (
+          <p className="mt-2 text-xs text-zinc-600">
+            Use the schedule slot order above to place a bye. Teams paired
+            against the bye receive 12 VP after the match date.
+          </p>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="mt-3 rounded border border-zinc-200 bg-zinc-50 p-3 text-sm">
       <p className="font-medium text-zinc-900">Schedule settings</p>

@@ -1,6 +1,22 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  emptyScheduleSlots,
+  slotsAreComplete,
+  type ScheduleSlotRow,
+} from "@/lib/competition/group-schedule-slots";
 
 type Club = { id: string; name: string };
 
@@ -25,6 +41,250 @@ type Props = {
   onTeamsChanged?: () => void;
 };
 
+type DragItem =
+  | { kind: "team"; id: string; name: string }
+  | { kind: "bye" };
+
+const BYE_ID = "__bye__";
+
+function dragId(item: DragItem): string {
+  return item.kind === "bye" ? BYE_ID : item.id;
+}
+
+function slotsToPayload(slots: ScheduleSlotRow[]) {
+  return slots.map((s) => ({
+    slot: s.slot,
+    teamId: s.isBye ? null : s.teamId,
+    isBye: s.isBye,
+  }));
+}
+
+function DragHandle({
+  item,
+  disabled,
+}: {
+  item: DragItem;
+  disabled?: boolean;
+}) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: dragId(item),
+    disabled,
+    data: { item },
+  });
+
+  return (
+    <button
+      ref={setNodeRef}
+      type="button"
+      className={`shrink-0 cursor-grab rounded px-1.5 py-0.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 active:cursor-grabbing ${
+        isDragging ? "opacity-40" : ""
+      }`}
+      aria-label="Drag to reorder"
+      {...listeners}
+      {...attributes}
+      disabled={disabled}
+    >
+      ⠿
+    </button>
+  );
+}
+
+function PoolChip({
+  item,
+  disabled,
+}: {
+  item: DragItem;
+  disabled?: boolean;
+}) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } =
+    useDraggable({
+      id: dragId(item),
+      disabled,
+      data: { item },
+    });
+
+  const style = transform
+    ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }
+    : undefined;
+
+  return (
+    <button
+      ref={setNodeRef}
+      type="button"
+      style={style}
+      className={`inline-flex cursor-grab items-center rounded border px-2 py-1 text-xs font-medium active:cursor-grabbing ${
+        item.kind === "bye"
+          ? "border-amber-300 bg-amber-50 text-amber-900"
+          : "border-zinc-300 bg-white text-zinc-900"
+      } ${isDragging ? "opacity-40" : ""}`}
+      {...listeners}
+      {...attributes}
+      disabled={disabled}
+    >
+      {item.kind === "bye" ? "Bye" : item.name}
+    </button>
+  );
+}
+
+function PoolDropZone({
+  children,
+  readOnly,
+}: {
+  children: React.ReactNode;
+  readOnly?: boolean;
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: "pool",
+    disabled: readOnly,
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`rounded border border-dashed p-3 ${
+        isOver ? "border-blue-400 bg-blue-50" : "border-zinc-300 bg-zinc-50"
+      }`}
+    >
+      {children}
+    </div>
+  );
+}
+
+function SlotListItem({
+  row,
+  team,
+  readOnly,
+  onEditCaptain,
+  onRemove,
+  editingCaptainTeamId,
+  editCaptainId,
+  setEditCaptainId,
+  editMembers,
+  onSaveCaptain,
+  onCancelEdit,
+  clubName,
+}: {
+  row: ScheduleSlotRow;
+  team?: TeamRow;
+  readOnly?: boolean;
+  onEditCaptain: (team: TeamRow) => void;
+  onRemove: (teamId: string) => void;
+  editingCaptainTeamId: string | null;
+  editCaptainId: string;
+  setEditCaptainId: (id: string) => void;
+  editMembers: ClubMember[];
+  onSaveCaptain: (team: TeamRow) => void;
+  onCancelEdit: () => void;
+  clubName: (id: string) => string;
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `slot-${row.slot}`,
+    disabled: readOnly,
+  });
+
+  const dragItem: DragItem | null = row.isBye
+    ? { kind: "bye" }
+    : team
+      ? { kind: "team", id: team.id, name: team.name }
+      : null;
+
+  return (
+    <li
+      ref={setNodeRef}
+      className={`flex flex-col gap-2 rounded border px-3 py-2 text-sm ${
+        isOver ? "border-blue-400 bg-blue-50" : "border-zinc-100 bg-white"
+      }`}
+    >
+      <div className="flex items-start gap-2">
+        <span className="mt-0.5 w-8 shrink-0 text-xs font-semibold text-zinc-500">
+          {row.slot}
+        </span>
+        {!readOnly && dragItem ? (
+          <DragHandle item={dragItem} />
+        ) : (
+          <span className="w-6 shrink-0" />
+        )}
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          {row.isBye ? (
+            <span className="inline-flex w-fit rounded border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-900">
+              Bye
+            </span>
+          ) : team ? (
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-zinc-900">
+                <span className="font-medium">{team.name}</span>
+                <span className="text-zinc-500"> · {clubName(team.club_id)}</span>
+                {team.captain ? (
+                  <span className="text-zinc-600">
+                    {" "}
+                    · Captain: {team.captain.name}
+                  </span>
+                ) : (
+                  <span className="text-amber-700"> · No captain</span>
+                )}
+              </span>
+              {!readOnly && (
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    className="text-xs font-medium text-zinc-700 underline"
+                    onClick={() => onEditCaptain(team)}
+                  >
+                    Change captain
+                  </button>
+                  <button
+                    type="button"
+                    className="text-xs font-medium text-red-700 underline"
+                    onClick={() => onRemove(team.id)}
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <span className="text-zinc-400">Empty</span>
+          )}
+          {team && editingCaptainTeamId === team.id && !readOnly ? (
+            <div className="flex flex-wrap items-end gap-2 border-t border-zinc-100 pt-2">
+              <label className="flex flex-col gap-1">
+                <span className="text-xs text-zinc-600">Captain</span>
+                <select
+                  value={editCaptainId}
+                  onChange={(e) => setEditCaptainId(e.target.value)}
+                  className="input max-w-xs text-sm"
+                >
+                  <option value="">Select…</option>
+                  {editMembers.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                      {p.member_number ? ` (${p.member_number})` : ""}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="button"
+                className="btn-secondary text-xs"
+                onClick={() => onSaveCaptain(team)}
+              >
+                Save
+              </button>
+              <button
+                type="button"
+                className="text-xs text-zinc-600 underline"
+                onClick={onCancelEdit}
+              >
+                Cancel
+              </button>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </li>
+  );
+}
+
 export function TeamsSetupPanel({
   groupId,
   divisionLabel,
@@ -34,6 +294,11 @@ export function TeamsSetupPanel({
   onTeamsChanged,
 }: Props) {
   const [teams, setTeams] = useState<TeamRow[]>([]);
+  const [slots, setSlots] = useState<ScheduleSlotRow[]>(emptyScheduleSlots());
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [byeEnabled, setByeEnabled] = useState(false);
+  const [activeItem, setActiveItem] = useState<DragItem | null>(null);
+  const [slotSaving, setSlotSaving] = useState(false);
   const [clubId, setClubId] = useState("");
   const [captainId, setCaptainId] = useState("");
   const [teamName, setTeamName] = useState("");
@@ -47,8 +312,19 @@ export function TeamsSetupPanel({
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const useSlotOrdering = teams.length >= 7 && teams.length <= 8;
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+  );
+
   const atCapacity =
     maxTeams !== undefined && teams.length >= maxTeams;
+
+  const teamById = useMemo(
+    () => new Map(teams.map((t) => [t.id, t])),
+    [teams],
+  );
 
   const loadTeams = useCallback(async () => {
     const res = await fetch(`/api/admin/competition/teams?groupId=${groupId}`);
@@ -60,6 +336,39 @@ export function TeamsSetupPanel({
   useEffect(() => {
     void loadTeams();
   }, [loadTeams]);
+
+  useEffect(() => {
+    if (!useSlotOrdering) return;
+    let cancelled = false;
+
+    (async () => {
+      setSlotsLoading(true);
+      const res = await fetch(
+        `/api/admin/competition/groups/${groupId}/schedule-slots`,
+      );
+      if (cancelled) return;
+      if (!res.ok) {
+        setSlotsLoading(false);
+        return;
+      }
+      const body = await res.json();
+      if (cancelled) return;
+      if (!body.applicable) {
+        setSlotsLoading(false);
+        return;
+      }
+      setSlots(body.slots ?? emptyScheduleSlots());
+      setByeEnabled(
+        (body.slots as ScheduleSlotRow[] | undefined)?.some((s) => s.isBye) ??
+          false,
+      );
+      setSlotsLoading(false);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [useSlotOrdering, groupId, teams.length]);
 
   useEffect(() => {
     if (clubs[0] && !clubId) setClubId(clubs[0].id);
@@ -97,6 +406,140 @@ export function TeamsSetupPanel({
       cancelled = true;
     };
   }, [clubId]);
+
+  const poolItems = useMemo(() => {
+    if (!useSlotOrdering) return [];
+    const assignedTeamIds = new Set(
+      slots.filter((s) => s.teamId).map((s) => s.teamId as string),
+    );
+    const hasByeInSlot = slots.some((s) => s.isBye);
+    const items: DragItem[] = teams
+      .filter((t) => !assignedTeamIds.has(t.id))
+      .map((t) => ({ kind: "team" as const, id: t.id, name: t.name }));
+    if (!hasByeInSlot && teams.length === 7 && byeEnabled) {
+      items.push({ kind: "bye" });
+    }
+    return items;
+  }, [useSlotOrdering, slots, teams, byeEnabled]);
+
+  const slotsComplete = useMemo(() => {
+    if (!useSlotOrdering) return true;
+    return slotsAreComplete(teams.length, slots);
+  }, [useSlotOrdering, teams.length, slots]);
+
+  async function persistSlots(nextSlots: ScheduleSlotRow[]) {
+    setSlotSaving(true);
+    const res = await fetch(
+      `/api/admin/competition/groups/${groupId}/schedule-slots`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slots: slotsToPayload(nextSlots) }),
+      },
+    );
+    const body = await res.json();
+    setSlotSaving(false);
+    if (!res.ok) {
+      setMessage(body.error ?? "Failed to save team order");
+      return;
+    }
+    setSlots(body.slots ?? nextSlots);
+    onTeamsChanged?.();
+  }
+
+  function parseDropTarget(overId: string | number): number | "pool" | null {
+    const id = String(overId);
+    if (id === "pool") return "pool";
+    if (id.startsWith("slot-")) {
+      const slot = Number(id.replace("slot-", ""));
+      if (slot >= 1 && slot <= 8) return slot;
+    }
+    return null;
+  }
+
+  function findItemLocation(item: DragItem): number | "pool" {
+    if (item.kind === "bye") {
+      const row = slots.find((s) => s.isBye);
+      return row ? row.slot : "pool";
+    }
+    const row = slots.find((s) => s.teamId === item.id);
+    return row ? row.slot : "pool";
+  }
+
+  function itemToSlotFields(item: DragItem): Pick<ScheduleSlotRow, "teamId" | "isBye"> {
+    if (item.kind === "bye") return { teamId: null, isBye: true };
+    return { teamId: item.id, isBye: false };
+  }
+
+  function clearSlot(slot: number): ScheduleSlotRow[] {
+    return slots.map((s) =>
+      s.slot === slot ? { ...s, teamId: null, isBye: false } : s,
+    );
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    setActiveItem(null);
+    if (readOnly || !event.over) return;
+
+    const activeData = event.active.data.current?.item as DragItem | undefined;
+    if (!activeData) return;
+
+    const target = parseDropTarget(event.over.id);
+    if (target === null) return;
+
+    const source = findItemLocation(activeData);
+    if (source === target) return;
+
+    let next = [...slots];
+
+    if (target === "pool") {
+      if (source !== "pool") {
+        next = clearSlot(source as number);
+        if (activeData.kind === "bye") {
+          setByeEnabled(true);
+        }
+      }
+    } else {
+      const targetSlot = target as number;
+      const targetRow = next.find((s) => s.slot === targetSlot);
+      const sourceRow =
+        source !== "pool" ? next.find((s) => s.slot === source) : null;
+
+      if (source === "pool") {
+        next = next.map((s) => {
+          if (s.slot === targetSlot) {
+            return { ...s, ...itemToSlotFields(activeData) };
+          }
+          return s;
+        });
+        if (targetRow?.isBye) {
+          setByeEnabled(true);
+        }
+      } else if (sourceRow) {
+        const targetFields = targetRow
+          ? { teamId: targetRow.teamId, isBye: targetRow.isBye }
+          : { teamId: null, isBye: false };
+
+        next = next.map((s) => {
+          if (s.slot === source) {
+            return { ...s, ...targetFields };
+          }
+          if (s.slot === targetSlot) {
+            return { ...s, ...itemToSlotFields(activeData) };
+          }
+          return s;
+        });
+      }
+    }
+
+    setSlots(next);
+    void persistSlots(next);
+  }
+
+  function handleDragStart(event: DragStartEvent) {
+    const item = event.active.data.current?.item as DragItem | undefined;
+    setActiveItem(item ?? null);
+  }
 
   async function loadEditMembers(forClubId: string) {
     const res = await fetch(`/api/admin/competition/clubs/${forClubId}/players`);
@@ -190,81 +633,167 @@ export function TeamsSetupPanel({
         </p>
       )}
 
-      <ul className="space-y-2">
-        {teams.map((t) => (
-          <li
-            key={t.id}
-            className="flex flex-col gap-2 rounded border border-zinc-100 px-3 py-2 text-sm"
-          >
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-zinc-900">
-                <span className="font-medium">{t.name}</span>
-                <span className="text-zinc-500"> · {clubName(t.club_id)}</span>
-                {t.captain ? (
-                  <span className="text-zinc-600">
-                    {" "}
-                    · Captain: {t.captain.name}
-                  </span>
-                ) : (
-                  <span className="text-amber-700"> · No captain</span>
+      {useSlotOrdering && (
+        <p className="text-xs text-zinc-600">
+          Drag teams to set spots 1–8 for schedule generation.
+          {teams.length === 7
+            ? " Add a bye and place it in one of the eight spots."
+            : null}
+        </p>
+      )}
+
+      {useSlotOrdering && slotsLoading ? (
+        <p className="text-sm text-zinc-600">Loading team order…</p>
+      ) : useSlotOrdering ? (
+        <DndContext
+          sensors={sensors}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <ul className="space-y-2">
+            {slots.map((row) => (
+              <SlotListItem
+                key={row.slot}
+                row={row}
+                team={row.teamId ? teamById.get(row.teamId) : undefined}
+                readOnly={readOnly}
+                onEditCaptain={startEditCaptain}
+                onRemove={removeTeam}
+                editingCaptainTeamId={editingCaptainTeamId}
+                editCaptainId={editCaptainId}
+                setEditCaptainId={setEditCaptainId}
+                editMembers={editMembers}
+                onSaveCaptain={saveCaptain}
+                onCancelEdit={() => setEditingCaptainTeamId(null)}
+                clubName={clubName}
+              />
+            ))}
+          </ul>
+
+          {!readOnly && poolItems.length > 0 && (
+            <div>
+              <p className="mb-2 text-xs font-medium text-zinc-700">
+                Unassigned
+              </p>
+              <PoolDropZone readOnly={readOnly}>
+                <div className="flex flex-wrap gap-2">
+                  {poolItems.map((item) => (
+                    <PoolChip key={dragId(item)} item={item} />
+                  ))}
+                </div>
+              </PoolDropZone>
+            </div>
+          )}
+
+          {!readOnly &&
+            teams.length === 7 &&
+            !byeEnabled &&
+            !slots.some((s) => s.isBye) && (
+              <button
+                type="button"
+                className="btn-secondary w-fit text-xs"
+                onClick={() => setByeEnabled(true)}
+              >
+                Add bye
+              </button>
+            )}
+
+          <DragOverlay>
+            {activeItem ? (
+              activeItem.kind === "bye" ? (
+                <PoolChip item={activeItem} />
+              ) : (
+                <span className="rounded border border-zinc-300 bg-white px-2 py-1 text-xs font-medium shadow">
+                  {activeItem.name}
+                </span>
+              )
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+      ) : (
+        <ul className="space-y-2">
+          {teams.map((t) => (
+            <li
+              key={t.id}
+              className="flex flex-col gap-2 rounded border border-zinc-100 px-3 py-2 text-sm"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-zinc-900">
+                  <span className="font-medium">{t.name}</span>
+                  <span className="text-zinc-500"> · {clubName(t.club_id)}</span>
+                  {t.captain ? (
+                    <span className="text-zinc-600">
+                      {" "}
+                      · Captain: {t.captain.name}
+                    </span>
+                  ) : (
+                    <span className="text-amber-700"> · No captain</span>
+                  )}
+                </span>
+                {!readOnly && (
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className="text-xs font-medium text-zinc-700 underline"
+                      onClick={() => startEditCaptain(t)}
+                    >
+                      Change captain
+                    </button>
+                    <button
+                      type="button"
+                      className="text-xs font-medium text-red-700 underline"
+                      onClick={() => removeTeam(t.id)}
+                    >
+                      Remove
+                    </button>
+                  </div>
                 )}
-              </span>
-              {!readOnly && (
-                <div className="flex gap-2">
+              </div>
+              {editingCaptainTeamId === t.id && !readOnly && (
+                <div className="flex flex-wrap items-end gap-2 border-t border-zinc-100 pt-2">
+                  <label className="flex flex-col gap-1">
+                    <span className="text-xs text-zinc-600">Captain</span>
+                    <select
+                      value={editCaptainId}
+                      onChange={(e) => setEditCaptainId(e.target.value)}
+                      className="input max-w-xs text-sm"
+                    >
+                      <option value="">Select…</option>
+                      {editMembers.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}
+                          {p.member_number ? ` (${p.member_number})` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                   <button
                     type="button"
-                    className="text-xs font-medium text-zinc-700 underline"
-                    onClick={() => startEditCaptain(t)}
+                    className="btn-secondary text-xs"
+                    onClick={() => saveCaptain(t)}
                   >
-                    Change captain
+                    Save
                   </button>
                   <button
                     type="button"
-                    className="text-xs font-medium text-red-700 underline"
-                    onClick={() => removeTeam(t.id)}
+                    className="text-xs text-zinc-600 underline"
+                    onClick={() => setEditingCaptainTeamId(null)}
                   >
-                    Remove
+                    Cancel
                   </button>
                 </div>
               )}
-            </div>
-            {editingCaptainTeamId === t.id && !readOnly && (
-              <div className="flex flex-wrap items-end gap-2 border-t border-zinc-100 pt-2">
-                <label className="flex flex-col gap-1">
-                  <span className="text-xs text-zinc-600">Captain</span>
-                  <select
-                    value={editCaptainId}
-                    onChange={(e) => setEditCaptainId(e.target.value)}
-                    className="input max-w-xs text-sm"
-                  >
-                    <option value="">Select…</option>
-                    {editMembers.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                        {p.member_number ? ` (${p.member_number})` : ""}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <button
-                  type="button"
-                  className="btn-secondary text-xs"
-                  onClick={() => saveCaptain(t)}
-                >
-                  Save
-                </button>
-                <button
-                  type="button"
-                  className="text-xs text-zinc-600 underline"
-                  onClick={() => setEditingCaptainTeamId(null)}
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
-          </li>
-        ))}
-      </ul>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {!readOnly && useSlotOrdering && !slotsComplete && (
+        <p className="text-xs text-amber-800">
+          Assign all teams{teams.length === 7 ? " and one bye" : ""} to spots
+          1–8 before generating the schedule.
+        </p>
+      )}
 
       {!readOnly && (
         <form onSubmit={addTeam} className="flex flex-col gap-3 border-t pt-4">
@@ -349,9 +878,9 @@ export function TeamsSetupPanel({
         </form>
       )}
 
-      {message && (
+      {(message || slotSaving) && (
         <p className="text-sm text-zinc-700" role="status">
-          {message}
+          {slotSaving ? "Saving order…" : message}
         </p>
       )}
     </div>

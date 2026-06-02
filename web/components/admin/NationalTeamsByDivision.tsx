@@ -42,8 +42,9 @@ export function NationalTeamsByDivision({
       <div>
         <h2 className="text-lg font-semibold text-zinc-900">Teams</h2>
         <p className="mt-1 text-sm text-zinc-600">
-          Select a division, then add up to {NATIONAL_TEAMS_PER_GROUP} teams (one
-          per club). Each team needs a captain from that club.
+          Select a division, then add 7 or 8 teams (one per club). If you have 7
+          teams, add a bye in the schedule slot order below. Each team needs a
+          captain from that club.
         </p>
       </div>
 

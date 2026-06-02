@@ -10,6 +10,11 @@ import {
 } from "./national-structure";
 import { NATIONAL_LEAGUE_NAME } from "./league-names";
 import { NATIONAL_TEAMS_PER_GROUP } from "./national-teams";
+import {
+  buildScheduleSlotsState,
+  seedGroupScheduleSlotsIfEmpty,
+  slotsAreComplete,
+} from "./group-schedule-slots";
 
 export type CalendarReadiness = {
   required: number;
@@ -22,8 +27,10 @@ export type DivisionReadiness = {
   groupId: string | null;
   teamCount: number;
   required: number;
+  minTeams: number;
   matchesCount: number;
   teamsComplete: boolean;
+  slotsComplete: boolean;
   scheduleComplete: boolean;
 };
 
@@ -62,7 +69,18 @@ export function countSetMatchDays(
 }
 
 export function divisionTeamsComplete(div: DivisionReadiness): boolean {
-  return div.groupId !== null && div.teamCount === div.required;
+  if (div.groupId === null) return false;
+  if (div.teamCount < div.minTeams || div.teamCount > div.required) {
+    return false;
+  }
+  return div.slotsComplete;
+}
+
+export function divisionTeamsLabel(div: DivisionReadiness): string {
+  if (div.teamCount === 7 && div.slotsComplete) {
+    return "7/8 teams (+ bye)";
+  }
+  return `${div.teamCount}/${div.required} teams`;
 }
 
 export function buildNationalReadiness(input: {
@@ -121,8 +139,12 @@ export function buildNationalReadiness(input: {
     if (divisionTeamsComplete(div)) continue;
     if (!div.groupId) {
       blockers.push(`${div.name}: group missing.`);
+    } else if (div.teamCount < div.minTeams || div.teamCount > div.required) {
+      blockers.push(`${div.name}: ${divisionTeamsLabel(div)} (need ${div.minTeams}–${div.required}).`);
+    } else if (!div.slotsComplete) {
+      blockers.push(`${div.name}: schedule slots incomplete.`);
     } else {
-      blockers.push(`${div.name}: ${div.teamCount}/${div.required} teams.`);
+      blockers.push(`${div.name}: ${divisionTeamsLabel(div)}.`);
     }
   }
 
@@ -163,8 +185,10 @@ function emptyDivisions(): DivisionReadiness[] {
     groupId: null,
     teamCount: 0,
     required: NATIONAL_TEAMS_PER_GROUP,
+    minTeams: 7,
     matchesCount: 0,
     teamsComplete: false,
+    slotsComplete: false,
     scheduleComplete: false,
   }));
 }
@@ -265,13 +289,32 @@ export async function fetchNationalReadiness(
       matchesCount = matches ?? 0;
     }
 
+    let slotsComplete = false;
+    if (group && teamCount >= 7 && teamCount <= 8) {
+      await seedGroupScheduleSlotsIfEmpty(supabase, group.id);
+      const { data: teamRows } = await supabase
+        .from("teams")
+        .select("id, name")
+        .eq("group_id", group.id)
+        .order("created_at");
+      const { data: slotRows } = await supabase
+        .from("group_schedule_slots")
+        .select("slot, team_id, is_bye")
+        .eq("group_id", group.id)
+        .order("slot");
+      const slotState = buildScheduleSlotsState(teamRows ?? [], slotRows ?? []);
+      slotsComplete = slotsAreComplete(teamCount, slotState.slots);
+    }
+
     const row: DivisionReadiness = {
       name: spec.name,
       groupId: group?.id ?? null,
       teamCount,
       required: NATIONAL_TEAMS_PER_GROUP,
+      minTeams: 7,
       matchesCount,
       teamsComplete: false,
+      slotsComplete,
       scheduleComplete: matchesCount > 0,
     };
     row.teamsComplete = divisionTeamsComplete(row);

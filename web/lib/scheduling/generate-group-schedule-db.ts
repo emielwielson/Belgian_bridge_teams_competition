@@ -1,8 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { applyMatchDatesDivisionFilter } from "@/lib/competition/match-dates-query";
 import {
+  loadSlotAssignmentsForGeneration,
+  seedGroupScheduleSlotsIfEmpty,
+  usesRbbfTemplate,
+} from "@/lib/competition/group-schedule-slots";
+import {
   assignTeamSlots,
-  buildMatchRows,
+  buildRbbfSchedule,
   type GeneratedMatch,
   type RoundDate,
 } from "./generate-group-schedule";
@@ -49,17 +54,6 @@ async function fetchMatchDates(
   return dates.map((d) => ({ round: d.round, datetime: d.datetime }));
 }
 
-function buildRbbfMatches(
-  groupId: string,
-  teamIds: string[],
-  roundDates: RoundDate[],
-  boardCount: number,
-  roundCount: number,
-): GeneratedMatch[] {
-  const teams = assignTeamSlots(teamIds);
-  return buildMatchRows(groupId, teams, roundDates, boardCount, roundCount);
-}
-
 function buildRegionalGenericMatches(
   groupId: string,
   teamIds: string[],
@@ -100,6 +94,8 @@ export async function generateGroupScheduleInDb(
   groupId: string,
   boardCount = 24,
 ): Promise<{ matchesCreated: number; rounds: number; byesCreated: number }> {
+  await seedGroupScheduleSlotsIfEmpty(supabase, groupId);
+
   const { error: validateError } = await supabase.rpc(
     "validate_group_schedule_generation",
     { p_group_id: groupId },
@@ -152,28 +148,44 @@ export async function generateGroupScheduleInDb(
     roundCount,
   );
 
+  const slotAssignments = await loadSlotAssignmentsForGeneration(
+    supabase,
+    groupId,
+    teamIds,
+  );
+
+  const onRbbfPath =
+    slotAssignments !== null &&
+    usesRbbfTemplate(league.scope, teamCount, slotAssignments);
+
   let matchRows: GeneratedMatch[];
   let byeRows: { round: number; team_id: string }[] = [];
 
-  if (league.scope === "national") {
-    if (teamCount !== 8) {
-      throw new Error("National group must have exactly 8 teams");
-    }
-    matchRows = buildRbbfMatches(
+  if (onRbbfPath && slotAssignments) {
+    const result = buildRbbfSchedule(
       groupId,
-      teamIds,
+      slotAssignments,
       roundDates,
       boardCount,
       roundCount,
+    );
+    matchRows = result.matches;
+    byeRows = result.byes;
+  } else if (league.scope === "national") {
+    throw new Error(
+      "National group requires complete schedule slot assignments (7 teams + bye, or 8 teams)",
     );
   } else if (teamCount === 8) {
-    matchRows = buildRbbfMatches(
+    const teams = assignTeamSlots(teamIds);
+    const result = buildRbbfSchedule(
       groupId,
-      teamIds,
+      teams,
       roundDates,
       boardCount,
       roundCount,
     );
+    matchRows = result.matches;
+    byeRows = result.byes;
   } else {
     const result = buildRegionalGenericMatches(
       groupId,

@@ -11,13 +11,16 @@ function divisionRow(
   name: string,
   teamCount: number,
   matchesCount: number,
+  slotsComplete = teamCount === NATIONAL_TEAMS_PER_GROUP,
 ): {
   name: string;
   groupId: string;
   teamCount: number;
   required: number;
+  minTeams: number;
   matchesCount: number;
   teamsComplete: boolean;
+  slotsComplete: boolean;
   scheduleComplete: boolean;
 } {
   return {
@@ -25,8 +28,10 @@ function divisionRow(
     groupId: `g-${name}`,
     teamCount,
     required: NATIONAL_TEAMS_PER_GROUP,
+    minTeams: 7,
     matchesCount,
-    teamsComplete: teamCount === NATIONAL_TEAMS_PER_GROUP,
+    teamsComplete: slotsComplete && teamCount >= 7 && teamCount <= 8,
+    slotsComplete,
     scheduleComplete: matchesCount > 0,
   };
 }
@@ -105,5 +110,15 @@ describe("national-readiness", () => {
     expect(result.blockers.some((b) => b.includes("Honor Division: 4/8"))).toBe(
       true,
     );
+  });
+
+  it("divisionTeamsComplete accepts 7 teams with complete slots and bye", () => {
+    const div = divisionRow("2nd Division A", 7, 0, true);
+    expect(divisionTeamsComplete(div)).toBe(true);
+  });
+
+  it("divisionTeamsComplete rejects 7 teams without complete slots", () => {
+    const div = divisionRow("2nd Division A", 7, 0, false);
+    expect(divisionTeamsComplete(div)).toBe(false);
   });
 });
