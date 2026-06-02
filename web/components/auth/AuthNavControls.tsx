@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { ARBITER_ACCESS_ROLES, hasAnyRole } from "@/lib/auth/roles";
 
 type MeResponse = {
   user: { id: string; email?: string };
@@ -47,6 +48,7 @@ export function AuthNavControls() {
   const showAdminDashboard =
     me.roles.includes("system_admin") ||
     me.roles.includes("competition_manager");
+  const showArbiterInbox = hasAnyRole(me.roles, [...ARBITER_ACCESS_ROLES]);
 
   return (
     <nav className="flex flex-wrap items-center gap-3 text-sm">
@@ -71,6 +73,11 @@ export function AuthNavControls() {
       ) : me.clubs && me.clubs.length > 1 ? (
         <Link href="/club-manager" className="text-zinc-600 hover:text-zinc-900">
           My clubs
+        </Link>
+      ) : null}
+      {showArbiterInbox ? (
+        <Link href="/arbiter" className="text-zinc-600 hover:text-zinc-900">
+          Arbiter inbox
         </Link>
       ) : null}
       {showAdminDashboard ? (

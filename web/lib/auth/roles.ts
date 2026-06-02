@@ -9,6 +9,12 @@ export const ROLES = {
 
 export type Role = (typeof ROLES)[keyof typeof ROLES];
 
+/** Roles that may use the arbiter inbox and resolve captain requests. */
+export const ARBITER_ACCESS_ROLES = [
+  ROLES.ARBITER,
+  ROLES.COMPETITION_MANAGER,
+] as const;
+
 export function hasRole(userRoles: string[], role: string): boolean {
   if (userRoles.includes(ROLES.SYSTEM_ADMIN)) return true;
   return userRoles.includes(role);

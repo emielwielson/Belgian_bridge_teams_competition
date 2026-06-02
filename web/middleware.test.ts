@@ -3,7 +3,7 @@ import {
   isPublicPath,
   requiredRolesForPath,
 } from "./lib/auth/middleware-routes";
-import { ROLES } from "./lib/auth/roles";
+import { ARBITER_ACCESS_ROLES, ROLES } from "./lib/auth/roles";
 
 describe("isPublicPath", () => {
   it("allows home, login, callback, health", () => {
@@ -47,7 +47,7 @@ describe("requiredRolesForPath", () => {
   it("maps role dashboards", () => {
     expect(requiredRolesForPath("/player")).toEqual([ROLES.PLAYER]);
     expect(requiredRolesForPath("/club-manager")).toEqual([ROLES.CLUB_MANAGER]);
-    expect(requiredRolesForPath("/arbiter")).toEqual([ROLES.ARBITER]);
+    expect(requiredRolesForPath("/arbiter")).toEqual([...ARBITER_ACCESS_ROLES]);
   });
 
   it("returns null for unguarded paths", () => {

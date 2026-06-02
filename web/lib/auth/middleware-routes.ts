@@ -1,4 +1,4 @@
-import { ROLES } from "./roles";
+import { ARBITER_ACCESS_ROLES, ROLES } from "./roles";
 
 const PUBLIC_EXACT = new Set([
   "/",
@@ -16,7 +16,7 @@ const ROLE_ROUTES: { prefix: string; roles: string[] }[] = [
   { prefix: "/admin", roles: [ROLES.SYSTEM_ADMIN, ROLES.COMPETITION_MANAGER] },
   { prefix: "/player", roles: [ROLES.PLAYER] },
   { prefix: "/club-manager", roles: [ROLES.CLUB_MANAGER] },
-  { prefix: "/arbiter", roles: [ROLES.ARBITER] },
+  { prefix: "/arbiter", roles: [...ARBITER_ACCESS_ROLES] },
 ];
 
 export function isPublicPath(pathname: string): boolean {

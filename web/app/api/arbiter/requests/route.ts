@@ -1,4 +1,4 @@
-import { ROLES } from "@/lib/auth/roles";
+import { ARBITER_ACCESS_ROLES } from "@/lib/auth/roles";
 import { requireRoles } from "@/lib/auth/route-auth";
 import { createOperationalSignedUrl } from "@/lib/files/operational-file-storage";
 import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
@@ -6,7 +6,7 @@ import { createServiceClient } from "@/lib/supabase/server-client";
 
 export async function GET(request: Request) {
   try {
-    const { supabase } = await requireRoles([ROLES.ARBITER, ROLES.COMPETITION_MANAGER]);
+    const { supabase } = await requireRoles([...ARBITER_ACCESS_ROLES]);
     const status = new URL(request.url).searchParams.get("status") ?? "open";
 
     let query = supabase
