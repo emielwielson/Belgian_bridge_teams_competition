@@ -2,6 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { LOCALE_COOKIE, localeCookieOptions } from "@/lib/i18n/locale-cookie";
+import { getUserPreferredLocale } from "@/lib/i18n/user-locale";
 import { getSupabasePublicEnv } from "@/lib/supabase/env";
 
 export async function GET(request: NextRequest) {
@@ -38,5 +40,22 @@ export async function GET(request: NextRequest) {
   }
 
   const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/";
-  return NextResponse.redirect(`${origin}${safeNext}`);
+  const redirect = NextResponse.redirect(`${origin}${safeNext}`);
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user) {
+    try {
+      const preferred = await getUserPreferredLocale(supabase, user.id);
+      if (preferred) {
+        redirect.cookies.set(LOCALE_COOKIE, preferred, localeCookieOptions());
+      }
+    } catch {
+      // Login succeeds even if profile locale cannot be loaded.
+    }
+  }
+
+  return redirect;
 }

@@ -11,8 +11,10 @@ import {
 import { hasAnyRole } from "@/lib/auth/roles";
 import { getSupabasePublicEnv } from "@/lib/supabase/env";
 import { defaultLocale, isLocale, type Locale } from "./i18n/config";
-
-const LOCALE_COOKIE = "NEXT_LOCALE";
+import {
+  LOCALE_COOKIE,
+  localeCookieOptions,
+} from "@/lib/i18n/locale-cookie";
 
 function localeFromAcceptLanguage(header: string | null): Locale | null {
   if (!header) return null;
@@ -37,11 +39,7 @@ function applyLocaleCookie(request: NextRequest, response: NextResponse) {
     localeFromAcceptLanguage(request.headers.get("accept-language")) ??
     defaultLocale;
 
-  response.cookies.set(LOCALE_COOKIE, detected, {
-    path: "/",
-    sameSite: "lax",
-    maxAge: 60 * 60 * 24 * 365,
-  });
+  response.cookies.set(LOCALE_COOKIE, detected, localeCookieOptions());
 }
 
 export async function middleware(request: NextRequest) {
