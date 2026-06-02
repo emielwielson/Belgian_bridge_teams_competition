@@ -12,7 +12,11 @@ const localeLabelKey: Record<Locale, "english" | "dutch" | "french"> = {
   fr: "french",
 };
 
-export function LanguageSwitcher() {
+type Props = {
+  id?: string;
+};
+
+export function LanguageSelect({ id = "locale-switcher" }: Props) {
   const locale = useLocale() as Locale;
   const t = useTranslations("nav.language");
   const router = useRouter();
@@ -41,18 +45,15 @@ export function LanguageSwitcher() {
   }
 
   return (
-    <div className="flex items-center gap-1.5">
-      <label
-        htmlFor="locale-switcher"
-        className="text-xs font-medium text-zinc-500"
-      >
+    <div>
+      <label htmlFor={id} className="mb-1 block text-xs font-medium text-zinc-500">
         {t("label")}
       </label>
       <select
-        id="locale-switcher"
+        id={id}
         value={locale}
         onChange={handleChange}
-        className="rounded-lg border border-zinc-200 bg-white px-2 py-1 text-sm text-zinc-800 shadow-sm"
+        className="w-full cursor-pointer rounded-md border border-zinc-200 bg-white px-2 py-1.5 text-sm text-zinc-700 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200"
       >
         {locales.map((code) => (
           <option key={code} value={code}>
