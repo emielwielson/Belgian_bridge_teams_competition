@@ -38,30 +38,19 @@ export async function POST(request: Request, { params }: Params) {
     const { supabase } = await requireAuth();
     const body = (await request.json()) as Record<string, unknown>;
 
-    const board = Number(body.board);
-    const description = String(body.description ?? "").trim();
-    const imagePath =
-      body.image_path != null ? String(body.image_path).trim() : null;
+    const imagePath = String(
+      body.image_path ?? body.imagePath ?? "",
+    ).trim();
 
-    if (!Number.isInteger(board) || board < 1 || !description) {
-      return jsonError("board (positive int) and description are required", 400);
+    if (!imagePath) {
+      return jsonError("image_path is required", 400);
     }
 
-    await createArbiterRequest(
-      supabase,
-      matchId,
-      board,
-      description,
-      imagePath || null,
-    );
+    await createArbiterRequest(supabase, matchId, imagePath);
 
     const state = await getMatchArbiterRequestsState(supabase, matchId);
 
-    void sendArbiterRequestCreatedEmail({
-      matchId,
-      board,
-      description,
-    });
+    void sendArbiterRequestCreatedEmail({ matchId });
 
     return jsonOk({ state });
   } catch (err) {

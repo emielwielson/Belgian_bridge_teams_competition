@@ -10,7 +10,10 @@ vi.mock("./make-webhook", () => ({
 
 import { createServiceClient } from "@/lib/supabase/server-client";
 import { sendMakeWebhook } from "./make-webhook";
-import { sendArbiterRequestResolvedEmail } from "./arbiter-request-email";
+import {
+  sendArbiterRequestCreatedEmail,
+  sendArbiterRequestResolvedEmail,
+} from "./arbiter-request-email";
 
 function mockServiceClient() {
   const supabase = {
@@ -32,7 +35,11 @@ function mockServiceClient() {
             eq: () => ({
               maybeSingle: () =>
                 Promise.resolve({
-                  data: { match_id: "m1", board: 7, description: "Slow play dispute" },
+                  data: {
+                    match_id: "m1",
+                    board: null,
+                    description: null,
+                  },
                   error: null,
                 }),
             }),
@@ -82,7 +89,24 @@ describe("arbiter-request-email", () => {
     process.env = env;
   });
 
-  it("sends resolved event payload via make webhook", async () => {
+  it("sends created event without board or description", async () => {
+    await sendArbiterRequestCreatedEmail({ matchId: "m1" });
+
+    expect(sendMakeWebhook).toHaveBeenCalledWith(
+      expect.objectContaining({
+        match_id: "m1",
+        match_url: "https://app.example.com/matches/m1",
+        login_url: "https://app.example.com/login?next=%2Fmatches%2Fm1",
+        subject: expect.stringContaining("Arbiter request:"),
+      }),
+      expect.objectContaining({ eventType: "arbiter_request_created" }),
+    );
+    const payload = vi.mocked(sendMakeWebhook).mock.calls[0][0];
+    expect(payload.board).toBeUndefined();
+    expect(payload.description).toBeUndefined();
+  });
+
+  it("sends resolved event with match links", async () => {
     await sendArbiterRequestResolvedEmail({ requestId: "req-1" });
 
     expect(sendMakeWebhook).toHaveBeenCalledWith(
@@ -90,7 +114,6 @@ describe("arbiter-request-email", () => {
         request_id: "req-1",
         match_id: "m1",
         match_url: "https://app.example.com/matches/m1",
-        login_url: "https://app.example.com/login?next=%2Fmatches%2Fm1",
       }),
       expect.objectContaining({ eventType: "arbiter_request_resolved" }),
     );

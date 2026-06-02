@@ -2,9 +2,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type ArbiterRequestRow = {
   id: string;
-  board: number;
-  description: string;
-  image_path: string | null;
+  board: number | null;
+  description: string | null;
+  image_path: string;
   status: string;
   created_at: string;
   resolved_at: string | null;
@@ -12,7 +12,6 @@ export type ArbiterRequestRow = {
 
 export type MatchArbiterRequestsState = {
   match_id: string;
-  board_count: number;
   can_submit: boolean;
   requests: ArbiterRequestRow[];
 };
@@ -21,22 +20,34 @@ function parseState(raw: unknown): MatchArbiterRequestsState | null {
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
   const requestsRaw = Array.isArray(o.requests) ? o.requests : [];
-  const requests: ArbiterRequestRow[] = requestsRaw.map((r) => {
-    const row = r as Record<string, unknown>;
-    return {
-      id: String(row.id),
-      board: Number(row.board),
-      description: String(row.description),
-      image_path: row.image_path != null ? String(row.image_path) : null,
-      status: String(row.status),
-      created_at: String(row.created_at),
-      resolved_at: row.resolved_at != null ? String(row.resolved_at) : null,
-    };
-  });
+  const requests: ArbiterRequestRow[] = requestsRaw
+    .map((r) => {
+      const row = r as Record<string, unknown>;
+      const imagePath =
+        row.image_path != null ? String(row.image_path).trim() : "";
+      if (!imagePath) return null;
+      const boardRaw = row.board;
+      const descriptionRaw = row.description;
+      return {
+        id: String(row.id),
+        board:
+          boardRaw != null && boardRaw !== "" && Number.isFinite(Number(boardRaw))
+            ? Number(boardRaw)
+            : null,
+        description:
+          descriptionRaw != null && String(descriptionRaw).trim() !== ""
+            ? String(descriptionRaw)
+            : null,
+        image_path: imagePath,
+        status: String(row.status),
+        created_at: String(row.created_at),
+        resolved_at: row.resolved_at != null ? String(row.resolved_at) : null,
+      };
+    })
+    .filter((r): r is ArbiterRequestRow => r != null);
 
   return {
     match_id: String(o.match_id),
-    board_count: Number(o.board_count),
     can_submit: Boolean(o.can_submit),
     requests,
   };
@@ -62,14 +73,10 @@ export function canAccessArbiterRequestWorkflow(
 export async function createArbiterRequest(
   supabase: SupabaseClient,
   matchId: string,
-  board: number,
-  description: string,
-  imagePath: string | null,
+  imagePath: string,
 ): Promise<string> {
   const { data, error } = await supabase.rpc("arbiter_request_create", {
     p_match_id: matchId,
-    p_board: board,
-    p_description: description,
     p_image_path: imagePath,
   });
   if (error) throw error;
@@ -89,8 +96,8 @@ export async function resolveArbiterRequest(
 export type OpenArbiterInboxItem = {
   id: string;
   match_id: string;
-  board: number;
-  description: string;
+  board: number | null;
+  description: string | null;
   image_path: string | null;
   status: string;
   created_at: string;

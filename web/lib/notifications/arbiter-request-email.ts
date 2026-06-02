@@ -1,11 +1,9 @@
 import { createServiceClient } from "@/lib/supabase/server-client";
-import { getAppBaseUrl } from "./postponement-email";
+import { getAppBaseUrl, loginThenMatchUrl } from "./postponement-email";
 import { sendMakeWebhook } from "./make-webhook";
 
 export type ArbiterRequestCreatedEmailContext = {
   matchId: string;
-  board: number;
-  description: string;
 };
 
 export type ArbiterRequestResolvedEmailContext = {
@@ -77,28 +75,28 @@ export async function sendArbiterRequestCreatedEmail(
   const summary = await loadMatchSummary(ctx.matchId);
   const baseUrl = getAppBaseUrl();
   const matchUrl = `${baseUrl}/matches/${ctx.matchId}`;
+  const loginUrl = loginThenMatchUrl(ctx.matchId);
   const inboxUrl = `${baseUrl}/arbiter`;
 
   const matchLine = summary
     ? `Round ${summary.round}: ${summary.homeTeamName} vs ${summary.awayTeamName}`
     : `Match ${ctx.matchId}`;
 
-  const subject = `Arbiter request: ${matchLine}, board ${ctx.board}`;
+  const subject = `Arbiter request: ${matchLine}`;
   const bodyText = [
-    "A team captain submitted an arbiter request.",
+    "A team captain submitted an arbiter request with an attachment.",
     "",
     matchLine,
-    `Board: ${ctx.board}`,
-    `Description: ${ctx.description}`,
     "",
     `Arbiter inbox: ${inboxUrl}`,
     `Match: ${matchUrl}`,
+    `Login first: ${loginUrl}`,
   ].join("\n");
 
   const bodyHtml = [
-    "<p>A team captain submitted an arbiter request.</p>",
-    `<p><strong>${matchLine}</strong><br>Board: ${ctx.board}<br>${ctx.description}</p>`,
-    `<p><a href="${inboxUrl}">Open arbiter inbox</a> · <a href="${matchUrl}">View match</a></p>`,
+    "<p>A team captain submitted an arbiter request with an attachment.</p>",
+    `<p><strong>${matchLine}</strong></p>`,
+    `<p><a href="${inboxUrl}">Open arbiter inbox</a> · <a href="${matchUrl}">View match</a><br><a href="${loginUrl}">Login first</a></p>`,
   ].join("");
 
   await sendMakeWebhook(
@@ -109,9 +107,8 @@ export async function sendArbiterRequestCreatedEmail(
       cc,
       match_id: ctx.matchId,
       match_url: matchUrl,
+      login_url: loginUrl,
       arbiter_inbox_url: inboxUrl,
-      board: ctx.board,
-      description: ctx.description,
     },
     { eventType: "arbiter_request_created" },
   );
@@ -124,8 +121,8 @@ async function loadArbiterRequestSummary(
   round: number;
   homeTeamName: string;
   awayTeamName: string;
-  board: number;
-  description: string;
+  board: number | null;
+  description: string | null;
 } | null> {
   const supabase = createServiceClient();
   const { data: row, error } = await supabase
@@ -144,8 +141,18 @@ async function loadArbiterRequestSummary(
     homeTeamName: match.homeTeamName,
     awayTeamName: match.awayTeamName,
     board: row.board,
-    description: row.description,
+    description: row.description?.trim() ? row.description : null,
   };
+}
+
+function legacyDetailLines(summary: {
+  board: number | null;
+  description: string | null;
+}): string[] {
+  const lines: string[] = [];
+  if (summary.board != null) lines.push(`Board: ${summary.board}`);
+  if (summary.description) lines.push(`Description: ${summary.description}`);
+  return lines;
 }
 
 export async function sendArbiterRequestResolvedEmail(
@@ -159,25 +166,31 @@ export async function sendArbiterRequestResolvedEmail(
 
   const baseUrl = getAppBaseUrl();
   const matchUrl = `${baseUrl}/matches/${summary.matchId}`;
-  const loginUrl = `${baseUrl}/login?next=${encodeURIComponent(`/matches/${summary.matchId}`)}`;
+  const loginUrl = loginThenMatchUrl(summary.matchId);
   const inboxUrl = `${baseUrl}/arbiter`;
   const matchLine = `Round ${summary.round}: ${summary.homeTeamName} vs ${summary.awayTeamName}`;
+  const legacyLines = legacyDetailLines(summary);
 
-  const subject = `Arbiter request resolved: ${matchLine}, board ${summary.board}`;
+  const subject = `Arbiter request resolved: ${matchLine}`;
   const bodyText = [
     "An arbiter request has been resolved.",
     "",
     matchLine,
-    `Board: ${summary.board}`,
-    `Description: ${summary.description}`,
+    ...legacyLines,
     "",
     `Arbiter inbox: ${inboxUrl}`,
     `Match: ${matchUrl}`,
     `Login first: ${loginUrl}`,
   ].join("\n");
+
+  const legacyHtml =
+    legacyLines.length > 0
+      ? `<br>${legacyLines.join("<br>")}`
+      : "<br>See the attachment in the arbiter inbox.";
+
   const bodyHtml = [
     "<p>An arbiter request has been resolved.</p>",
-    `<p><strong>${matchLine}</strong><br>Board: ${summary.board}<br>${summary.description}</p>`,
+    `<p><strong>${matchLine}</strong>${legacyHtml}</p>`,
     `<p><a href="${inboxUrl}">Open arbiter inbox</a> · <a href="${matchUrl}">View match</a><br><a href="${loginUrl}">Login first</a></p>`,
   ].join("");
 

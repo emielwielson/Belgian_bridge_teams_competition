@@ -7,8 +7,8 @@ import { formatBrussels } from "@/lib/time/brussels";
 type InboxRequest = {
   id: string;
   match_id: string;
-  board: number;
-  description: string;
+  board: number | null;
+  description: string | null;
   status: string;
   created_at: string;
   image_signed_url: string | null;
@@ -78,16 +78,13 @@ export function ArbiterInbox() {
               <li key={r.id} className="py-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <p className="font-medium text-zinc-900">
-                      {label} — board {r.board}
-                    </p>
+                    <p className="font-medium text-zinc-900">{label}</p>
                     <p className="mt-1 text-xs text-zinc-500">
                       Submitted {formatBrussels(r.created_at)}
                       {m?.datetime
                         ? ` · Match ${formatBrussels(m.datetime)}`
                         : ""}
                     </p>
-                    <p className="mt-2 text-sm text-zinc-700">{r.description}</p>
                     {r.image_signed_url ? (
                       <p className="mt-2">
                         <a
@@ -99,6 +96,18 @@ export function ArbiterInbox() {
                           View attachment
                         </a>
                       </p>
+                    ) : (
+                      <p className="mt-2 text-sm text-zinc-600">
+                        No attachment available
+                      </p>
+                    )}
+                    {r.board != null ? (
+                      <p className="mt-1 text-sm text-zinc-600">
+                        Board {r.board}
+                      </p>
+                    ) : null}
+                    {r.description ? (
+                      <p className="mt-1 text-sm text-zinc-700">{r.description}</p>
                     ) : null}
                     <p className="mt-2">
                       <Link

@@ -7,7 +7,6 @@ import {
 describe("canAccessArbiterRequestWorkflow", () => {
   const base: MatchArbiterRequestsState = {
     match_id: "m1",
-    board_count: 16,
     can_submit: false,
     requests: [],
   };
@@ -25,12 +24,31 @@ describe("canAccessArbiterRequestWorkflow", () => {
         requests: [
           {
             id: "r1",
-            board: 1,
-            description: "test",
-            image_path: null,
+            board: null,
+            description: null,
+            image_path: "arbiter/m1/file.pdf",
             status: "open",
             created_at: "2025-01-01T00:00:00Z",
             resolved_at: null,
+          },
+        ],
+      }),
+    ).toBe(true);
+  });
+
+  it("allows viewing legacy requests with board and description", () => {
+    expect(
+      canAccessArbiterRequestWorkflow({
+        ...base,
+        requests: [
+          {
+            id: "r2",
+            board: 3,
+            description: "Legacy note",
+            image_path: "arbiter/m1/old.pdf",
+            status: "resolved",
+            created_at: "2025-01-01T00:00:00Z",
+            resolved_at: "2025-01-02T00:00:00Z",
           },
         ],
       }),

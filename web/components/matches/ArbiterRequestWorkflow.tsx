@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useId, useState } from "react";
 import { FilePickerField } from "@/components/files/FilePickerField";
 import type { MatchArbiterRequestsState } from "@/lib/competition/arbiter-request";
+import { formatBrussels } from "@/lib/time/brussels";
 
 type Props = {
   matchId: string;
@@ -15,8 +16,6 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [board, setBoard] = useState("1");
-  const [description, setDescription] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [fileInputKey, setFileInputKey] = useState(0);
   const [uploadedPath, setUploadedPath] = useState<string | null>(null);
@@ -81,10 +80,6 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!description.trim()) {
-      setError("Description is required");
-      return;
-    }
     if (!uploadedPath) {
       setError("Upload an attachment before submitting");
       return;
@@ -96,18 +91,13 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
       const res = await fetch(`/api/matches/${matchId}/arbiter-requests`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          board: Number(board),
-          description: description.trim(),
-          image_path: uploadedPath,
-        }),
+        body: JSON.stringify({ image_path: uploadedPath }),
       });
       const body = await res.json();
       if (!res.ok) {
         throw new Error(body.error ?? "Failed to submit request");
       }
       setState(body.state);
-      setDescription("");
       setFile(null);
       setUploadedPath(null);
       setFileInputKey((k) => k + 1);
@@ -121,11 +111,7 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
     }
   }
 
-  const canSubmit =
-    Boolean(uploadedPath) &&
-    Boolean(description.trim()) &&
-    !busy &&
-    !uploading;
+  const canSubmit = Boolean(uploadedPath) && !busy && !uploading;
 
   if (loading) {
     return (
@@ -141,33 +127,11 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
     <section className="card">
       <h2 className="font-semibold text-zinc-900">Arbiter request</h2>
       <p className="mt-1 text-xs text-zinc-500">
-        Request a ruling for a specific board. Upload a photo or PDF (max 10
-        MB), then submit.
+        Upload a photo or PDF (max 10 MB), then submit to the arbiter.
       </p>
 
       {state.can_submit ? (
         <form onSubmit={handleSubmit} className="mt-4 space-y-3">
-          <label className="block text-xs font-medium text-zinc-600">
-            Board (1–{state.board_count})
-            <input
-              type="number"
-              min={1}
-              max={state.board_count}
-              value={board}
-              onChange={(e) => setBoard(e.target.value)}
-              className="mt-1 w-full max-w-[8rem] rounded-md border border-zinc-300 px-2 py-2 text-sm"
-            />
-          </label>
-          <label className="block text-xs font-medium text-zinc-600">
-            Description
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-              className="mt-1 w-full rounded-md border border-zinc-300 px-2 py-2 text-sm"
-              placeholder="Describe the situation…"
-            />
-          </label>
           <FilePickerField
             key={fileInputKey}
             id={fileInputId}
@@ -193,17 +157,25 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
         <ul className="mt-4 divide-y divide-zinc-200 text-sm">
           {state.requests.map((r) => (
             <li key={r.id} className="py-2">
-              <span className="font-medium">Board {r.board}</span> —{" "}
               <span
                 className={
                   r.status === "open"
-                    ? "text-amber-700"
-                    : "text-emerald-700"
+                    ? "font-medium text-amber-700"
+                    : "font-medium text-emerald-700"
                 }
               >
                 {r.status === "open" ? "Open" : "Resolved"}
               </span>
-              <p className="mt-1 text-zinc-700">{r.description}</p>
+              <span className="text-zinc-500">
+                {" "}
+                · submitted {formatBrussels(r.created_at)}
+              </span>
+              {r.board != null ? (
+                <p className="mt-1 text-zinc-600">Board {r.board}</p>
+              ) : null}
+              {r.description ? (
+                <p className="mt-1 text-zinc-700">{r.description}</p>
+              ) : null}
             </li>
           ))}
         </ul>
