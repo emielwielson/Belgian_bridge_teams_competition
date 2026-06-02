@@ -9,7 +9,8 @@ import {
   type RegionCode,
 } from "@/lib/competition/scopes";
 import { startNationalLeague } from "@/lib/competition/start-national-league";
-import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
+import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
+import { ErrorCodes } from "@/lib/http/error-codes";
 
 export async function GET() {
   try {
@@ -85,7 +86,7 @@ export async function POST(request: Request) {
       let regionCode: RegionCode | undefined;
       if (scope === SCOPES.REGIONAL) {
         if (!body.region_id) {
-          return jsonError("region_id required for regional league", 400);
+          return jsonErrorCode(ErrorCodes.api.regionIdRequired, 400);
         }
         const { data: region } = await supabase
           .from("regions")
@@ -93,14 +94,13 @@ export async function POST(request: Request) {
           .eq("id", body.region_id)
           .single();
         regionCode = parseRegionParam(region?.code ?? "") ?? undefined;
-        if (!regionCode) return jsonError("Invalid region", 400);
+        if (!regionCode) return jsonErrorCode(ErrorCodes.api.invalidRegion, 400);
       }
       const expectedName = canonicalLeagueName(scope, regionCode);
       if (body.name !== expectedName) {
-        return jsonError(
-          `League name must be "${expectedName}" for this scope`,
-          400,
-        );
+        return jsonErrorCode(ErrorCodes.api.leagueNameMustBe, 400, {
+          expectedName,
+        });
       }
 
       const { data, error } = await supabase
@@ -148,7 +148,7 @@ export async function POST(request: Request) {
       return jsonOk({ group: data }, { status: 201 });
     }
 
-    return jsonError("Invalid type", 400);
+    return jsonErrorCode(ErrorCodes.api.invalidType, 400);
   } catch (err) {
     return jsonFromError(err);
   }
@@ -168,7 +168,7 @@ export async function PATCH(request: Request) {
     if (body.action === "ensure_regional_league") {
       const season = await requireActiveSeason(supabase);
       const regionCode = parseRegionParam(body.regionCode ?? "");
-      if (!regionCode) return jsonError("Invalid regionCode", 400);
+      if (!regionCode) return jsonErrorCode(ErrorCodes.api.invalidRegionCode, 400);
       const result = await ensureRegionalLeague(
         supabase,
         season.id,
@@ -265,7 +265,7 @@ export async function PATCH(request: Request) {
       return jsonOk({ updated: true });
     }
 
-    return jsonError("Invalid patch", 400);
+    return jsonErrorCode(ErrorCodes.api.invalidPatch, 400);
   } catch (err) {
     return jsonFromError(err);
   }
@@ -282,14 +282,14 @@ export async function DELETE(request: Request) {
         .select("id", { count: "exact", head: true })
         .eq("group_id", body.id);
       if ((count ?? 0) > 0) {
-        return jsonError("Cannot delete group with matches", 409);
+        return jsonErrorCode(ErrorCodes.api.cannotDeleteGroupWithMatches, 409);
       }
       const { error } = await supabase.from("groups").delete().eq("id", body.id);
       if (error) return jsonError(error.message, 400);
       return jsonOk({ deleted: true });
     }
 
-    return jsonError("Invalid delete", 400);
+    return jsonErrorCode(ErrorCodes.api.invalidDelete, 400);
   } catch (err) {
     return jsonFromError(err);
   }

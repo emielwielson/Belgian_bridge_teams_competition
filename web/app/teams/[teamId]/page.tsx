@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { TeamConventionCardsSection } from "@/components/teams/TeamConventionCardsSection";
 import { TeamInfoSection } from "@/components/teams/TeamInfoSection";
@@ -13,6 +14,7 @@ type Props = { params: Promise<{ teamId: string }> };
 
 export default async function TeamPage({ params }: Props) {
   const { teamId } = await params;
+  const t = await getTranslations("team");
   const supabase = await createSessionClient();
   const detail = await loadTeamDetail(supabase, teamId);
 
@@ -37,7 +39,7 @@ export default async function TeamPage({ params }: Props) {
     <main className="page-container flex flex-col gap-6">
       <header>
         <Link href="/standings" className="link-back">
-          ← Standings
+          {t("backStandings")}
         </Link>
         <nav className="mt-2 flex flex-wrap items-center gap-1 text-sm text-zinc-600">
           <Link href={`/standings/league/${league.id}`} className="hover:text-zinc-900">

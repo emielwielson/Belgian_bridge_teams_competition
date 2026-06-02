@@ -1,7 +1,8 @@
 import { ARBITER_ACCESS_ROLES } from "@/lib/auth/roles";
 import { requireRoles } from "@/lib/auth/route-auth";
 import { revalidateStandingsForTeam } from "@/lib/competition/revalidate-standings";
-import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
+import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
+import { ErrorCodes } from "@/lib/http/error-codes";
 
 type Params = { params: Promise<{ penaltyId: string }> };
 
@@ -21,7 +22,7 @@ export async function PATCH(request: Request, { params }: Params) {
     if (body.vp_deduction != null) {
       const vp = Number(body.vp_deduction);
       if (!Number.isFinite(vp) || vp < 0) {
-        return jsonError("vp_deduction must be a non-negative number", 400);
+        return jsonErrorCode(ErrorCodes.api.vpDeductionNonNegative, 400);
       }
       updates.vp_deduction = vp;
     }
@@ -42,7 +43,7 @@ export async function PATCH(request: Request, { params }: Params) {
       .single();
 
     if (error) return jsonError(error.message, 400);
-    if (!data) return jsonError("Penalty not found", 404);
+    if (!data) return jsonErrorCode(ErrorCodes.api.penaltyNotFound, 404);
 
     await revalidateStandingsForTeam(supabase, data.team_id);
 
@@ -64,7 +65,7 @@ export async function DELETE(_request: Request, { params }: Params) {
       .maybeSingle();
 
     if (loadError) return jsonError(loadError.message, 500);
-    if (!existing) return jsonError("Penalty not found", 404);
+    if (!existing) return jsonErrorCode(ErrorCodes.api.penaltyNotFound, 404);
 
     const { error } = await supabase
       .from("penalties")

@@ -6,7 +6,8 @@ import {
 } from "@/lib/competition/group-schedule-slots";
 import { requireActiveSeason } from "@/lib/competition/season";
 import { requireSeasonInSetup } from "@/lib/competition/season-setup";
-import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
+import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
+import { ErrorCodes } from "@/lib/http/error-codes";
 
 type Params = { params: Promise<{ groupId: string }> };
 
@@ -20,7 +21,6 @@ export async function GET(_request: Request, { params }: Params) {
     if (state.teamCount < 7 || state.teamCount > 8) {
       return jsonOk({
         applicable: false,
-        teamCount: state.teamCount,
         ...state,
       });
     }
@@ -44,7 +44,7 @@ export async function PUT(request: Request, { params }: Params) {
     const body = await request.json();
     const slots = body.slots as ScheduleSlotPayload[] | undefined;
     if (!Array.isArray(slots)) {
-      return jsonError("slots array required", 400);
+      return jsonErrorCode(ErrorCodes.api.slotsArrayRequired, 400);
     }
 
     await saveGroupScheduleSlots(supabase, groupId, slots);

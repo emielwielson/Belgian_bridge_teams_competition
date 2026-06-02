@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
+import type { Locale } from "@/i18n/config";
+import { toIntlLocale } from "@/i18n/intl-locale";
 import { formatBrussels } from "@/lib/time/brussels";
 
 type ScorableMatch = {
@@ -19,6 +22,9 @@ type Props = {
 };
 
 export function RegularSeasonScoring({ linkedPlayerName }: Props) {
+  const t = useTranslations("player");
+  const locale = useLocale() as Locale;
+  const intlLocale = toIntlLocale(locale);
   const [matches, setMatches] = useState<ScorableMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,14 +35,14 @@ export function RegularSeasonScoring({ linkedPlayerName }: Props) {
     try {
       const res = await fetch("/api/matches/scorable");
       const body = await res.json();
-      if (!res.ok) throw new Error(body.error ?? "Failed to load matches");
+      if (!res.ok) throw new Error(body.error ?? t("loadFailed"));
       setMatches(body.matches ?? []);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load matches");
+      setError(e instanceof Error ? e.message : t("loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (!linkedPlayerName) {
@@ -47,16 +53,11 @@ export function RegularSeasonScoring({ linkedPlayerName }: Props) {
   }, [load, linkedPlayerName]);
 
   if (!linkedPlayerName) {
-    return (
-      <p className="mt-2 text-sm text-amber-800">
-        Your account is not linked to a player profile yet. Ask your club manager
-        to link your user to your player record.
-      </p>
-    );
+    return <p className="mt-2 text-sm text-amber-800">{t("notLinked")}</p>;
   }
 
   if (loading) {
-    return <p className="mt-4 text-sm text-zinc-600">Loading matches…</p>;
+    return <p className="mt-4 text-sm text-zinc-600">{t("loadingMatches")}</p>;
   }
 
   if (error) {
@@ -64,12 +65,7 @@ export function RegularSeasonScoring({ linkedPlayerName }: Props) {
   }
 
   if (matches.length === 0) {
-    return (
-      <p className="mt-4 text-sm text-zinc-600">
-        No matches ready to score. Check back when a scheduled match is assigned to
-        you.
-      </p>
-    );
+    return <p className="mt-4 text-sm text-zinc-600">{t("noMatches")}</p>;
   }
 
   return (
@@ -81,13 +77,16 @@ export function RegularSeasonScoring({ linkedPlayerName }: Props) {
             className="block rounded-lg border border-zinc-200 bg-white px-4 py-4 shadow-sm hover:border-emerald-300 hover:bg-emerald-50/30"
           >
             <span className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-              {m.group_name} · Round {m.round}
+              {t("matchCard", { groupName: m.group_name, round: m.round })}
             </span>
             <span className="mt-1 block text-base font-semibold text-zinc-900">
-              {m.home_team.name} vs {m.away_team.name}
+              {t("matchVs", {
+                homeTeam: m.home_team.name,
+                awayTeam: m.away_team.name,
+              })}
             </span>
             <span className="mt-1 block text-sm text-zinc-600">
-              {formatBrussels(m.datetime)}
+              {formatBrussels(m.datetime, intlLocale)}
             </span>
           </Link>
         </li>

@@ -6,7 +6,8 @@ import {
 import { loadClubSubCandidates } from "@/lib/competition/player-matches";
 import { requireActiveSeason } from "@/lib/competition/season";
 import { requireAuth } from "@/lib/auth/route-auth";
-import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
+import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
+import { ErrorCodes } from "@/lib/http/error-codes";
 
 type Params = { params: Promise<{ matchId: string }> };
 
@@ -23,7 +24,7 @@ export async function GET(request: Request, { params }: Params) {
   try {
     const { matchId } = await params;
     const teamId = new URL(request.url).searchParams.get("team_id");
-    if (!teamId) return jsonError("team_id query parameter is required", 400);
+    if (!teamId) return jsonErrorCode(ErrorCodes.api.teamIdQueryRequired, 400);
 
     const { supabase } = await requireAuth();
     await assertCanViewMatchOps(supabase, matchId);
@@ -32,7 +33,7 @@ export async function GET(request: Request, { params }: Params) {
 
     const clubId = clubIdForTeam(match, teamId);
     if (!clubId) {
-      return jsonError("team_id must be home or away for this match", 400);
+      return jsonErrorCode(ErrorCodes.api.teamIdHomeOrAway, 400);
     }
 
     const season = await requireActiveSeason(supabase);

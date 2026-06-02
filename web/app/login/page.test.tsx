@@ -1,7 +1,17 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { NextIntlClientProvider } from "next-intl";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LoginForm } from "@/components/auth/LoginForm";
+import messages from "@/messages/en.json";
+
+function renderLoginForm() {
+  return render(
+    <NextIntlClientProvider locale="en" messages={messages}>
+      <LoginForm />
+    </NextIntlClientProvider>,
+  );
+}
 
 const signInWithOtp = vi.fn();
 
@@ -24,7 +34,7 @@ describe("LoginForm", () => {
     signInWithOtp.mockResolvedValue({ error: null });
     const user = userEvent.setup();
 
-    render(<LoginForm />);
+    renderLoginForm();
     await user.type(screen.getByLabelText(/email/i), "test@example.com");
     await user.click(screen.getByRole("button", { name: /send magic link/i }));
 
@@ -42,7 +52,7 @@ describe("LoginForm", () => {
     signInWithOtp.mockResolvedValue({ error: { message: "Rate limited" } });
     const user = userEvent.setup();
 
-    render(<LoginForm />);
+    renderLoginForm();
     await user.type(screen.getByLabelText(/email/i), "test@example.com");
     await user.click(screen.getByRole("button", { name: /send magic link/i }));
 

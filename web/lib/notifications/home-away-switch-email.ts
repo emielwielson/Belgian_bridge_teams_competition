@@ -1,4 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  buildHomeAwaySwitchDecisionEmail,
+  buildHomeAwaySwitchProposedEmail,
+  loadEmailTemplateContext,
+} from "@/lib/i18n/email-templates";
 import { createServiceClient } from "@/lib/supabase/server-client";
 import { loginThenMatchUrl, matchPostponementUrl } from "./postponement-email";
 import { sendMakeWebhook, type MakeWebhookEventType } from "./make-webhook";
@@ -91,7 +96,7 @@ async function loadHomeAwaySwitchCc(
   return uniqueEmails([...captainEmails, ...managerEmails]);
 }
 
-function sendPayload(
+async function sendPayload(
   eventType: MakeWebhookEventType,
   ctx: {
     matchId: string;
@@ -99,34 +104,43 @@ function sendPayload(
     homeTeamName: string;
     awayTeamName: string;
     requestingTeamName: string;
-    actionLabel?: string;
+    action?: HomeAwaySwitchDecision;
   },
   cc: string[],
+  locale?: string | null,
 ): Promise<boolean> {
+  const emailContext = await loadEmailTemplateContext(locale);
   const matchUrl = matchPostponementUrl(ctx.matchId);
   const loginUrl = loginThenMatchUrl(ctx.matchId);
-  const matchLine = `Round ${ctx.round}: ${ctx.homeTeamName} vs ${ctx.awayTeamName}`;
-  const actionLine = ctx.actionLabel
-    ? `${ctx.requestingTeamName} request was ${ctx.actionLabel}.`
-    : `${ctx.requestingTeamName} proposed switching the host side for this match.`;
-  const subject = ctx.actionLabel
-    ? `Home/away switch ${ctx.actionLabel}: ${ctx.homeTeamName} vs ${ctx.awayTeamName} (round ${ctx.round})`
-    : `Home/away switch request: ${ctx.homeTeamName} vs ${ctx.awayTeamName} (round ${ctx.round})`;
 
-  const bodyText = [
-    actionLine,
-    "",
-    matchLine,
-    "",
-    `Open match: ${matchUrl}`,
-    `Login first: ${loginUrl}`,
-  ].join("\n");
+  const { subject, bodyText, bodyHtml } = ctx.action
+    ? buildHomeAwaySwitchDecisionEmail(
+        {
+          matchId: ctx.matchId,
+          round: ctx.round,
+          homeTeamName: ctx.homeTeamName,
+          awayTeamName: ctx.awayTeamName,
+          requestingTeamName: ctx.requestingTeamName,
+          action: ctx.action,
+        },
+        matchUrl,
+        loginUrl,
+        emailContext,
+      )
+    : buildHomeAwaySwitchProposedEmail(
+        ctx,
+        matchUrl,
+        loginUrl,
+        emailContext,
+      );
 
-  const bodyHtml = [
-    `<p>${actionLine}</p>`,
-    `<p><strong>${matchLine}</strong></p>`,
-    `<p><a href="${matchUrl}">Open match</a><br><a href="${loginUrl}">Login first</a></p>`,
-  ].join("");
+  const actionLabel = ctx.action
+    ? {
+        approve: emailContext.t("homeAwaySwitchDecision.approved"),
+        reject: emailContext.t("homeAwaySwitchDecision.rejected"),
+        cancel: emailContext.t("homeAwaySwitchDecision.cancelled"),
+      }[ctx.action]
+    : "proposed";
 
   return sendMakeWebhook(
     {
@@ -141,7 +155,7 @@ function sendPayload(
       home_team_name: ctx.homeTeamName,
       away_team_name: ctx.awayTeamName,
       requesting_team_name: ctx.requestingTeamName,
-      action: ctx.actionLabel ?? "proposed",
+      action: actionLabel,
     },
     { eventType },
   );
@@ -152,10 +166,11 @@ export async function sendHomeAwaySwitchProposedEmail(
   ctx: HomeAwaySwitchProposedEmailContext,
   homeTeamId: string,
   awayTeamId: string,
+  locale?: string | null,
 ): Promise<void> {
   const cc = await loadHomeAwaySwitchCc(homeTeamId, awayTeamId);
   if (cc.length === 0) return;
-  await sendPayload("home_away_switch_proposed", ctx, cc);
+  await sendPayload("home_away_switch_proposed", ctx, cc, locale);
 }
 
 /** Send Make notification when a home/away switch request is approved/rejected/cancelled. */
@@ -163,6 +178,7 @@ export async function sendHomeAwaySwitchDecisionEmail(
   ctx: HomeAwaySwitchDecisionEmailContext,
   homeTeamId: string,
   awayTeamId: string,
+  locale?: string | null,
 ): Promise<void> {
   const cc = await loadHomeAwaySwitchCc(homeTeamId, awayTeamId);
   if (cc.length === 0) return;
@@ -172,15 +188,11 @@ export async function sendHomeAwaySwitchDecisionEmail(
     reject: "home_away_switch_rejected",
     cancel: "home_away_switch_cancelled",
   };
-  const actionLabelByAction: Record<HomeAwaySwitchDecision, string> = {
-    approve: "approved",
-    reject: "rejected",
-    cancel: "cancelled",
-  };
 
   await sendPayload(
     eventTypeByAction[ctx.action],
-    { ...ctx, actionLabel: actionLabelByAction[ctx.action] },
+    { ...ctx, action: ctx.action },
     cc,
+    locale,
   );
 }

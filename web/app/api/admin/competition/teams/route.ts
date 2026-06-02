@@ -9,7 +9,8 @@ import {
   parseCaptainId,
   validateTeamCreateBody,
 } from "@/lib/competition/team-captain";
-import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
+import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
+import { ErrorCodes } from "@/lib/http/error-codes";
 
 function unwrapCaptain(raw: unknown): { id: string; name: string; member_number: string | null } | null {
   if (!raw) return null;
@@ -23,7 +24,7 @@ export async function GET(request: Request) {
   try {
     const { supabase } = await requireRoles([...COMPETITION_ADMIN_ROLES]);
     const groupId = new URL(request.url).searchParams.get("groupId");
-    if (!groupId) return jsonError("groupId required", 400);
+    if (!groupId) return jsonErrorCode(ErrorCodes.api.groupIdRequired, 400);
 
     const { data: teams, error } = await supabase
       .from("teams")
@@ -119,10 +120,7 @@ export async function POST(request: Request) {
     try {
       await assertNationalGroupCanAddTeam(supabase, createInput.group_id);
     } catch (err) {
-      return jsonError(
-        err instanceof Error ? err.message : "Cannot add team",
-        400,
-      );
+      return jsonFromError(err);
     }
 
     await assertCaptainIsClubMember(supabase, {
@@ -154,7 +152,7 @@ export async function PATCH(request: Request) {
     const { supabase } = await requireRoles([...COMPETITION_ADMIN_ROLES]);
     const body = await request.json();
     const teamId = typeof body.id === "string" ? body.id : "";
-    if (!teamId) return jsonError("id required", 400);
+    if (!teamId) return jsonErrorCode(ErrorCodes.api.idRequired, 400);
 
     const { data: team, error: teamError } = await supabase
       .from("teams")
@@ -163,19 +161,19 @@ export async function PATCH(request: Request) {
       .maybeSingle();
 
     if (teamError) return jsonError(teamError.message, 500);
-    if (!team) return jsonError("Team not found", 404);
+    if (!team) return jsonErrorCode(ErrorCodes.api.teamNotFound, 404);
 
     const patch: Record<string, unknown> = {};
     if (body.name !== undefined) {
       const name = typeof body.name === "string" ? body.name.trim() : "";
-      if (!name) return jsonError("Team name is required", 400);
+      if (!name) return jsonErrorCode(ErrorCodes.api.teamNameRequired, 400);
       patch.name = name;
     }
 
     const captainId = parseCaptainId(body);
     if (captainId !== undefined) {
       if (captainId === null) {
-        return jsonError("captain_id is required", 400);
+        return jsonErrorCode(ErrorCodes.api.captainIdRequired, 400);
       }
       const season = await requireActiveSeason(supabase);
       await assertCaptainIsClubMember(supabase, {
@@ -187,7 +185,7 @@ export async function PATCH(request: Request) {
     }
 
     if (Object.keys(patch).length === 0) {
-      return jsonError("No fields to update", 400);
+      return jsonErrorCode(ErrorCodes.api.noFieldsToUpdate, 400);
     }
 
     const { error } = await supabase.from("teams").update(patch).eq("id", teamId);
@@ -204,7 +202,7 @@ export async function DELETE(request: Request) {
     const { supabase } = await requireRoles([...COMPETITION_ADMIN_ROLES]);
     const body = await request.json();
     const teamId = body.id as string | undefined;
-    if (!teamId) return jsonError("id required", 400);
+    if (!teamId) return jsonErrorCode(ErrorCodes.api.idRequired, 400);
 
     const { data: team } = await supabase
       .from("teams")
@@ -230,7 +228,7 @@ export async function DELETE(request: Request) {
     const matchCount = (homeCount ?? 0) + (awayCount ?? 0);
 
     if ((matchCount ?? 0) > 0) {
-      return jsonError("Cannot delete team with scheduled matches", 409);
+      return jsonErrorCode(ErrorCodes.api.cannotDeleteTeamWithMatches, 409);
     }
 
     const { error } = await supabase.from("teams").delete().eq("id", teamId);

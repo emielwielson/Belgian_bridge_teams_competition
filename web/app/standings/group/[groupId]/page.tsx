@@ -1,17 +1,23 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
 import { GroupPenaltiesSection } from "@/components/standings/GroupPenaltiesSection";
 import { GroupRulingsSection } from "@/components/standings/GroupRulingsSection";
 import { GroupStandingsGrid } from "@/components/standings/GroupStandingsGrid";
 import { buildGroupStandingsGrid } from "@/lib/competition/group-standings-grid";
 import { loadGroupStandingsFull } from "@/lib/competition/standings-queries";
 import { createOperationalSignedUrl } from "@/lib/files/operational-file-storage";
+import { toIntlLocale } from "@/i18n/intl-locale";
+import type { Locale } from "@/i18n/config";
 import { createServiceClient, createSessionClient } from "@/lib/supabase/server-client";
 
 type Props = { params: Promise<{ groupId: string }> };
 
 export default async function GroupStandingsPage({ params }: Props) {
   const { groupId } = await params;
+  const t = await getTranslations("standings");
+  const locale = (await getLocale()) as Locale;
+  const intlLocale = toIntlLocale(locale);
   const supabase = await createSessionClient();
   const data = await loadGroupStandingsFull(supabase, groupId);
 
@@ -21,7 +27,12 @@ export default async function GroupStandingsPage({ params }: Props) {
 
   const { group, division, league, standings, matches, byeRounds, penalties, rulings } =
     data;
-  const grid = buildGroupStandingsGrid(standings, matches, byeRounds);
+  const grid = buildGroupStandingsGrid(
+    standings,
+    matches,
+    byeRounds,
+    intlLocale,
+  );
 
   const service = createServiceClient();
   const penaltiesWithUrls = await Promise.all(
@@ -60,11 +71,14 @@ export default async function GroupStandingsPage({ params }: Props) {
           href={`/standings/league/${league.id}`}
           className="link-back"
         >
-          ← {league.name} standings
+          {t("backToLeagueStandings", { leagueName: league.name })}
         </Link>
         <h1 className="mt-2 text-2xl font-semibold">{group.name}</h1>
         <p className="mt-1 text-sm text-zinc-600">
-          {[league.name, division.name].join(" · ")}
+          {t("breadcrumb", {
+            leagueName: league.name,
+            divisionName: division.name,
+          })}
         </p>
       </header>
       <GroupStandingsGrid grid={grid} />

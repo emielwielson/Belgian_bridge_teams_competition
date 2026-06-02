@@ -1,8 +1,10 @@
+import { getLocale } from "next-intl/server";
 import { ARBITER_ACCESS_ROLES } from "@/lib/auth/roles";
 import { requireRoles } from "@/lib/auth/route-auth";
 import { resolveArbiterRequest } from "@/lib/competition/arbiter-request";
 import { createOperationalSignedUrl } from "@/lib/files/operational-file-storage";
-import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
+import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
+import { ErrorCodes } from "@/lib/http/error-codes";
 import { sendArbiterRequestResolvedEmail } from "@/lib/notifications/arbiter-request-email";
 import { createServiceClient } from "@/lib/supabase/server-client";
 
@@ -16,7 +18,7 @@ export async function POST(request: Request, { params }: Params) {
     const body = (await request.json()) as Record<string, unknown>;
     const filePath = String(body.file_path ?? body.filePath ?? "").trim();
     if (!filePath) {
-      return jsonError("file_path is required", 400);
+      return jsonErrorCode(ErrorCodes.api.filePathRequired, 400);
     }
 
     const boardRaw = body.board;
@@ -25,7 +27,7 @@ export async function POST(request: Request, { params }: Params) {
         ? Number(boardRaw)
         : null;
     if (board != null && board <= 0) {
-      return jsonError("board must be positive when provided", 400);
+      return jsonErrorCode(ErrorCodes.api.boardPositive, 400);
     }
 
     const rulingDateRaw = body.ruling_date ?? body.rulingDate;
@@ -60,10 +62,14 @@ export async function POST(request: Request, { params }: Params) {
       }
     }
 
-    void sendArbiterRequestResolvedEmail({
-      requestId,
-      rulingSignedUrl,
-    });
+    const locale = await getLocale();
+    void sendArbiterRequestResolvedEmail(
+      {
+        requestId,
+        rulingSignedUrl,
+      },
+      locale,
+    );
 
     return jsonOk({ resolved: true, rulingId, rulingSignedUrl });
   } catch (err) {

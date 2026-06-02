@@ -3,10 +3,8 @@
  * Times are fixed per schedule — see national-match-schedule.ts.
  */
 
-import {
-  expandMatchDaysToRounds,
-  type NationalScheduleKey,
-} from "./national-match-schedule";
+import { expandMatchDaysToRounds } from "./national-match-schedule";
+import type { NationalScheduleKey } from "./national-structure";
 
 export type DemoRoundSlot = {
   round: number;

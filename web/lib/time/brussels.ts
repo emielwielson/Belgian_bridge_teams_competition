@@ -1,7 +1,10 @@
 const BRUSSELS = "Europe/Brussels";
 
-export function formatBrussels(isoUtc: string): string {
-  return new Intl.DateTimeFormat("en-GB", {
+export function formatBrussels(
+  isoUtc: string,
+  intlLocale = "en-GB",
+): string {
+  return new Intl.DateTimeFormat(intlLocale, {
     timeZone: BRUSSELS,
     dateStyle: "medium",
     timeStyle: "short",
@@ -9,19 +12,22 @@ export function formatBrussels(isoUtc: string): string {
 }
 
 /** Date and time parts for standings round column headers (compact DD/MM/YY). */
-export function formatBrusselsRoundHeader(isoUtc: string): {
+export function formatBrusselsRoundHeader(
+  isoUtc: string,
+  intlLocale = "en-GB",
+): {
   date: string;
   time: string;
 } {
   const d = new Date(isoUtc);
   return {
-    date: new Intl.DateTimeFormat("en-GB", {
+    date: new Intl.DateTimeFormat(intlLocale, {
       timeZone: BRUSSELS,
       day: "2-digit",
       month: "2-digit",
       year: "2-digit",
     }).format(d),
-    time: new Intl.DateTimeFormat("en-GB", {
+    time: new Intl.DateTimeFormat(intlLocale, {
       timeZone: BRUSSELS,
       hour: "2-digit",
       minute: "2-digit",

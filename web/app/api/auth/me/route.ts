@@ -1,7 +1,8 @@
 import { loadManagedClubsForUser } from "@/lib/auth/user-access";
 import { getUserRoles } from "@/lib/auth/session";
 import { loadTeamsForUser } from "@/lib/competition/team-queries";
-import { jsonError, jsonOk } from "@/lib/http/api-response";
+import { jsonOk, jsonErrorCode } from "@/lib/http/api-response";
+import { ErrorCodes } from "@/lib/http/error-codes";
 import { createSessionClient } from "@/lib/supabase/server-client";
 
 export async function GET() {
@@ -12,7 +13,7 @@ export async function GET() {
   } = await supabase.auth.getUser();
 
   if (error || !user) {
-    return jsonError("Unauthorized", 401);
+    return jsonErrorCode(ErrorCodes.api.unauthorized, 401);
   }
 
   const [roles, teams, clubs] = await Promise.all([

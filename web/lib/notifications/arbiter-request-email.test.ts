@@ -111,7 +111,7 @@ describe("arbiter-request-email", () => {
   });
 
   it("sends created event without board or description", async () => {
-    await sendArbiterRequestCreatedEmail({ matchId: "m1" });
+    await sendArbiterRequestCreatedEmail({ matchId: "m1" }, "en");
 
     expect(sendMakeWebhook).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -128,7 +128,7 @@ describe("arbiter-request-email", () => {
   });
 
   it("sends resolved event with match links", async () => {
-    await sendArbiterRequestResolvedEmail({ requestId: "req-1" });
+    await sendArbiterRequestResolvedEmail({ requestId: "req-1" }, "en");
 
     expect(sendMakeWebhook).toHaveBeenCalledWith(
       expect.objectContaining({

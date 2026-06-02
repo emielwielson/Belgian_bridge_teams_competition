@@ -1,6 +1,9 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
+import type { Locale } from "@/i18n/config";
+import { toIntlLocale } from "@/i18n/intl-locale";
 import { formatBrussels } from "@/lib/time/brussels";
 
 type Props = {
@@ -31,6 +34,9 @@ export function MatchScoreForm({
   lineupsComplete,
   allowSubmit = true,
 }: Props) {
+  const t = useTranslations("match.score");
+  const locale = useLocale() as Locale;
+  const intlLocale = toIntlLocale(locale);
   const [impsHome, setImpsHome] = useState(
     initialImpsHome != null ? String(initialImpsHome) : "",
   );
@@ -50,8 +56,8 @@ export function MatchScoreForm({
   if (!allowSubmit && !locked && !canEditFinishedScore) {
     return (
       <section className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
-        <h3 className="text-sm font-semibold text-zinc-900">Score</h3>
-        <p className="mt-2 text-sm text-zinc-600">This match has not been played yet.</p>
+        <h3 className="text-sm font-semibold text-zinc-900">{t("title")}</h3>
+        <p className="mt-2 text-sm text-zinc-600">{t("notPlayedYet")}</p>
       </section>
     );
   }
@@ -59,10 +65,8 @@ export function MatchScoreForm({
   if (!locked && !lineupsComplete) {
     return (
       <section className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
-        <h3 className="text-sm font-semibold text-zinc-900">Submit score</h3>
-        <p className="mt-2 text-sm text-amber-800">
-          Save both team lineups above first (at least 4 players per team).
-        </p>
+        <h3 className="text-sm font-semibold text-zinc-900">{t("submitTitle")}</h3>
+        <p className="mt-2 text-sm text-amber-800">{t("lineupsFirst")}</p>
       </section>
     );
   }
@@ -80,14 +84,14 @@ export function MatchScoreForm({
         }),
       });
       const body = await res.json();
-      if (!res.ok) throw new Error(body.error ?? "Failed to submit score");
+      if (!res.ok) throw new Error(body.error ?? t("submitFailed"));
       setVpHome(body.match.vp_home);
       setVpAway(body.match.vp_away);
       setPlayedAt(body.match.played_at ?? new Date().toISOString());
       if (body.match.imps_home != null) setImpsHome(String(body.match.imps_home));
       if (body.match.imps_away != null) setImpsAway(String(body.match.imps_away));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Submit failed");
+      setError(e instanceof Error ? e.message : t("submitFailedGeneric"));
     } finally {
       setSaving(false);
     }
@@ -96,23 +100,21 @@ export function MatchScoreForm({
   if (locked && !canEditLockedScore) {
     return (
       <section className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
-        <h3 className="text-sm font-semibold text-zinc-900">Official score</h3>
+        <h3 className="text-sm font-semibold text-zinc-900">{t("officialTitle")}</h3>
         <p className="mt-2 text-sm text-zinc-700">
-          IMPs: {impsHome} – {impsAway}
+          {t("imps", { home: impsHome, away: impsAway })}
         </p>
         {vpHome != null && vpAway != null ? (
           <p className="mt-1 text-sm text-zinc-700">
-            VP: {vpHome} – {vpAway}
+            {t("vp", { home: vpHome, away: vpAway })}
           </p>
         ) : null}
         {playedAt ? (
           <p className="mt-2 text-xs text-zinc-500">
-            Played {formatBrussels(playedAt)}
+            {t("playedAt", { datetime: formatBrussels(playedAt, intlLocale) })}
           </p>
         ) : null}
-        <p className="mt-2 text-xs text-zinc-500">
-          Score is locked. Contact an arbiter or competition manager to change it.
-        </p>
+        <p className="mt-2 text-xs text-zinc-500">{t("lockedContact")}</p>
       </section>
     );
   }
@@ -120,12 +122,14 @@ export function MatchScoreForm({
   return (
     <section className="rounded-lg border border-zinc-200 bg-white p-4">
       <h3 className="text-sm font-semibold text-zinc-900">
-        {canEditLockedScore ? "Official score edit" : "Submit score"}
+        {canEditLockedScore ? t("editTitle") : t("submitTitle")}
       </h3>
-      <p className="mt-1 text-xs text-zinc-500">{boardCount} boards · VP from table</p>
+      <p className="mt-1 text-xs text-zinc-500">
+        {t("boardsVpFromTable", { boardCount })}
+      </p>
       {playedAt && canEditLockedScore ? (
         <p className="mt-1 text-xs text-zinc-500">
-          Last scored {formatBrussels(playedAt)}
+          {t("lastScored", { datetime: formatBrussels(playedAt, intlLocale) })}
         </p>
       ) : null}
       <ScoreImpsInputs
@@ -134,6 +138,8 @@ export function MatchScoreForm({
         setImpsHome={setImpsHome}
         setImpsAway={setImpsAway}
         disabled={saving}
+        homeLabel={t("homeImps")}
+        awayLabel={t("awayImps")}
       />
       {canSubmit ? (
         <button
@@ -142,7 +148,7 @@ export function MatchScoreForm({
           disabled={saving || impsHome === "" || impsAway === ""}
           className="mt-4 w-full rounded-md bg-emerald-700 px-3 py-3 text-sm font-medium text-white disabled:opacity-50"
         >
-          {saving ? "Submitting…" : "Submit official score"}
+          {saving ? t("submitting") : t("submitOfficial")}
         </button>
       ) : null}
       {canEditLockedScore ? (
@@ -152,12 +158,12 @@ export function MatchScoreForm({
           disabled={saving || impsHome === "" || impsAway === ""}
           className="mt-4 w-full rounded-md bg-amber-700 px-3 py-3 text-sm font-medium text-white disabled:opacity-50"
         >
-          {saving ? "Saving…" : "Overwrite official score"}
+          {saving ? t("saving") : t("overwriteOfficial")}
         </button>
       ) : null}
       {vpHome != null && vpAway != null && locked ? (
         <p className="mt-2 text-sm text-emerald-700">
-          VP: {vpHome} – {vpAway}
+          {t("vp", { home: vpHome, away: vpAway })}
         </p>
       ) : null}
       {error ? <p className="mt-2 text-xs text-red-600">{error}</p> : null}
@@ -171,17 +177,21 @@ function ScoreImpsInputs({
   setImpsHome,
   setImpsAway,
   disabled,
+  homeLabel,
+  awayLabel,
 }: {
   impsHome: string;
   impsAway: string;
   setImpsHome: (v: string) => void;
   setImpsAway: (v: string) => void;
   disabled: boolean;
+  homeLabel: string;
+  awayLabel: string;
 }) {
   return (
     <div className="mt-3 grid grid-cols-2 gap-3">
       <label className="block text-xs font-medium text-zinc-600">
-        Home IMPs
+        {homeLabel}
         <input
           type="number"
           inputMode="numeric"
@@ -192,7 +202,7 @@ function ScoreImpsInputs({
         />
       </label>
       <label className="block text-xs font-medium text-zinc-600">
-        Away IMPs
+        {awayLabel}
         <input
           type="number"
           inputMode="numeric"

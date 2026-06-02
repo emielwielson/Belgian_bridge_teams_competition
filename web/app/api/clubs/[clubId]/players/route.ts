@@ -5,7 +5,8 @@ import {
 import { assertClubManagerForClub } from "@/lib/auth/user-access";
 import { hasAnyRole } from "@/lib/auth/roles";
 import { requireActiveSeason } from "@/lib/competition/season";
-import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
+import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
+import { ErrorCodes } from "@/lib/http/error-codes";
 
 type Params = { params: Promise<{ clubId: string }> };
 
@@ -41,10 +42,7 @@ export async function POST(request: Request, { params }: Params) {
     if (!playerId) {
       const isAdmin = hasAnyRole(roles, [...COMPETITION_ADMIN_ROLES]);
       if (!isAdmin) {
-        return jsonError(
-          "player_id is required; club managers cannot create new players",
-          403,
-        );
+        return jsonErrorCode(ErrorCodes.api.playerIdRequiredNoCreate, 403);
       }
       const { data: player, error: playerError } = await supabase
         .from("players")
@@ -98,7 +96,7 @@ export async function PATCH(request: Request, { params }: Params) {
     const body = await request.json();
     const playerId = body.player_id as string | undefined;
     if (!playerId) {
-      return jsonError("player_id is required", 400);
+      return jsonErrorCode(ErrorCodes.api.playerIdRequired, 400);
     }
 
     const season = await requireActiveSeason(supabase);
@@ -112,7 +110,7 @@ export async function PATCH(request: Request, { params }: Params) {
 
     if (membershipError) return jsonError(membershipError.message, 500);
     if (!membership) {
-      return jsonError("Player is not a member of this club", 403);
+      return jsonErrorCode(ErrorCodes.api.playerNotClubMember, 403);
     }
 
     const authUserId =

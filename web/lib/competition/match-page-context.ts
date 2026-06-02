@@ -3,7 +3,8 @@ import { loadMatchContext, type MatchContext } from "@/lib/auth/match-access";
 
 export type MatchPageBackLink = {
   href: string;
-  label: string;
+  leagueName: string | null;
+  groupName: string | null;
 };
 
 export async function loadMatchForPage(
@@ -37,7 +38,7 @@ export async function loadMatchStandingsBackLink(
 
   if (error) throw error;
   if (!group) {
-    return { href: "/standings", label: "← Standings" };
+    return { href: "/standings", leagueName: null, groupName: null };
   }
 
   const rawDivision = group.division as unknown;
@@ -54,8 +55,7 @@ export async function loadMatchStandingsBackLink(
 
   return {
     href: `/standings/group/${group.id}`,
-    label: league
-      ? `← ${league.name} · ${group.name}`
-      : `← ${group.name}`,
+    leagueName: league?.name ?? null,
+    groupName: group.name,
   };
 }

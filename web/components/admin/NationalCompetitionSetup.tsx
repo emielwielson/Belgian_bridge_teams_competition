@@ -2,12 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  NATIONAL_SCHEDULE_LABELS,
-  type NationalScheduleKey,
-} from "@/lib/competition/national-structure";
+import { useTranslations } from "next-intl";
 import type { NationalReadiness } from "@/lib/competition/national-readiness";
 import { SCOPES } from "@/lib/competition/scopes";
+import { translateScheduleLabel } from "@/lib/i18n/labels";
+import type { NationalScheduleKey } from "@/lib/competition/national-structure";
 import { NationalMatchDatesEditor } from "./NationalMatchDatesEditor";
 import { NationalStartLeagueSection } from "./NationalStartLeagueSection";
 import { NationalDisciplineSection } from "./NationalDisciplineSection";
@@ -20,13 +19,6 @@ const NATIONAL_SCHEDULE_KEYS: NationalScheduleKey[] = [
 ];
 
 type SetupTab = "dates" | "teams" | "discipline" | "start";
-
-const TABS: { id: SetupTab; label: string }[] = [
-  { id: "dates", label: "Match days" },
-  { id: "teams", label: "Teams" },
-  { id: "discipline", label: "Discipline & audit" },
-  { id: "start", label: "Start league" },
-];
 
 function tabComplete(tab: SetupTab, readiness: NationalReadiness | null): boolean {
   if (!readiness) return false;
@@ -44,10 +36,21 @@ function tabComplete(tab: SetupTab, readiness: NationalReadiness | null): boolea
 }
 
 export function NationalCompetitionSetup() {
+  const t = useTranslations("admin");
+  const tTabs = useTranslations("admin.nationalTabs");
+  const tDivisions = useTranslations("divisions");
+
   const [activeTab, setActiveTab] = useState<SetupTab>("dates");
   const [readiness, setReadiness] = useState<NationalReadiness | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [structureLoading, setStructureLoading] = useState(true);
+
+  const tabs: { id: SetupTab; label: string }[] = [
+    { id: "dates", label: tTabs("matchDays") },
+    { id: "teams", label: tTabs("teams") },
+    { id: "discipline", label: tTabs("discipline") },
+    { id: "start", label: tTabs("startLeague") },
+  ];
 
   const loadReadiness = useCallback(async () => {
     const res = await fetch("/api/admin/competition/national/readiness");
@@ -65,7 +68,7 @@ export function NationalCompetitionSetup() {
       });
       if (!res.ok) {
         const body = await res.json();
-        setMessage(body.error ?? "Failed to set up national structure");
+        setMessage(body.error ?? tTabs("structureFailed"));
       } else {
         setMessage(null);
       }
@@ -73,7 +76,7 @@ export function NationalCompetitionSetup() {
       await loadReadiness();
     }
     void init();
-  }, [loadReadiness]);
+  }, [loadReadiness, tTabs]);
 
   async function startLeague() {
     const res = await fetch("/api/admin/competition", {
@@ -83,7 +86,7 @@ export function NationalCompetitionSetup() {
     });
     const body = await res.json();
     if (!res.ok) {
-      throw new Error(body.error ?? "Failed to start league");
+      throw new Error(body.error ?? tTabs("startFailed"));
     }
     await loadReadiness();
   }
@@ -94,12 +97,12 @@ export function NationalCompetitionSetup() {
     <main className="page-container flex flex-col gap-6">
       <header>
         <Link href="/admin/competition" className="link-back">
-          ← Scopes
+          {t("backScopes")}
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold text-zinc-900">National</h1>
+        <h1 className="mt-2 text-2xl font-semibold text-zinc-900">{t("national")}</h1>
         <p className="text-sm text-zinc-600">
-          Season status: {readiness?.seasonStatus ?? "…"}
-          {structureLoading && " · Setting up structure…"}
+          {t("seasonStatus", { status: readiness?.seasonStatus ?? "…" })}
+          {structureLoading && t("settingUpStructure")}
         </p>
       </header>
 
@@ -112,9 +115,9 @@ export function NationalCompetitionSetup() {
       <div className="flex flex-col gap-4">
         <nav
           className="flex gap-1 border-b border-zinc-200"
-          aria-label="National setup"
+          aria-label={tTabs("ariaLabel")}
         >
-          {TABS.map((tab) => {
+          {tabs.map((tab) => {
             const selected = activeTab === tab.id;
             const complete = tabComplete(tab.id, readiness);
             return (
@@ -140,7 +143,7 @@ export function NationalCompetitionSetup() {
                       "inline-block h-2 w-2 shrink-0 rounded-full",
                       complete ? "bg-green-600" : "bg-zinc-300",
                     ].join(" ")}
-                    aria-label={complete ? "Complete" : "Incomplete"}
+                    aria-label={complete ? tTabs("complete") : tTabs("incomplete")}
                   />
                 )}
               </button>
@@ -155,17 +158,14 @@ export function NationalCompetitionSetup() {
             aria-labelledby="national-tab-dates-trigger"
             className="flex flex-col gap-4 pt-2"
           >
-            <p className="text-sm text-zinc-600">
-              Set match days for each calendar (Europe/Brussels). Start times are
-              fixed per division level.
-            </p>
+            <p className="text-sm text-zinc-600">{tTabs("matchDaysIntro")}</p>
             <div className="flex flex-col gap-4">
               {NATIONAL_SCHEDULE_KEYS.map((key) => (
                 <NationalMatchDatesEditor
                   key={key}
                   scope={SCOPES.NATIONAL}
                   scheduleKey={key}
-                  title={NATIONAL_SCHEDULE_LABELS[key]}
+                  title={translateScheduleLabel(key, tDivisions)}
                   readOnly={readOnly}
                   onSaved={loadReadiness}
                 />

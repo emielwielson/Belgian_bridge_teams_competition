@@ -1,7 +1,8 @@
 import { requireAuth } from "@/lib/auth/route-auth";
 import { assertClubManagerForClub } from "@/lib/auth/user-access";
 import { ROLES } from "@/lib/auth/roles";
-import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
+import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
+import { ErrorCodes } from "@/lib/http/error-codes";
 
 type Params = { params: Promise<{ clubId: string }> };
 
@@ -36,7 +37,7 @@ export async function PATCH(request: Request, { params }: Params) {
       roles.includes(ROLES.CLUB_MANAGER);
 
     if (!canManage) {
-      return jsonError("Forbidden", 403);
+      return jsonErrorCode(ErrorCodes.api.forbidden, 403);
     }
 
     const body = await request.json();
@@ -51,7 +52,7 @@ export async function PATCH(request: Request, { params }: Params) {
           : String(body.location);
     }
     if (Object.keys(patch).length === 0) {
-      return jsonError("No fields to update", 400);
+      return jsonErrorCode(ErrorCodes.api.noFieldsToUpdate, 400);
     }
 
     const { error } = await supabase

@@ -11,7 +11,8 @@ import {
   validateLineupPayload,
   type LineupPlayerInput,
 } from "@/lib/scoring/match-operations";
-import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
+import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
+import { ErrorCodes } from "@/lib/http/error-codes";
 import { matchStatus } from "@/lib/scoring/match-state";
 
 type Params = { params: Promise<{ matchId: string }> };
@@ -64,11 +65,11 @@ export async function PUT(request: Request, { params }: Params) {
     const players = body.players as LineupPlayerInput[] | undefined;
 
     if (!teamId || !Array.isArray(players)) {
-      return jsonError("team_id and players array are required", 400);
+      return jsonErrorCode(ErrorCodes.api.teamAndPlayersRequired, 400);
     }
 
     if (teamId !== match.home_team_id && teamId !== match.away_team_id) {
-      return jsonError("team_id must be home or away for this match", 400);
+      return jsonErrorCode(ErrorCodes.api.teamIdHomeOrAway, 400);
     }
 
     const clubId =

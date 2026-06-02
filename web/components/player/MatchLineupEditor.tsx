@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { ClubSubCandidate } from "@/lib/competition/player-matches";
@@ -50,6 +51,7 @@ export function MatchLineupEditor({
   initialLineup,
   canEdit,
 }: Props) {
+  const t = useTranslations("match.lineup");
   const [selected, setSelected] = useState<Set<string>>(
     () =>
       new Set(
@@ -115,11 +117,11 @@ export function MatchLineupEditor({
         body: JSON.stringify({ team_id: teamId, players }),
       });
       const body = await res.json();
-      if (!res.ok) throw new Error(body.error ?? "Failed to save lineup");
-      setMessage(`Saved ${teamName} lineup (${players.length} players)`);
+      if (!res.ok) throw new Error(body.error ?? t("saveFailed"));
+      setMessage(t("saved", { teamName, count: players.length }));
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Save failed");
+      setError(e instanceof Error ? e.message : t("saveFailedGeneric"));
     } finally {
       setSaving(false);
     }
@@ -132,11 +134,9 @@ export function MatchLineupEditor({
       <h3 className="text-sm font-semibold text-zinc-900">{teamName}</h3>
 
       <p className="mt-3 text-xs font-medium uppercase tracking-wide text-zinc-500">
-        Lineup
+        {t("lineupHeading")}
       </p>
-      <p className="mt-1 text-xs text-zinc-500">
-        Select at least 4 players from your roster.
-      </p>
+      <p className="mt-1 text-xs text-zinc-500">{t("selectAtLeast4")}</p>
       <ul className="mt-2 space-y-2">
         {roster.map((p) => (
           <li key={p.id} className="flex items-center gap-2 text-sm">
@@ -157,15 +157,13 @@ export function MatchLineupEditor({
         ))}
       </ul>
       {roster.length === 0 ? (
-        <p className="mt-2 text-xs text-amber-700">No roster players found.</p>
+        <p className="mt-2 text-xs text-amber-700">{t("noRoster")}</p>
       ) : null}
 
       <p className="mt-4 text-xs font-medium uppercase tracking-wide text-zinc-500">
-        Substitutes
+        {t("substitutesHeading")}
       </p>
-      <p className="mt-1 text-xs text-zinc-500">
-        Add substitutes from your club (not on the team roster).
-      </p>
+      <p className="mt-1 text-xs text-zinc-500">{t("substitutesHint")}</p>
       {subs.length > 0 ? (
         <ul className="mt-2 space-y-2">
           {subs.map((s) => (
@@ -187,14 +185,14 @@ export function MatchLineupEditor({
                   onClick={() => removeSub(s.player_id)}
                   className="text-xs font-medium text-red-700 underline"
                 >
-                  Remove
+                  {t("remove")}
                 </button>
               ) : null}
             </li>
           ))}
         </ul>
       ) : (
-        <p className="mt-2 text-xs text-zinc-500">No substitutes added.</p>
+        <p className="mt-2 text-xs text-zinc-500">{t("noSubstitutes")}</p>
       )}
       {canEdit ? (
         <button
@@ -202,7 +200,7 @@ export function MatchLineupEditor({
           onClick={() => setPickerOpen(true)}
           className="mt-2 text-sm font-medium text-emerald-700 underline hover:text-emerald-800"
         >
-          + Sub
+          {t("addSub")}
         </button>
       ) : null}
 
@@ -213,11 +211,11 @@ export function MatchLineupEditor({
           disabled={saving || totalCount < 4}
           className="mt-4 w-full rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
         >
-          {saving ? "Saving…" : `Save lineup (${totalCount})`}
+          {saving ? t("saving") : t("saveLineup", { count: totalCount })}
         </button>
       ) : null}
       {totalCount > 0 && totalCount < 4 ? (
-        <p className="mt-2 text-xs text-amber-700">Need at least 4 players.</p>
+        <p className="mt-2 text-xs text-amber-700">{t("needAtLeast4")}</p>
       ) : null}
       {message ? (
         <p className="mt-2 text-xs text-emerald-700">{message}</p>

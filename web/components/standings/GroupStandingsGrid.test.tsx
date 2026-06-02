@@ -1,6 +1,7 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import type { GroupStandingsGridData } from "@/lib/competition/group-standings-grid";
+import { renderWithIntl } from "@/test/render-with-intl";
 import { GroupStandingsGrid } from "./GroupStandingsGrid";
 
 const sampleGrid: GroupStandingsGridData = {
@@ -16,8 +17,8 @@ const sampleGrid: GroupStandingsGridData = {
       teamName: "Alpha",
       vpTotal: 20,
       cells: [
-        { vp: 14, isHome: true, pairingClass: "bg-sky-100", matchId: "m1" },
-        { vp: null, isHome: false, pairingClass: "bg-amber-100", matchId: null },
+        { vp: 14, isHome: true, pairingClass: "bg-sky-100", matchId: "m1", scheduledLabel: null },
+        { vp: null, isHome: false, pairingClass: "bg-amber-100", matchId: null, scheduledLabel: null },
       ],
     },
     {
@@ -26,8 +27,8 @@ const sampleGrid: GroupStandingsGridData = {
       teamName: "Bravo",
       vpTotal: 12,
       cells: [
-        { vp: 6, isHome: false, pairingClass: "bg-sky-100", matchId: null },
-        { vp: 10, isHome: true, pairingClass: "bg-amber-100", matchId: "m2" },
+        { vp: 6, isHome: false, pairingClass: "bg-sky-100", matchId: null, scheduledLabel: null },
+        { vp: 10, isHome: true, pairingClass: "bg-amber-100", matchId: "m2", scheduledLabel: null },
       ],
     },
   ],
@@ -39,7 +40,7 @@ describe("GroupStandingsGrid", () => {
   });
 
   it("links team names to the team page", () => {
-    render(<GroupStandingsGrid grid={sampleGrid} />);
+    renderWithIntl(<GroupStandingsGrid grid={sampleGrid} />);
     const alphaLink = screen.getByRole("link", { name: "Alpha" });
     expect(alphaLink).toHaveAttribute("href", "/teams/t1");
     expect(screen.getByRole("link", { name: "Bravo" })).toHaveAttribute(
@@ -49,7 +50,7 @@ describe("GroupStandingsGrid", () => {
   });
 
   it("renders round headers and team rows", () => {
-    render(<GroupStandingsGrid grid={sampleGrid} />);
+    renderWithIntl(<GroupStandingsGrid grid={sampleGrid} />);
     expect(screen.getByText("04/10/24")).toBeInTheDocument();
     expect(screen.getByText("11/10/24")).toBeInTheDocument();
     expect(screen.getByText("Alpha")).toBeInTheDocument();
@@ -58,7 +59,7 @@ describe("GroupStandingsGrid", () => {
   });
 
   it("links home icons to the public match page", () => {
-    render(<GroupStandingsGrid grid={sampleGrid} />);
+    renderWithIntl(<GroupStandingsGrid grid={sampleGrid} />);
     const links = screen.getAllByRole("link", { name: "View match" });
     expect(links).toHaveLength(2);
     expect(links.map((l) => l.getAttribute("href"))).toEqual([
@@ -68,13 +69,13 @@ describe("GroupStandingsGrid", () => {
   });
 
   it("applies pairing background classes to round cells", () => {
-    const { container } = render(<GroupStandingsGrid grid={sampleGrid} />);
+    const { container } = renderWithIntl(<GroupStandingsGrid grid={sampleGrid} />);
     expect(container.querySelector(".bg-sky-100")).toBeTruthy();
     expect(container.querySelector(".bg-amber-100")).toBeTruthy();
   });
 
   it("shows schedule message when there are no matches", () => {
-    render(
+    renderWithIntl(
       <GroupStandingsGrid
         grid={{ ...sampleGrid, hasMatches: false, rounds: [] }}
       />,

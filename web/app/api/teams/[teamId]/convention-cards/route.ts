@@ -8,7 +8,8 @@ import {
   validateConventionCardFile,
 } from "@/lib/files/convention-card-upload";
 import { uploadConventionCardFile } from "@/lib/files/convention-card-storage";
-import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
+import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
+import { ErrorCodes } from "@/lib/http/error-codes";
 import {
   createServiceClient,
   createSessionClient,
@@ -38,10 +39,10 @@ export async function POST(request: Request, { params }: TeamParams) {
     const file = formData.get("file");
 
     if (typeof nameRaw !== "string" || !nameRaw.trim()) {
-      return jsonError("name is required", 400);
+      return jsonErrorCode(ErrorCodes.api.nameRequired, 400);
     }
     if (!(file instanceof File)) {
-      return jsonError("file is required", 400);
+      return jsonErrorCode(ErrorCodes.api.fileRequired, 400);
     }
 
     const validated = validateConventionCardFile(file);
@@ -78,10 +79,10 @@ export async function POST(request: Request, { params }: TeamParams) {
       await uploadConventionCardFile(service, storagePath, buffer, validated);
     } catch (uploadErr) {
       await supabase.from("team_convention_cards").delete().eq("id", row.id);
-      return jsonError(
-        uploadErr instanceof Error ? uploadErr.message : "Upload failed",
-        400,
-      );
+      if (uploadErr instanceof Error && uploadErr.message) {
+        return jsonError(uploadErr.message, 400);
+      }
+      return jsonErrorCode(ErrorCodes.api.uploadFailed, 400);
     }
 
     const cards = await listConventionCards(supabase, teamId);

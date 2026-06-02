@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import { useTranslations } from "next-intl";
 
 export const FILE_PICKER_ACCEPT =
   "application/pdf,image/jpeg,image/png,image/webp";
@@ -20,6 +21,7 @@ export function FilePickerField({
   hint,
   disabled = false,
 }: Props) {
+  const t = useTranslations("common");
   const inputRef = useRef<HTMLInputElement>(null);
 
   function clearFile() {
@@ -49,10 +51,10 @@ export function FilePickerField({
             disabled ? "pointer-events-none opacity-50" : "",
           ].join(" ")}
         >
-          Choose file
+          {t("chooseFile")}
         </label>
         <span className="text-zinc-600">
-          {file ? file.name : "No file chosen"}
+          {file ? file.name : t("noFileChosen")}
         </span>
         {file && !disabled ? (
           <button
@@ -60,7 +62,7 @@ export function FilePickerField({
             onClick={clearFile}
             className="text-sm text-zinc-500 hover:text-zinc-800 hover:underline"
           >
-            Clear
+            {t("clear")}
           </button>
         ) : null}
       </div>

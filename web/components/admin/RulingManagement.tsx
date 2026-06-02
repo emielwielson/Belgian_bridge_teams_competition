@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 
 type MatchOption = {
   id: string;
@@ -28,13 +29,12 @@ type Props = {
   groupId: string | null;
 };
 
-function matchLabel(m: MatchOption): string {
-  const home = m.home_team?.name ?? "Home";
-  const away = m.away_team?.name ?? "Away";
-  return `R${m.round}: ${home} vs ${away}`;
-}
-
 export function RulingManagement({ groupId }: Props) {
+  const t = useTranslations("admin.rulings");
+  const tCommon = useTranslations("common");
+  const tPenalties = useTranslations("admin.penalties");
+  const tMatchArbiter = useTranslations("match.arbiterRequest");
+
   const [rulings, setRulings] = useState<Ruling[]>([]);
   const [matches, setMatches] = useState<MatchOption[]>([]);
   const [loading, setLoading] = useState(false);
@@ -47,6 +47,12 @@ export function RulingManagement({ groupId }: Props) {
     file: null as File | null,
   });
 
+  function matchLabel(m: MatchOption): string {
+    const home = m.home_team?.name ?? tCommon("home");
+    const away = m.away_team?.name ?? tCommon("away");
+    return tCommon("round", { round: m.round }) + `: ${home} ${tCommon("vs")} ${away}`;
+  }
+
   const loadRulings = useCallback(async () => {
     if (!groupId) {
       setRulings([]);
@@ -57,14 +63,14 @@ export function RulingManagement({ groupId }: Props) {
     try {
       const res = await fetch(`/api/admin/rulings?groupId=${groupId}`);
       const body = await res.json();
-      if (!res.ok) throw new Error(body.error ?? "Failed to load rulings");
+      if (!res.ok) throw new Error(body.error ?? t("loadFailed"));
       setRulings(body.rulings ?? []);
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Load failed");
+      setMessage(e instanceof Error ? e.message : t("loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, [groupId]);
+  }, [groupId, t]);
 
   const loadMatches = useCallback(async () => {
     if (!groupId) {
@@ -90,7 +96,7 @@ export function RulingManagement({ groupId }: Props) {
 
   async function save() {
     if (!form.match_id || !form.file) {
-      setMessage("Match and PDF/image file are required");
+      setMessage(t("matchFileRequired"));
       return;
     }
     setBusy(true);
@@ -107,7 +113,7 @@ export function RulingManagement({ groupId }: Props) {
       });
       const uploadBody = await uploadRes.json();
       if (!uploadRes.ok) {
-        throw new Error(uploadBody.error ?? "Upload failed");
+        throw new Error(uploadBody.error ?? tPenalties("saveFailed"));
       }
 
       const res = await fetch("/api/admin/rulings", {
@@ -124,7 +130,7 @@ export function RulingManagement({ groupId }: Props) {
         }),
       });
       const body = await res.json();
-      if (!res.ok) throw new Error(body.error ?? "Save failed");
+      if (!res.ok) throw new Error(body.error ?? tPenalties("saveFailed"));
 
       setForm({
         match_id: matches[0]?.id ?? "",
@@ -133,44 +139,38 @@ export function RulingManagement({ groupId }: Props) {
         file: null,
       });
       await loadRulings();
-      setMessage("Ruling added");
+      setMessage(t("added"));
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Save failed");
+      setMessage(e instanceof Error ? e.message : tPenalties("saveFailed"));
     } finally {
       setBusy(false);
     }
   }
 
   async function remove(id: string) {
-    if (!confirm("Delete this ruling and its file?")) return;
+    if (!confirm(t("deleteConfirm"))) return;
     const res = await fetch(`/api/admin/rulings/${id}`, { method: "DELETE" });
     const body = await res.json();
     if (!res.ok) {
-      setMessage(body.error ?? "Delete failed");
+      setMessage(body.error ?? tPenalties("deleteFailed"));
       return;
     }
     await loadRulings();
-    setMessage("Ruling removed");
+    setMessage(t("removed"));
   }
 
   if (!groupId) {
-    return (
-      <p className="text-sm text-zinc-600">
-        Select a group above to manage match rulings.
-      </p>
-    );
+    return <p className="text-sm text-zinc-600">{t("selectGroup")}</p>;
   }
 
   return (
     <section className="card mt-6">
-      <h2 className="font-semibold text-zinc-900">Rulings</h2>
-      <p className="mt-1 text-xs text-zinc-500">
-        Official rulings per match (PDF or image, max 10 MB). Board optional.
-      </p>
+      <h2 className="font-semibold text-zinc-900">{t("title")}</h2>
+      <p className="mt-1 text-xs text-zinc-500">{t("description")}</p>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <label className="block text-xs font-medium text-zinc-600 sm:col-span-2">
-          Match
+          {t("match")}
           <select
             value={form.match_id}
             onChange={(e) =>
@@ -178,7 +178,7 @@ export function RulingManagement({ groupId }: Props) {
             }
             className="mt-1 w-full rounded-md border border-zinc-300 px-2 py-2 text-sm"
           >
-            <option value="">Select match</option>
+            <option value="">{t("selectMatch")}</option>
             {matches.map((m) => (
               <option key={m.id} value={m.id}>
                 {matchLabel(m)}
@@ -187,7 +187,7 @@ export function RulingManagement({ groupId }: Props) {
           </select>
         </label>
         <label className="block text-xs font-medium text-zinc-600">
-          Board (optional)
+          {t("boardOptional")}
           <input
             type="number"
             min={1}
@@ -197,7 +197,7 @@ export function RulingManagement({ groupId }: Props) {
           />
         </label>
         <label className="block text-xs font-medium text-zinc-600">
-          Ruling date
+          {t("rulingDate")}
           <input
             type="date"
             value={form.ruling_date}
@@ -208,7 +208,7 @@ export function RulingManagement({ groupId }: Props) {
           />
         </label>
         <label className="block text-xs font-medium text-zinc-600 sm:col-span-2">
-          File (PDF or image)
+          {t("file")}
           <input
             type="file"
             accept="application/pdf,image/jpeg,image/png,image/webp"
@@ -230,7 +230,7 @@ export function RulingManagement({ groupId }: Props) {
           disabled={busy}
           className="btn-primary text-sm disabled:opacity-50"
         >
-          {busy ? "Uploading…" : "Add ruling"}
+          {busy ? t("uploading") : t("add")}
         </button>
       </div>
 
@@ -239,19 +239,19 @@ export function RulingManagement({ groupId }: Props) {
       ) : null}
 
       {loading ? (
-        <p className="mt-4 text-sm text-zinc-600">Loading…</p>
+        <p className="mt-4 text-sm text-zinc-600">{tPenalties("loading")}</p>
       ) : (
         <ul className="mt-4 divide-y divide-zinc-200 text-sm">
           {rulings.length === 0 ? (
-            <li className="py-2 text-zinc-600">No rulings for this group.</li>
+            <li className="py-2 text-zinc-600">{t("none")}</li>
           ) : (
             rulings.map((r) => {
               const m = r.match;
               const label = m
-                ? `R${m.round}: ${m.home_team?.name ?? "?"} vs ${m.away_team?.name ?? "?"}${r.board != null ? ` — board ${r.board}` : ""}`
+                ? `${tCommon("round", { round: m.round })}: ${m.home_team?.name ?? "?"} ${tCommon("vs")} ${m.away_team?.name ?? "?"}${r.board != null ? ` — ${tMatchArbiter("board", { board: r.board })}` : ""}`
                 : r.board != null
-                  ? `Board ${r.board}`
-                  : "Match ruling";
+                  ? tMatchArbiter("board", { board: r.board })
+                  : t("matchRuling");
               return (
                 <li
                   key={r.id}
@@ -269,7 +269,7 @@ export function RulingManagement({ groupId }: Props) {
                           rel="noopener noreferrer"
                           className="font-medium text-emerald-800 underline"
                         >
-                          View file
+                          {t("viewFile")}
                         </a>
                       </>
                     ) : null}
@@ -279,7 +279,7 @@ export function RulingManagement({ groupId }: Props) {
                     className="text-xs font-medium text-red-700 underline"
                     onClick={() => remove(r.id)}
                   >
-                    Delete
+                    {tCommon("delete")}
                   </button>
                 </li>
               );

@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import type { DivisionReadiness } from "@/lib/competition/national-readiness";
+import { translateDivisionName } from "@/lib/i18n/labels";
 import { MatchLogViewer } from "./MatchLogViewer";
 import { PenaltyManagement } from "./PenaltyManagement";
 import { RulingManagement } from "./RulingManagement";
@@ -12,6 +14,9 @@ type Props = {
 };
 
 export function NationalDisciplineSection({ divisions }: Props) {
+  const t = useTranslations("admin.nationalDiscipline");
+  const tDivisions = useTranslations("divisions");
+
   const withGroups = divisions.filter((d) => d.groupId);
   const [groupId, setGroupId] = useState<string | null>(
     withGroups[0]?.groupId ?? null,
@@ -37,18 +42,13 @@ export function NationalDisciplineSection({ divisions }: Props) {
   }, [groupId, loadTeams]);
 
   if (withGroups.length === 0) {
-    return (
-      <p className="text-sm text-zinc-600">
-        Add teams to national divisions before managing penalties, warnings, and
-        rulings.
-      </p>
-    );
+    return <p className="text-sm text-zinc-600">{t("needTeams")}</p>;
   }
 
   return (
     <div className="flex flex-col gap-4">
       <label className="block text-sm font-medium text-zinc-700">
-        Division / group
+        {t("divisionGroup")}
         <select
           value={groupId ?? ""}
           onChange={(e) => setGroupId(e.target.value || null)}
@@ -56,7 +56,10 @@ export function NationalDisciplineSection({ divisions }: Props) {
         >
           {withGroups.map((d) => (
             <option key={d.groupId!} value={d.groupId!}>
-              {d.name} ({d.teamCount} teams)
+              {t("option", {
+                name: translateDivisionName(d.name, tDivisions),
+                teamCount: d.teamCount,
+              })}
             </option>
           ))}
         </select>

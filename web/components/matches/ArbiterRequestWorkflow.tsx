@@ -1,8 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useId, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { FilePickerField } from "@/components/files/FilePickerField";
 import type { MatchArbiterRequestsState } from "@/lib/competition/arbiter-request";
+import { toIntlLocale } from "@/i18n/intl-locale";
+import type { Locale } from "@/i18n/config";
+import { useTranslateApiError } from "@/lib/i18n/translate-api-error";
 import { formatBrussels } from "@/lib/time/brussels";
 
 type Props = {
@@ -10,6 +14,10 @@ type Props = {
 };
 
 export function ArbiterRequestWorkflow({ matchId }: Props) {
+  const t = useTranslations("match.arbiterRequest");
+  const locale = useLocale() as Locale;
+  const intlLocale = toIntlLocale(locale);
+  const translateApiError = useTranslateApiError();
   const fileInputId = useId();
   const [state, setState] = useState<MatchArbiterRequestsState | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,14 +40,14 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
     }
     if (!res.ok) {
       const body = await res.json();
-      setError(body.error ?? "Failed to load arbiter requests");
+      setError(body.error ? translateApiError(body.error) : t("loadFailed"));
       setLoading(false);
       return;
     }
     const body = (await res.json()) as { state: MatchArbiterRequestsState };
     setState(body.state);
     setLoading(false);
-  }, [matchId]);
+  }, [matchId, t, translateApiError]);
 
   useEffect(() => {
     void load();
@@ -65,14 +73,16 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
       });
       const uploadBody = await uploadRes.json();
       if (!uploadRes.ok) {
-        throw new Error(uploadBody.error ?? "Upload failed");
+        throw new Error(
+          translateApiError(uploadBody.error) ?? t("uploadFailed"),
+        );
       }
       setUploadedPath(uploadBody.path as string);
-      setMessage("Attachment uploaded. You can submit the request.");
+      setMessage(t("uploadedReady"));
     } catch (err) {
       setFile(null);
       setFileInputKey((k) => k + 1);
-      setError(err instanceof Error ? err.message : "Upload failed");
+      setError(err instanceof Error ? err.message : t("uploadFailed"));
     } finally {
       setUploading(false);
     }
@@ -81,7 +91,7 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!uploadedPath) {
-      setError("Upload an attachment before submitting");
+      setError(t("uploadBeforeSubmit"));
       return;
     }
     setBusy(true);
@@ -95,17 +105,19 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
       });
       const body = await res.json();
       if (!res.ok) {
-        throw new Error(body.error ?? "Failed to submit request");
+        throw new Error(
+          translateApiError(body.error) ?? t("submitFailed"),
+        );
       }
       setState(body.state);
       setFile(null);
       setUploadedPath(null);
       setFileInputKey((k) => k + 1);
-      setMessage(
-        "Arbiter request submitted. Arbiters were notified by email.",
-      );
+      setMessage(t("submittedSuccess"));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Submit failed");
+      setError(
+        err instanceof Error ? err.message : t("submitFailedGeneric"),
+      );
     } finally {
       setBusy(false);
     }
@@ -116,7 +128,7 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
   if (loading) {
     return (
       <section className="card">
-        <p className="text-sm text-zinc-600">Loading arbiter requests…</p>
+        <p className="text-sm text-zinc-600">{t("loading")}</p>
       </section>
     );
   }
@@ -125,10 +137,8 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
 
   return (
     <section className="card">
-      <h2 className="font-semibold text-zinc-900">Arbiter request</h2>
-      <p className="mt-1 text-xs text-zinc-500">
-        Upload a photo or PDF (max 10 MB), then submit to the arbiter.
-      </p>
+      <h2 className="font-semibold text-zinc-900">{t("title")}</h2>
+      <p className="mt-1 text-xs text-zinc-500">{t("hint")}</p>
 
       {state.can_submit ? (
         <form onSubmit={handleSubmit} className="mt-4 space-y-3">
@@ -137,18 +147,18 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
             id={fileInputId}
             file={file}
             onFileChange={handleFileChange}
-            hint="Attachment (PDF or image, required)"
+            hint={t("attachmentHint")}
             disabled={uploading || busy}
           />
           {uploading ? (
-            <p className="text-sm text-zinc-600">Uploading attachment…</p>
+            <p className="text-sm text-zinc-600">{t("uploading")}</p>
           ) : null}
           <button
             type="submit"
             disabled={!canSubmit}
             className="btn-primary text-sm disabled:cursor-not-allowed disabled:bg-zinc-400 disabled:opacity-100 hover:disabled:bg-zinc-400"
           >
-            {busy ? "Submitting…" : "Submit to arbiter"}
+            {busy ? t("submitting") : t("submit")}
           </button>
         </form>
       ) : null}
@@ -164,14 +174,17 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
                     : "font-medium text-emerald-700"
                 }
               >
-                {r.status === "open" ? "Open" : "Resolved"}
+                {r.status === "open" ? t("statusOpen") : t("statusResolved")}
               </span>
               <span className="text-zinc-500">
-                {" "}
-                · submitted {formatBrussels(r.created_at)}
+                {t("submittedAt", {
+                  datetime: formatBrussels(r.created_at, intlLocale),
+                })}
               </span>
               {r.board != null ? (
-                <p className="mt-1 text-zinc-600">Board {r.board}</p>
+                <p className="mt-1 text-zinc-600">
+                  {t("board", { board: r.board })}
+                </p>
               ) : null}
               {r.description ? (
                 <p className="mt-1 text-zinc-700">{r.description}</p>
@@ -180,7 +193,7 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
           ))}
         </ul>
       ) : state.can_submit ? null : (
-        <p className="mt-3 text-sm text-zinc-600">No arbiter requests yet.</p>
+        <p className="mt-3 text-sm text-zinc-600">{t("noneYet")}</p>
       )}
 
       {error ? <p className="mt-2 text-sm text-red-700">{error}</p> : null}

@@ -1,3 +1,6 @@
+"use client";
+
+import { useTranslations } from "next-intl";
 import type { TeamRosterPlayer } from "@/lib/competition/team-queries";
 
 type Props = {
@@ -6,11 +9,13 @@ type Props = {
 };
 
 export function TeamRosterList({ roster, captainId }: Props) {
+  const t = useTranslations("team");
+
   return (
     <section className="rounded-lg border border-zinc-200 bg-white p-4">
-      <h2 className="text-sm font-semibold text-zinc-900">Players</h2>
+      <h2 className="text-sm font-semibold text-zinc-900">{t("playersTitle")}</h2>
       {roster.length === 0 ? (
-        <p className="mt-2 text-sm text-zinc-500">No players on the roster yet.</p>
+        <p className="mt-2 text-sm text-zinc-500">{t("noPlayers")}</p>
       ) : (
         <ul className="mt-3 flex flex-col gap-2">
           {roster.map((player) => (
@@ -22,7 +27,7 @@ export function TeamRosterList({ roster, captainId }: Props) {
                 {player.name}
                 {player.id === captainId ? (
                   <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
-                    Captain
+                    {t("captainBadge")}
                   </span>
                 ) : null}
               </span>

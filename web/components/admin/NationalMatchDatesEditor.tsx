@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   collapseRoundsToMatchDays,
   formatSlotTimesLabel,
@@ -24,6 +25,10 @@ export function NationalMatchDatesEditor({
   readOnly = false,
   onSaved,
 }: Props) {
+  const t = useTranslations("admin.nationalMatchDays");
+  const tDates = useTranslations("admin.matchDates");
+  const tCommon = useTranslations("common");
+
   const matchDayCount = NATIONAL_MATCH_DAY_COUNTS[scheduleKey];
   const slotLabel = formatSlotTimesLabel(scheduleKey);
 
@@ -65,10 +70,10 @@ export function NationalMatchDatesEditor({
     setLoading(false);
     if (!res.ok) {
       const err = await res.json();
-      setMessage(err.error ?? "Failed to save dates");
+      setMessage(err.error ?? tDates("saveFailed"));
       return;
     }
-    setMessage("Match days saved.");
+    setMessage(t("saved"));
     await loadDates();
     onSaved?.();
   }
@@ -77,22 +82,22 @@ export function NationalMatchDatesEditor({
     <div className="flex flex-col gap-4 rounded-lg border border-zinc-200 bg-zinc-50/50 p-4">
       <div className="flex items-center justify-between gap-2">
         <h3 className="text-base font-semibold text-zinc-900">
-          {title ?? `Match days (${matchDayCount})`}
+          {title ?? t("title", { count: matchDayCount })}
         </h3>
         <span
           className={`text-sm font-medium ${complete ? "text-green-700" : "text-zinc-500"}`}
         >
-          {setCount}/{matchDayCount} days
+          {t("daysProgress", { set: setCount, required: matchDayCount })}
         </span>
       </div>
       <p className="text-sm text-zinc-600">
-        Pick match days only (Europe/Brussels). Start times are fixed: {slotLabel}.
+        {t("pickDays", { slotTimes: slotLabel })}
       </p>
       <ul className="flex flex-col gap-2">
         {matchDays.map((day, index) => (
           <li key={index} className="flex items-center gap-3">
             <span className="w-24 shrink-0 text-sm font-medium text-zinc-700">
-              Match day {index + 1}
+              {t("matchDay", { index: index + 1 })}
             </span>
             <input
               type="date"
@@ -115,7 +120,7 @@ export function NationalMatchDatesEditor({
           onClick={saveDates}
           className="btn-primary w-fit"
         >
-          {loading ? "Saving…" : "Save match days"}
+          {loading ? tCommon("saving") : t("saveMatchDays")}
         </button>
       )}
       {message && (

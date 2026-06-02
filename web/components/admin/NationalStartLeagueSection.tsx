@@ -1,8 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import type { NationalReadiness } from "@/lib/competition/national-readiness";
-import { NATIONAL_SCHEDULE_LABELS } from "@/lib/competition/national-structure";
+import {
+  buildTranslatedNationalBlockers,
+  translateDivisionName,
+  translateScheduleLabel,
+} from "@/lib/i18n/labels";
 
 type Props = {
   readiness: NationalReadiness | null;
@@ -15,8 +20,20 @@ export function NationalStartLeagueSection({
   loading = false,
   onStart,
 }: Props) {
+  const t = useTranslations("admin.startLeague");
+  const tDivisions = useTranslations("divisions");
+  const tBlockers = useTranslations("divisions.nationalBlockers");
+
   const [starting, setStarting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  const translatedBlockers = useMemo(
+    () =>
+      readiness
+        ? buildTranslatedNationalBlockers(readiness, tBlockers, tDivisions)
+        : [],
+    [readiness, tBlockers, tDivisions],
+  );
 
   const isSetup = readiness?.seasonStatus === "setup";
   const canStart = readiness?.canStartLeague ?? false;
@@ -25,8 +42,8 @@ export function NationalStartLeagueSection({
   async function handleStart() {
     if (!canStart) return;
     const confirmMessage = schedulesExist
-      ? "Activate the national league? Fixtures are already generated; rosters will be locked."
-      : "Generate fixtures for all 8 divisions and start the league? Rosters will be locked after this.";
+      ? t("confirmWithFixtures")
+      : t("confirmGenerate");
     if (!confirm(confirmMessage)) {
       return;
     }
@@ -34,9 +51,9 @@ export function NationalStartLeagueSection({
     setMessage(null);
     try {
       await onStart();
-      setMessage("League started. Fixtures generated and season is now active.");
+      setMessage(t("started"));
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "Failed to start league");
+      setMessage(err instanceof Error ? err.message : t("startFailed"));
     } finally {
       setStarting(false);
     }
@@ -45,7 +62,7 @@ export function NationalStartLeagueSection({
   if (!readiness) {
     return (
       <section className="card">
-        <p className="text-sm text-zinc-600">Loading readiness…</p>
+        <p className="text-sm text-zinc-600">{t("loading")}</p>
       </section>
     );
   }
@@ -53,10 +70,9 @@ export function NationalStartLeagueSection({
   if (!isSetup) {
     return (
       <section className="card flex flex-col gap-2">
-        <h2 className="text-lg font-semibold text-zinc-900">League status</h2>
+        <h2 className="text-lg font-semibold text-zinc-900">{t("statusTitle")}</h2>
         <p className="text-sm text-zinc-600">
-          The season is <strong>{readiness.seasonStatus}</strong>. Setup is
-          complete; match days and teams are locked.
+          {t("statusBody", { status: readiness.seasonStatus })}
         </p>
       </section>
     );
@@ -65,48 +81,60 @@ export function NationalStartLeagueSection({
   return (
     <section className="card flex flex-col gap-4">
       <div>
-        <h2 className="text-lg font-semibold text-zinc-900">Start league</h2>
-        <p className="mt-1 text-sm text-zinc-600">
-          When match days and teams are complete, generate all fixtures and
-          activate the season.
-        </p>
+        <h2 className="text-lg font-semibold text-zinc-900">{t("title")}</h2>
+        <p className="mt-1 text-sm text-zinc-600">{t("description")}</p>
       </div>
 
       <ul className="space-y-2 text-sm text-zinc-800">
-        <CheckItem
-          ok={readiness.structureReady}
-          label="National structure (8 divisions)"
-        />
+        <CheckItem ok={readiness.structureReady} label={t("structureCheck")} />
         <CheckItem
           ok={readiness.calendars.honor.complete}
-          label={`Honor Division match days: ${readiness.calendars.honor.set}/${readiness.calendars.honor.required}`}
+          label={t("honorDays", {
+            set: readiness.calendars.honor.set,
+            required: readiness.calendars.honor.required,
+          })}
         />
         <CheckItem
           ok={readiness.calendars.first.complete}
-          label={`1st Division match days: ${readiness.calendars.first.set}/${readiness.calendars.first.required}`}
+          label={t("firstDays", {
+            set: readiness.calendars.first.set,
+            required: readiness.calendars.first.required,
+          })}
         />
         <CheckItem
           ok={readiness.calendars.default.complete}
-          label={`2nd & 3rd match days: ${readiness.calendars.default.set}/${readiness.calendars.default.required}`}
+          label={t("secondThirdDays", {
+            set: readiness.calendars.default.set,
+            required: readiness.calendars.default.required,
+          })}
         />
         {readiness.divisions.map((d) => (
           <CheckItem
             key={d.name}
             ok={d.teamsComplete}
-            label={`${d.name}: ${d.teamCount}/${d.required} teams`}
+            label={t("divisionTeams", {
+              divisionName: translateDivisionName(d.name, tDivisions),
+              teamLabel:
+                d.teamCount === 7 && d.slotsComplete
+                  ? tBlockers("teamsSevenBye")
+                  : tBlockers("teamsCount", {
+                      count: d.teamCount,
+                      required: d.required,
+                    }),
+            })}
           />
         ))}
         <CheckItem
           ok={readiness.allSchedulesReady}
-          label="Fixtures generated for all divisions"
+          label={t("fixturesCheck")}
         />
       </ul>
 
-      {readiness.blockers.length > 0 && !canStart && (
+      {translatedBlockers.length > 0 && !canStart && (
         <div className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          <p className="font-medium">Still needed:</p>
+          <p className="font-medium">{t("stillNeeded")}</p>
           <ul className="mt-1 list-inside list-disc">
-            {readiness.blockers.map((b) => (
+            {translatedBlockers.map((b) => (
               <li key={b}>{b}</li>
             ))}
           </ul>
@@ -119,12 +147,10 @@ export function NationalStartLeagueSection({
         onClick={handleStart}
         className="btn-danger w-fit disabled:opacity-50"
         title={
-          canStart
-            ? undefined
-            : readiness.blockers[0] ?? "Complete setup first"
+          canStart ? undefined : translatedBlockers[0] ?? t("completeSetupFirst")
         }
       >
-        {starting ? "Starting…" : "Start league"}
+        {starting ? t("starting") : t("startButton")}
       </button>
 
       {message && (
@@ -134,8 +160,11 @@ export function NationalStartLeagueSection({
       )}
 
       <p className="text-xs text-zinc-500">
-        Calendars: {NATIONAL_SCHEDULE_LABELS.honor};{" "}
-        {NATIONAL_SCHEDULE_LABELS.first}; {NATIONAL_SCHEDULE_LABELS.default}.
+        {t("calendarsFooter", {
+          honorLabel: translateScheduleLabel("honor", tDivisions),
+          firstLabel: translateScheduleLabel("first", tDivisions),
+          defaultLabel: translateScheduleLabel("default", tDivisions),
+        })}
       </p>
     </section>
   );
@@ -154,4 +183,3 @@ function CheckItem({ ok, label }: { ok: boolean; label: string }) {
     </li>
   );
 }
-

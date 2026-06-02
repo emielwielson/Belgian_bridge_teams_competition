@@ -13,7 +13,8 @@ import {
   removeConventionCardFile,
   uploadConventionCardFile,
 } from "@/lib/files/convention-card-storage";
-import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
+import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
+import { ErrorCodes } from "@/lib/http/error-codes";
 import {
   createServiceClient,
   createSessionClient,
@@ -31,7 +32,7 @@ export async function PATCH(request: Request, { params }: CardParams) {
 
     const existing = await getConventionCard(supabase, teamId, cardId);
     if (!existing) {
-      return jsonError("Convention card not found", 404);
+      return jsonErrorCode(ErrorCodes.api.conventionCardNotFound, 404);
     }
 
     const contentType = request.headers.get("content-type") ?? "";
@@ -56,7 +57,7 @@ export async function PATCH(request: Request, { params }: CardParams) {
     }
 
     if (name === undefined && !file) {
-      return jsonError("Provide name and/or file to update", 400);
+      return jsonErrorCode(ErrorCodes.api.conventionUpdateRequired, 400);
     }
 
     const service = createServiceClient();
@@ -113,7 +114,7 @@ export async function DELETE(_request: Request, { params }: CardParams) {
 
     const existing = await getConventionCard(supabase, teamId, cardId);
     if (!existing) {
-      return jsonError("Convention card not found", 404);
+      return jsonErrorCode(ErrorCodes.api.conventionCardNotFound, 404);
     }
 
     const { error: deleteError } = await supabase

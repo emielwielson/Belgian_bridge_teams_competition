@@ -5,6 +5,10 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
+vi.mock("next-intl/server", () => ({
+  getLocale: vi.fn().mockResolvedValue("en"),
+}));
+
 vi.mock("@/lib/auth/route-auth", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/auth/route-auth")>();
   return {
@@ -147,6 +151,7 @@ describe("/api/matches/[matchId]/switch-home-away", () => {
       expect.objectContaining({ requestingTeamName: "Home FC" }),
       "home-1",
       "away-1",
+      "en",
     );
   });
 
@@ -190,6 +195,7 @@ describe("/api/matches/[matchId]/switch-home-away", () => {
       expect.objectContaining({ action: "approve" }),
       "home-1",
       "away-1",
+      "en",
     );
   });
 });

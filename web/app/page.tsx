@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 type Props = {
   searchParams: Promise<{ error?: string }>;
@@ -6,37 +7,40 @@ type Props = {
 
 export default async function Home({ searchParams }: Props) {
   const { error } = await searchParams;
+  const t = await getTranslations("home");
 
   return (
     <main className="page-container flex flex-col items-center justify-center gap-6 text-center">
-      <h1 className="text-2xl font-semibold text-zinc-900">
-        Belgian Bridge Competition
-      </h1>
+      <h1 className="text-2xl font-semibold text-zinc-900">{t("title")}</h1>
       {error === "forbidden" ? (
         <p className="max-w-md rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-          You do not have access to that page. Club managers need a row in{" "}
-          <code className="rounded bg-amber-100 px-1">club_manager_assignments</code>{" "}
-          for their club (and usually the{" "}
-          <code className="rounded bg-amber-100 px-1">club_manager</code> role).
-          Ask a competition admin, or open{" "}
-          <Link href="/club-manager" className="font-medium underline">
-            Club manager
-          </Link>{" "}
-          if you are already set up.
+          {t.rich("forbidden", {
+            assignments: () => (
+              <code className="rounded bg-amber-100 px-1">
+                club_manager_assignments
+              </code>
+            ),
+            role: () => (
+              <code className="rounded bg-amber-100 px-1">club_manager</code>
+            ),
+            link: (chunks) => (
+              <Link href="/club-manager" className="font-medium underline">
+                {chunks}
+              </Link>
+            ),
+          })}
         </p>
       ) : null}
-      <p className="max-w-md text-zinc-600">
-        Core league flow MVP — authentication and public standings are live.
-      </p>
+      <p className="max-w-md text-zinc-600">{t("tagline")}</p>
       <div className="flex flex-wrap justify-center gap-3">
         <Link href="/standings" className="btn-secondary">
-          Standings
+          {t("standings")}
         </Link>
         <Link href="/login" className="btn-primary">
-          Sign in
+          {t("signIn")}
         </Link>
         <Link href="/api/health" className="btn-secondary">
-          API health
+          {t("apiHealth")}
         </Link>
       </div>
     </main>

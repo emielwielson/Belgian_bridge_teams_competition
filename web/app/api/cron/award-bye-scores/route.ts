@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
-import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
+import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
+import { ErrorCodes } from "@/lib/http/error-codes";
 
 /**
  * Automation hook for Make.com / cron: awards 12 VP for regional bye rounds
@@ -11,18 +12,18 @@ export async function POST(request: Request) {
   try {
     const secret = process.env.AWARD_BYE_SCORES_SECRET;
     if (!secret) {
-      return jsonError("AWARD_BYE_SCORES_SECRET not configured", 503);
+      return jsonErrorCode(ErrorCodes.api.awardByeSecretNotConfigured, 503);
     }
 
     const provided = request.headers.get("x-award-bye-secret");
     if (provided !== secret) {
-      return jsonError("Unauthorized", 401);
+      return jsonErrorCode(ErrorCodes.api.unauthorized, 401);
     }
 
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const serviceKey = process.env.SUPABASE_SECRET_KEY;
     if (!url || !serviceKey) {
-      return jsonError("Supabase not configured", 503);
+      return jsonErrorCode(ErrorCodes.api.supabaseNotConfigured, 503);
     }
 
     const body = await request.json().catch(() => ({}));

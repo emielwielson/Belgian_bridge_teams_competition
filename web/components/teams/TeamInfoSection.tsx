@@ -1,3 +1,6 @@
+"use client";
+
+import { useTranslations } from "next-intl";
 import type { TeamDetail } from "@/lib/competition/team-queries";
 
 type Props = Pick<
@@ -13,6 +16,8 @@ export function TeamInfoSection({
   division,
   league,
 }: Props) {
+  const t = useTranslations("team");
+
   return (
     <section className="rounded-lg border border-zinc-200 bg-white p-4">
       <p className="text-sm text-zinc-600">
@@ -22,7 +27,7 @@ export function TeamInfoSection({
       <p className="mt-1 text-sm text-zinc-600">{club.name}</p>
       <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
         <div>
-          <dt className="font-medium text-zinc-500">Captain</dt>
+          <dt className="font-medium text-zinc-500">{t("captain")}</dt>
           <dd className="mt-0.5 text-zinc-900">
             {captain ? (
               <>
@@ -32,15 +37,15 @@ export function TeamInfoSection({
                 ) : null}
               </>
             ) : (
-              <span className="text-zinc-500">Not set</span>
+              <span className="text-zinc-500">{t("captainNotSet")}</span>
             )}
           </dd>
         </div>
         <div>
-          <dt className="font-medium text-zinc-500">Location</dt>
+          <dt className="font-medium text-zinc-500">{t("location")}</dt>
           <dd className="mt-0.5 text-zinc-900">
             {team.location?.trim() ? team.location : (
-              <span className="text-zinc-500">Not set</span>
+              <span className="text-zinc-500">{t("locationNotSet")}</span>
             )}
           </dd>
         </div>

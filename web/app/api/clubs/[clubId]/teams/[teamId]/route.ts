@@ -7,7 +7,8 @@ import {
   assertCaptainIsClubMember,
   parseCaptainId,
 } from "@/lib/competition/team-captain";
-import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
+import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
+import { ErrorCodes } from "@/lib/http/error-codes";
 
 type Params = { params: Promise<{ clubId: string; teamId: string }> };
 
@@ -18,7 +19,7 @@ export async function GET(_request: Request, { params }: Params) {
     await assertClubManagerForClub(supabase, user.id, roles, clubId);
 
     const detail = await loadClubTeamDetail(supabase, clubId, teamId);
-    if (!detail) return jsonError("Team not found", 404);
+    if (!detail) return jsonErrorCode(ErrorCodes.api.teamNotFound, 404);
 
     return jsonOk(detail);
   } catch (err) {
@@ -40,7 +41,7 @@ export async function PATCH(request: Request, { params }: Params) {
 
     if (teamError) return jsonError(teamError.message, 500);
     if (!team || team.club_id !== clubId) {
-      return jsonError("Team not found", 404);
+      return jsonErrorCode(ErrorCodes.api.teamNotFound, 404);
     }
 
     const body = await request.json();
@@ -62,7 +63,7 @@ export async function PATCH(request: Request, { params }: Params) {
     }
 
     if (Object.keys(updates).length === 0) {
-      return jsonError("No fields to update", 400);
+      return jsonErrorCode(ErrorCodes.api.noFieldsToUpdate, 400);
     }
 
     const { error } = await supabase
@@ -92,7 +93,7 @@ export async function POST(request: Request, { params }: Params) {
 
     if (teamError) return jsonError(teamError.message, 500);
     if (!team || team.club_id !== clubId) {
-      return jsonError("Team not found", 404);
+      return jsonErrorCode(ErrorCodes.api.teamNotFound, 404);
     }
 
     const season = await requireActiveSeason(supabase);
@@ -100,7 +101,7 @@ export async function POST(request: Request, { params }: Params) {
 
     const body = await request.json();
     const playerId = body.player_id as string | undefined;
-    if (!playerId) return jsonError("player_id is required", 400);
+    if (!playerId) return jsonErrorCode(ErrorCodes.api.playerIdRequired, 400);
 
     const { data: membership } = await supabase
       .from("player_club_memberships")
@@ -111,7 +112,7 @@ export async function POST(request: Request, { params }: Params) {
       .maybeSingle();
 
     if (!membership) {
-      return jsonError("Player is not a member of this club", 403);
+      return jsonErrorCode(ErrorCodes.api.playerNotClubMember, 403);
     }
 
     if (body.action === "roster_remove") {

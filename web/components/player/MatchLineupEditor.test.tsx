@@ -1,5 +1,6 @@
-import { cleanup, render, screen, fireEvent } from "@testing-library/react";
+import { cleanup, screen, fireEvent } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { renderWithIntl } from "@/test/render-with-intl";
 import { MatchLineupEditor } from "./MatchLineupEditor";
 
 vi.mock("next/navigation", () => ({
@@ -44,7 +45,7 @@ describe("MatchLineupEditor", () => {
   ];
 
   it("does not show per-player Sub checkbox", () => {
-    render(
+    renderWithIntl(
       <MatchLineupEditor
         matchId="m1"
         teamId="t1"
@@ -64,7 +65,7 @@ describe("MatchLineupEditor", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    render(
+    renderWithIntl(
       <MatchLineupEditor
         matchId="m1"
         teamId="t1"

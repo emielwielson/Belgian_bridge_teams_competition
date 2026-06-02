@@ -1,4 +1,5 @@
 import { revalidatePath } from "next/cache";
+import { getLocale } from "next-intl/server";
 import { requireAuth } from "@/lib/auth/route-auth";
 import { loadMatchContext } from "@/lib/auth/match-access";
 import {
@@ -8,7 +9,8 @@ import {
   respondMatchPostponement,
 } from "@/lib/competition/postponement";
 import { revalidateStandingsForGroup } from "@/lib/competition/revalidate-standings";
-import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
+import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
+import { ErrorCodes } from "@/lib/http/error-codes";
 import {
   sendPostponementDecisionEmail,
   sendPostponementProposedEmail,
@@ -36,11 +38,11 @@ export async function GET(_request: Request, { params }: Params) {
     const state = await getMatchPostponementState(supabase, matchId);
 
     if (!state) {
-      return jsonError("Match not found", 404);
+      return jsonErrorCode(ErrorCodes.api.matchNotFound, 404);
     }
 
     if (!canAccessPostponementWorkflow(state)) {
-      return jsonError("Forbidden", 403);
+      return jsonErrorCode(ErrorCodes.api.forbidden, 403);
     }
 
     return jsonOk({ state });
@@ -61,7 +63,7 @@ export async function POST(request: Request, { params }: Params) {
     );
 
     if (!proposedDatetime || !proposingTeamId) {
-      return jsonError("proposed_datetime and proposing_team_id are required", 400);
+      return jsonErrorCode(ErrorCodes.api.proposedDatetimeRequired, 400);
     }
 
     const match = await loadMatchContext(supabase, matchId);
@@ -81,6 +83,8 @@ export async function POST(request: Request, { params }: Params) {
         ? match.home_team.name
         : match.away_team.name;
 
+    const locale = await getLocale();
+
     void sendPostponementProposedEmail(
       {
         matchId,
@@ -93,6 +97,7 @@ export async function POST(request: Request, { params }: Params) {
       },
       match.home_team_id,
       match.away_team_id,
+      locale,
     );
 
     return jsonOk({ state });
@@ -111,7 +116,7 @@ export async function PATCH(request: Request, { params }: Params) {
     const action = body.action as string;
 
     if (!requestId || !["approve", "reject", "cancel"].includes(action)) {
-      return jsonError("request_id and action (approve|reject|cancel) are required", 400);
+      return jsonErrorCode(ErrorCodes.api.postponeActionRequired, 400);
     }
 
     const matchBefore = await loadMatchContext(supabase, matchId);
@@ -136,6 +141,7 @@ export async function PATCH(request: Request, { params }: Params) {
         pending.proposing_team_id === matchBefore.home_team_id
           ? matchBefore.home_team.name
           : matchBefore.away_team.name;
+      const locale = await getLocale();
       void sendPostponementDecisionEmail(
         {
           matchId,
@@ -149,6 +155,7 @@ export async function PATCH(request: Request, { params }: Params) {
         },
         matchBefore.home_team_id,
         matchBefore.away_team_id,
+        locale,
       );
     }
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 import type { ClubSubCandidate } from "@/lib/competition/player-matches";
 
@@ -18,6 +19,7 @@ export function AddSubPicker({
   onSelect,
   onClose,
 }: Props) {
+  const t = useTranslations("match.addSub");
   const [candidates, setCandidates] = useState<ClubSubCandidate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,14 +32,14 @@ export function AddSubPicker({
         `/api/matches/${matchId}/sub-candidates?team_id=${encodeURIComponent(teamId)}`,
       );
       const body = await res.json();
-      if (!res.ok) throw new Error(body.error ?? "Failed to load club players");
+      if (!res.ok) throw new Error(body.error ?? t("loadFailed"));
       setCandidates(body.players ?? []);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load club players");
+      setError(e instanceof Error ? e.message : t("loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, [matchId, teamId]);
+  }, [matchId, teamId, t]);
 
   useEffect(() => {
     load();
@@ -60,30 +62,26 @@ export function AddSubPicker({
       >
         <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3">
           <h4 id="add-sub-title" className="text-sm font-semibold text-zinc-900">
-            Add substitute
+            {t("title")}
           </h4>
           <button
             type="button"
             onClick={onClose}
             className="text-sm text-zinc-600 hover:text-zinc-900"
           >
-            Cancel
+            {t("cancel")}
           </button>
         </div>
         <div className="max-h-[50vh] overflow-y-auto px-4 py-3">
-          <p className="text-xs text-zinc-500">
-            Choose a club member who is not on the team roster.
-          </p>
+          <p className="text-xs text-zinc-500">{t("hint")}</p>
           {loading ? (
-            <p className="mt-3 text-sm text-zinc-600">Loading…</p>
+            <p className="mt-3 text-sm text-zinc-600">{t("loading")}</p>
           ) : null}
           {error ? (
             <p className="mt-3 text-sm text-red-600">{error}</p>
           ) : null}
           {!loading && !error && available.length === 0 ? (
-            <p className="mt-3 text-sm text-zinc-600">
-              No eligible club players available.
-            </p>
+            <p className="mt-3 text-sm text-zinc-600">{t("noneAvailable")}</p>
           ) : null}
           {!loading && !error && available.length > 0 ? (
             <ul className="mt-3 divide-y divide-zinc-100">

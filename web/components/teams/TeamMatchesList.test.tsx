@@ -1,6 +1,7 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import type { TeamMatchRow } from "@/lib/competition/team-queries";
+import { renderWithIntl } from "@/test/render-with-intl";
 import { TeamMatchesList } from "./TeamMatchesList";
 
 const played: TeamMatchRow = {
@@ -31,15 +32,13 @@ describe("TeamMatchesList", () => {
   });
 
   it("renders played and scheduled matches", () => {
-    render(
+    renderWithIntl(
       <TeamMatchesList teamName="Alpha" matches={[played, scheduled]} />,
     );
     expect(screen.getByText("Played")).toBeInTheDocument();
     expect(screen.getByText("Scheduled")).toBeInTheDocument();
-    expect(screen.getByText("Bravo")).toBeInTheDocument();
-    expect(screen.getByText("Charlie")).toBeInTheDocument();
-    expect(screen.getByText(/Home vs/)).toBeInTheDocument();
-    expect(screen.getByText(/Away at/)).toBeInTheDocument();
+    expect(screen.getByText(/Home vs Bravo/)).toBeInTheDocument();
+    expect(screen.getByText(/Away at Charlie/)).toBeInTheDocument();
     expect(screen.getByText(/VP 14 – 10/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Round 1/ })).toHaveAttribute(
       "href",

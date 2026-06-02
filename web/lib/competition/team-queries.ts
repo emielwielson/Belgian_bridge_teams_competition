@@ -58,9 +58,10 @@ function isMissingHostingTeamIdColumn(error: PostgrestError | null): boolean {
   );
 }
 
-function unwrapOne<T>(value: T | T[] | null | undefined): T | null {
+function unwrapOne<T>(value: unknown): T | null {
   if (value == null) return null;
-  return Array.isArray(value) ? (value[0] ?? null) : value;
+  if (Array.isArray(value)) return (value[0] ?? null) as T | null;
+  return value as T;
 }
 
 export function mapRawMatchToTeamMatchRow(
@@ -119,25 +120,27 @@ export async function loadTeamDetail(
   if (teamError) throw teamError;
   if (!teamRow) return null;
 
-  const group = unwrapOne(teamRow.group as unknown);
+  const group = unwrapOne<{ id: string; name: string; division: unknown }>(
+    teamRow.group,
+  );
   if (!group) return null;
 
-  const division = unwrapOne(
-    (group as { division: unknown }).division as { id: string; name: string; league: unknown },
+  const division = unwrapOne<{ id: string; name: string; league: unknown }>(
+    group.division,
   );
   if (!division) return null;
 
-  const league = unwrapOne(division.league as { id: string; name: string });
+  const league = unwrapOne<{ id: string; name: string }>(division.league);
   if (!league) return null;
 
-  const captainRaw = unwrapOne(
-    teamRow.captain as {
-      id: string;
-      name: string;
-      member_number: string | null;
-    } | null,
+  const captainRaw = unwrapOne<{
+    id: string;
+    name: string;
+    member_number: string | null;
+  }>(teamRow.captain);
+  const club = unwrapOne<{ id: string; name: string; location: string | null }>(
+    teamRow.club,
   );
-  const club = unwrapOne(teamRow.club as { id: string; name: string; location: string | null });
   if (!club) return null;
 
   const season = await getActiveSeason(supabase);
@@ -154,13 +157,11 @@ export async function loadTeamDetail(
 
     roster = (rosterRows ?? [])
       .map((row) =>
-        unwrapOne(
-          row.player as {
-            id: string;
-            name: string;
-            member_number: string | null;
-          } | null,
-        ),
+        unwrapOne<{
+          id: string;
+          name: string;
+          member_number: string | null;
+        }>(row.player),
       )
       .filter((p): p is TeamRosterPlayer => p != null)
       .sort((a, b) => a.name.localeCompare(b.name));
@@ -182,7 +183,8 @@ export async function loadTeamDetail(
       .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
       .order("round")
       .order("datetime");
-    matchRows = fallback.data;
+    matchRows =
+      fallback.data?.map((m) => ({ ...m, hosting_team_id: null })) ?? null;
     matchesError = fallback.error;
   }
 
@@ -261,9 +263,7 @@ export async function loadTeamsForUser(
 
   const teams: PlayerTeamSummary[] = [];
   for (const row of rows ?? []) {
-    const team = unwrapOne(
-      row.team as { id: string; name: string } | { id: string; name: string }[] | null,
-    );
+    const team = unwrapOne<{ id: string; name: string }>(row.team);
     if (team) teams.push({ id: team.id, name: team.name });
   }
 

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
+import { useTranslateApiError } from "@/lib/i18n/translate-api-error";
 
 type TeamOption = {
   id: string;
@@ -13,6 +15,8 @@ type Props = {
 };
 
 export function MatchPenaltyForm({ homeTeam, awayTeam }: Props) {
+  const t = useTranslations("match.penalty");
+  const translateApiError = useTranslateApiError();
   const [teamId, setTeamId] = useState(homeTeam.id);
   const [penaltyDate, setPenaltyDate] = useState(
     new Date().toISOString().slice(0, 10),
@@ -25,12 +29,12 @@ export function MatchPenaltyForm({ homeTeam, awayTeam }: Props) {
 
   async function submit() {
     if (!reason.trim()) {
-      setMessage("Motivation is required");
+      setMessage(t("motivationRequired"));
       return;
     }
     const vp = Number(vpDeduction);
     if (!Number.isFinite(vp) || vp < 0) {
-      setMessage("VP deduction must be zero or positive");
+      setMessage(t("vpNonNegative"));
       return;
     }
 
@@ -51,7 +55,9 @@ export function MatchPenaltyForm({ homeTeam, awayTeam }: Props) {
         });
         const uploadBody = await uploadRes.json();
         if (!uploadRes.ok) {
-          throw new Error(uploadBody.error ?? "Failed to upload document");
+          throw new Error(
+            translateApiError(uploadBody.error) ?? t("uploadFailed"),
+          );
         }
         filePath = uploadBody.path ?? null;
       }
@@ -69,15 +75,21 @@ export function MatchPenaltyForm({ homeTeam, awayTeam }: Props) {
       });
       const body = await res.json();
       if (!res.ok) {
-        throw new Error(body.error ?? "Failed to add penalty");
+        throw new Error(
+          translateApiError(body.error) ?? t("saveFailed"),
+        );
       }
 
       setReason("");
       setVpDeduction("0");
       setFile(null);
-      setMessage("Penalty saved.");
+      setMessage(t("saved"));
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Failed to save penalty");
+      setMessage(
+        e instanceof Error
+          ? e.message
+          : t("saveFailedGeneric"),
+      );
     } finally {
       setBusy(false);
     }
@@ -85,13 +97,11 @@ export function MatchPenaltyForm({ homeTeam, awayTeam }: Props) {
 
   return (
     <section className="rounded-lg border border-zinc-200 bg-white p-4">
-      <h3 className="text-sm font-semibold text-zinc-900">Add penalty VP</h3>
-      <p className="mt-1 text-xs text-zinc-500">
-        Deduct VP from a team with a written motivation. Document optional.
-      </p>
+      <h3 className="text-sm font-semibold text-zinc-900">{t("title")}</h3>
+      <p className="mt-1 text-xs text-zinc-500">{t("description")}</p>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <label className="block text-xs font-medium text-zinc-600">
-          Team
+          {t("team")}
           <select
             value={teamId}
             onChange={(e) => setTeamId(e.target.value)}
@@ -102,7 +112,7 @@ export function MatchPenaltyForm({ homeTeam, awayTeam }: Props) {
           </select>
         </label>
         <label className="block text-xs font-medium text-zinc-600">
-          Date
+          {t("date")}
           <input
             type="date"
             value={penaltyDate}
@@ -111,7 +121,7 @@ export function MatchPenaltyForm({ homeTeam, awayTeam }: Props) {
           />
         </label>
         <label className="block text-xs font-medium text-zinc-600 sm:col-span-2">
-          VP deduction
+          {t("vpDeduction")}
           <input
             type="number"
             min={0}
@@ -122,7 +132,7 @@ export function MatchPenaltyForm({ homeTeam, awayTeam }: Props) {
           />
         </label>
         <label className="block text-xs font-medium text-zinc-600 sm:col-span-2">
-          Motivation
+          {t("motivation")}
           <textarea
             value={reason}
             onChange={(e) => setReason(e.target.value)}
@@ -131,7 +141,7 @@ export function MatchPenaltyForm({ homeTeam, awayTeam }: Props) {
           />
         </label>
         <label className="block text-xs font-medium text-zinc-600 sm:col-span-2">
-          Document (optional)
+          {t("documentOptional")}
           <input
             type="file"
             accept="application/pdf,image/jpeg,image/png,image/webp"
@@ -146,7 +156,7 @@ export function MatchPenaltyForm({ homeTeam, awayTeam }: Props) {
         disabled={busy}
         className="btn-primary mt-4 text-sm disabled:opacity-50"
       >
-        {busy ? "Saving…" : "Add penalty"}
+        {busy ? t("saving") : t("addPenalty")}
       </button>
       {message ? <p className="mt-2 text-xs text-zinc-700">{message}</p> : null}
     </section>

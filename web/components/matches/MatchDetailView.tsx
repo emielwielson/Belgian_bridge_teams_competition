@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getLocale, getTranslations } from "next-intl/server";
 import { MatchPenaltyForm } from "@/components/matches/MatchPenaltyForm";
 import { MatchSecondaryWorkflows } from "@/components/matches/MatchSecondaryWorkflows";
 import { MatchLineupEditor } from "@/components/player/MatchLineupEditor";
@@ -28,6 +29,8 @@ import type { MatchPageBackLink } from "@/lib/competition/match-page-context";
 import { loadTeamRoster } from "@/lib/competition/player-matches";
 import { getMatchLineup, isLineupComplete } from "@/lib/scoring/match-operations";
 import { matchStatus } from "@/lib/scoring/match-state";
+import { toIntlLocale } from "@/i18n/intl-locale";
+import type { Locale } from "@/i18n/config";
 import { formatBrussels } from "@/lib/time/brussels";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -40,6 +43,22 @@ type Props = {
   roles: string[];
 };
 
+function backLinkLabel(
+  backLink: MatchPageBackLink,
+  t: Awaited<ReturnType<typeof getTranslations>>,
+): string {
+  if (backLink.leagueName && backLink.groupName) {
+    return t("backLeagueGroup", {
+      leagueName: backLink.leagueName,
+      groupName: backLink.groupName,
+    });
+  }
+  if (backLink.groupName) {
+    return t("backGroupOnly", { groupName: backLink.groupName });
+  }
+  return t("backStandings");
+}
+
 export async function MatchDetailView({
   supabase,
   match,
@@ -48,6 +67,11 @@ export async function MatchDetailView({
   userId,
   roles,
 }: Props) {
+  const t = await getTranslations("match");
+  const tStatus = await getTranslations("match.status");
+  const locale = (await getLocale()) as Locale;
+  const intlLocale = toIntlLocale(locale);
+
   const canOps = userId
     ? await canViewMatchOps(supabase, matchId)
     : false;
@@ -152,15 +176,15 @@ export async function MatchDetailView({
   const opsBackLink =
     userId && canOps
       ? managesClub
-        ? { href: "/club-manager", label: "← My club" }
-        : { href: "/player", label: "← Player dashboard" }
+        ? { href: "/club-manager", label: t("backMyClub") }
+        : { href: "/player", label: t("backPlayerDashboard") }
       : null;
 
   return (
     <main className="page-container flex flex-col gap-6">
       <header>
         <Link href={backLink.href} className="link-back">
-          {backLink.label}
+          {backLinkLabel(backLink, t)}
         </Link>
         {opsBackLink ? (
           <p className="mt-2">
@@ -170,10 +194,14 @@ export async function MatchDetailView({
           </p>
         ) : null}
         <h1 className="mt-2 text-2xl font-semibold text-zinc-900">
-          Round {match.round}: {match.home_team.name} vs {match.away_team.name}
+          {t("title", {
+            round: match.round,
+            homeTeam: match.home_team.name,
+            awayTeam: match.away_team.name,
+          })}
         </h1>
         <p className="mt-1 text-sm text-zinc-600">
-          {formatBrussels(match.datetime)}
+          {formatBrussels(match.datetime, intlLocale)}
         </p>
         <p className="mt-2 flex flex-wrap items-center gap-2">
           <span
@@ -183,20 +211,28 @@ export async function MatchDetailView({
                 : "rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-700"
             }
           >
-            {status === "played" ? "Played" : "Scheduled"}
+            {status === "played" ? tStatus("played") : tStatus("scheduled")}
           </span>
           {match.played_at ? (
             <span className="text-xs text-zinc-500">
-              Scored {formatBrussels(match.played_at)}
+              {tStatus("scoredAt", {
+                datetime: formatBrussels(match.played_at, intlLocale),
+              })}
             </span>
           ) : null}
         </p>
         {!userId ? (
           <p className="mt-3 text-sm text-zinc-600">
-            <Link href={`/login?next=/matches/${matchId}`} className="font-medium text-emerald-800 hover:underline">
-              Sign in
-            </Link>{" "}
-            to score this match or manage lineups if you are on one of the teams.
+            {t.rich("signInPrompt", {
+              link: (chunks) => (
+                <Link
+                  href={`/login?next=/matches/${matchId}`}
+                  className="font-medium text-emerald-800 hover:underline"
+                >
+                  {chunks}
+                </Link>
+              ),
+            })}
           </p>
         ) : null}
       </header>

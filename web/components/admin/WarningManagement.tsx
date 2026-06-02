@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 
 type Warning = {
   id: string;
@@ -18,6 +19,10 @@ type Props = {
 };
 
 export function WarningManagement({ groupId, teams }: Props) {
+  const t = useTranslations("admin.warnings");
+  const tPenalties = useTranslations("admin.penalties");
+  const tCommon = useTranslations("common");
+
   const [warnings, setWarnings] = useState<Warning[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -38,14 +43,14 @@ export function WarningManagement({ groupId, teams }: Props) {
     try {
       const res = await fetch(`/api/admin/warnings?groupId=${groupId}`);
       const body = await res.json();
-      if (!res.ok) throw new Error(body.error ?? "Failed to load warnings");
+      if (!res.ok) throw new Error(body.error ?? tPenalties("loadFailed"));
       setWarnings(body.warnings ?? []);
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Load failed");
+      setMessage(e instanceof Error ? e.message : tPenalties("loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, [groupId]);
+  }, [groupId, tPenalties]);
 
   useEffect(() => {
     void load();
@@ -53,7 +58,7 @@ export function WarningManagement({ groupId, teams }: Props) {
 
   async function save() {
     if (!form.team_id || !form.reason.trim()) {
-      setMessage("Team and reason are required");
+      setMessage(tPenalties("teamReasonRequired"));
       return;
     }
     setMessage(null);
@@ -72,9 +77,10 @@ export function WarningManagement({ groupId, teams }: Props) {
     });
     const body = await res.json();
     if (!res.ok) {
-      setMessage(body.error ?? "Save failed");
+      setMessage(body.error ?? tPenalties("saveFailed"));
       return;
     }
+    const wasEditing = editingId;
     setEditingId(null);
     setForm({
       team_id: teams[0]?.id ?? "",
@@ -82,19 +88,19 @@ export function WarningManagement({ groupId, teams }: Props) {
       reason: "",
     });
     await load();
-    setMessage(editingId ? "Warning updated" : "Warning added");
+    setMessage(wasEditing ? t("updated") : t("added"));
   }
 
   async function remove(id: string) {
-    if (!confirm("Delete this warning?")) return;
+    if (!confirm(t("deleteConfirm"))) return;
     const res = await fetch(`/api/admin/warnings/${id}`, { method: "DELETE" });
     const body = await res.json();
     if (!res.ok) {
-      setMessage(body.error ?? "Delete failed");
+      setMessage(body.error ?? tPenalties("deleteFailed"));
       return;
     }
     await load();
-    setMessage("Warning removed");
+    setMessage(t("removed"));
   }
 
   function startEdit(w: Warning) {
@@ -107,38 +113,32 @@ export function WarningManagement({ groupId, teams }: Props) {
   }
 
   if (!groupId) {
-    return (
-      <p className="text-sm text-zinc-600">
-        Select a group above to manage team warnings.
-      </p>
-    );
+    return <p className="text-sm text-zinc-600">{t("selectGroup")}</p>;
   }
 
   return (
     <section className="card mt-6">
-      <h2 className="font-semibold text-zinc-900">Warnings</h2>
-      <p className="mt-1 text-xs text-zinc-500">
-        Formal warnings issued to teams (visible on standings context).
-      </p>
+      <h2 className="font-semibold text-zinc-900">{t("title")}</h2>
+      <p className="mt-1 text-xs text-zinc-500">{t("description")}</p>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <label className="block text-xs font-medium text-zinc-600">
-          Team
+          {tPenalties("team")}
           <select
             value={form.team_id}
             onChange={(e) => setForm((f) => ({ ...f, team_id: e.target.value }))}
             className="mt-1 w-full rounded-md border border-zinc-300 px-2 py-2 text-sm"
           >
-            <option value="">Select team</option>
-            {teams.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
+            <option value="">{tPenalties("selectTeam")}</option>
+            {teams.map((team) => (
+              <option key={team.id} value={team.id}>
+                {team.name}
               </option>
             ))}
           </select>
         </label>
         <label className="block text-xs font-medium text-zinc-600">
-          Date
+          {tPenalties("date")}
           <input
             type="date"
             value={form.warning_date}
@@ -149,7 +149,7 @@ export function WarningManagement({ groupId, teams }: Props) {
           />
         </label>
         <label className="block text-xs font-medium text-zinc-600 sm:col-span-2">
-          Reason
+          {tPenalties("reason")}
           <input
             type="text"
             value={form.reason}
@@ -161,7 +161,7 @@ export function WarningManagement({ groupId, teams }: Props) {
 
       <div className="mt-3 flex flex-wrap gap-2">
         <button type="button" onClick={save} className="btn-primary text-sm">
-          {editingId ? "Update warning" : "Add warning"}
+          {editingId ? t("update") : t("add")}
         </button>
         {editingId ? (
           <button
@@ -176,7 +176,7 @@ export function WarningManagement({ groupId, teams }: Props) {
             }}
             className="btn-secondary text-sm"
           >
-            Cancel edit
+            {tPenalties("cancelEdit")}
           </button>
         ) : null}
       </div>
@@ -186,11 +186,11 @@ export function WarningManagement({ groupId, teams }: Props) {
       ) : null}
 
       {loading ? (
-        <p className="mt-4 text-sm text-zinc-600">Loading…</p>
+        <p className="mt-4 text-sm text-zinc-600">{tPenalties("loading")}</p>
       ) : (
         <ul className="mt-4 divide-y divide-zinc-200 text-sm">
           {warnings.length === 0 ? (
-            <li className="py-2 text-zinc-600">No warnings for this group.</li>
+            <li className="py-2 text-zinc-600">{t("none")}</li>
           ) : (
             warnings.map((w) => (
               <li
@@ -198,8 +198,13 @@ export function WarningManagement({ groupId, teams }: Props) {
                 className="flex flex-wrap items-center justify-between gap-2 py-2"
               >
                 <span>
-                  {(w.team as { name?: string } | null)?.name ?? "Team"} —{" "}
-                  {w.warning_date}: {w.reason}
+                  {t("entry", {
+                    teamName:
+                      (w.team as { name?: string } | null)?.name ??
+                      tPenalties("teamFallback"),
+                    date: w.warning_date,
+                    reason: w.reason,
+                  })}
                 </span>
                 <span className="flex gap-2">
                   <button
@@ -207,14 +212,14 @@ export function WarningManagement({ groupId, teams }: Props) {
                     className="text-xs font-medium text-zinc-700 underline"
                     onClick={() => startEdit(w)}
                   >
-                    Edit
+                    {tCommon("edit")}
                   </button>
                   <button
                     type="button"
                     className="text-xs font-medium text-red-700 underline"
                     onClick={() => remove(w.id)}
                   >
-                    Delete
+                    {tCommon("delete")}
                   </button>
                 </span>
               </li>

@@ -56,7 +56,7 @@ describe("POST /api/admin/competition/teams", () => {
     );
     expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body.error).toContain("captain_id");
+    expect(body.error).toBe("api.captainIdRequired");
   });
 
   it("rejects captain who is not a club member", async () => {
@@ -95,7 +95,7 @@ describe("POST /api/admin/competition/teams", () => {
     );
     expect(res.status).toBe(403);
     const body = await res.json();
-    expect(body.error).toContain("club");
+    expect(body.error).toBe("api.captainNotClubMember");
   });
 
   it("creates team when captain is a club member", async () => {

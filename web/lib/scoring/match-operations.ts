@@ -103,7 +103,7 @@ export async function getMatchLineup(
     .eq("match_id", matchId);
 
   if (error) throw error;
-  return (data ?? []) as MatchLineupEntry[];
+  return (data ?? []) as unknown as MatchLineupEntry[];
 }
 
 export async function countLineupByTeam(

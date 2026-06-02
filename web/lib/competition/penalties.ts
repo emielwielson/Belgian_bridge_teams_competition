@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { ErrorCodes, type ErrorCode } from "@/lib/http/error-codes";
 import { requireActiveSeason } from "@/lib/competition/season";
 
 export type PenaltyRow = {
@@ -76,7 +77,7 @@ export function parsePenaltyInput(body: Record<string, unknown>): {
   reason: string;
   vpDeduction: number;
   filePath: string | null;
-} | { error: string } {
+} | { error: ErrorCode } {
   const teamId = body.team_id as string | undefined;
   const penaltyDate = body.penalty_date as string | undefined;
   const reason = body.reason as string | undefined;
@@ -88,10 +89,10 @@ export function parsePenaltyInput(body: Record<string, unknown>): {
       : null;
 
   if (!teamId || !penaltyDate || !reason?.trim()) {
-    return { error: "team_id, penalty_date, and reason are required" };
+    return { error: ErrorCodes.api.penaltyFieldsRequired };
   }
   if (!Number.isFinite(vpDeduction) || vpDeduction < 0) {
-    return { error: "vp_deduction must be a non-negative number" };
+    return { error: ErrorCodes.api.vpDeductionNonNegative };
   }
 
   return {

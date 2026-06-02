@@ -244,14 +244,15 @@ export async function loadClubSubCandidates(
   if (error) throw error;
 
   const players = (memberships ?? [])
-    .map(
-      (row) =>
-        row.player as {
-          id: string;
-          name: string;
-          member_number: string | null;
-        } | null,
-    )
+    .map((row) => {
+      const raw = row.player as unknown;
+      const p = Array.isArray(raw) ? raw[0] : raw;
+      return p as {
+        id: string;
+        name: string;
+        member_number: string | null;
+      } | null;
+    })
     .filter(
       (
         p,
@@ -274,14 +275,15 @@ export async function loadTeamRoster(
   if (error) throw error;
 
   return (data ?? [])
-    .map(
-      (row) =>
-        row.player as {
-          id: string;
-          name: string;
-          member_number: string | null;
-        } | null,
-    )
+    .map((row) => {
+      const raw = row.player as unknown;
+      const p = Array.isArray(raw) ? raw[0] : raw;
+      return p as {
+        id: string;
+        name: string;
+        member_number: string | null;
+      } | null;
+    })
     .filter(
       (
         p,

@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 import { FilePickerField } from "@/components/files/FilePickerField";
+import type { Locale } from "@/i18n/config";
+import { toIntlLocale } from "@/i18n/intl-locale";
 import { formatBrussels } from "@/lib/time/brussels";
 
 type InboxRequest = {
@@ -42,6 +45,9 @@ function emptyDraft(): ResolveDraft {
 }
 
 export function ArbiterInbox() {
+  const t = useTranslations("arbiter");
+  const locale = useLocale() as Locale;
+  const intlLocale = toIntlLocale(locale);
   const [requests, setRequests] = useState<InboxRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
@@ -57,13 +63,13 @@ export function ArbiterInbox() {
     const res = await fetch("/api/arbiter/requests?status=open");
     const body = await res.json();
     if (!res.ok) {
-      setMessage(body.error ?? "Failed to load inbox");
+      setMessage(body.error ?? t("loadFailed"));
       setLoading(false);
       return;
     }
     setRequests(body.requests ?? []);
     setLoading(false);
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void load();
@@ -102,7 +108,7 @@ export function ArbiterInbox() {
       });
       const uploadBody = await uploadRes.json();
       if (!uploadRes.ok) {
-        throw new Error(uploadBody.error ?? "Failed to upload ruling");
+        throw new Error(uploadBody.error ?? t("uploadRulingFailed"));
       }
       updateDraft(requestId, {
         file: next,
@@ -116,14 +122,14 @@ export function ArbiterInbox() {
         uploading: false,
         fileInputKey: draft.fileInputKey + 1,
       });
-      setMessage(e instanceof Error ? e.message : "Failed to upload ruling");
+      setMessage(e instanceof Error ? e.message : t("uploadRulingFailed"));
     }
   }
 
   async function resolve(request: InboxRequest) {
     const draft = resolveDrafts[request.id] ?? emptyDraft();
     if (!draft.uploadedPath) {
-      setMessage("Upload an official ruling document before resolving.");
+      setMessage(t("uploadRulingFirst"));
       return;
     }
 
@@ -150,7 +156,7 @@ export function ArbiterInbox() {
       );
       const body = await res.json();
       if (!res.ok) {
-        throw new Error(body.error ?? "Failed to resolve");
+        throw new Error(body.error ?? t("resolveFailed"));
       }
 
       if (body.rulingSignedUrl) {
@@ -166,9 +172,9 @@ export function ArbiterInbox() {
         return next;
       });
       await load();
-      setMessage("Request resolved with official ruling.");
+      setMessage(t("resolvedSuccess"));
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Failed to resolve");
+      setMessage(e instanceof Error ? e.message : t("resolveFailed"));
     } finally {
       setBusyId(null);
     }
@@ -178,16 +184,20 @@ export function ArbiterInbox() {
     <div>
       {message ? <p className="mb-4 text-sm text-zinc-700">{message}</p> : null}
       {loading ? (
-        <p className="text-sm text-zinc-600">Loading open requests…</p>
+        <p className="text-sm text-zinc-600">{t("loading")}</p>
       ) : requests.length === 0 ? (
-        <p className="text-sm text-zinc-600">No open arbiter requests.</p>
+        <p className="text-sm text-zinc-600">{t("none")}</p>
       ) : (
         <ul className="divide-y divide-zinc-200">
           {requests.map((r) => {
             const m = r.match;
             const label = m
-              ? `Round ${m.round}: ${m.home_team?.name ?? "?"} vs ${m.away_team?.name ?? "?"}`
-              : "Match";
+              ? t("matchLine", {
+                  round: m.round,
+                  homeTeam: m.home_team?.name ?? "?",
+                  awayTeam: m.away_team?.name ?? "?",
+                })
+              : t("matchFallback");
             const draft = resolveDrafts[r.id] ?? emptyDraft();
             const rulingLink = rulingLinks[r.id];
             const canResolve =
@@ -200,9 +210,13 @@ export function ArbiterInbox() {
                   <div>
                     <p className="font-medium text-zinc-900">{label}</p>
                     <p className="mt-1 text-xs text-zinc-500">
-                      Submitted {formatBrussels(r.created_at)}
+                      {t("submitted", {
+                        datetime: formatBrussels(r.created_at, intlLocale),
+                      })}
                       {m?.datetime
-                        ? ` · Match ${formatBrussels(m.datetime)}`
+                        ? t("matchDatetime", {
+                            datetime: formatBrussels(m.datetime, intlLocale),
+                          })
                         : ""}
                     </p>
                     {r.image_signed_url ? (
@@ -213,12 +227,12 @@ export function ArbiterInbox() {
                           rel="noopener noreferrer"
                           className="text-sm font-medium text-emerald-800 underline"
                         >
-                          View captain attachment
+                          {t("viewAttachment")}
                         </a>
                       </p>
                     ) : (
                       <p className="mt-2 text-sm text-zinc-600">
-                        No attachment available
+                        {t("noAttachment")}
                       </p>
                     )}
                     <p className="mt-2">
@@ -226,18 +240,16 @@ export function ArbiterInbox() {
                         href={`/matches/${r.match_id}`}
                         className="text-sm text-zinc-600 underline hover:text-zinc-900"
                       >
-                        Open match
+                        {t("openMatch")}
                       </Link>
                     </p>
                   </div>
 
                   <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
                     <p className="text-sm font-medium text-zinc-900">
-                      Resolve with official ruling
+                      {t("resolveTitle")}
                     </p>
-                    <p className="mt-1 text-xs text-zinc-600">
-                      Upload the ruling document (required). Board optional.
-                    </p>
+                    <p className="mt-1 text-xs text-zinc-600">{t("resolveHint")}</p>
                     <div className="mt-3 grid gap-3 sm:grid-cols-2">
                       <div className="sm:col-span-2">
                         <FilePickerField
@@ -247,21 +259,21 @@ export function ArbiterInbox() {
                           onFileChange={(next) =>
                             void handleRulingFileChange(r, next)
                           }
-                          hint="Official ruling (PDF or image, required, max 10 MB)"
+                          hint={t("rulingFileHint")}
                           disabled={busyId === r.id || draft.uploading}
                         />
                         {draft.uploading ? (
                           <p className="mt-1 text-xs text-zinc-600">
-                            Uploading ruling…
+                            {t("uploadingRuling")}
                           </p>
                         ) : draft.uploadedPath ? (
                           <p className="mt-1 text-xs text-emerald-800">
-                            Ruling uploaded. You can resolve the request.
+                            {t("rulingUploaded")}
                           </p>
                         ) : null}
                       </div>
                       <label className="block text-xs font-medium text-zinc-600">
-                        Board (optional)
+                        {t("boardOptional")}
                         <input
                           type="number"
                           min={1}
@@ -274,7 +286,7 @@ export function ArbiterInbox() {
                         />
                       </label>
                       <label className="block text-xs font-medium text-zinc-600">
-                        Ruling date
+                        {t("rulingDate")}
                         <input
                           type="date"
                           value={draft.rulingDate}
@@ -292,7 +304,7 @@ export function ArbiterInbox() {
                       onClick={() => resolve(r)}
                       className="btn-primary mt-3 text-sm disabled:cursor-not-allowed disabled:bg-zinc-400 disabled:opacity-100 hover:disabled:bg-zinc-400"
                     >
-                      {busyId === r.id ? "Resolving…" : "Resolve with ruling"}
+                      {busyId === r.id ? t("resolving") : t("resolveButton")}
                     </button>
                     {rulingLink ? (
                       <p className="mt-2 text-sm">
@@ -302,7 +314,7 @@ export function ArbiterInbox() {
                           rel="noopener noreferrer"
                           className="font-medium text-emerald-800 underline"
                         >
-                          View published ruling
+                          {t("viewPublishedRuling")}
                         </a>
                       </p>
                     ) : null}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { toDatetimeLocalValue } from "@/lib/time/brussels";
 import {
   NATIONAL_SCHEDULE_ROUND_COUNTS,
@@ -25,6 +26,8 @@ export function CompetitionManagement({
   roundCount: roundCountProp,
   title,
 }: Props) {
+  const t = useTranslations("admin.matchDates");
+
   const roundCount =
     roundCountProp ??
     (scheduleKey ? NATIONAL_SCHEDULE_ROUND_COUNTS[scheduleKey] : 14);
@@ -74,10 +77,10 @@ export function CompetitionManagement({
     setLoading(false);
     if (!res.ok) {
       const err = await res.json();
-      setMessage(err.error ?? "Failed to save dates");
+      setMessage(err.error ?? t("saveFailed"));
       return;
     }
-    setMessage("Match dates saved.");
+    setMessage(t("saved"));
     await loadDates();
   }
 
@@ -85,18 +88,18 @@ export function CompetitionManagement({
     <section className="card flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-lg font-semibold text-zinc-900">
-          {title ?? `Match dates (${roundCount} rounds)`}
+          {title ?? t("title", { roundCount })}
         </h2>
         <button type="button" onClick={loadDates} className="link-back">
-          Reload
+          {t("reload")}
         </button>
       </div>
-      <p className="text-sm text-zinc-600">Times in Europe/Brussels</p>
+      <p className="text-sm text-zinc-600">{t("timesBrussels")}</p>
       <ul className="flex flex-col gap-2">
         {dates.map((d) => (
           <li key={d.round} className="flex items-center gap-3">
             <span className="w-16 text-sm font-medium text-zinc-700">
-              Round {d.round}
+              {t("round", { round: d.round })}
             </span>
             <input
               type="datetime-local"
@@ -121,7 +124,7 @@ export function CompetitionManagement({
         onClick={saveDates}
         className="btn-primary w-fit"
       >
-        {loading ? "Saving…" : "Save dates"}
+        {loading ? t("saving") : t("saveDates")}
       </button>
       {message && (
         <p className="text-sm text-zinc-700" role="status">

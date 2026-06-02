@@ -1,6 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  buildPostponementDecisionEmail,
+  buildPostponementProposedEmail,
+  loadEmailTemplateContext,
+} from "@/lib/i18n/email-templates";
 import { createServiceClient } from "@/lib/supabase/server-client";
-import { formatBrussels } from "@/lib/time/brussels";
 import { sendMakeWebhook } from "./make-webhook";
 
 export type PostponementProposedEmailContext = {
@@ -121,50 +125,23 @@ export async function loadPostponementProposedCc(
   return uniqueEmails([...captainEmails, ...managerEmails]);
 }
 
-function buildProposedEmailContent(ctx: PostponementProposedEmailContext): {
-  subject: string;
-  bodyText: string;
-  bodyHtml: string;
-} {
-  const matchUrl = matchPostponementUrl(ctx.matchId);
-  const previous = formatBrussels(ctx.previousDatetime);
-  const proposed = formatBrussels(ctx.proposedDatetime);
-
-  const subject = `Reschedule request: ${ctx.homeTeamName} vs ${ctx.awayTeamName} (round ${ctx.round})`;
-
-  const bodyText = [
-    `${ctx.proposingTeamName} proposed a new date for this match.`,
-    "",
-    `Round ${ctx.round}: ${ctx.homeTeamName} vs ${ctx.awayTeamName}`,
-    `Current date: ${previous}`,
-    `Proposed date: ${proposed}`,
-    "",
-    `Open the match to approve or reject:`,
-    matchUrl,
-  ].join("\n");
-
-  const bodyHtml = [
-    `<p><strong>${ctx.proposingTeamName}</strong> proposed a new date for this match.</p>`,
-    `<p><strong>Round ${ctx.round}:</strong> ${ctx.homeTeamName} vs ${ctx.awayTeamName}<br>`,
-    `Current date: ${previous}<br>`,
-    `Proposed date: ${proposed}</p>`,
-    `<p><a href="${matchUrl}">Open match to approve or reject</a></p>`,
-  ].join("");
-
-  return { subject, bodyText, bodyHtml };
-}
-
 /** Sends postponement-proposed email via Make.com (CC: both captains + competition managers). */
 export async function sendPostponementProposedEmail(
   ctx: PostponementProposedEmailContext,
   homeTeamId: string,
   awayTeamId: string,
+  locale?: string | null,
 ): Promise<void> {
   const cc = await loadPostponementProposedCc(homeTeamId, awayTeamId);
   if (cc.length === 0) return;
 
-  const { subject, bodyText, bodyHtml } = buildProposedEmailContent(ctx);
+  const emailContext = await loadEmailTemplateContext(locale);
   const matchUrl = matchPostponementUrl(ctx.matchId);
+  const { subject, bodyText, bodyHtml } = buildPostponementProposedEmail(
+    ctx,
+    matchUrl,
+    emailContext,
+  );
 
   await sendMakeWebhook(
     {
@@ -190,19 +167,25 @@ export async function sendPostponementDecisionEmail(
   ctx: PostponementDecisionEmailContext,
   homeTeamId: string,
   awayTeamId: string,
+  locale?: string | null,
 ): Promise<void> {
   const cc = await loadPostponementProposedCc(homeTeamId, awayTeamId);
   if (cc.length === 0) return;
 
+  const emailContext = await loadEmailTemplateContext(locale);
   const matchUrl = matchPostponementUrl(ctx.matchId);
   const loginUrl = loginThenMatchUrl(ctx.matchId);
-  const previous = formatBrussels(ctx.previousDatetime);
-  const proposed = formatBrussels(ctx.proposedDatetime);
+  const { subject, bodyText, bodyHtml } = buildPostponementDecisionEmail(
+    ctx,
+    matchUrl,
+    loginUrl,
+    emailContext,
+  );
 
   const actionLabelByAction: Record<PostponementDecision, string> = {
-    approve: "approved",
-    reject: "rejected",
-    cancel: "cancelled",
+    approve: emailContext.t("postponementDecision.approved"),
+    reject: emailContext.t("postponementDecision.rejected"),
+    cancel: emailContext.t("postponementDecision.cancelled"),
   };
   const eventTypeByAction: Record<
     PostponementDecision,
@@ -212,27 +195,6 @@ export async function sendPostponementDecisionEmail(
     reject: "postponement_rejected",
     cancel: "postponement_cancelled",
   };
-  const actionLabel = actionLabelByAction[ctx.action];
-
-  const subject = `Reschedule request ${actionLabel}: ${ctx.homeTeamName} vs ${ctx.awayTeamName} (round ${ctx.round})`;
-  const bodyText = [
-    `${ctx.proposingTeamName} reschedule request was ${actionLabel}.`,
-    "",
-    `Round ${ctx.round}: ${ctx.homeTeamName} vs ${ctx.awayTeamName}`,
-    `Current date: ${previous}`,
-    `Proposed date: ${proposed}`,
-    "",
-    `Open match: ${matchUrl}`,
-    `Login first: ${loginUrl}`,
-  ].join("\n");
-
-  const bodyHtml = [
-    `<p><strong>${ctx.proposingTeamName}</strong> reschedule request was ${actionLabel}.</p>`,
-    `<p><strong>Round ${ctx.round}:</strong> ${ctx.homeTeamName} vs ${ctx.awayTeamName}<br>`,
-    `Current date: ${previous}<br>`,
-    `Proposed date: ${proposed}</p>`,
-    `<p><a href="${matchUrl}">Open match</a><br><a href="${loginUrl}">Login first</a></p>`,
-  ].join("");
 
   await sendMakeWebhook(
     {
@@ -249,7 +211,7 @@ export async function sendPostponementDecisionEmail(
       proposing_team_name: ctx.proposingTeamName,
       previous_datetime: ctx.previousDatetime,
       proposed_datetime: ctx.proposedDatetime,
-      action: actionLabel,
+      action: actionLabelByAction[ctx.action],
     },
     { eventType: eventTypeByAction[ctx.action] },
   );

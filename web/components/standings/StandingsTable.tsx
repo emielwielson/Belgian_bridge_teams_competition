@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 export type StandingsTableRow = {
   team_id?: string;
@@ -11,21 +14,21 @@ type Props = {
   emptyMessage?: string;
 };
 
-export function StandingsTable({
-  rows,
-  emptyMessage = "No scored matches yet.",
-}: Props) {
+export function StandingsTable({ rows, emptyMessage }: Props) {
+  const t = useTranslations("standings.table");
+  const empty = emptyMessage ?? t("empty");
+
   if (rows.length === 0) {
-    return <p className="text-sm text-zinc-500">{emptyMessage}</p>;
+    return <p className="text-sm text-zinc-500">{empty}</p>;
   }
 
   return (
     <table className="w-full text-left text-sm">
       <thead>
         <tr className="border-b border-zinc-200 text-zinc-500">
-          <th className="py-2 pr-4">#</th>
-          <th className="py-2 pr-4">Team</th>
-          <th className="py-2 text-right">VP</th>
+          <th className="py-2 pr-4">{t("rank")}</th>
+          <th className="py-2 pr-4">{t("team")}</th>
+          <th className="py-2 text-right">{t("vp")}</th>
         </tr>
       </thead>
       <tbody>

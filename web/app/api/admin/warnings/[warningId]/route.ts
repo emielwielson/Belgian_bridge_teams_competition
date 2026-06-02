@@ -1,5 +1,6 @@
 import { COMPETITION_ADMIN_ROLES, requireRoles } from "@/lib/auth/route-auth";
-import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
+import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
+import { ErrorCodes } from "@/lib/http/error-codes";
 
 type Params = { params: Promise<{ warningId: string }> };
 
@@ -26,7 +27,7 @@ export async function PATCH(request: Request, { params }: Params) {
       .single();
 
     if (error) return jsonError(error.message, 400);
-    if (!data) return jsonError("Warning not found", 404);
+    if (!data) return jsonErrorCode(ErrorCodes.api.warningNotFound, 404);
 
     return jsonOk({ warning: data });
   } catch (err) {

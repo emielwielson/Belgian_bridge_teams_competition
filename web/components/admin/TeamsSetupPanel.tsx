@@ -12,6 +12,7 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   emptyScheduleSlots,
   slotsAreComplete,
@@ -66,6 +67,7 @@ function DragHandle({
   item: DragItem;
   disabled?: boolean;
 }) {
+  const t = useTranslations("admin.teamsPanel");
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: dragId(item),
     disabled,
@@ -79,7 +81,7 @@ function DragHandle({
       className={`shrink-0 cursor-grab rounded px-1.5 py-0.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 active:cursor-grabbing ${
         isDragging ? "opacity-40" : ""
       }`}
-      aria-label="Drag to reorder"
+      aria-label={t("dragAria")}
       {...listeners}
       {...attributes}
       disabled={disabled}
@@ -96,6 +98,8 @@ function PoolChip({
   item: DragItem;
   disabled?: boolean;
 }) {
+  const t = useTranslations("admin.teamsPanel");
+  const tCommon = useTranslations("common");
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
       id: dragId(item),
@@ -121,7 +125,7 @@ function PoolChip({
       {...attributes}
       disabled={disabled}
     >
-      {item.kind === "bye" ? "Bye" : item.name}
+      {item.kind === "bye" ? tCommon("bye") : item.name}
     </button>
   );
 }
@@ -177,6 +181,8 @@ function SlotListItem({
   onCancelEdit: () => void;
   clubName: (id: string) => string;
 }) {
+  const t = useTranslations("admin.teamsPanel");
+  const tCommon = useTranslations("common");
   const { setNodeRef, isOver } = useDroppable({
     id: `slot-${row.slot}`,
     disabled: readOnly,
@@ -207,7 +213,7 @@ function SlotListItem({
         <div className="flex min-w-0 flex-1 flex-col gap-2">
           {row.isBye ? (
             <span className="inline-flex w-fit rounded border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-900">
-              Bye
+              {tCommon("bye")}
             </span>
           ) : team ? (
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -217,10 +223,10 @@ function SlotListItem({
                 {team.captain ? (
                   <span className="text-zinc-600">
                     {" "}
-                    · Captain: {team.captain.name}
+                    · {t("captain")}: {team.captain.name}
                   </span>
                 ) : (
-                  <span className="text-amber-700"> · No captain</span>
+                  <span className="text-amber-700">{t("noCaptain")}</span>
                 )}
               </span>
               {!readOnly && (
@@ -230,31 +236,31 @@ function SlotListItem({
                     className="text-xs font-medium text-zinc-700 underline"
                     onClick={() => onEditCaptain(team)}
                   >
-                    Change captain
+                    {t("changeCaptain")}
                   </button>
                   <button
                     type="button"
                     className="text-xs font-medium text-red-700 underline"
                     onClick={() => onRemove(team.id)}
                   >
-                    Remove
+                    {tCommon("remove")}
                   </button>
                 </div>
               )}
             </div>
           ) : (
-            <span className="text-zinc-400">Empty</span>
+            <span className="text-zinc-400">{t("empty")}</span>
           )}
           {team && editingCaptainTeamId === team.id && !readOnly ? (
             <div className="flex flex-wrap items-end gap-2 border-t border-zinc-100 pt-2">
               <label className="flex flex-col gap-1">
-                <span className="text-xs text-zinc-600">Captain</span>
+                <span className="text-xs text-zinc-600">{t("captain")}</span>
                 <select
                   value={editCaptainId}
                   onChange={(e) => setEditCaptainId(e.target.value)}
                   className="input max-w-xs text-sm"
                 >
-                  <option value="">Select…</option>
+                  <option value="">{t("selectCaptain")}</option>
                   {editMembers.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
@@ -268,14 +274,14 @@ function SlotListItem({
                 className="btn-secondary text-xs"
                 onClick={() => onSaveCaptain(team)}
               >
-                Save
+                {t("save")}
               </button>
               <button
                 type="button"
                 className="text-xs text-zinc-600 underline"
                 onClick={onCancelEdit}
               >
-                Cancel
+                {t("cancel")}
               </button>
             </div>
           ) : null}
@@ -293,6 +299,9 @@ export function TeamsSetupPanel({
   maxTeams,
   onTeamsChanged,
 }: Props) {
+  const t = useTranslations("admin.teamsPanel");
+  const tCommon = useTranslations("common");
+
   const [teams, setTeams] = useState<TeamRow[]>([]);
   const [slots, setSlots] = useState<ScheduleSlotRow[]>(emptyScheduleSlots());
   const [slotsLoading, setSlotsLoading] = useState(false);
@@ -440,7 +449,7 @@ export function TeamsSetupPanel({
     const body = await res.json();
     setSlotSaving(false);
     if (!res.ok) {
-      setMessage(body.error ?? "Failed to save team order");
+      setMessage(body.error ?? t("saveOrderFailed"));
       return;
     }
     setSlots(body.slots ?? nextSlots);
@@ -551,7 +560,7 @@ export function TeamsSetupPanel({
     e.preventDefault();
     if (readOnly || atCapacity) return;
     if (!captainId) {
-      setMessage("Select a captain");
+      setMessage(t("selectCaptainError"));
       return;
     }
     setMessage(null);
@@ -569,7 +578,7 @@ export function TeamsSetupPanel({
     setLoading(false);
     const body = await res.json();
     if (!res.ok) {
-      setMessage(body.error ?? "Failed to add team");
+      setMessage(body.error ?? t("addTeamFailed"));
       return;
     }
     await loadTeams();
@@ -577,7 +586,7 @@ export function TeamsSetupPanel({
   }
 
   async function removeTeam(teamId: string) {
-    if (readOnly || !confirm("Remove this team?")) return;
+    if (readOnly || !confirm(t("removeConfirm"))) return;
     setMessage(null);
     const res = await fetch("/api/admin/competition/teams", {
       method: "DELETE",
@@ -586,7 +595,7 @@ export function TeamsSetupPanel({
     });
     const body = await res.json();
     if (!res.ok) {
-      setMessage(body.error ?? "Failed to remove team");
+      setMessage(body.error ?? t("removeFailed"));
       return;
     }
     setEditingCaptainTeamId(null);
@@ -596,7 +605,7 @@ export function TeamsSetupPanel({
 
   async function saveCaptain(team: TeamRow) {
     if (!editCaptainId) {
-      setMessage("Select a captain");
+      setMessage(t("selectCaptainError"));
       return;
     }
     setMessage(null);
@@ -607,7 +616,7 @@ export function TeamsSetupPanel({
     });
     const body = await res.json();
     if (!res.ok) {
-      setMessage(body.error ?? "Failed to update captain");
+      setMessage(body.error ?? t("updateCaptainFailed"));
       return;
     }
     setEditingCaptainTeamId(null);
@@ -621,7 +630,8 @@ export function TeamsSetupPanel({
     void loadEditMembers(team.club_id);
   }
 
-  const clubName = (id: string) => clubs.find((c) => c.id === id)?.name ?? "Club";
+  const clubName = (id: string) =>
+    clubs.find((c) => c.id === id)?.name ?? t("clubFallback");
 
   return (
     <div className="flex flex-col gap-4">
@@ -629,21 +639,19 @@ export function TeamsSetupPanel({
         <p
           className={`text-sm font-medium ${teams.length === maxTeams ? "text-green-700" : "text-zinc-700"}`}
         >
-          {teams.length}/{maxTeams} teams
+          {t("teamsProgress", { current: teams.length, max: maxTeams })}
         </p>
       )}
 
       {useSlotOrdering && (
         <p className="text-xs text-zinc-600">
-          Drag teams to set spots 1–8 for schedule generation.
-          {teams.length === 7
-            ? " Add a bye and place it in one of the eight spots."
-            : null}
+          {t("dragHint")}
+          {teams.length === 7 ? t("dragHintBye") : null}
         </p>
       )}
 
       {useSlotOrdering && slotsLoading ? (
-        <p className="text-sm text-zinc-600">Loading team order…</p>
+        <p className="text-sm text-zinc-600">{t("loadingOrder")}</p>
       ) : useSlotOrdering ? (
         <DndContext
           sensors={sensors}
@@ -673,7 +681,7 @@ export function TeamsSetupPanel({
           {!readOnly && poolItems.length > 0 && (
             <div>
               <p className="mb-2 text-xs font-medium text-zinc-700">
-                Unassigned
+                {t("unassigned")}
               </p>
               <PoolDropZone readOnly={readOnly}>
                 <div className="flex flex-wrap gap-2">
@@ -694,7 +702,7 @@ export function TeamsSetupPanel({
                 className="btn-secondary w-fit text-xs"
                 onClick={() => setByeEnabled(true)}
               >
-                Add bye
+                {t("addBye")}
               </button>
             )}
 
@@ -712,22 +720,22 @@ export function TeamsSetupPanel({
         </DndContext>
       ) : (
         <ul className="space-y-2">
-          {teams.map((t) => (
+          {teams.map((team) => (
             <li
-              key={t.id}
+              key={team.id}
               className="flex flex-col gap-2 rounded border border-zinc-100 px-3 py-2 text-sm"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-zinc-900">
-                  <span className="font-medium">{t.name}</span>
-                  <span className="text-zinc-500"> · {clubName(t.club_id)}</span>
-                  {t.captain ? (
+                  <span className="font-medium">{team.name}</span>
+                  <span className="text-zinc-500"> · {clubName(team.club_id)}</span>
+                  {team.captain ? (
                     <span className="text-zinc-600">
                       {" "}
-                      · Captain: {t.captain.name}
+                      · {t("captain")}: {team.captain.name}
                     </span>
                   ) : (
-                    <span className="text-amber-700"> · No captain</span>
+                    <span className="text-amber-700">{t("noCaptain")}</span>
                   )}
                 </span>
                 {!readOnly && (
@@ -735,30 +743,30 @@ export function TeamsSetupPanel({
                     <button
                       type="button"
                       className="text-xs font-medium text-zinc-700 underline"
-                      onClick={() => startEditCaptain(t)}
+                      onClick={() => startEditCaptain(team)}
                     >
-                      Change captain
+                      {t("changeCaptain")}
                     </button>
                     <button
                       type="button"
                       className="text-xs font-medium text-red-700 underline"
-                      onClick={() => removeTeam(t.id)}
+                      onClick={() => removeTeam(team.id)}
                     >
-                      Remove
+                      {tCommon("remove")}
                     </button>
                   </div>
                 )}
               </div>
-              {editingCaptainTeamId === t.id && !readOnly && (
+              {editingCaptainTeamId === team.id && !readOnly && (
                 <div className="flex flex-wrap items-end gap-2 border-t border-zinc-100 pt-2">
                   <label className="flex flex-col gap-1">
-                    <span className="text-xs text-zinc-600">Captain</span>
+                    <span className="text-xs text-zinc-600">{t("captain")}</span>
                     <select
                       value={editCaptainId}
                       onChange={(e) => setEditCaptainId(e.target.value)}
                       className="input max-w-xs text-sm"
                     >
-                      <option value="">Select…</option>
+                      <option value="">{t("selectCaptain")}</option>
                       {editMembers.map((p) => (
                         <option key={p.id} value={p.id}>
                           {p.name}
@@ -770,16 +778,16 @@ export function TeamsSetupPanel({
                   <button
                     type="button"
                     className="btn-secondary text-xs"
-                    onClick={() => saveCaptain(t)}
+                    onClick={() => saveCaptain(team)}
                   >
-                    Save
+                    {t("save")}
                   </button>
                   <button
                     type="button"
                     className="text-xs text-zinc-600 underline"
                     onClick={() => setEditingCaptainTeamId(null)}
                   >
-                    Cancel
+                    {t("cancel")}
                   </button>
                 </div>
               )}
@@ -790,21 +798,20 @@ export function TeamsSetupPanel({
 
       {!readOnly && useSlotOrdering && !slotsComplete && (
         <p className="text-xs text-amber-800">
-          Assign all teams{teams.length === 7 ? " and one bye" : ""} to spots
-          1–8 before generating the schedule.
+          {t("assignSlotsWarning", {
+            byePart: teams.length === 7 ? t("byePart") : "",
+          })}
         </p>
       )}
 
       {!readOnly && (
         <form onSubmit={addTeam} className="flex flex-col gap-3 border-t pt-4">
           {clubs.length === 0 ? (
-            <p className="text-sm text-amber-800">
-              No clubs found. Create clubs before adding teams.
-            </p>
+            <p className="text-sm text-amber-800">{t("noClubs")}</p>
           ) : (
             <>
               <label className="flex flex-col gap-1">
-                <span className="text-sm font-medium text-zinc-700">Club</span>
+                <span className="text-sm font-medium text-zinc-700">{t("club")}</span>
                 <select
                   value={clubId}
                   onChange={(e) => setClubId(e.target.value)}
@@ -819,7 +826,7 @@ export function TeamsSetupPanel({
                 </select>
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-sm font-medium text-zinc-700">Captain</span>
+                <span className="text-sm font-medium text-zinc-700">{t("captain")}</span>
                 <select
                   value={captainId}
                   onChange={(e) => setCaptainId(e.target.value)}
@@ -830,8 +837,8 @@ export function TeamsSetupPanel({
                   {clubMembers.length === 0 ? (
                     <option value="">
                       {membersLoading
-                        ? "Loading…"
-                        : "No players in this club"}
+                        ? t("loadingMembers")
+                        : t("noPlayersInClub")}
                     </option>
                   ) : (
                     clubMembers.map((p) => (
@@ -843,13 +850,11 @@ export function TeamsSetupPanel({
                   )}
                 </select>
                 {!membersLoading && clubMembers.length === 0 && clubId ? (
-                  <p className="text-xs text-amber-800">
-                    Add players to this club before creating a team.
-                  </p>
+                  <p className="text-xs text-amber-800">{t("addPlayersFirst")}</p>
                 ) : null}
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-sm font-medium text-zinc-700">Team name</span>
+                <span className="text-sm font-medium text-zinc-700">{t("teamName")}</span>
                 <input
                   type="text"
                   value={teamName}
@@ -870,8 +875,8 @@ export function TeamsSetupPanel({
                 className="btn-secondary w-fit"
               >
                 {atCapacity && maxTeams !== undefined
-                  ? `Division full (${maxTeams} teams)`
-                  : "Add team"}
+                  ? t("divisionFull", { max: maxTeams })
+                  : t("addTeam")}
               </button>
             </>
           )}
@@ -880,7 +885,7 @@ export function TeamsSetupPanel({
 
       {(message || slotSaving) && (
         <p className="text-sm text-zinc-700" role="status">
-          {slotSaving ? "Saving order…" : message}
+          {slotSaving ? t("savingOrder") : message}
         </p>
       )}
     </div>

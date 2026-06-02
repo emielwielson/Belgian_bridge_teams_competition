@@ -1,6 +1,7 @@
 import { COMPETITION_ADMIN_ROLES, requireRoles } from "@/lib/auth/route-auth";
 import { removeOperationalFile } from "@/lib/files/operational-file-storage";
-import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
+import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
+import { ErrorCodes } from "@/lib/http/error-codes";
 import { createServiceClient } from "@/lib/supabase/server-client";
 
 type Params = { params: Promise<{ rulingId: string }> };
@@ -18,7 +19,7 @@ export async function PATCH(request: Request, { params }: Params) {
       .maybeSingle();
 
     if (loadError) return jsonError(loadError.message, 500);
-    if (!existing) return jsonError("Ruling not found", 404);
+    if (!existing) return jsonErrorCode(ErrorCodes.api.rulingNotFound, 404);
 
     const updates: Record<string, unknown> = {
       updated_by: user.id,
@@ -28,7 +29,7 @@ export async function PATCH(request: Request, { params }: Params) {
     if (body.board != null) {
       const board = Number(body.board);
       if (!Number.isInteger(board) || board < 1) {
-        return jsonError("board must be a positive integer", 400);
+        return jsonErrorCode(ErrorCodes.api.boardPositiveInteger, 400);
       }
       updates.board = board;
     }
@@ -68,7 +69,7 @@ export async function DELETE(_request: Request, { params }: Params) {
       .maybeSingle();
 
     if (loadError) return jsonError(loadError.message, 500);
-    if (!existing) return jsonError("Ruling not found", 404);
+    if (!existing) return jsonErrorCode(ErrorCodes.api.rulingNotFound, 404);
 
     const { error } = await supabase.from("rulings").delete().eq("id", rulingId);
 

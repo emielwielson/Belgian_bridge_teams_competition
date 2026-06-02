@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import type { LeagueStandingsDivision } from "@/lib/competition/standings-queries";
 import { StandingsTable } from "./StandingsTable";
 
@@ -7,6 +10,7 @@ type Props = {
 };
 
 export function DivisionStandingsBlock({ division }: Props) {
+  const t = useTranslations("standings");
   const showGroupNames = division.groups.length > 1;
   const fullStandingsGroup =
     division.groups.length === 1 ? division.groups[0] : null;
@@ -20,7 +24,7 @@ export function DivisionStandingsBlock({ division }: Props) {
             href={`/standings/group/${fullStandingsGroup.id}`}
             className="btn-secondary shrink-0 px-3 py-1.5 text-sm"
           >
-            Full standings
+            {t("fullStandings")}
           </Link>
         ) : null}
       </div>
@@ -36,7 +40,7 @@ export function DivisionStandingsBlock({ division }: Props) {
                   href={`/standings/group/${group.id}`}
                   className="btn-secondary shrink-0 px-3 py-1.5 text-sm"
                 >
-                  Full standings
+                  {t("fullStandings")}
                 </Link>
               </div>
             ) : null}

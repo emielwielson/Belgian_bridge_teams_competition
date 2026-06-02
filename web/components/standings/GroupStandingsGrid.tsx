@@ -1,15 +1,18 @@
+"use client";
+
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import type { GroupStandingsGridData } from "@/lib/competition/group-standings-grid";
 
 type Props = {
   grid: GroupStandingsGridData;
 };
 
-function HomeIcon({ linked }: { linked?: boolean }) {
+function HomeIcon({ linked, homeLabel }: { linked?: boolean; homeLabel: string }) {
   return (
     <svg
       aria-hidden={linked}
-      aria-label={linked ? undefined : "Home"}
+      aria-label={linked ? undefined : homeLabel}
       role={linked ? undefined : "img"}
       viewBox="0 0 20 20"
       fill="currentColor"
@@ -26,36 +29,35 @@ const stickyCell =
   "sticky z-10 bg-white px-2 py-1.5 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]";
 
 export function GroupStandingsGrid({ grid }: Props) {
+  const t = useTranslations("standings.table");
   const { rounds, rows, hasMatches } = grid;
 
   if (rows.length === 0) {
     return (
-      <p className="text-sm text-zinc-500">No teams in this group yet.</p>
+      <p className="text-sm text-zinc-500">{t("noTeamsInGroup")}</p>
     );
   }
 
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col gap-2">
       {!hasMatches ? (
-        <p className="text-sm text-zinc-500">
-          Round columns appear after the match schedule is generated.
-        </p>
+        <p className="text-sm text-zinc-500">{t("roundColumnsPending")}</p>
       ) : null}
       <div className="w-full min-w-0 flex-1 overflow-x-auto rounded-lg border border-zinc-200 bg-white">
         <table className="w-full min-w-max border-collapse text-sm">
           <thead>
             <tr className="border-b border-zinc-200">
-              <th className={`${stickyHead} left-0 w-10`}>#</th>
-              <th className={`${stickyHead} left-10 min-w-[9rem]`}>Team</th>
+              <th className={`${stickyHead} left-0 w-10`}>{t("rank")}</th>
+              <th className={`${stickyHead} left-10 min-w-[9rem]`}>{t("team")}</th>
               <th
                 className={`${stickyHead} left-[10.25rem] w-16 text-right`}
               >
-                Pen.
+                {t("penaltyShort")}
               </th>
               <th
                 className={`${stickyHead} left-[14.5rem] w-16 text-right`}
               >
-                VP
+                {t("vp")}
               </th>
               {rounds.map((col) => (
                 <th
@@ -113,13 +115,13 @@ export function GroupStandingsGrid({ grid }: Props) {
                         <Link
                           href={`/matches/${cell.matchId}`}
                           className="inline-flex rounded text-zinc-500 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-1"
-                          aria-label="View match"
+                          aria-label={t("viewMatchAria")}
                         >
-                          <HomeIcon linked />
+                          <HomeIcon linked homeLabel={t("homeAria")} />
                         </Link>
                       ) : cell.isHome ? (
                         <span className="inline-flex text-zinc-500">
-                          <HomeIcon />
+                          <HomeIcon homeLabel={t("homeAria")} />
                         </span>
                       ) : null}
                       {cell.vp != null ? (

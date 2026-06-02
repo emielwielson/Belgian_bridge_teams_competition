@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
+import { renderWithIntl } from "@/test/render-with-intl";
 import { RegularSeasonScoring } from "./RegularSeasonScoring";
 
 describe("RegularSeasonScoring", () => {
@@ -8,7 +9,7 @@ describe("RegularSeasonScoring", () => {
   });
 
   it("shows message when player is not linked", () => {
-    render(<RegularSeasonScoring linkedPlayerName={null} />);
+    renderWithIntl(<RegularSeasonScoring linkedPlayerName={null} />);
     expect(screen.getByText(/not linked to a player profile/i)).toBeInTheDocument();
   });
 
@@ -17,7 +18,7 @@ describe("RegularSeasonScoring", () => {
       "fetch",
       vi.fn(() => new Promise(() => {})),
     );
-    render(<RegularSeasonScoring linkedPlayerName="Alice" />);
+    renderWithIntl(<RegularSeasonScoring linkedPlayerName="Alice" />);
     expect(screen.getByText(/Loading matches/i)).toBeInTheDocument();
   });
 });

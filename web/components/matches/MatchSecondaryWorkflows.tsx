@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { ArbiterRequestWorkflow } from "@/components/matches/ArbiterRequestWorkflow";
 import { HomeAwaySwitchWorkflow } from "@/components/matches/HomeAwaySwitchWorkflow";
 import { PostponeWorkflow } from "@/components/matches/PostponeWorkflow";
@@ -35,6 +36,7 @@ export function MatchSecondaryWorkflows({
   postpone,
   homeAwaySwitch,
 }: Props) {
+  const t = useTranslations("match.workflows");
   const [postponeOpen, setPostponeOpen] = useState(false);
   const [arbiterOpen, setArbiterOpen] = useState(false);
   const [switchOpen, setSwitchOpen] = useState(false);
@@ -51,7 +53,7 @@ export function MatchSecondaryWorkflows({
             aria-expanded={postponeOpen}
             onClick={() => setPostponeOpen((open) => !open)}
           >
-            {postponeOpen ? "Hide reschedule" : "Reschedule match"}
+            {postponeOpen ? t("hideReschedule") : t("rescheduleMatch")}
           </button>
         ) : null}
         {showArbiter ? (
@@ -61,7 +63,7 @@ export function MatchSecondaryWorkflows({
             aria-expanded={arbiterOpen}
             onClick={() => setArbiterOpen((open) => !open)}
           >
-            {arbiterOpen ? "Hide arbiter request" : "Request arbiter"}
+            {arbiterOpen ? t("hideArbiterRequest") : t("requestArbiter")}
           </button>
         ) : null}
         {showHomeAwaySwitch ? (
@@ -71,7 +73,7 @@ export function MatchSecondaryWorkflows({
             aria-expanded={switchOpen}
             onClick={() => setSwitchOpen((open) => !open)}
           >
-            {switchOpen ? "Hide home/away swap" : "Home/away swap"}
+            {switchOpen ? t("hideHomeAwaySwap") : t("homeAwaySwap")}
           </button>
         ) : null}
       </div>

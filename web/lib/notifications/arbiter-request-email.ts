@@ -1,3 +1,8 @@
+import {
+  buildArbiterRequestCreatedEmail,
+  buildArbiterRequestResolvedEmail,
+  loadEmailTemplateContext,
+} from "@/lib/i18n/email-templates";
 import { createServiceClient } from "@/lib/supabase/server-client";
 import { getAppBaseUrl, loginThenMatchUrl } from "./postponement-email";
 import { sendMakeWebhook } from "./make-webhook";
@@ -76,7 +81,10 @@ async function loadArbiterEmails(): Promise<string[]> {
   });
 }
 
-async function loadMatchSummary(matchId: string): Promise<{
+async function loadMatchSummary(
+  matchId: string,
+  locale?: string | null,
+): Promise<{
   round: number;
   homeTeamName: string;
   awayTeamName: string;
@@ -99,45 +107,45 @@ async function loadMatchSummary(matchId: string): Promise<{
     ? match.away_team[0]
     : match.away_team;
 
+  const emailContext = await loadEmailTemplateContext(locale);
+
   return {
     round: match.round,
-    homeTeamName: (home as { name?: string } | null)?.name ?? "Home",
-    awayTeamName: (away as { name?: string } | null)?.name ?? "Away",
+    homeTeamName:
+      (home as { name?: string } | null)?.name ??
+      emailContext.t("arbiterRequestCreated.homeFallback"),
+    awayTeamName:
+      (away as { name?: string } | null)?.name ??
+      emailContext.t("arbiterRequestCreated.awayFallback"),
   };
 }
 
 export async function sendArbiterRequestCreatedEmail(
   ctx: ArbiterRequestCreatedEmailContext,
+  locale?: string | null,
 ): Promise<void> {
   const cc = await loadArbiterEmails();
   if (cc.length === 0) return;
 
-  const summary = await loadMatchSummary(ctx.matchId);
+  const emailContext = await loadEmailTemplateContext(locale);
+  const summary = await loadMatchSummary(ctx.matchId, locale);
   const baseUrl = getAppBaseUrl();
   const matchUrl = `${baseUrl}/matches/${ctx.matchId}`;
   const loginUrl = loginThenMatchUrl(ctx.matchId);
   const inboxUrl = `${baseUrl}/arbiter`;
 
-  const matchLine = summary
-    ? `Round ${summary.round}: ${summary.homeTeamName} vs ${summary.awayTeamName}`
-    : `Match ${ctx.matchId}`;
-
-  const subject = `Arbiter request: ${matchLine}`;
-  const bodyText = [
-    "A team captain submitted an arbiter request with an attachment.",
-    "",
-    matchLine,
-    "",
-    `Arbiter inbox: ${inboxUrl}`,
-    `Match: ${matchUrl}`,
-    `Login first: ${loginUrl}`,
-  ].join("\n");
-
-  const bodyHtml = [
-    "<p>A team captain submitted an arbiter request with an attachment.</p>",
-    `<p><strong>${matchLine}</strong></p>`,
-    `<p><a href="${inboxUrl}">Open arbiter inbox</a> · <a href="${matchUrl}">View match</a><br><a href="${loginUrl}">Login first</a></p>`,
-  ].join("");
+  const { subject, bodyText, bodyHtml } = buildArbiterRequestCreatedEmail(
+    {
+      matchId: ctx.matchId,
+      round: summary?.round,
+      homeTeamName: summary?.homeTeamName,
+      awayTeamName: summary?.awayTeamName,
+      matchUrl,
+      loginUrl,
+      inboxUrl,
+    },
+    emailContext,
+  );
 
   await sendMakeWebhook(
     {
@@ -156,6 +164,7 @@ export async function sendArbiterRequestCreatedEmail(
 
 async function loadArbiterRequestSummary(
   requestId: string,
+  locale?: string | null,
 ): Promise<{
   matchId: string;
   round: number;
@@ -172,7 +181,7 @@ async function loadArbiterRequestSummary(
     .maybeSingle();
   if (error || !row) return null;
 
-  const match = await loadMatchSummary(row.match_id);
+  const match = await loadMatchSummary(row.match_id, locale);
   if (!match) return null;
 
   return {
@@ -185,25 +194,17 @@ async function loadArbiterRequestSummary(
   };
 }
 
-function legacyDetailLines(summary: {
-  board: number | null;
-  description: string | null;
-}): string[] {
-  const lines: string[] = [];
-  if (summary.board != null) lines.push(`Board: ${summary.board}`);
-  if (summary.description) lines.push(`Description: ${summary.description}`);
-  return lines;
-}
-
 export async function sendArbiterRequestResolvedEmail(
   ctx: ArbiterRequestResolvedEmailContext,
+  locale?: string | null,
 ): Promise<void> {
-  const summary = await loadArbiterRequestSummary(ctx.requestId);
+  const summary = await loadArbiterRequestSummary(ctx.requestId, locale);
   if (!summary) return;
 
-  const [arbiterEmails, captainEmails] = await Promise.all([
+  const [arbiterEmails, captainEmails, emailContext] = await Promise.all([
     loadArbiterEmails(),
     loadCaptainEmailsForMatch(summary.matchId),
+    loadEmailTemplateContext(locale),
   ]);
 
   const cc = [...new Set([...arbiterEmails, ...captainEmails])];
@@ -213,41 +214,21 @@ export async function sendArbiterRequestResolvedEmail(
   const matchUrl = `${baseUrl}/matches/${summary.matchId}`;
   const loginUrl = loginThenMatchUrl(summary.matchId);
   const inboxUrl = `${baseUrl}/arbiter`;
-  const matchLine = `Round ${summary.round}: ${summary.homeTeamName} vs ${summary.awayTeamName}`;
-  const legacyLines = legacyDetailLines(summary);
 
-  const rulingLine = ctx.rulingSignedUrl
-    ? `Official ruling: ${ctx.rulingSignedUrl}`
-    : null;
-
-  const subject = `Arbiter request resolved: ${matchLine}`;
-  const bodyText = [
-    "An arbiter request has been resolved with an official ruling.",
-    "",
-    matchLine,
-    ...legacyLines,
-    ...(rulingLine ? ["", rulingLine] : []),
-    "",
-    `Arbiter inbox: ${inboxUrl}`,
-    `Match: ${matchUrl}`,
-    `Login first: ${loginUrl}`,
-  ].join("\n");
-
-  const legacyHtml =
-    legacyLines.length > 0
-      ? `<br>${legacyLines.join("<br>")}`
-      : "";
-
-  const rulingHtml = ctx.rulingSignedUrl
-    ? `<p><a href="${ctx.rulingSignedUrl}">View official ruling (PDF/image)</a></p>`
-    : "";
-
-  const bodyHtml = [
-    "<p>An arbiter request has been resolved with an official ruling.</p>",
-    `<p><strong>${matchLine}</strong>${legacyHtml}</p>`,
-    rulingHtml,
-    `<p><a href="${inboxUrl}">Open arbiter inbox</a> · <a href="${matchUrl}">View match</a><br><a href="${loginUrl}">Login first</a></p>`,
-  ].join("");
+  const { subject, bodyText, bodyHtml } = buildArbiterRequestResolvedEmail(
+    {
+      round: summary.round,
+      homeTeamName: summary.homeTeamName,
+      awayTeamName: summary.awayTeamName,
+      board: summary.board,
+      description: summary.description,
+      matchUrl,
+      loginUrl,
+      inboxUrl,
+      rulingSignedUrl: ctx.rulingSignedUrl,
+    },
+    emailContext,
+  );
 
   await sendMakeWebhook(
     {

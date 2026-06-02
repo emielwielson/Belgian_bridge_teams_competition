@@ -3,7 +3,8 @@ import {
   getConventionCard,
   getConventionCardPublicUrl,
 } from "@/lib/competition/convention-card-queries";
-import { jsonError, jsonFromError } from "@/lib/http/api-response";
+import { jsonError, jsonFromError, jsonErrorCode } from "@/lib/http/api-response";
+import { ErrorCodes } from "@/lib/http/error-codes";
 import { createSessionClient } from "@/lib/supabase/server-client";
 
 type DownloadParams = {
@@ -17,7 +18,7 @@ export async function GET(_request: Request, { params }: DownloadParams) {
 
     const card = await getConventionCard(supabase, teamId, cardId);
     if (!card) {
-      return jsonError("Convention card not found", 404);
+      return jsonErrorCode(ErrorCodes.api.conventionCardNotFound, 404);
     }
 
     const url = getConventionCardPublicUrl(supabase, card.storage_path);

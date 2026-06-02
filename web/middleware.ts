@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import createMiddleware from "next-intl/middleware";
 import { NextResponse, type NextRequest } from "next/server";
 import {
   isPublicPath,
@@ -10,17 +11,42 @@ import {
 } from "@/lib/auth/user-access";
 import { hasAnyRole } from "@/lib/auth/roles";
 import { getSupabasePublicEnv } from "@/lib/supabase/env";
+import { routing } from "./i18n/routing";
+
+const intlMiddleware = createMiddleware(routing);
+
+const localeCookieName = "NEXT_LOCALE";
+
+function copyIntlCookies(from: NextResponse, to: NextResponse) {
+  const localeCookie = from.cookies.get(localeCookieName);
+  if (!localeCookie) {
+    return;
+  }
+
+  const cookieOptions =
+    typeof routing.localeCookie === "object"
+      ? Object.fromEntries(
+          Object.entries(routing.localeCookie).filter(([key]) => key !== "name"),
+        )
+      : {};
+
+  to.cookies.set(localeCookieName, localeCookie.value, {
+    path: "/",
+    ...cookieOptions,
+  });
+}
 
 export async function middleware(request: NextRequest) {
+  const intlResponse = intlMiddleware(request);
   const { pathname } = request.nextUrl;
 
   if (isPublicPath(pathname)) {
-    return NextResponse.next();
+    return intlResponse;
   }
 
   const requiredRoles = requiredRolesForPath(pathname);
   if (!requiredRoles) {
-    return NextResponse.next();
+    return intlResponse;
   }
 
   let response = NextResponse.next({ request });
@@ -48,7 +74,9 @@ export async function middleware(request: NextRequest) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     loginUrl.searchParams.set("next", pathname);
-    return NextResponse.redirect(loginUrl);
+    const redirect = NextResponse.redirect(loginUrl);
+    copyIntlCookies(intlResponse, redirect);
+    return redirect;
   }
 
   const { data: roleRows } = await supabase
@@ -69,7 +97,9 @@ export async function middleware(request: NextRequest) {
       const home = request.nextUrl.clone();
       home.pathname = "/";
       home.searchParams.set("error", "forbidden");
-      return NextResponse.redirect(home);
+      const redirect = NextResponse.redirect(home);
+      copyIntlCookies(intlResponse, redirect);
+      return redirect;
     }
 
     if (pathname === "/club-manager") {
@@ -81,14 +111,18 @@ export async function middleware(request: NextRequest) {
       if (assignments?.length === 1) {
         const clubUrl = request.nextUrl.clone();
         clubUrl.pathname = `/club-manager/${assignments[0].club_id}`;
-        return NextResponse.redirect(clubUrl);
+        const redirect = NextResponse.redirect(clubUrl);
+        copyIntlCookies(intlResponse, redirect);
+        return redirect;
       }
     }
 
+    copyIntlCookies(intlResponse, response);
     return response;
   }
 
   if (pathname.startsWith("/player/matches/")) {
+    copyIntlCookies(intlResponse, response);
     return response;
   }
 
@@ -96,9 +130,12 @@ export async function middleware(request: NextRequest) {
     const home = request.nextUrl.clone();
     home.pathname = "/";
     home.searchParams.set("error", "forbidden");
-    return NextResponse.redirect(home);
+    const redirect = NextResponse.redirect(home);
+    copyIntlCookies(intlResponse, redirect);
+    return redirect;
   }
 
+  copyIntlCookies(intlResponse, response);
   return response;
 }
 

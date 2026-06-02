@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { createBrowserClient } from "@/lib/supabase/browser-client";
 
@@ -8,6 +9,7 @@ type Props = {
 };
 
 export function LoginForm({ nextPath }: Props) {
+  const t = useTranslations("auth");
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "sent" | "error">(
     "idle",
@@ -37,13 +39,13 @@ export function LoginForm({ nextPath }: Props) {
     }
 
     setStatus("sent");
-    setMessage("Check your email for the magic link.");
+    setMessage(t("checkEmail"));
   }
 
   return (
     <form onSubmit={handleSubmit} className="card flex max-w-sm flex-col gap-4">
       <label className="flex flex-col gap-1 text-sm font-medium text-zinc-900">
-        Email
+        {t("email")}
         <input
           type="email"
           name="email"
@@ -52,7 +54,7 @@ export function LoginForm({ nextPath }: Props) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="input"
-          placeholder="you@example.com"
+          placeholder={t("emailPlaceholder")}
         />
       </label>
       <button
@@ -60,7 +62,7 @@ export function LoginForm({ nextPath }: Props) {
         disabled={status === "loading" || status === "sent"}
         className="btn-primary w-full"
       >
-        {status === "loading" ? "Sending…" : "Send magic link"}
+        {status === "loading" ? t("sending") : t("sendMagicLink")}
       </button>
       {message && (
         <p

@@ -5,7 +5,8 @@ import {
 } from "@/lib/competition/group-match-rounds";
 import { requireActiveSeason } from "@/lib/competition/season";
 import { requireSeasonInSetup } from "@/lib/competition/season-setup";
-import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
+import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
+import { ErrorCodes } from "@/lib/http/error-codes";
 
 type Params = { params: Promise<{ groupId: string }> };
 
@@ -31,7 +32,7 @@ export async function PUT(request: Request, { params }: Params) {
     const body = await request.json();
     const skippedRounds = body.skippedRounds as number[] | undefined;
     if (!Array.isArray(skippedRounds)) {
-      return jsonError("skippedRounds array required", 400);
+      return jsonErrorCode(ErrorCodes.api.skippedRoundsRequired, 400);
     }
 
     await saveGroupSkippedRounds(supabase, groupId, skippedRounds);

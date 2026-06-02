@@ -1,4 +1,5 @@
 import { revalidatePath } from "next/cache";
+import { getLocale } from "next-intl/server";
 import { requireAuth } from "@/lib/auth/route-auth";
 import { loadMatchContext } from "@/lib/auth/match-access";
 import {
@@ -8,7 +9,8 @@ import {
   respondMatchHomeAwaySwitch,
 } from "@/lib/competition/home-away-switch";
 import { revalidateStandingsForGroup } from "@/lib/competition/revalidate-standings";
-import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
+import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
+import { ErrorCodes } from "@/lib/http/error-codes";
 import {
   sendHomeAwaySwitchDecisionEmail,
   sendHomeAwaySwitchProposedEmail,
@@ -23,11 +25,11 @@ export async function GET(_request: Request, { params }: Params) {
     const state = await getMatchHomeAwaySwitchState(supabase, matchId);
 
     if (!state) {
-      return jsonError("Match not found", 404);
+      return jsonErrorCode(ErrorCodes.api.matchNotFound, 404);
     }
 
     if (!canAccessHomeAwaySwitchWorkflow(state)) {
-      return jsonError("Home/away switch is not available for this match", 403);
+      return jsonErrorCode(ErrorCodes.api.homeAwayNotAvailable, 403);
     }
 
     return jsonOk({ state });
@@ -48,7 +50,7 @@ export async function POST(request: Request, { params }: Params) {
     );
 
     if (!requestingTeamId) {
-      return jsonError("requesting_team_id is required", 400);
+      return jsonErrorCode(ErrorCodes.api.requestingTeamIdRequired, 400);
     }
 
     await proposeMatchHomeAwaySwitch(supabase, matchId, requestingTeamId);
@@ -58,6 +60,7 @@ export async function POST(request: Request, { params }: Params) {
       requestingTeamId === match.home_team_id
         ? match.home_team.name
         : match.away_team.name;
+    const locale = await getLocale();
     void sendHomeAwaySwitchProposedEmail(
       {
         matchId,
@@ -68,6 +71,7 @@ export async function POST(request: Request, { params }: Params) {
       },
       match.home_team_id,
       match.away_team_id,
+      locale,
     );
 
     return jsonOk({ state });
@@ -86,10 +90,7 @@ export async function PATCH(request: Request, { params }: Params) {
     const action = body.action as string;
 
     if (!requestId || !["approve", "reject", "cancel"].includes(action)) {
-      return jsonError(
-        "request_id and action (approve|reject|cancel) are required",
-        400,
-      );
+      return jsonErrorCode(ErrorCodes.api.postponeActionRequired, 400);
     }
 
     const matchBefore = await loadMatchContext(supabase, matchId);
@@ -114,6 +115,7 @@ export async function PATCH(request: Request, { params }: Params) {
         requestingTeamId === matchBefore.home_team_id
           ? matchBefore.home_team.name
           : matchBefore.away_team.name;
+      const locale = await getLocale();
       void sendHomeAwaySwitchDecisionEmail(
         {
           matchId,
@@ -125,6 +127,7 @@ export async function PATCH(request: Request, { params }: Params) {
         },
         matchBefore.home_team_id,
         matchBefore.away_team_id,
+        locale,
       );
     }
 

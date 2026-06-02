@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GET, POST } from "./route";
 
+vi.mock("next-intl/server", () => ({
+  getLocale: vi.fn().mockResolvedValue("en"),
+}));
+
 vi.mock("@/lib/auth/route-auth", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/auth/route-auth")>();
   return {
@@ -86,9 +90,10 @@ describe("/api/matches/[matchId]/arbiter-requests", () => {
       "match-1",
       "arbiter/match-1/file.pdf",
     );
-    expect(sendArbiterRequestCreatedEmail).toHaveBeenCalledWith({
-      matchId: "match-1",
-    });
+    expect(sendArbiterRequestCreatedEmail).toHaveBeenCalledWith(
+      { matchId: "match-1" },
+      "en",
+    );
   });
 
   it("POST returns 400 when image_path is missing", async () => {

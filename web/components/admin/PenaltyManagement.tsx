@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 
 type Penalty = {
   id: string;
@@ -20,6 +21,9 @@ type Props = {
 };
 
 export function PenaltyManagement({ groupId, teams }: Props) {
+  const t = useTranslations("admin.penalties");
+  const tCommon = useTranslations("common");
+
   const [penalties, setPenalties] = useState<Penalty[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -42,14 +46,14 @@ export function PenaltyManagement({ groupId, teams }: Props) {
     try {
       const res = await fetch(`/api/admin/penalties?groupId=${groupId}`);
       const body = await res.json();
-      if (!res.ok) throw new Error(body.error ?? "Failed to load penalties");
+      if (!res.ok) throw new Error(body.error ?? t("loadFailed"));
       setPenalties(body.penalties ?? []);
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Load failed");
+      setMessage(e instanceof Error ? e.message : t("loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, [groupId]);
+  }, [groupId, t]);
 
   useEffect(() => {
     load();
@@ -57,7 +61,7 @@ export function PenaltyManagement({ groupId, teams }: Props) {
 
   async function save() {
     if (!form.team_id || !form.reason.trim()) {
-      setMessage("Team and reason are required");
+      setMessage(t("teamReasonRequired"));
       return;
     }
     setMessage(null);
@@ -75,7 +79,7 @@ export function PenaltyManagement({ groupId, teams }: Props) {
         });
         const uploadBody = await uploadRes.json();
         if (!uploadRes.ok) {
-          throw new Error(uploadBody.error ?? "Upload failed");
+          throw new Error(uploadBody.error ?? t("saveFailed"));
         }
         filePath = uploadBody.path ?? null;
       }
@@ -97,9 +101,10 @@ export function PenaltyManagement({ groupId, teams }: Props) {
       });
       const body = await res.json();
       if (!res.ok) {
-        setMessage(body.error ?? "Save failed");
+        setMessage(body.error ?? t("saveFailed"));
         return;
       }
+      const wasEditing = editingId;
       setEditingId(null);
       setForm({
         team_id: teams[0]?.id ?? "",
@@ -109,22 +114,22 @@ export function PenaltyManagement({ groupId, teams }: Props) {
         file: null,
       });
       await load();
-      setMessage(editingId ? "Penalty updated" : "Penalty added");
+      setMessage(wasEditing ? t("updated") : t("added"));
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Save failed");
+      setMessage(e instanceof Error ? e.message : t("saveFailed"));
     }
   }
 
   async function remove(id: string) {
-    if (!confirm("Delete this penalty?")) return;
+    if (!confirm(t("deleteConfirm"))) return;
     const res = await fetch(`/api/admin/penalties/${id}`, { method: "DELETE" });
     const body = await res.json();
     if (!res.ok) {
-      setMessage(body.error ?? "Delete failed");
+      setMessage(body.error ?? t("deleteFailed"));
       return;
     }
     await load();
-    setMessage("Penalty removed");
+    setMessage(t("removed"));
   }
 
   function startEdit(p: Penalty) {
@@ -139,38 +144,32 @@ export function PenaltyManagement({ groupId, teams }: Props) {
   }
 
   if (!groupId) {
-    return (
-      <p className="text-sm text-zinc-600">
-        Select a group above to manage VP penalties (standings corrections).
-      </p>
-    );
+    return <p className="text-sm text-zinc-600">{t("selectGroup")}</p>;
   }
 
   return (
     <section className="card mt-6">
-      <h2 className="font-semibold text-zinc-900">Penalties & corrections</h2>
-      <p className="mt-1 text-xs text-zinc-500">
-        VP deductions apply to group standings for the active season.
-      </p>
+      <h2 className="font-semibold text-zinc-900">{t("title")}</h2>
+      <p className="mt-1 text-xs text-zinc-500">{t("description")}</p>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <label className="block text-xs font-medium text-zinc-600">
-          Team
+          {t("team")}
           <select
             value={form.team_id}
             onChange={(e) => setForm((f) => ({ ...f, team_id: e.target.value }))}
             className="mt-1 w-full rounded-md border border-zinc-300 px-2 py-2 text-sm"
           >
-            <option value="">Select team</option>
-            {teams.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
+            <option value="">{t("selectTeam")}</option>
+            {teams.map((team) => (
+              <option key={team.id} value={team.id}>
+                {team.name}
               </option>
             ))}
           </select>
         </label>
         <label className="block text-xs font-medium text-zinc-600">
-          Date
+          {t("date")}
           <input
             type="date"
             value={form.penalty_date}
@@ -181,7 +180,7 @@ export function PenaltyManagement({ groupId, teams }: Props) {
           />
         </label>
         <label className="block text-xs font-medium text-zinc-600 sm:col-span-2">
-          Reason
+          {t("reason")}
           <input
             type="text"
             value={form.reason}
@@ -190,7 +189,7 @@ export function PenaltyManagement({ groupId, teams }: Props) {
           />
         </label>
         <label className="block text-xs font-medium text-zinc-600">
-          VP deduction
+          {t("vpDeduction")}
           <input
             type="number"
             min={0}
@@ -203,7 +202,7 @@ export function PenaltyManagement({ groupId, teams }: Props) {
           />
         </label>
         <label className="block text-xs font-medium text-zinc-600 sm:col-span-2">
-          Document (optional)
+          {t("documentOptional")}
           <input
             type="file"
             accept="application/pdf,image/jpeg,image/png,image/webp"
@@ -217,7 +216,7 @@ export function PenaltyManagement({ groupId, teams }: Props) {
 
       <div className="mt-3 flex flex-wrap gap-2">
         <button type="button" onClick={save} className="btn-primary text-sm">
-          {editingId ? "Update penalty" : "Add penalty"}
+          {editingId ? t("update") : t("add")}
         </button>
         {editingId ? (
           <button
@@ -234,7 +233,7 @@ export function PenaltyManagement({ groupId, teams }: Props) {
             }}
             className="btn-secondary text-sm"
           >
-            Cancel edit
+            {t("cancelEdit")}
           </button>
         ) : null}
       </div>
@@ -244,11 +243,11 @@ export function PenaltyManagement({ groupId, teams }: Props) {
       ) : null}
 
       {loading ? (
-        <p className="mt-4 text-sm text-zinc-600">Loading…</p>
+        <p className="mt-4 text-sm text-zinc-600">{t("loading")}</p>
       ) : (
         <ul className="mt-4 divide-y divide-zinc-200 text-sm">
           {penalties.length === 0 ? (
-            <li className="py-2 text-zinc-600">No penalties for this group.</li>
+            <li className="py-2 text-zinc-600">{t("none")}</li>
           ) : (
             penalties.map((p) => (
               <li
@@ -256,8 +255,14 @@ export function PenaltyManagement({ groupId, teams }: Props) {
                 className="flex flex-wrap items-center justify-between gap-2 py-2"
               >
                 <span>
-                  {(p.team as { name?: string } | null)?.name ?? "Team"} —{" "}
-                  {p.penalty_date}: {p.reason} (−{p.vp_deduction} VP)
+                  {t("entry", {
+                    teamName:
+                      (p.team as { name?: string } | null)?.name ??
+                      t("teamFallback"),
+                    date: p.penalty_date,
+                    reason: p.reason,
+                    vp: p.vp_deduction,
+                  })}
                 </span>
                 <span className="flex gap-2">
                   <button
@@ -265,14 +270,14 @@ export function PenaltyManagement({ groupId, teams }: Props) {
                     className="text-xs font-medium text-zinc-700 underline"
                     onClick={() => startEdit(p)}
                   >
-                    Edit
+                    {tCommon("edit")}
                   </button>
                   <button
                     type="button"
                     className="text-xs font-medium text-red-700 underline"
                     onClick={() => remove(p.id)}
                   >
-                    Delete
+                    {tCommon("delete")}
                   </button>
                 </span>
               </li>

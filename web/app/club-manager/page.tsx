@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { redirect } from "next/navigation";
 import { loadManagedClubsForUser } from "@/lib/auth/user-access";
 import { createSessionClient } from "@/lib/supabase/server-client";
 
 export default async function ClubManagerPage() {
+  const t = await getTranslations("club");
   const supabase = await createSessionClient();
   const {
     data: { user },
@@ -17,32 +19,34 @@ export default async function ClubManagerPage() {
 
   return (
     <main className="page-container flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold text-zinc-900">Club manager</h1>
-      <p className="text-sm text-zinc-600">
-        Manage players and memberships for your assigned clubs.
-      </p>
+      <h1 className="text-2xl font-semibold text-zinc-900">{t("hubTitle")}</h1>
+      <p className="text-sm text-zinc-600">{t("hubDescription")}</p>
       {clubs.length === 0 ? (
         <section className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
-          <p className="font-medium">No club assigned yet</p>
+          <p className="font-medium">{t("noClubTitle")}</p>
           <p className="mt-2">
-            A competition manager must link your account to a club. You need
-            both the <code className="rounded bg-amber-100 px-1">club_manager</code>{" "}
-            role and a row in{" "}
-            <code className="rounded bg-amber-100 px-1">
-              club_manager_assignments
-            </code>
-            .
+            {t.rich("noClubBody", {
+              roleCode: () => (
+                <code className="rounded bg-amber-100 px-1">club_manager</code>
+              ),
+              assignmentsCode: () => (
+                <code className="rounded bg-amber-100 px-1">
+                  club_manager_assignments
+                </code>
+              ),
+            })}
           </p>
-          <p className="mt-3 font-medium">In Supabase SQL (as competition admin)</p>
+          <p className="mt-3 font-medium">{t("sqlInstructionsTitle")}</p>
           <ol className="mt-2 list-decimal space-y-2 pl-5">
             <li>
-              Copy the club id from Table Editor →{" "}
-              <code className="rounded bg-amber-100 px-1">clubs</code>.
+              {t.rich("sqlStep1", {
+                clubsTable: () => (
+                  <code className="rounded bg-amber-100 px-1">clubs</code>
+                ),
+              })}
             </li>
-            <li>
-              Run both statements below (role first, then club assignment).
-            </li>
-            <li>Sign out and sign in again.</li>
+            <li>{t("sqlStep2")}</li>
+            <li>{t("sqlStep3")}</li>
           </ol>
           <pre className="mt-2 overflow-x-auto rounded bg-amber-100/80 p-3 text-xs">
 {`-- Step 1: club_manager role (required for /club-manager routes)
@@ -56,10 +60,11 @@ values ('${user.id}', '<clubs.id>')
 on conflict (user_id, club_id) do nothing;`}
           </pre>
           <p className="mt-2 text-amber-900">
-            Your user id is pre-filled. Replace{" "}
-            <code className="rounded bg-amber-100 px-1">&lt;clubs.id&gt;</code> with
-            the club uuid. If you already ran step 2 only, run step 1 and sign in
-            again.
+            {t.rich("sqlReplaceClubId", {
+              clubIdPlaceholder: () => (
+                <code className="rounded bg-amber-100 px-1">&lt;clubs.id&gt;</code>
+              ),
+            })}
           </p>
         </section>
       ) : (

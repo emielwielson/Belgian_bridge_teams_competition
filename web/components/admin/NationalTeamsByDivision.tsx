@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { TeamsSetupPanel } from "@/components/admin/TeamsSetupPanel";
 import { NATIONAL_DIVISIONS } from "@/lib/competition/national-structure";
 import { NATIONAL_TEAMS_PER_GROUP } from "@/lib/competition/national-teams";
 import type { DivisionReadiness } from "@/lib/competition/national-readiness";
+import { translateDivisionName } from "@/lib/i18n/labels";
 
 type Club = { id: string; name: string };
 
@@ -19,6 +21,9 @@ export function NationalTeamsByDivision({
   readOnly = false,
   onTeamsChanged,
 }: Props) {
+  const t = useTranslations("admin.nationalTeams");
+  const tDivisions = useTranslations("divisions");
+
   const [selectedDivision, setSelectedDivision] = useState(
     NATIONAL_DIVISIONS[0]?.name ?? "",
   );
@@ -26,6 +31,7 @@ export function NationalTeamsByDivision({
 
   const division = divisions.find((d) => d.name === selectedDivision);
   const groupId = division?.groupId ?? null;
+  const divisionLabel = translateDivisionName(selectedDivision, tDivisions);
 
   useEffect(() => {
     fetch("/api/admin/competition/clubs")
@@ -40,16 +46,12 @@ export function NationalTeamsByDivision({
   return (
     <section className="card flex flex-col gap-4">
       <div>
-        <h2 className="text-lg font-semibold text-zinc-900">Teams</h2>
-        <p className="mt-1 text-sm text-zinc-600">
-          Select a division, then add 7 or 8 teams (one per club). If you have 7
-          teams, add a bye in the schedule slot order below. Each team needs a
-          captain from that club.
-        </p>
+        <h2 className="text-lg font-semibold text-zinc-900">{t("title")}</h2>
+        <p className="mt-1 text-sm text-zinc-600">{t("description")}</p>
       </div>
 
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-medium text-zinc-700">Division</span>
+        <span className="text-sm font-medium text-zinc-700">{t("division")}</span>
         <select
           value={selectedDivision}
           onChange={(e) => setSelectedDivision(e.target.value)}
@@ -57,23 +59,20 @@ export function NationalTeamsByDivision({
         >
           {NATIONAL_DIVISIONS.map((d) => (
             <option key={d.name} value={d.name}>
-              {d.name}
+              {translateDivisionName(d.name, tDivisions)}
             </option>
           ))}
         </select>
       </label>
 
       {!groupId && (
-        <p className="text-sm text-amber-800">
-          This division has no group yet. National structure may still be setting
-          up.
-        </p>
+        <p className="text-sm text-amber-800">{t("noGroupYet")}</p>
       )}
 
       {groupId && (
         <TeamsSetupPanel
           groupId={groupId}
-          divisionLabel={selectedDivision}
+          divisionLabel={divisionLabel}
           clubs={clubs}
           readOnly={readOnly}
           maxTeams={NATIONAL_TEAMS_PER_GROUP}

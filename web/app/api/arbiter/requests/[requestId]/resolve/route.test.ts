@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { POST } from "./route";
 
+vi.mock("next-intl/server", () => ({
+  getLocale: vi.fn().mockResolvedValue("en"),
+}));
+
 vi.mock("@/lib/auth/route-auth", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/auth/route-auth")>();
   return {
@@ -83,9 +87,12 @@ describe("/api/arbiter/requests/[requestId]/resolve", () => {
       board: 2,
       rulingDate: null,
     });
-    expect(sendArbiterRequestResolvedEmail).toHaveBeenCalledWith({
-      requestId: "req-1",
-      rulingSignedUrl: "https://signed/r.pdf",
-    });
+    expect(sendArbiterRequestResolvedEmail).toHaveBeenCalledWith(
+      {
+        requestId: "req-1",
+        rulingSignedUrl: "https://signed/r.pdf",
+      },
+      "en",
+    );
   });
 });

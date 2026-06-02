@@ -1,7 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import type { MatchPostponementState } from "@/lib/competition/postponement";
+import { toIntlLocale } from "@/i18n/intl-locale";
+import type { Locale } from "@/i18n/config";
+import { useTranslateApiError } from "@/lib/i18n/translate-api-error";
 import {
   formatBrussels,
   parseBrusselsToUtc,
@@ -23,6 +27,11 @@ export function PostponeWorkflow({
   homeTeamId,
   awayTeamId,
 }: Props) {
+  const t = useTranslations("match.reschedule");
+  const tCommon = useTranslations("common");
+  const locale = useLocale() as Locale;
+  const intlLocale = toIntlLocale(locale);
+  const translateApiError = useTranslateApiError();
   const [state, setState] = useState<MatchPostponementState | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
@@ -42,7 +51,7 @@ export function PostponeWorkflow({
     }
     if (!res.ok) {
       const body = await res.json();
-      setError(body.error ?? "Failed to load postponement state");
+      setError(body.error ? translateApiError(body.error) : t("loadFailed"));
       setLoading(false);
       return;
     }
@@ -53,7 +62,7 @@ export function PostponeWorkflow({
     }
     setProposedLocal(toDatetimeLocalValue(body.state.datetime));
     setLoading(false);
-  }, [matchId]);
+  }, [matchId, t, translateApiError]);
 
   useEffect(() => {
     void load();
@@ -62,7 +71,7 @@ export function PostponeWorkflow({
   async function handlePropose(e: React.FormEvent) {
     e.preventDefault();
     if (!proposingTeamId || !proposedLocal) {
-      setError("Choose a team and new date/time");
+      setError(t("chooseTeamAndDate"));
       return;
     }
     setBusy(true);
@@ -79,14 +88,12 @@ export function PostponeWorkflow({
     setBusy(false);
     if (!res.ok) {
       const body = await res.json();
-      setError(body.error ?? "Failed to propose postponement");
+      setError(body.error ? translateApiError(body.error) : t("proposeFailed"));
       return;
     }
     const body = (await res.json()) as { state: MatchPostponementState };
     setState(body.state);
-    setMessage(
-      "Reschedule proposed. Both captains and competition managers were notified by email. The other captain can approve here on this match page.",
-    );
+    setMessage(t("proposedSuccess"));
   }
 
   async function handleRespond(
@@ -107,24 +114,28 @@ export function PostponeWorkflow({
     setBusy(false);
     if (!res.ok) {
       const body = await res.json();
-      setError(body.error ?? `Failed to ${action}`);
+      setError(
+        body.error
+          ? translateApiError(body.error)
+          : t("respondFailed", { action: tCommon(action) }),
+      );
       return;
     }
     const body = (await res.json()) as { state: MatchPostponementState };
     setState(body.state);
     if (action === "approve") {
-      setMessage("Match rescheduled.");
+      setMessage(t("approved"));
     } else if (action === "reject") {
-      setMessage("Postponement request rejected.");
+      setMessage(t("rejected"));
     } else {
-      setMessage("Postponement request cancelled.");
+      setMessage(t("cancelled"));
     }
   }
 
   if (loading) {
     return (
       <section className="card">
-        <p className="text-sm text-zinc-500">Loading reschedule options…</p>
+        <p className="text-sm text-zinc-500">{t("loading")}</p>
       </section>
     );
   }
@@ -151,11 +162,8 @@ export function PostponeWorkflow({
   return (
     <section className="card flex flex-col gap-4">
       <div>
-        <h2 className="text-sm font-semibold text-zinc-900">Reschedule match</h2>
-        <p className="mt-1 text-sm text-zinc-600">
-          Propose a new date on this page. The other captain approves or rejects
-          here as well.
-        </p>
+        <h2 className="text-sm font-semibold text-zinc-900">{t("title")}</h2>
+        <p className="mt-1 text-sm text-zinc-600">{t("description")}</p>
       </div>
 
       {error ? (
@@ -170,20 +178,19 @@ export function PostponeWorkflow({
       ) : null}
 
       {played ? (
-        <p className="text-sm text-zinc-500">
-          This match has been played; rescheduling is no longer available.
-        </p>
+        <p className="text-sm text-zinc-500">{t("playedNoLonger")}</p>
       ) : state.pending ? (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-sm">
-          <p className="font-medium text-amber-900">Pending approval</p>
+          <p className="font-medium text-amber-900">{t("pendingTitle")}</p>
           <p className="mt-1 text-amber-800">
-            {teamLabel(state.pending.proposing_team_id)} proposed{" "}
-            <span className="font-medium">
-              {formatBrussels(state.pending.proposed_datetime)}
-            </span>
-            . Official date remains{" "}
-            <span className="font-medium">{formatBrussels(state.datetime)}</span>{" "}
-            until approved.
+            {t("pendingBody", {
+              proposingTeam: teamLabel(state.pending.proposing_team_id),
+              proposedDatetime: formatBrussels(
+                state.pending.proposed_datetime,
+                intlLocale,
+              ),
+              currentDatetime: formatBrussels(state.datetime, intlLocale),
+            })}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             {state.can_approve ? (
@@ -193,7 +200,7 @@ export function PostponeWorkflow({
                 onClick={() => handleRespond("approve")}
                 className="btn-primary px-3 py-1.5 text-sm"
               >
-                Approve
+                {tCommon("approve")}
               </button>
             ) : null}
             {state.can_reject ? (
@@ -203,7 +210,7 @@ export function PostponeWorkflow({
                 onClick={() => handleRespond("reject")}
                 className="btn-secondary px-3 py-1.5 text-sm"
               >
-                Reject
+                {tCommon("reject")}
               </button>
             ) : null}
             {state.can_cancel ? (
@@ -213,7 +220,7 @@ export function PostponeWorkflow({
                 onClick={() => handleRespond("cancel")}
                 className="text-sm text-zinc-600 hover:underline"
               >
-                Cancel request
+                {t("cancelRequest")}
               </button>
             ) : null}
           </div>
@@ -222,14 +229,14 @@ export function PostponeWorkflow({
         <form onSubmit={handlePropose} className="flex flex-col gap-3">
           {state.captain_teams.length > 1 ? (
             <label className="flex flex-col gap-1 text-sm">
-              <span className="text-zinc-600">Proposing as</span>
+              <span className="text-zinc-600">{t("proposingAs")}</span>
               <select
                 value={proposingTeamId}
                 onChange={(e) => setProposingTeamId(e.target.value)}
                 className="input"
                 required
               >
-                <option value="">Select team</option>
+                <option value="">{t("selectTeam")}</option>
                 {state.captain_teams.map((id) => (
                   <option key={id} value={id}>
                     {teamLabel(id)}
@@ -239,7 +246,7 @@ export function PostponeWorkflow({
             </label>
           ) : null}
           <label className="flex flex-col gap-1 text-sm">
-            <span className="text-zinc-600">New date and time (Europe/Brussels)</span>
+            <span className="text-zinc-600">{t("newDateTime")}</span>
             <input
               type="datetime-local"
               value={proposedLocal}
@@ -253,7 +260,7 @@ export function PostponeWorkflow({
             disabled={busy || !proposingTeamId}
             className="btn-primary w-fit disabled:cursor-not-allowed disabled:bg-zinc-400 disabled:opacity-100 hover:disabled:bg-zinc-400"
           >
-            {busy ? "Sending…" : "Propose new date"}
+            {busy ? t("sending") : t("proposeNewDate")}
           </button>
         </form>
       ) : null}

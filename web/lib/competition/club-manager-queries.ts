@@ -34,9 +34,10 @@ export type ClubOverview = {
   teams: ClubOverviewTeam[];
 };
 
-function unwrapOne<T>(value: T | T[] | null | undefined): T | null {
+function unwrapOne<T>(value: unknown): T | null {
   if (value == null) return null;
-  return Array.isArray(value) ? (value[0] ?? null) : value;
+  if (Array.isArray(value)) return (value[0] ?? null) as T | null;
+  return value as T;
 }
 
 export async function loadClubOverview(
@@ -52,9 +53,7 @@ export async function loadClubOverview(
   if (clubError) throw clubError;
   if (!clubRow) return null;
 
-  const regionRaw = unwrapOne(
-    clubRow.region as { code: string; name: string } | null,
-  );
+  const regionRaw = unwrapOne<{ code: string; name: string }>(clubRow.region);
   const season = await getActiveSeason(supabase);
 
   let players: ClubOverviewPlayer[] = [];
@@ -109,7 +108,7 @@ export async function loadClubOverview(
 
       for (const row of rosterRows ?? []) {
         rosterByTeam.set(row.team_id, (rosterByTeam.get(row.team_id) ?? 0) + 1);
-        const team = unwrapOne(row.team as { id: string; name: string } | null);
+        const team = unwrapOne<{ id: string; name: string }>(row.team);
         if (team) {
           assignmentByPlayer.set(row.player_id, {
             team_id: team.id,
@@ -120,21 +119,17 @@ export async function loadClubOverview(
     }
 
     teams = (teamRows ?? []).map((t) => {
-      const group = unwrapOne(
-        t.group as {
+      const group = unwrapOne<{
           name: string;
           division: { name: string; league: { name: string } | { name: string }[] };
-        } | null,
-      );
+        }>(t.group);
       const division = group
-        ? unwrapOne(group.division as { name: string; league: unknown })
+        ? unwrapOne<{ name: string; league: unknown }>(group.division)
         : null;
       const league = division
-        ? unwrapOne(division.league as { name: string })
+        ? unwrapOne<{ name: string }>(division.league)
         : null;
-      const captain = unwrapOne(
-        t.captain as { id: string; name: string } | null,
-      );
+      const captain = unwrapOne<{ id: string; name: string }>(t.captain);
       return {
         id: t.id,
         name: t.name,
@@ -149,13 +144,11 @@ export async function loadClubOverview(
 
     players = (memberships ?? [])
       .map((m) => {
-        const player = unwrapOne(
-          m.player as {
+        const player = unwrapOne<{
             id: string;
             name: string;
             member_number: string | null;
-          } | null,
-        );
+          }>(m.player);
         if (!player) return null;
         const onTeam = assignmentByPlayer.get(player.id);
         return {
@@ -240,16 +233,11 @@ export async function loadClubTeamDetail(
   if (teamError) throw teamError;
   if (!teamRow || teamRow.club_id !== clubId) return null;
 
-  const group = unwrapOne(teamRow.group as unknown);
+  const group = unwrapOne<{ name: string; division: unknown }>(teamRow.group);
   const division = group
-    ? unwrapOne(
-        (group as { division: unknown }).division as {
-          name: string;
-          league: unknown;
-        },
-      )
+    ? unwrapOne<{ name: string; league: unknown }>(group.division)
     : null;
-  const league = division ? unwrapOne(division.league as { name: string }) : null;
+  const league = division ? unwrapOne<{ name: string }>(division.league) : null;
 
   const season = await getActiveSeason(supabase);
   const roster_editable = season?.status === "setup";
@@ -265,13 +253,11 @@ export async function loadClubTeamDetail(
 
     roster = (rosterRows ?? [])
       .map((r) => {
-        const p = unwrapOne(
-          r.player as {
+        const p = unwrapOne<{
             id: string;
             name: string;
             member_number: string | null;
-          } | null,
-        );
+          }>(r.player);
         if (!p) return null;
         return {
           player_id: p.id,
@@ -307,7 +293,7 @@ export async function loadClubTeamDetail(
         .eq("season_id", season.id);
 
       for (const row of clubAssignments ?? []) {
-        const team = unwrapOne(row.team as { id: string; name: string } | null);
+        const team = unwrapOne<{ id: string; name: string }>(row.team);
         if (team) {
           assignmentByPlayer.set(row.player_id, {
             team_id: team.id,
@@ -320,13 +306,11 @@ export async function loadClubTeamDetail(
     const onRoster = new Set(roster.map((r) => r.player_id));
 
     for (const m of memberships ?? []) {
-      const p = unwrapOne(
-        m.player as {
+      const p = unwrapOne<{
           id: string;
           name: string;
           member_number: string | null;
-        } | null,
-      );
+        }>(m.player);
       if (!p || onRoster.has(p.id)) continue;
 
       const assignment = assignmentByPlayer.get(p.id);
@@ -360,7 +344,7 @@ export async function loadClubTeamDetail(
 
   const matches: ClubTeamDetail["matches"] = [];
   for (const m of homeMatches.data ?? []) {
-    const away = unwrapOne(m.away_team as { name: string } | null);
+    const away = unwrapOne<{ name: string }>(m.away_team);
     matches.push({
       id: m.id,
       round: m.round,
@@ -371,7 +355,7 @@ export async function loadClubTeamDetail(
     });
   }
   for (const m of awayMatches.data ?? []) {
-    const home = unwrapOne(m.home_team as { name: string } | null);
+    const home = unwrapOne<{ name: string }>(m.home_team);
     matches.push({
       id: m.id,
       round: m.round,
@@ -385,9 +369,7 @@ export async function loadClubTeamDetail(
     (a, b) => new Date(a.datetime).getTime() - new Date(b.datetime).getTime(),
   );
 
-  const clubRaw = unwrapOne(
-    teamRow.club as { location: string | null } | null,
-  );
+  const clubRaw = unwrapOne<{ location: string | null }>(teamRow.club);
 
   return {
     team: {

@@ -10,7 +10,8 @@ import {
   createOperationalSignedUrl,
   uploadOperationalFile,
 } from "@/lib/files/operational-file-storage";
-import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
+import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
+import { ErrorCodes } from "@/lib/http/error-codes";
 import { createServiceClient } from "@/lib/supabase/server-client";
 
 async function assertCanUploadForPurpose(
@@ -73,18 +74,18 @@ export async function POST(request: Request) {
     const matchIdRaw = formData.get("matchId");
 
     if (!(file instanceof File)) {
-      return jsonError("file is required", 400);
+      return jsonErrorCode(ErrorCodes.api.fileRequired, 400);
     }
     if (typeof purposeRaw !== "string" || !purposeRaw.trim()) {
-      return jsonError("purpose is required", 400);
+      return jsonErrorCode(ErrorCodes.api.purposeRequired, 400);
     }
     if (typeof matchIdRaw !== "string" || !matchIdRaw.trim()) {
-      return jsonError("matchId is required", 400);
+      return jsonErrorCode(ErrorCodes.api.matchIdRequired, 400);
     }
 
     const purpose = purposeRaw.trim() as OperationalFilePurpose;
     if (purpose !== "ruling" && purpose !== "arbiter_request" && purpose !== "penalty") {
-      return jsonError("purpose must be ruling, arbiter_request, or penalty", 400);
+      return jsonErrorCode(ErrorCodes.api.purposeInvalid, 400);
     }
 
     const matchId = matchIdRaw.trim();
@@ -94,7 +95,7 @@ export async function POST(request: Request) {
         : matchId;
 
     if (purpose === "penalty" && !entityId) {
-      return jsonError("teamId is required for penalty uploads", 400);
+      return jsonErrorCode(ErrorCodes.api.teamIdRequiredPenalty, 400);
     }
 
     await assertCanUploadForPurpose(supabase, purpose, entityId, roles);
@@ -116,9 +117,6 @@ export async function POST(request: Request) {
 
     return jsonOk({ path: storagePath, signedUrl }, { status: 201 });
   } catch (err) {
-    if (err instanceof Error && err.message === "Forbidden") {
-      return jsonError("Forbidden", 403);
-    }
     return jsonFromError(err);
   }
 }

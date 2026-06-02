@@ -68,7 +68,10 @@ function pairingClassForIndex(index: number): string {
   return PAIRING_BG_CLASSES[index % PAIRING_BG_CLASSES.length];
 }
 
-function buildRoundColumns(matches: GroupMatchRow[]): RoundColumn[] {
+function buildRoundColumns(
+  matches: GroupMatchRow[],
+  intlLocale: string,
+): RoundColumn[] {
   const byRound = new Map<number, string[]>();
   for (const match of matches) {
     const list = byRound.get(match.round) ?? [];
@@ -80,7 +83,7 @@ function buildRoundColumns(matches: GroupMatchRow[]): RoundColumn[] {
     .sort(([a], [b]) => a - b)
     .map(([round, datetimes]) => {
       const earliest = datetimes.sort()[0];
-      const { date, time } = formatBrusselsRoundHeader(earliest);
+      const { date, time } = formatBrusselsRoundHeader(earliest, intlLocale);
       return { round, dateLabel: date, timeLabel: time };
     });
 }
@@ -89,6 +92,7 @@ export function buildGroupStandingsGrid(
   standings: StandingsTeamRow[],
   matches: GroupMatchRow[],
   byeRounds: GroupByeRoundRow[] = [],
+  intlLocale = "en-GB",
 ): GroupStandingsGridData {
   const byeByTeamRound = new Map<string, GroupByeRoundRow>();
   for (const bye of byeRounds) {
@@ -119,7 +123,10 @@ export function buildGroupStandingsGrid(
       vp_away: null,
       played_at: null,
     }));
-  const rounds = buildRoundColumns([...matches, ...syntheticMatches]);
+  const rounds = buildRoundColumns(
+    [...matches, ...syntheticMatches],
+    intlLocale,
+  );
   const roundDateLabelByRound = new Map(
     rounds.map((col) => [col.round, col.dateLabel]),
   );
@@ -146,7 +153,10 @@ export function buildGroupStandingsGrid(
       const awayVp = scored ? match.vp_away : null;
       const hostTeamId = match.hosting_team_id ?? match.home_team_id;
 
-      const matchDateLabel = formatBrusselsRoundHeader(match.datetime).date;
+      const matchDateLabel = formatBrusselsRoundHeader(
+        match.datetime,
+        intlLocale,
+      ).date;
       const roundDateLabel = roundDateLabelByRound.get(round);
       const scheduledLabel =
         scored || matchDateLabel === roundDateLabel ? null : matchDateLabel;

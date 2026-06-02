@@ -1,7 +1,8 @@
 import { COMPETITION_ADMIN_ROLES, requireRoles } from "@/lib/auth/route-auth";
 import { activeSeasonMatchIds } from "@/lib/competition/admin-season-scope";
 import { createOperationalSignedUrl } from "@/lib/files/operational-file-storage";
-import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
+import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
+import { ErrorCodes } from "@/lib/http/error-codes";
 import { createServiceClient } from "@/lib/supabase/server-client";
 
 export async function GET(request: Request) {
@@ -71,15 +72,15 @@ export async function POST(request: Request) {
     const rulingDate = (body.ruling_date as string | undefined) ?? null;
 
     if (!matchId || !filePath?.trim()) {
-      return jsonError("match_id and file_path are required", 400);
+      return jsonErrorCode(ErrorCodes.api.matchIdAndFileRequired, 400);
     }
     if (board != null && (!Number.isInteger(board) || board < 1)) {
-      return jsonError("board must be a positive integer when provided", 400);
+      return jsonErrorCode(ErrorCodes.api.boardPositiveInteger, 400);
     }
 
     const seasonMatches = await activeSeasonMatchIds(supabase);
     if (!seasonMatches.has(matchId)) {
-      return jsonError("Match is not in the active season", 400);
+      return jsonErrorCode(ErrorCodes.api.matchNotActiveSeason, 400);
     }
 
     const { data, error } = await supabase

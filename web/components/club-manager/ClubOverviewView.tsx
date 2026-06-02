@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 import type { ClubOverview } from "@/lib/competition/club-manager-queries";
 
@@ -9,6 +10,7 @@ type Props = {
 };
 
 export function ClubOverviewView({ clubId }: Props) {
+  const t = useTranslations("club");
   const [overview, setOverview] = useState<ClubOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
@@ -25,23 +27,23 @@ export function ClubOverviewView({ clubId }: Props) {
       setMessage(null);
     } else {
       const err = await res.json();
-      setMessage(err.error ?? "Failed to load club");
+      setMessage(err.error ?? t("loadFailed"));
     }
     setLoading(false);
-  }, [clubId]);
+  }, [clubId, t]);
 
   useEffect(() => {
     load();
   }, [load]);
 
   if (loading) {
-    return <p className="text-sm text-zinc-600">Loading…</p>;
+    return <p className="text-sm text-zinc-600">{t("loading")}</p>;
   }
 
   if (!overview) {
     return (
       <p className="text-sm text-red-600" role="alert">
-        {message ?? "Club not found"}
+        {message ?? t("notFound")}
       </p>
     );
   }
@@ -58,7 +60,7 @@ export function ClubOverviewView({ clubId }: Props) {
     setSavingLocation(false);
     if (!res.ok) {
       const err = await res.json();
-      setMessage(err.error ?? "Failed to update location");
+      setMessage(err.error ?? t("updateLocationFailed"));
       return;
     }
     setMessage(null);
@@ -68,26 +70,29 @@ export function ClubOverviewView({ clubId }: Props) {
   return (
     <div className="flex flex-col gap-8">
       <section className="card flex flex-col gap-2">
-        <h2 className="text-sm font-semibold text-zinc-900">Club info</h2>
+        <h2 className="text-sm font-semibold text-zinc-900">{t("infoTitle")}</h2>
         <p className="text-lg font-medium text-zinc-900">{overview.club.name}</p>
         {overview.club.region ? (
           <p className="text-sm text-zinc-600">
-            {overview.club.region.name} ({overview.club.region.code})
+            {t("region", {
+              regionName: overview.club.region.name,
+              regionCode: overview.club.region.code,
+            })}
           </p>
         ) : null}
         {overview.season ? (
           <p className="text-sm text-zinc-600">
-            Season: {overview.season.name}
-            {seasonLocked ? " · roster locked" : " · setup (roster editable)"}
+            {t("season", { seasonName: overview.season.name })}
+            {seasonLocked ? t("seasonLocked") : t("seasonSetup")}
           </p>
         ) : null}
         <label className="mt-4 flex flex-col gap-1 text-sm">
-          <span className="text-zinc-600">Location (match venue for all club teams)</span>
+          <span className="text-zinc-600">{t("locationLabel")}</span>
           <input
             type="text"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
-            placeholder="Address or venue name"
+            placeholder={t("locationPlaceholder")}
             className="rounded-lg border border-zinc-300 px-3 py-2"
           />
         </label>
@@ -97,7 +102,7 @@ export function ClubOverviewView({ clubId }: Props) {
           disabled={savingLocation}
           className="btn-primary mt-2 w-fit"
         >
-          {savingLocation ? "Saving…" : "Save location"}
+          {savingLocation ? t("saving") : t("saveLocation")}
         </button>
       </section>
 
@@ -108,9 +113,9 @@ export function ClubOverviewView({ clubId }: Props) {
       ) : null}
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold text-zinc-900">Teams</h2>
+        <h2 className="text-sm font-semibold text-zinc-900">{t("teamsTitle")}</h2>
         {overview.teams.length === 0 ? (
-          <p className="text-sm text-zinc-500">No teams for this club yet.</p>
+          <p className="text-sm text-zinc-500">{t("noTeams")}</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {overview.teams.map((team) => (
@@ -122,7 +127,7 @@ export function ClubOverviewView({ clubId }: Props) {
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <span className="font-medium text-zinc-900">{team.name}</span>
                     <span className="text-xs text-zinc-500">
-                      {team.roster_count} player{team.roster_count === 1 ? "" : "s"}
+                      {t("playerCount", { count: team.roster_count })}
                     </span>
                   </div>
                   <p className="mt-1 text-sm text-zinc-600">
@@ -130,7 +135,7 @@ export function ClubOverviewView({ clubId }: Props) {
                   </p>
                   {team.captain_name ? (
                     <p className="mt-1 text-sm text-zinc-600">
-                      Captain: {team.captain_name}
+                      {t("captain", { name: team.captain_name })}
                     </p>
                   ) : null}
                 </Link>
@@ -141,13 +146,10 @@ export function ClubOverviewView({ clubId }: Props) {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold text-zinc-900">Players</h2>
-        <p className="text-sm text-zinc-600">
-          Players are registered by the competition administrator. Roster changes
-          are blocked once the season is active.
-        </p>
+        <h2 className="text-sm font-semibold text-zinc-900">{t("playersTitle")}</h2>
+        <p className="text-sm text-zinc-600">{t("playersAdminNote")}</p>
         {overview.players.length === 0 ? (
-          <p className="text-sm text-zinc-500">No players registered yet.</p>
+          <p className="text-sm text-zinc-500">{t("noPlayers")}</p>
         ) : (
           <ul className="flex flex-col gap-2 text-sm">
             {overview.players.map((player) => (
@@ -157,9 +159,11 @@ export function ClubOverviewView({ clubId }: Props) {
                   <span className="text-zinc-600"> · {player.member_number}</span>
                 ) : null}
                 {player.team_name ? (
-                  <span className="ml-2 text-zinc-600">→ {player.team_name}</span>
+                  <span className="ml-2 text-zinc-600">
+                    {t("onTeam", { teamName: player.team_name })}
+                  </span>
                 ) : (
-                  <span className="ml-2 text-zinc-500">· no team</span>
+                  <span className="ml-2 text-zinc-500">{t("noTeam")}</span>
                 )}
               </li>
             ))}

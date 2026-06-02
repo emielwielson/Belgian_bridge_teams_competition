@@ -7,7 +7,8 @@ import {
 } from "@/lib/competition/penalties";
 import { revalidateStandingsForTeam } from "@/lib/competition/revalidate-standings";
 import { createOperationalSignedUrl } from "@/lib/files/operational-file-storage";
-import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
+import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
+import { ErrorCodes } from "@/lib/http/error-codes";
 import { createServiceClient } from "@/lib/supabase/server-client";
 
 export async function GET(request: Request) {
@@ -72,7 +73,7 @@ export async function POST(request: Request) {
     const { user, supabase } = await requireRoles([...ARBITER_ACCESS_ROLES]);
     const body = await request.json();
     const parsed = parsePenaltyInput(body);
-    if ("error" in parsed) return jsonError(parsed.error, 400);
+    if ("error" in parsed) return jsonErrorCode(parsed.error, 400);
 
     const { data, error } = await supabase
       .from("penalties")

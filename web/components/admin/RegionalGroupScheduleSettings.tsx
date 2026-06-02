@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import {
   computeRoundCount,
   maxRoundRobinCountForDates,
@@ -9,6 +10,8 @@ import {
 import {
   REGIONAL_CALENDAR_ROUNDS,
 } from "@/lib/competition/group-match-rounds";
+import { toIntlLocale } from "@/i18n/intl-locale";
+import type { Locale } from "@/i18n/config";
 import { formatBrusselsRoundHeader } from "@/lib/time/brussels";
 
 type Props = {
@@ -28,6 +31,11 @@ export function RegionalGroupScheduleSettings({
   roundCount: initialRc,
   onUpdated,
 }: Props) {
+  const t = useTranslations("admin.scheduleSettings");
+  const tCommon = useTranslations("common");
+  const locale = useLocale() as Locale;
+  const intlLocale = toIntlLocale(locale);
+
   const [roundRobinCount, setRoundRobinCount] = useState(initialRr);
   const [roundCount, setRoundCount] = useState(initialRc);
   const [saving, setSaving] = useState(false);
@@ -86,7 +94,11 @@ export function RegionalGroupScheduleSettings({
   async function save() {
     if (roundRobinCount < 1 || roundRobinCount > maxRr) {
       setMessage(
-        `Round-robin count must be between 1 and ${maxRr} (${REGIONAL_CALENDAR_ROUNDS} match dates, ${roundsPerCycle(teamCount)} rounds per cycle).`,
+        t("cyclesRangeError", {
+          max: maxRr,
+          calendarRounds: REGIONAL_CALENDAR_ROUNDS,
+          perCycle: roundsPerCycle(teamCount),
+        }),
       );
       return;
     }
@@ -104,11 +116,11 @@ export function RegionalGroupScheduleSettings({
     const body = await res.json();
     setSaving(false);
     if (!res.ok) {
-      setMessage(body.error ?? "Failed to save");
+      setMessage(body.error ?? t("saveFailed"));
       return;
     }
     setRoundCount(previewRounds);
-    setMessage("Round-robin count saved.");
+    setMessage(t("cyclesSaved"));
     onUpdated();
   }
 
@@ -126,7 +138,7 @@ export function RegionalGroupScheduleSettings({
 
   async function saveDates() {
     if (!selectionComplete) {
-      setMessage(`Select exactly ${roundCount} dates from the regional calendar.`);
+      setMessage(t("selectExactDates", { count: roundCount }));
       return;
     }
     setSavingDates(true);
@@ -148,26 +160,23 @@ export function RegionalGroupScheduleSettings({
     const body = await res.json();
     setSavingDates(false);
     if (!res.ok) {
-      setMessage(body.error ?? "Failed to save date selection");
+      setMessage(body.error ?? t("saveDatesFailed"));
       return;
     }
     setUsedRounds(new Set(body.usedRounds ?? []));
-    setMessage("Match dates saved.");
+    setMessage(t("datesSaved"));
     onUpdated();
   }
 
   if (usesRbbfPath) {
     return (
       <div className="mt-3 rounded border border-zinc-200 bg-zinc-50 p-3 text-sm">
-        <p className="font-medium text-zinc-900">Schedule settings</p>
+        <p className="font-medium text-zinc-900">{t("title")}</p>
         <p className="mt-1 text-zinc-600">
-          {teamCount} teams · 14-round RBBF template (all regional dates used)
+          {t("rbbfTemplate", { teamCount })}
         </p>
         {teamCount === 7 && (
-          <p className="mt-2 text-xs text-zinc-600">
-            Use the schedule slot order above to place a bye. Teams paired
-            against the bye receive 12 VP after the match date.
-          </p>
+          <p className="mt-2 text-xs text-zinc-600">{t("byeHint")}</p>
         )}
       </div>
     );
@@ -175,13 +184,16 @@ export function RegionalGroupScheduleSettings({
 
   return (
     <div className="mt-3 rounded border border-zinc-200 bg-zinc-50 p-3 text-sm">
-      <p className="font-medium text-zinc-900">Schedule settings</p>
+      <p className="font-medium text-zinc-900">{t("title")}</p>
       <p className="mt-1 text-zinc-600">
-        {teamCount} teams · {roundsPerCycle(teamCount)} rounds per cycle · total{" "}
-        {roundCount} fixture rounds
+        {t("roundsSummary", {
+          teamCount,
+          perCycle: roundsPerCycle(teamCount),
+          total: roundCount,
+        })}
       </p>
       <label className="mt-2 flex flex-wrap items-center gap-2">
-        <span className="text-zinc-700">Round-robin cycles</span>
+        <span className="text-zinc-700">{t("roundRobinCycles")}</span>
         <input
           type="number"
           min={1}
@@ -191,13 +203,12 @@ export function RegionalGroupScheduleSettings({
           className="w-16 rounded border border-zinc-300 px-2 py-1"
           disabled={teamCount < 2}
         />
-        <span className="text-zinc-500">→ {previewRounds} match rounds</span>
+        <span className="text-zinc-500">
+          {t("matchRounds", { count: previewRounds })}
+        </span>
       </label>
       {teamCount % 2 === 1 && (
-        <p className="mt-2 text-xs text-zinc-600">
-          Odd group size: one team rests each round and receives 12 VP after the
-          match date (via automation).
-        </p>
+        <p className="mt-2 text-xs text-zinc-600">{t("oddGroupRest")}</p>
       )}
       <div className="mt-2 flex flex-wrap gap-2">
         <button
@@ -206,23 +217,25 @@ export function RegionalGroupScheduleSettings({
           disabled={saving || teamCount < 2}
           className="btn-secondary text-xs"
         >
-          {saving ? "Saving…" : "Save cycles"}
+          {saving ? tCommon("saving") : t("saveCycles")}
         </button>
       </div>
 
       {datesApplicable && (
         <div className="mt-4 border-t border-zinc-200 pt-3">
-          <p className="font-medium text-zinc-900">Regional match dates</p>
+          <p className="font-medium text-zinc-900">{t("regionalDatesTitle")}</p>
           <p className="mt-1 text-xs text-zinc-600">
-            Choose {roundCount} of the 14 shared regional dates for this group.
-            Dates are configured in the regional calendar above.
+            {t("regionalDatesHint", { count: roundCount })}
           </p>
           {datesLoading ? (
-            <p className="mt-2 text-xs text-zinc-500">Loading dates…</p>
+            <p className="mt-2 text-xs text-zinc-500">{t("loadingDates")}</p>
           ) : (
             <ul className="mt-2 space-y-1">
               {regionalDates.map((d) => {
-                const { date, time } = formatBrusselsRoundHeader(d.datetime);
+                const { date, time } = formatBrusselsRoundHeader(
+                  d.datetime,
+                  intlLocale,
+                );
                 const checked = usedRounds.has(d.round);
                 const atCapacity =
                   !checked && usedRounds.size >= roundCount;
@@ -236,7 +249,7 @@ export function RegionalGroupScheduleSettings({
                         onChange={() => toggleDate(d.round)}
                       />
                       <span className="text-zinc-700">
-                        Round {d.round}: {date} {time}
+                        {t("roundDate", { round: d.round, date, time })}
                       </span>
                     </label>
                   </li>
@@ -246,9 +259,9 @@ export function RegionalGroupScheduleSettings({
           )}
           {!selectionComplete && !datesLoading && (
             <p className="mt-2 text-xs text-amber-800">
-              Select {roundCount - usedRounds.size} more date
-              {roundCount - usedRounds.size === 1 ? "" : "s"} before generating
-              the schedule.
+              {t("selectMoreDates", {
+                count: roundCount - usedRounds.size,
+              })}
             </p>
           )}
           <button
@@ -257,7 +270,7 @@ export function RegionalGroupScheduleSettings({
             disabled={savingDates || !selectionComplete || datesLoading}
             className="btn-secondary mt-2 text-xs"
           >
-            {savingDates ? "Saving…" : "Save date selection"}
+            {savingDates ? tCommon("saving") : t("saveDateSelection")}
           </button>
         </div>
       )}

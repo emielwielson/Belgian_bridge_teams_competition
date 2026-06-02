@@ -26,6 +26,6 @@ describe("parsePenaltyInput", () => {
       reason: "  ",
       vp_deduction: 1,
     });
-    expect(result).toEqual({ error: "team_id, penalty_date, and reason are required" });
+    expect(result).toEqual({ error: "api.penaltyFieldsRequired" });
   });
 });

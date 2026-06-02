@@ -306,7 +306,8 @@ export async function loadGroupStandingsFull(
       .eq("group_id", groupId)
       .order("round")
       .order("datetime");
-    matches = fallback.data;
+    matches =
+      fallback.data?.map((m) => ({ ...m, hosting_team_id: null })) ?? null;
     matchesError = fallback.error;
   }
 
@@ -345,7 +346,7 @@ export async function loadGroupStandingsFull(
       .in("team_id", teamIds)
       .order("penalty_date", { ascending: false });
     if (penaltyError) throw penaltyError;
-    penalties = (penaltyRows ?? []) as GroupPenaltyRow[];
+    penalties = (penaltyRows ?? []) as unknown as GroupPenaltyRow[];
   }
 
   const matchIds = (matches ?? []).map((m) => m.id);
@@ -374,7 +375,7 @@ export async function loadGroupStandingsFull(
     rulings = (rulingRows ?? []).map((row) => ({
       ...row,
       signed_url: null,
-    })) as GroupRulingRow[];
+    })) as unknown as GroupRulingRow[];
   }
 
   return {

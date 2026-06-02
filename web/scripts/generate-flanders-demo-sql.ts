@@ -12,7 +12,7 @@ const teamValues: string[] = [];
 for (const g of FLANDERS_DEMO_GROUPS) {
   for (const t of g.teams) {
     teamValues.push(
-      `    (${g.liga}, '${g.groupCode}', '${t.replace(/'/g, "''")}', ${g.roundCount})`,
+      `    (${g.liga}, '${g.groupCode}', '${t.replace(/'/g, "''")}', ${computeRoundCount(g.teams.length, g.roundRobinCount)})`,
     );
   }
 }

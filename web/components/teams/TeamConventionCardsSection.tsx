@@ -1,6 +1,9 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import { useRef, useState } from "react";
+import type { Locale } from "@/i18n/config";
+import { toIntlLocale } from "@/i18n/intl-locale";
 import type { ConventionCardListItem } from "@/lib/competition/convention-card-queries";
 import { formatBrussels } from "@/lib/time/brussels";
 
@@ -12,6 +15,9 @@ type ConventionCardFileInputProps = {
   file: File | null;
   onFileChange: (file: File | null) => void;
   hint: string;
+  chooseFileLabel: string;
+  noFileChosenLabel: string;
+  clearLabel: string;
 };
 
 function ConventionCardFileInput({
@@ -19,6 +25,9 @@ function ConventionCardFileInput({
   file,
   onFileChange,
   hint,
+  chooseFileLabel,
+  noFileChosenLabel,
+  clearLabel,
 }: ConventionCardFileInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -42,10 +51,10 @@ function ConventionCardFileInput({
           className="sr-only"
         />
         <label htmlFor={id} className="btn-secondary cursor-pointer px-3 py-1.5">
-          Choose file
+          {chooseFileLabel}
         </label>
         <span className="text-zinc-600">
-          {file ? file.name : "No file chosen"}
+          {file ? file.name : noFileChosenLabel}
         </span>
         {file ? (
           <button
@@ -53,7 +62,7 @@ function ConventionCardFileInput({
             onClick={clearFile}
             className="text-sm text-zinc-500 hover:text-zinc-800 hover:underline"
           >
-            Clear
+            {clearLabel}
           </button>
         ) : null}
       </div>
@@ -72,6 +81,10 @@ export function TeamConventionCardsSection({
   initialCards,
   canManage,
 }: Props) {
+  const t = useTranslations("team.conventionCards");
+  const tc = useTranslations("common");
+  const locale = useLocale() as Locale;
+  const intlLocale = toIntlLocale(locale);
   const [cards, setCards] = useState(initialCards);
   const [message, setMessage] = useState<string | null>(null);
   const [uploadName, setUploadName] = useState("");
@@ -87,7 +100,7 @@ export function TeamConventionCardsSection({
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
     if (!uploadName.trim() || !uploadFile) {
-      setMessage("Name and file are required");
+      setMessage(t("nameAndFileRequired"));
       return;
     }
     setUploading(true);
@@ -101,7 +114,7 @@ export function TeamConventionCardsSection({
     setUploading(false);
     if (!res.ok) {
       const err = await res.json();
-      setMessage(err.error ?? "Upload failed");
+      setMessage(err.error ?? t("uploadFailed"));
       return;
     }
     const body = (await res.json()) as { cards: ConventionCardListItem[] };
@@ -127,7 +140,7 @@ export function TeamConventionCardsSection({
 
   async function saveEdit(cardId: string) {
     if (!editName.trim()) {
-      setMessage("Name is required");
+      setMessage(t("nameRequired"));
       return;
     }
     setSavingId(cardId);
@@ -143,7 +156,7 @@ export function TeamConventionCardsSection({
     setSavingId(null);
     if (!res.ok) {
       const err = await res.json();
-      setMessage(err.error ?? "Update failed");
+      setMessage(err.error ?? t("updateFailed"));
       return;
     }
     const body = (await res.json()) as { cards: ConventionCardListItem[] };
@@ -153,9 +166,7 @@ export function TeamConventionCardsSection({
   }
 
   async function handleDelete(cardId: string, cardName: string) {
-    if (
-      !window.confirm(`Delete convention card "${cardName}"? This cannot be undone.`)
-    ) {
+    if (!window.confirm(t("deleteConfirm", { name: cardName }))) {
       return;
     }
     const res = await fetch(
@@ -164,7 +175,7 @@ export function TeamConventionCardsSection({
     );
     if (!res.ok) {
       const err = await res.json();
-      setMessage(err.error ?? "Delete failed");
+      setMessage(err.error ?? t("deleteFailed"));
       return;
     }
     const body = (await res.json()) as { cards: ConventionCardListItem[] };
@@ -172,12 +183,16 @@ export function TeamConventionCardsSection({
     setMessage(null);
   }
 
+  const fileInputLabels = {
+    chooseFileLabel: tc("chooseFile"),
+    noFileChosenLabel: tc("noFileChosen"),
+    clearLabel: tc("clear"),
+  };
+
   return (
     <section className="rounded-lg border border-zinc-200 bg-white p-4">
-      <h2 className="text-sm font-semibold text-zinc-900">Convention cards</h2>
-      <p className="mt-1 text-sm text-zinc-600">
-        System summaries shared with opponents (PDF or image).
-      </p>
+      <h2 className="text-sm font-semibold text-zinc-900">{t("title")}</h2>
+      <p className="mt-1 text-sm text-zinc-600">{t("description")}</p>
 
       {message ? (
         <p className="mt-3 text-sm text-red-600" role="alert">
@@ -186,7 +201,7 @@ export function TeamConventionCardsSection({
       ) : null}
 
       {cards.length === 0 ? (
-        <p className="mt-3 text-sm text-zinc-500">No convention cards yet.</p>
+        <p className="mt-3 text-sm text-zinc-500">{t("none")}</p>
       ) : (
         <ul className="mt-3 flex flex-col gap-2">
           {cards.map((card) => (
@@ -197,7 +212,7 @@ export function TeamConventionCardsSection({
               {editingId === card.id ? (
                 <div className="flex flex-col gap-3">
                   <label className="flex flex-col gap-1">
-                    <span className="text-zinc-600">Name</span>
+                    <span className="text-zinc-600">{t("name")}</span>
                     <input
                       type="text"
                       value={editName}
@@ -209,7 +224,8 @@ export function TeamConventionCardsSection({
                     id={`convention-card-edit-file-${card.id}`}
                     file={editFile}
                     onFileChange={setEditFile}
-                    hint="Replace file (optional)"
+                    hint={t("replaceFile")}
+                    {...fileInputLabels}
                   />
                   <div className="flex flex-wrap gap-2">
                     <button
@@ -218,14 +234,14 @@ export function TeamConventionCardsSection({
                       disabled={savingId === card.id}
                       className="btn-primary px-3 py-1.5 text-sm"
                     >
-                      {savingId === card.id ? "Saving…" : "Save"}
+                      {savingId === card.id ? t("saving") : t("save")}
                     </button>
                     <button
                       type="button"
                       onClick={cancelEdit}
                       className="btn-secondary px-3 py-1.5 text-sm"
                     >
-                      Cancel
+                      {t("cancel")}
                     </button>
                   </div>
                 </div>
@@ -234,13 +250,15 @@ export function TeamConventionCardsSection({
                   <div>
                     <p className="font-medium text-zinc-900">{card.name}</p>
                     <p className="mt-1 text-zinc-600">
-                      Updated {formatBrussels(card.updated_at)}
+                      {t("updated", {
+                        datetime: formatBrussels(card.updated_at, intlLocale),
+                      })}
                     </p>
                     <a
                       href={card.download_url}
                       className="mt-2 inline-block text-emerald-800 hover:underline"
                     >
-                      Download
+                      {t("download")}
                     </a>
                   </div>
                   {canManage ? (
@@ -250,14 +268,14 @@ export function TeamConventionCardsSection({
                         onClick={() => startEdit(card)}
                         className="btn-secondary px-3 py-1.5 text-xs"
                       >
-                        Edit
+                        {t("edit")}
                       </button>
                       <button
                         type="button"
                         onClick={() => handleDelete(card.id, card.name)}
                         className="text-xs text-amber-700 hover:underline"
                       >
-                        Delete
+                        {t("delete")}
                       </button>
                     </div>
                   ) : null}
@@ -273,15 +291,15 @@ export function TeamConventionCardsSection({
           onSubmit={handleUpload}
           className="mt-4 flex flex-col gap-3 border-t border-zinc-100 pt-4"
         >
-          <h3 className="text-sm font-medium text-zinc-900">Upload</h3>
+          <h3 className="text-sm font-medium text-zinc-900">{t("uploadTitle")}</h3>
           <label className="flex flex-col gap-1 text-sm">
-            <span className="text-zinc-600">Name</span>
+            <span className="text-zinc-600">{t("name")}</span>
             <input
               type="text"
               value={uploadName}
               onChange={(e) => setUploadName(e.target.value)}
               className="rounded-lg border border-zinc-300 px-3 py-2"
-              placeholder="e.g. 2024–25 system"
+              placeholder={t("namePlaceholder")}
             />
           </label>
           <ConventionCardFileInput
@@ -289,14 +307,15 @@ export function TeamConventionCardsSection({
             id="convention-card-upload-file"
             file={uploadFile}
             onFileChange={setUploadFile}
-            hint="Document (PDF or image, max 10 MB)"
+            hint={t("documentHint")}
+            {...fileInputLabels}
           />
           <button
             type="submit"
             disabled={uploading || !uploadReady}
             className="btn-primary w-fit disabled:cursor-not-allowed disabled:bg-zinc-400 disabled:opacity-100 hover:disabled:bg-zinc-400"
           >
-            {uploading ? "Uploading…" : "Upload convention card"}
+            {uploading ? t("uploading") : t("uploadButton")}
           </button>
         </form>
       ) : null}

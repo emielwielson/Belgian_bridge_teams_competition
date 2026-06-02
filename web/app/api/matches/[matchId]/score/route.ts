@@ -12,7 +12,8 @@ import { FINISHED_SCORE_EDIT_ROLES, ROLES } from "@/lib/auth/roles";
 import { revalidateStandingsForGroup } from "@/lib/competition/revalidate-standings";
 import { submitMatchScore } from "@/lib/scoring/match-operations";
 import { matchResponseFields } from "@/lib/scoring/match-state";
-import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
+import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
+import { ErrorCodes } from "@/lib/http/error-codes";
 
 type Params = { params: Promise<{ matchId: string }> };
 
@@ -58,7 +59,7 @@ export async function POST(request: Request, { params }: Params) {
     const body = await request.json();
     const imps = parseImps(body);
     if (!imps) {
-      return jsonError("imps_home and imps_away must be numbers", 400);
+      return jsonErrorCode(ErrorCodes.api.impsMustBeNumbers, 400);
     }
 
     const result = await submitMatchScore(supabase, match, user.id, imps, {
@@ -83,13 +84,13 @@ export async function PATCH(request: Request, { params }: Params) {
 
     const match = await loadMatchContext(supabase, matchId);
     if (!match.played_at) {
-      return jsonError("Match has no official score yet; use POST to submit", 400);
+      return jsonErrorCode(ErrorCodes.api.noOfficialScoreUsePost, 400);
     }
 
     const body = await request.json();
     const imps = parseImps(body);
     if (!imps) {
-      return jsonError("imps_home and imps_away must be numbers", 400);
+      return jsonErrorCode(ErrorCodes.api.impsMustBeNumbers, 400);
     }
 
     const previous =

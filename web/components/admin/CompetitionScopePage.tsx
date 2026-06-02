@@ -2,12 +2,17 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { sortDivisionsByCanonicalName } from "@/lib/competition/sort-divisions";
 import {
   SCOPES,
-  scopeLabel,
   type CompetitionScope,
+  type RegionCode,
 } from "@/lib/competition/scopes";
+import {
+  translateLeagueName,
+  translateRegionalScopeTitle,
+} from "@/lib/i18n/labels";
 import { CompetitionManagement } from "./CompetitionManagement";
 import { NationalCompetitionSetup } from "./NationalCompetitionSetup";
 import { MatchLogViewer } from "./MatchLogViewer";
@@ -42,6 +47,10 @@ type Props = {
 };
 
 export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
+  const t = useTranslations("admin");
+  const tRegions = useTranslations("regions");
+  const tCommon = useTranslations("common");
+
   const [leagues, setLeagues] = useState<League[]>([]);
   const [divisionLevels, setDivisionLevels] = useState<DivisionLevel[]>([]);
   const [seasonStatus, setSeasonStatus] = useState("setup");
@@ -49,6 +58,11 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
   const [teams, setTeams] = useState<{ id: string; name: string }[]>([]);
   const [clubs, setClubs] = useState<{ id: string; name: string }[]>([]);
   const [message, setMessage] = useState<string | null>(null);
+
+  const scopeTitle =
+    scope === SCOPES.NATIONAL
+      ? t("national")
+      : translateRegionalScopeTitle(regionCode as RegionCode | undefined, t);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/admin/competition");
@@ -84,17 +98,24 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
     });
     const body = await res.json();
     if (!res.ok) {
-      setMessage(body.error ?? "Failed to set up regional league");
+      setMessage(body.error ?? t("generationFailed"));
       return;
     }
-    setMessage(`${scopeLabel(scope, regionCode)} league is ready.`);
+    setMessage(
+      t("leagueReady", {
+        leagueName: translateRegionalScopeTitle(
+          regionCode as RegionCode,
+          t,
+        ),
+      }),
+    );
     await load();
   }
 
   async function createDivision(leagueId: string) {
     const levelId = divisionLevels[0]?.id;
     if (!levelId) return;
-    const name = prompt("Division name");
+    const name = prompt(t("promptDivisionName"));
     if (!name) return;
     await fetch("/api/admin/competition", {
       method: "POST",
@@ -110,7 +131,7 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
   }
 
   async function createGroup(divisionId: string) {
-    const name = prompt("Group name");
+    const name = prompt(t("promptGroupName"));
     if (!name) return;
     await fetch("/api/admin/competition", {
       method: "POST",
@@ -164,12 +185,19 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
     );
     const body = await res.json();
     if (!res.ok) {
-      setMessage(body.error ?? "Generation failed");
+      setMessage(body.error ?? t("generationFailed"));
       return;
     }
     const byeNote =
-      body.byesCreated > 0 ? `, ${body.byesCreated} bye rounds` : "";
-    setMessage(`Created ${body.matchesCreated} matches${byeNote}.`);
+      body.byesCreated > 0
+        ? t("byeNote", { byeCount: body.byesCreated })
+        : "";
+    setMessage(
+      t("scheduleCreated", {
+        matchCount: body.matchesCreated,
+        byeNote,
+      }),
+    );
   }
 
   async function activateSeason() {
@@ -179,7 +207,7 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
       body: JSON.stringify({ action: "activate_season", activate_groups: true }),
     });
     if (res.ok) {
-      setMessage("Season activated — rosters and memberships are now locked.");
+      setMessage(t("seasonActivated"));
       await load();
     }
   }
@@ -192,12 +220,12 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
     <main className="page-container flex flex-col gap-6">
       <header>
         <Link href="/admin/competition" className="link-back">
-          ← Scopes
+          {t("backScopes")}
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold text-zinc-900">
-          {scopeLabel(scope, regionCode)}
-        </h1>
-        <p className="text-sm text-zinc-600">Season status: {seasonStatus}</p>
+        <h1 className="mt-2 text-2xl font-semibold text-zinc-900">{scopeTitle}</h1>
+        <p className="text-sm text-zinc-600">
+          {t("seasonStatus", { status: seasonStatus })}
+        </p>
       </header>
 
       {message && (
@@ -212,7 +240,7 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
           onClick={ensureRegionalLeague}
           className="btn-secondary"
         >
-          Set up {scopeLabel(scope, regionCode)} league
+          {t("setupRegionalLeague", { leagueName: scopeTitle })}
         </button>
         {seasonStatus === "setup" && (
           <button
@@ -220,7 +248,7 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
             onClick={activateSeason}
             className="btn-danger"
           >
-            Activate season
+            {t("activateSeason")}
           </button>
         )}
       </section>
@@ -230,13 +258,15 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
           key={league.id}
           className="card"
         >
-          <h2 className="font-semibold text-zinc-900">{league.name}</h2>
+          <h2 className="font-semibold text-zinc-900">
+            {translateLeagueName(league.name, tRegions)}
+          </h2>
           <button
             type="button"
             className="mt-2 text-sm font-medium text-zinc-700 underline hover:text-zinc-900"
             onClick={() => createDivision(league.id)}
           >
-            Add division
+            {t("addDivision")}
           </button>
           {sortDivisionsByCanonicalName(league.divisions).map((division) => (
             <div key={division.id} className="mt-4 border-t pt-3">
@@ -246,7 +276,7 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
                 className="mt-1 text-sm font-medium text-zinc-700 underline hover:text-zinc-900"
                 onClick={() => createGroup(division.id)}
               >
-                Add group
+                {t("addGroup")}
               </button>
               <ul className="mt-2 flex flex-col gap-2">
                 {division.groups.map((group) => (
@@ -264,7 +294,9 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
                     <span className="text-xs text-zinc-500">{group.status}</span>
                     {group.max_matches_per_day_per_team != null && (
                       <span className="text-xs text-zinc-500">
-                        max {group.max_matches_per_day_per_team}/day
+                        {tCommon("maxPerDay", {
+                          count: group.max_matches_per_day_per_team,
+                        })}
                       </span>
                     )}
                     <button
@@ -272,7 +304,7 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
                       className="text-xs font-medium text-zinc-700 underline"
                       onClick={() => generateSchedule(group.id)}
                     >
-                      Generate schedule
+                      {t("generateSchedule")}
                     </button>
                   </li>
                 ))}
@@ -285,8 +317,12 @@ export function CompetitionScopePage({ scope, regionCode, regionId }: Props) {
       {selectedGroupId && selectedGroupContext && (
         <section className="card flex flex-col gap-4">
           <h2 className="font-semibold text-zinc-900">
-            Teams — {selectedGroupContext.divisionLabel} ({teams.length}
-            {teams.length === 8 ? ", RBBF template" : ""})
+            {t("teamsSection", {
+              divisionLabel: selectedGroupContext.divisionLabel,
+              teamCount: teams.length,
+              rbbfSuffix:
+                teams.length === 8 ? t("rbbfTemplate") : "",
+            })}
           </h2>
           <RegionalGroupScheduleSettings
             groupId={selectedGroupContext.group.id}

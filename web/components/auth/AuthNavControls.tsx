@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { ARBITER_ACCESS_ROLES, hasAnyRole } from "@/lib/auth/roles";
 
@@ -12,6 +13,7 @@ type MeResponse = {
 };
 
 export function AuthNavControls() {
+  const t = useTranslations("nav");
   const [me, setMe] = useState<MeResponse | null>(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -26,20 +28,20 @@ export function AuthNavControls() {
   }, []);
 
   if (!loaded) {
-    return <nav className="text-sm text-zinc-500">…</nav>;
+    return <nav className="text-sm text-zinc-500">{t("loading")}</nav>;
   }
 
   if (!me) {
     return (
       <nav className="flex items-center gap-3 text-sm">
         <Link href="/standings" className="text-zinc-600 hover:text-zinc-900">
-          Standings
+          {t("standings")}
         </Link>
         <Link
           href="/login"
           className="rounded-lg bg-zinc-900 px-3 py-1.5 font-medium text-white hover:bg-zinc-700"
         >
-          Sign in
+          {t("signIn")}
         </Link>
       </nav>
     );
@@ -53,14 +55,14 @@ export function AuthNavControls() {
   return (
     <nav className="flex flex-wrap items-center gap-3 text-sm">
       <Link href="/standings" className="text-zinc-600 hover:text-zinc-900">
-        Standings
+        {t("standings")}
       </Link>
       {me.teams?.length === 1 ? (
         <Link
           href={`/teams/${me.teams[0].id}`}
           className="text-zinc-600 hover:text-zinc-900"
         >
-          My team
+          {t("myTeam")}
         </Link>
       ) : null}
       {me.clubs?.length === 1 ? (
@@ -68,21 +70,21 @@ export function AuthNavControls() {
           href={`/club-manager/${me.clubs[0].id}`}
           className="text-zinc-600 hover:text-zinc-900"
         >
-          My club
+          {t("myClub")}
         </Link>
       ) : me.clubs && me.clubs.length > 1 ? (
         <Link href="/club-manager" className="text-zinc-600 hover:text-zinc-900">
-          My clubs
+          {t("myClubs")}
         </Link>
       ) : null}
       {showArbiterInbox ? (
         <Link href="/arbiter" className="text-zinc-600 hover:text-zinc-900">
-          Arbiter inbox
+          {t("arbiterInbox")}
         </Link>
       ) : null}
       {showAdminDashboard ? (
         <Link href="/admin" className="text-zinc-600 hover:text-zinc-900">
-          Dashboard
+          {t("dashboard")}
         </Link>
       ) : null}
       <span className="text-zinc-500">{me.user.email}</span>
@@ -91,7 +93,7 @@ export function AuthNavControls() {
           type="submit"
           className="text-zinc-600 underline hover:text-zinc-900"
         >
-          Sign out
+          {t("signOut")}
         </button>
       </form>
     </nav>

@@ -14,7 +14,8 @@ import { resolveRegionId } from "@/lib/competition/queries";
 import { requireActiveSeason } from "@/lib/competition/season";
 import { requireSeasonInSetup } from "@/lib/competition/season-setup";
 import { parseScopeParam, SCOPES } from "@/lib/competition/scopes";
-import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
+import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
+import { ErrorCodes } from "@/lib/http/error-codes";
 import { parseBrusselsToUtc } from "@/lib/time/brussels";
 
 function parseNationalScheduleKey(
@@ -32,7 +33,7 @@ export async function GET(request: Request) {
     const season = await requireActiveSeason(supabase);
     const { searchParams } = new URL(request.url);
     const scope = parseScopeParam(searchParams.get("scope") ?? "");
-    if (!scope) return jsonError("Invalid scope", 400);
+    if (!scope) return jsonErrorCode(ErrorCodes.api.invalidScope, 400);
 
     const regionCode = searchParams.get("region") ?? undefined;
     const regionId = await resolveRegionId(supabase, scope, regionCode ?? undefined);
@@ -91,7 +92,7 @@ export async function PUT(request: Request) {
     requireSeasonInSetup(season);
     const body = await request.json();
     const scope = parseScopeParam(body.scope ?? "");
-    if (!scope) return jsonError("Invalid scope", 400);
+    if (!scope) return jsonErrorCode(ErrorCodes.api.invalidScope, 400);
 
     const regionId = await resolveRegionId(
       supabase,
@@ -114,21 +115,17 @@ export async function PUT(request: Request) {
       const matchDays: string[] = body.matchDays ?? [];
       const expectedDays = NATIONAL_MATCH_DAY_COUNTS[scheduleKey];
       if (matchDays.length !== expectedDays) {
-        return jsonError(
-          `Exactly ${expectedDays} match days required`,
-          400,
-        );
+        return jsonErrorCode(ErrorCodes.api.exactlyMatchDays, 400, {
+          count: expectedDays,
+        });
       }
       try {
         rounds = expandMatchDaysToRounds(scheduleKey, matchDays);
       } catch (err) {
-        return jsonError(
-          err instanceof Error ? err.message : "Invalid match days",
-          400,
-        );
+        return jsonFromError(err);
       }
     } else if (rounds.length !== 14) {
-      return jsonError("Exactly 14 round datetimes required", 400);
+      return jsonErrorCode(ErrorCodes.api.exactly14Rounds, 400);
     }
 
     let deleteQuery = supabase

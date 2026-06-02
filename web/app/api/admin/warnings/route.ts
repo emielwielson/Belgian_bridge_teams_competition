@@ -1,6 +1,7 @@
 import { COMPETITION_ADMIN_ROLES, requireRoles } from "@/lib/auth/route-auth";
 import { activeSeasonTeamIds } from "@/lib/competition/admin-season-scope";
-import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
+import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
+import { ErrorCodes } from "@/lib/http/error-codes";
 
 export async function GET(request: Request) {
   try {
@@ -44,12 +45,12 @@ export async function POST(request: Request) {
     const reason = body.reason as string | undefined;
 
     if (!teamId || !warningDate || !reason?.trim()) {
-      return jsonError("team_id, warning_date, and reason are required", 400);
+      return jsonErrorCode(ErrorCodes.api.teamWarningFieldsRequired, 400);
     }
 
     const seasonTeams = await activeSeasonTeamIds(supabase);
     if (!seasonTeams.has(teamId)) {
-      return jsonError("Team is not in the active season", 400);
+      return jsonErrorCode(ErrorCodes.api.teamNotActiveSeason, 400);
     }
 
     const { data, error } = await supabase

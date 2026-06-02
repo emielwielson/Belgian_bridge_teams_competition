@@ -80,6 +80,7 @@ describe("home-away-switch-email", () => {
       },
       "home-1",
       "away-1",
+      "en",
     );
 
     expect(sendMakeWebhook).toHaveBeenCalledWith(
@@ -105,6 +106,7 @@ describe("home-away-switch-email", () => {
       },
       "home-1",
       "away-1",
+      "en",
     );
 
     expect(sendMakeWebhook).toHaveBeenCalledWith(
