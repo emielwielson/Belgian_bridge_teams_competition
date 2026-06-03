@@ -91,7 +91,9 @@ export function NationalCompetitionSetup() {
   }
 
   const setupLocked = readiness?.seasonStatus !== "setup";
-  const teamsReadOnly = readiness?.rostersLocked ?? false;
+  const rostersLocked = readiness?.rostersLocked ?? false;
+  const teamsLocked = setupLocked || rostersLocked;
+  const captainsEditable = !rostersLocked;
 
   return (
     <main className="page-container flex flex-col gap-6">
@@ -181,15 +183,10 @@ export function NationalCompetitionSetup() {
             aria-labelledby="national-tab-teams-trigger"
             className="flex flex-col gap-4 pt-2"
           >
-            <RosterLockSection
-              scope={SCOPES.NATIONAL}
-              leagueId={readiness?.leagueId ?? null}
-              rostersLocked={readiness?.rostersLocked ?? false}
-              onChanged={loadReadiness}
-            />
             <NationalTeamsByDivision
               divisions={readiness?.divisions ?? []}
-              readOnly={teamsReadOnly}
+              teamsLocked={teamsLocked}
+              captainsEditable={captainsEditable}
               onTeamsChanged={loadReadiness}
             />
           </div>
@@ -200,8 +197,14 @@ export function NationalCompetitionSetup() {
             id="national-tab-start"
             role="tabpanel"
             aria-labelledby="national-tab-start-trigger"
-            className="pt-2"
+            className="flex flex-col gap-4 pt-2"
           >
+            <RosterLockSection
+              scope={SCOPES.NATIONAL}
+              leagueId={readiness?.leagueId ?? null}
+              rostersLocked={rostersLocked}
+              onChanged={loadReadiness}
+            />
             <NationalStartLeagueSection
               readiness={readiness}
               loading={structureLoading}

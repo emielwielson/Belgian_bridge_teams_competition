@@ -1,6 +1,7 @@
 import { COMPETITION_ADMIN_ROLES, requireRoles } from "@/lib/auth/route-auth";
 import { assertNationalGroupCanAddTeam } from "@/lib/competition/national-teams";
 import { requireActiveSeason } from "@/lib/competition/season";
+import { requireSeasonInSetup } from "@/lib/competition/season-setup";
 import {
   assertGroupRosterEditable,
   assertTeamRosterEditable,
@@ -116,6 +117,7 @@ export async function POST(request: Request) {
     }
 
     const season = await requireActiveSeason(supabase);
+    requireSeasonInSetup(season);
     const createInput = validateTeamCreateBody(body);
     await assertGroupRosterEditable(supabase, createInput.group_id);
 
@@ -178,6 +180,8 @@ export async function PATCH(request: Request) {
 
     const patch: Record<string, unknown> = {};
     if (body.name !== undefined) {
+      const season = await requireActiveSeason(supabase);
+      requireSeasonInSetup(season);
       const name = typeof body.name === "string" ? body.name.trim() : "";
       if (!name) return jsonErrorCode(ErrorCodes.api.teamNameRequired, 400);
       patch.name = name;
@@ -226,6 +230,8 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const { supabase } = await requireRoles([...COMPETITION_ADMIN_ROLES]);
+    const season = await requireActiveSeason(supabase);
+    requireSeasonInSetup(season);
     const body = await request.json();
     const teamId = body.id as string | undefined;
     if (!teamId) return jsonErrorCode(ErrorCodes.api.idRequired, 400);

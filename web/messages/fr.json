@@ -486,7 +486,7 @@
     "regionalStartLeague": {
       "loading": "Chargement de l'état…",
       "statusTitle": "Statut de la ligue",
-      "statusBody": "La saison est {status}. Les journées sont verrouillées après le démarrage ; verrouillez les effectifs dans l’onglet Équipes quand les compositions sont finalisées.",
+      "statusBody": "La saison est {status}. Divisions, groupes et équipes sont verrouillés ; les capitaines peuvent encore être modifiés. Verrouillez les effectifs ci-dessous quand les compositions sont finalisées.",
       "title": "Démarrer la ligue",
       "description": "Lorsque les journées et tous les groupes sont prêts, générez les rencontres pour chaque groupe et activez cette ligue régionale. Toute la saison devient active (la configuration nationale sera verrouillée si elle n'est pas terminée).",
       "calendarCheck": "Journées régionales : {set}/{required}",
@@ -563,7 +563,7 @@
     "startLeague": {
       "loading": "Chargement de l'état de préparation…",
       "statusTitle": "Statut de la ligue",
-      "statusBody": "La saison est {status}. Les journées sont verrouillées après le démarrage ; verrouillez les effectifs dans l’onglet Équipes quand les compositions sont finalisées.",
+      "statusBody": "La saison est {status}. Divisions, groupes et équipes sont verrouillés ; les capitaines peuvent encore être modifiés. Verrouillez les effectifs ci-dessous quand les compositions sont finalisées.",
       "title": "Démarrer la ligue",
       "description": "Lorsque les journées de jeu et les équipes sont complètes, générez toutes les rencontres et activez la saison.",
       "structureCheck": "Structure nationale (8 divisions)",

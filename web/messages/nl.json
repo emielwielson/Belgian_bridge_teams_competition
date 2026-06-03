@@ -486,7 +486,7 @@
     "regionalStartLeague": {
       "loading": "Gereedheid laden…",
       "statusTitle": "Competitiestatus",
-      "statusBody": "Het seizoen is {status}. Speeldagen zijn vergrendeld na de start; vergrendel teamroosters op het tabblad Teams wanneer de indeling definitief is.",
+      "statusBody": "Het seizoen is {status}. Divisies, groepen en teams zijn vergrendeld; kapiteins kunnen nog wel gewijzigd worden. Vergrendel selecties hieronder wanneer de samenstelling definitief is.",
       "title": "Competitie starten",
       "description": "Als speeldagen en alle groepen klaar zijn, worden wedstrijden voor elke groep gegenereerd en wordt deze regionale competitie geactiveerd. Het hele seizoen wordt actief (nationale opzet wordt vergrendeld als die nog niet klaar is).",
       "calendarCheck": "Regionale speeldagen: {set}/{required}",
@@ -563,7 +563,7 @@
     "startLeague": {
       "loading": "Gereedheid laden…",
       "statusTitle": "Competitiestatus",
-      "statusBody": "Het seizoen is {status}. Speeldagen zijn vergrendeld na de start; vergrendel teamroosters op het tabblad Teams wanneer de indeling definitief is.",
+      "statusBody": "Het seizoen is {status}. Divisies, groepen en teams zijn vergrendeld; kapiteins kunnen nog wel gewijzigd worden. Vergrendel selecties hieronder wanneer de samenstelling definitief is.",
       "title": "Competitie starten",
       "description": "Wanneer speeldagen en teams compleet zijn, genereer alle wedstrijden en activeer het seizoen.",
       "structureCheck": "Nationale structuur (8 afdelingen)",

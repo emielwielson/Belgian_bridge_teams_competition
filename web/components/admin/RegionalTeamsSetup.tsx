@@ -30,7 +30,9 @@ type GroupOption = {
 type Props = {
   regionId: string;
   leagues: League[];
-  readOnly?: boolean;
+  teamsLocked?: boolean;
+  captainsEditable?: boolean;
+  scheduleSettingsLocked?: boolean;
   onStructureChanged: () => void;
   onTeamsChanged: () => void;
 };
@@ -38,7 +40,9 @@ type Props = {
 export function RegionalTeamsSetup({
   regionId,
   leagues,
-  readOnly = false,
+  teamsLocked = false,
+  captainsEditable,
+  scheduleSettingsLocked = false,
   onStructureChanged,
   onTeamsChanged,
 }: Props) {
@@ -154,6 +158,7 @@ export function RegionalTeamsSetup({
             teamCount={teamCount}
             roundRobinCount={selectedGroup.roundRobinCount}
             roundCount={selectedGroup.roundCount}
+            readOnly={scheduleSettingsLocked}
             onUpdated={() => {
               onStructureChanged();
               onTeamsChanged();
@@ -163,7 +168,8 @@ export function RegionalTeamsSetup({
             groupId={selectedGroup.groupId}
             divisionLabel={`${selectedGroup.divisionName} — ${selectedGroup.groupName}`}
             clubs={clubs}
-            readOnly={readOnly}
+            teamsLocked={teamsLocked}
+            captainsEditable={captainsEditable}
             onTeamsChanged={handleTeamsChanged}
           />
         </section>

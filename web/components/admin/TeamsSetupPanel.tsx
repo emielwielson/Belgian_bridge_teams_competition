@@ -37,7 +37,10 @@ type Props = {
   groupId: string;
   divisionLabel: string;
   clubs: Club[];
-  readOnly?: boolean;
+  /** Blocks add/remove/reorder teams and slot assignment. */
+  teamsLocked?: boolean;
+  /** Captain changes allowed even when teamsLocked (e.g. after season start). */
+  captainsEditable?: boolean;
   maxTeams?: number;
   onTeamsChanged?: () => void;
 };
@@ -157,7 +160,8 @@ function PoolDropZone({
 function SlotListItem({
   row,
   team,
-  readOnly,
+  teamsLocked,
+  captainsEditable,
   onEditCaptain,
   onRemove,
   editingCaptainTeamId,
@@ -170,7 +174,8 @@ function SlotListItem({
 }: {
   row: ScheduleSlotRow;
   team?: TeamRow;
-  readOnly?: boolean;
+  teamsLocked?: boolean;
+  captainsEditable?: boolean;
   onEditCaptain: (team: TeamRow) => void;
   onRemove: (teamId: string) => void;
   editingCaptainTeamId: string | null;
@@ -185,7 +190,7 @@ function SlotListItem({
   const tCommon = useTranslations("common");
   const { setNodeRef, isOver } = useDroppable({
     id: `slot-${row.slot}`,
-    disabled: readOnly,
+    disabled: teamsLocked,
   });
 
   const dragItem: DragItem | null = row.isBye
@@ -205,7 +210,7 @@ function SlotListItem({
         <span className="mt-0.5 w-8 shrink-0 text-xs font-semibold text-zinc-500">
           {row.slot}
         </span>
-        {!readOnly && dragItem ? (
+        {!teamsLocked && dragItem ? (
           <DragHandle item={dragItem} />
         ) : (
           <span className="w-6 shrink-0" />
@@ -229,29 +234,33 @@ function SlotListItem({
                   <span className="text-amber-700">{t("noCaptain")}</span>
                 )}
               </span>
-              {!readOnly && (
+              {(captainsEditable || !teamsLocked) && (
                 <div className="flex gap-2">
-                  <button
-                    type="button"
-                    className="text-xs font-medium text-zinc-700 underline"
-                    onClick={() => onEditCaptain(team)}
-                  >
-                    {t("changeCaptain")}
-                  </button>
-                  <button
-                    type="button"
-                    className="text-xs font-medium text-red-700 underline"
-                    onClick={() => onRemove(team.id)}
-                  >
-                    {tCommon("remove")}
-                  </button>
+                  {captainsEditable && (
+                    <button
+                      type="button"
+                      className="text-xs font-medium text-zinc-700 underline"
+                      onClick={() => onEditCaptain(team)}
+                    >
+                      {t("changeCaptain")}
+                    </button>
+                  )}
+                  {!teamsLocked && (
+                    <button
+                      type="button"
+                      className="text-xs font-medium text-red-700 underline"
+                      onClick={() => onRemove(team.id)}
+                    >
+                      {tCommon("remove")}
+                    </button>
+                  )}
                 </div>
               )}
             </div>
           ) : (
             <span className="text-zinc-400">{t("empty")}</span>
           )}
-          {team && editingCaptainTeamId === team.id && !readOnly ? (
+          {team && editingCaptainTeamId === team.id && captainsEditable ? (
             <div className="flex flex-wrap items-end gap-2 border-t border-zinc-100 pt-2">
               <label className="flex flex-col gap-1">
                 <span className="text-xs text-zinc-600">{t("captain")}</span>
@@ -295,12 +304,14 @@ export function TeamsSetupPanel({
   groupId,
   divisionLabel,
   clubs,
-  readOnly = false,
+  teamsLocked = false,
+  captainsEditable,
   maxTeams,
   onTeamsChanged,
 }: Props) {
   const t = useTranslations("admin.teamsPanel");
   const tCommon = useTranslations("common");
+  const canEditCaptains = captainsEditable ?? !teamsLocked;
 
   const [teams, setTeams] = useState<TeamRow[]>([]);
   const [slots, setSlots] = useState<ScheduleSlotRow[]>(emptyScheduleSlots());
@@ -488,7 +499,7 @@ export function TeamsSetupPanel({
 
   function handleDragEnd(event: DragEndEvent) {
     setActiveItem(null);
-    if (readOnly || !event.over) return;
+    if (teamsLocked || !event.over) return;
 
     const activeData = event.active.data.current?.item as DragItem | undefined;
     if (!activeData) return;
@@ -558,7 +569,7 @@ export function TeamsSetupPanel({
 
   async function addTeam(e: React.FormEvent) {
     e.preventDefault();
-    if (readOnly || atCapacity) return;
+    if (teamsLocked || atCapacity) return;
     if (!captainId) {
       setMessage(t("selectCaptainError"));
       return;
@@ -586,7 +597,7 @@ export function TeamsSetupPanel({
   }
 
   async function removeTeam(teamId: string) {
-    if (readOnly || !confirm(t("removeConfirm"))) return;
+    if (teamsLocked || !confirm(t("removeConfirm"))) return;
     setMessage(null);
     const res = await fetch("/api/admin/competition/teams", {
       method: "DELETE",
@@ -664,7 +675,8 @@ export function TeamsSetupPanel({
                 key={row.slot}
                 row={row}
                 team={row.teamId ? teamById.get(row.teamId) : undefined}
-                readOnly={readOnly}
+                teamsLocked={teamsLocked}
+                captainsEditable={canEditCaptains}
                 onEditCaptain={startEditCaptain}
                 onRemove={removeTeam}
                 editingCaptainTeamId={editingCaptainTeamId}
@@ -678,12 +690,12 @@ export function TeamsSetupPanel({
             ))}
           </ul>
 
-          {!readOnly && poolItems.length > 0 && (
+          {!teamsLocked && poolItems.length > 0 && (
             <div>
               <p className="mb-2 text-xs font-medium text-zinc-700">
                 {t("unassigned")}
               </p>
-              <PoolDropZone readOnly={readOnly}>
+              <PoolDropZone readOnly={teamsLocked}>
                 <div className="flex flex-wrap gap-2">
                   {poolItems.map((item) => (
                     <PoolChip key={dragId(item)} item={item} />
@@ -693,7 +705,7 @@ export function TeamsSetupPanel({
             </div>
           )}
 
-          {!readOnly &&
+          {!teamsLocked &&
             teams.length === 7 &&
             !byeEnabled &&
             !slots.some((s) => s.isBye) && (
@@ -738,26 +750,30 @@ export function TeamsSetupPanel({
                     <span className="text-amber-700">{t("noCaptain")}</span>
                   )}
                 </span>
-                {!readOnly && (
+                {(canEditCaptains || !teamsLocked) && (
                   <div className="flex gap-2">
-                    <button
-                      type="button"
-                      className="text-xs font-medium text-zinc-700 underline"
-                      onClick={() => startEditCaptain(team)}
-                    >
-                      {t("changeCaptain")}
-                    </button>
-                    <button
-                      type="button"
-                      className="text-xs font-medium text-red-700 underline"
-                      onClick={() => removeTeam(team.id)}
-                    >
-                      {tCommon("remove")}
-                    </button>
+                    {canEditCaptains && (
+                      <button
+                        type="button"
+                        className="text-xs font-medium text-zinc-700 underline"
+                        onClick={() => startEditCaptain(team)}
+                      >
+                        {t("changeCaptain")}
+                      </button>
+                    )}
+                    {!teamsLocked && (
+                      <button
+                        type="button"
+                        className="text-xs font-medium text-red-700 underline"
+                        onClick={() => removeTeam(team.id)}
+                      >
+                        {tCommon("remove")}
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
-              {editingCaptainTeamId === team.id && !readOnly && (
+              {editingCaptainTeamId === team.id && canEditCaptains && (
                 <div className="flex flex-wrap items-end gap-2 border-t border-zinc-100 pt-2">
                   <label className="flex flex-col gap-1">
                     <span className="text-xs text-zinc-600">{t("captain")}</span>
@@ -796,7 +812,7 @@ export function TeamsSetupPanel({
         </ul>
       )}
 
-      {!readOnly && useSlotOrdering && !slotsComplete && (
+      {!teamsLocked && useSlotOrdering && !slotsComplete && (
         <p className="text-xs text-amber-800">
           {t("assignSlotsWarning", {
             byePart: teams.length === 7 ? t("byePart") : "",
@@ -804,7 +820,7 @@ export function TeamsSetupPanel({
         </p>
       )}
 
-      {!readOnly && (
+      {!teamsLocked && (
         <form onSubmit={addTeam} className="flex flex-col gap-3 border-t pt-4">
           {clubs.length === 0 ? (
             <p className="text-sm text-amber-800">{t("noClubs")}</p>

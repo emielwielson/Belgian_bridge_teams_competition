@@ -486,7 +486,7 @@
     "regionalStartLeague": {
       "loading": "Loading readiness…",
       "statusTitle": "League status",
-      "statusBody": "The season is {status}. Match days are locked after start; lock team rosters on the Teams tab when compositions are final.",
+      "statusBody": "The season is {status}. Divisions, groups, and teams are locked; you can still change captains. Lock rosters below when compositions are final.",
       "title": "Start league",
       "description": "When match days and all groups are ready, generate fixtures for every group and activate this regional league. The whole season becomes active (national setup will lock if not finished yet).",
       "calendarCheck": "Regional match days: {set}/{required}",
@@ -563,7 +563,7 @@
     "startLeague": {
       "loading": "Loading readiness…",
       "statusTitle": "League status",
-      "statusBody": "The season is {status}. Match days are locked after start; lock team rosters on the Teams tab when compositions are final.",
+      "statusBody": "The season is {status}. Divisions, groups, and teams are locked; you can still change captains. Lock rosters below when compositions are final.",
       "title": "Start league",
       "description": "When match days and teams are complete, generate all fixtures and activate the season.",
       "structureCheck": "National structure (8 divisions)",

@@ -12,13 +12,15 @@ type Club = { id: string; name: string };
 
 type Props = {
   divisions: DivisionReadiness[];
-  readOnly?: boolean;
+  teamsLocked?: boolean;
+  captainsEditable?: boolean;
   onTeamsChanged?: () => void;
 };
 
 export function NationalTeamsByDivision({
   divisions,
-  readOnly = false,
+  teamsLocked = false,
+  captainsEditable,
   onTeamsChanged,
 }: Props) {
   const t = useTranslations("admin.nationalTeams");
@@ -74,7 +76,8 @@ export function NationalTeamsByDivision({
           groupId={groupId}
           divisionLabel={divisionLabel}
           clubs={clubs}
-          readOnly={readOnly}
+          teamsLocked={teamsLocked}
+          captainsEditable={captainsEditable}
           maxTeams={NATIONAL_TEAMS_PER_GROUP}
           onTeamsChanged={handleTeamsChanged}
         />

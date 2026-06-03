@@ -125,6 +125,7 @@ export async function POST(request: Request) {
     }
 
     if (body.type === "division") {
+      requireSeasonInSetup(season);
       const { data, error } = await supabase
         .from("divisions")
         .insert({
@@ -139,6 +140,7 @@ export async function POST(request: Request) {
     }
 
     if (body.type === "group") {
+      requireSeasonInSetup(season);
       const roundRobinCount =
         typeof body.round_robin_count === "number" ? body.round_robin_count : 2;
       const { data, error } = await supabase
@@ -301,6 +303,8 @@ export async function PATCH(request: Request) {
     }
 
     if (body.type === "division" && body.id) {
+      const season = await requireActiveSeason(supabase);
+      requireSeasonInSetup(season);
       const { error } = await supabase
         .from("divisions")
         .update({ name: body.name })
@@ -310,6 +314,8 @@ export async function PATCH(request: Request) {
     }
 
     if (body.type === "group" && body.id) {
+      const season = await requireActiveSeason(supabase);
+      requireSeasonInSetup(season);
       const patch: Record<string, unknown> = {};
       if (body.name !== undefined) patch.name = body.name;
       if (body.status !== undefined) patch.status = body.status;

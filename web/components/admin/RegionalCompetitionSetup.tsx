@@ -131,7 +131,9 @@ export function RegionalCompetitionSetup({ regionCode, regionId }: Props) {
   }
 
   const setupLocked = readiness?.seasonStatus !== "setup";
-  const teamsReadOnly = readiness?.rostersLocked ?? false;
+  const rostersLocked = readiness?.rostersLocked ?? false;
+  const teamsLocked = setupLocked || rostersLocked;
+  const captainsEditable = !rostersLocked;
 
   const filteredLeagues = leagues.map((league) => ({
     ...league,
@@ -244,17 +246,12 @@ export function RegionalCompetitionSetup({ regionCode, regionId }: Props) {
             aria-labelledby="regional-tab-teams-trigger"
             className="flex flex-col gap-4 pt-2"
           >
-            <RosterLockSection
-              scope={SCOPES.REGIONAL}
-              regionCode={regionCode}
-              leagueId={readiness?.leagueId ?? null}
-              rostersLocked={readiness?.rostersLocked ?? false}
-              onChanged={loadReadiness}
-            />
             <RegionalTeamsSetup
               regionId={regionId}
               leagues={filteredLeagues}
-              readOnly={teamsReadOnly}
+              teamsLocked={teamsLocked}
+              captainsEditable={captainsEditable}
+              scheduleSettingsLocked={setupLocked}
               onStructureChanged={loadAll}
               onTeamsChanged={loadReadiness}
             />
@@ -266,8 +263,15 @@ export function RegionalCompetitionSetup({ regionCode, regionId }: Props) {
             id="regional-tab-start"
             role="tabpanel"
             aria-labelledby="regional-tab-start-trigger"
-            className="pt-2"
+            className="flex flex-col gap-4 pt-2"
           >
+            <RosterLockSection
+              scope={SCOPES.REGIONAL}
+              regionCode={regionCode}
+              leagueId={readiness?.leagueId ?? null}
+              rostersLocked={rostersLocked}
+              onChanged={loadReadiness}
+            />
             <RegionalStartLeagueSection
               readiness={readiness}
               loading={structureLoading}

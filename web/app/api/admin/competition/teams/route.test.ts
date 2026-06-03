@@ -172,6 +172,38 @@ describe("POST /api/admin/competition/teams", () => {
       },
     );
   });
+
+  it("rejects create when season is active", async () => {
+    const { requireActiveSeason } = await import("@/lib/competition/season");
+    vi.mocked(requireActiveSeason).mockResolvedValueOnce({
+      id: "season-1",
+      name: "2025-26",
+      status: "active",
+      is_active: true,
+    });
+
+    const { requireRoles } = await import("@/lib/auth/route-auth");
+    vi.mocked(requireRoles).mockResolvedValue({
+      supabase: { from: vi.fn() } as never,
+      user: { id: "u1" } as never,
+      roles: ["competition_manager"],
+    });
+
+    const res = await POST(
+      new Request("http://localhost", {
+        method: "POST",
+        body: JSON.stringify({
+          group_id: "g1",
+          club_id: "c1",
+          name: "Team A",
+          captain_id: "p1",
+        }),
+      }),
+    );
+    expect(res.status).toBe(409);
+    const body = await res.json();
+    expect(body.error).toBe("api.seasonSetupLocked");
+  });
 });
 
 describe("PATCH /api/admin/competition/teams", () => {
@@ -215,5 +247,54 @@ describe("PATCH /api/admin/competition/teams", () => {
       }),
     );
     expect(res.status).toBe(403);
+  });
+
+  it("allows captain update when season is active", async () => {
+    const { requireActiveSeason } = await import("@/lib/competition/season");
+    vi.mocked(requireActiveSeason).mockResolvedValue({
+      id: "season-1",
+      name: "2025-26",
+      status: "active",
+      is_active: true,
+    });
+
+    const teamChain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockResolvedValue({
+        data: { id: "t1", club_id: "c1" },
+        error: null,
+      }),
+      update: vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ error: null }),
+      }),
+    };
+
+    const membershipChain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockResolvedValue({ data: { id: "m1" }, error: null }),
+    };
+
+    const from = vi.fn((table: string) => {
+      if (table === "teams") return teamChain;
+      if (table === "player_club_memberships") return membershipChain;
+      return {};
+    });
+
+    const { requireRoles } = await import("@/lib/auth/route-auth");
+    vi.mocked(requireRoles).mockResolvedValue({
+      supabase: { from } as never,
+      user: { id: "u1" } as never,
+      roles: ["competition_manager"],
+    });
+
+    const res = await PATCH(
+      new Request("http://localhost", {
+        method: "PATCH",
+        body: JSON.stringify({ id: "t1", captain_id: "p1" }),
+      }),
+    );
+    expect(res.status).toBe(200);
   });
 });

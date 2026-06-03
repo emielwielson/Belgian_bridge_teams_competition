@@ -19,6 +19,7 @@ type Props = {
   teamCount: number;
   roundRobinCount: number;
   roundCount: number;
+  readOnly?: boolean;
   onUpdated: () => void;
 };
 
@@ -29,6 +30,7 @@ export function RegionalGroupScheduleSettings({
   teamCount,
   roundRobinCount: initialRr,
   roundCount: initialRc,
+  readOnly = false,
   onUpdated,
 }: Props) {
   const t = useTranslations("admin.scheduleSettings");
@@ -92,6 +94,7 @@ export function RegionalGroupScheduleSettings({
   }, [datesApplicable, usedRounds, roundCount]);
 
   async function save() {
+    if (readOnly) return;
     if (roundRobinCount < 1 || roundRobinCount > maxRr) {
       setMessage(
         t("cyclesRangeError", {
@@ -137,6 +140,7 @@ export function RegionalGroupScheduleSettings({
   }
 
   async function saveDates() {
+    if (readOnly) return;
     if (!selectionComplete) {
       setMessage(t("selectExactDates", { count: roundCount }));
       return;
@@ -201,7 +205,7 @@ export function RegionalGroupScheduleSettings({
           value={roundRobinCount}
           onChange={(e) => setRoundRobinCount(Number(e.target.value))}
           className="w-16 rounded border border-zinc-300 px-2 py-1"
-          disabled={teamCount < 2}
+          disabled={readOnly || teamCount < 2}
         />
         <span className="text-zinc-500">
           {t("matchRounds", { count: previewRounds })}
@@ -210,16 +214,18 @@ export function RegionalGroupScheduleSettings({
       {teamCount % 2 === 1 && (
         <p className="mt-2 text-xs text-zinc-600">{t("oddGroupRest")}</p>
       )}
-      <div className="mt-2 flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={save}
-          disabled={saving || teamCount < 2}
-          className="btn-secondary text-xs"
-        >
-          {saving ? tCommon("saving") : t("saveCycles")}
-        </button>
-      </div>
+      {!readOnly && (
+        <div className="mt-2 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={save}
+            disabled={saving || teamCount < 2}
+            className="btn-secondary text-xs"
+          >
+            {saving ? tCommon("saving") : t("saveCycles")}
+          </button>
+        </div>
+      )}
 
       {datesApplicable && (
         <div className="mt-4 border-t border-zinc-200 pt-3">
@@ -245,7 +251,7 @@ export function RegionalGroupScheduleSettings({
                       <input
                         type="checkbox"
                         checked={checked}
-                        disabled={atCapacity}
+                        disabled={readOnly || atCapacity}
                         onChange={() => toggleDate(d.round)}
                       />
                       <span className="text-zinc-700">
@@ -264,14 +270,16 @@ export function RegionalGroupScheduleSettings({
               })}
             </p>
           )}
-          <button
-            type="button"
-            onClick={saveDates}
-            disabled={savingDates || !selectionComplete || datesLoading}
-            className="btn-secondary mt-2 text-xs"
-          >
-            {savingDates ? tCommon("saving") : t("saveDateSelection")}
-          </button>
+          {!readOnly && (
+            <button
+              type="button"
+              onClick={saveDates}
+              disabled={savingDates || !selectionComplete || datesLoading}
+              className="btn-secondary mt-2 text-xs"
+            >
+              {savingDates ? tCommon("saving") : t("saveDateSelection")}
+            </button>
+          )}
         </div>
       )}
 
