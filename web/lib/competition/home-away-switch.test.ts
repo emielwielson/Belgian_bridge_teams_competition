@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   canAccessHomeAwaySwitchWorkflow,
+  hasHomeAwaySwitchRespondActions,
   isHomeAwaySwitchCaptain,
   shouldShowHomeAwaySwitchSection,
 } from "./home-away-switch";
@@ -65,5 +66,16 @@ describe("isHomeAwaySwitchCaptain", () => {
     expect(isHomeAwaySwitchCaptain(baseState({ captain_teams: [] }))).toBe(
       false,
     );
+  });
+});
+
+describe("hasHomeAwaySwitchRespondActions", () => {
+  it("is true when manager or captain may approve or reject", () => {
+    expect(
+      hasHomeAwaySwitchRespondActions(
+        baseState({ captain_teams: [], can_approve: true, can_reject: true }),
+      ),
+    ).toBe(true);
+    expect(hasHomeAwaySwitchRespondActions(baseState())).toBe(false);
   });
 });

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import {
+  hasHomeAwaySwitchRespondActions,
   isHomeAwaySwitchCaptain,
   type MatchHomeAwaySwitchState,
 } from "@/lib/competition/home-away-switch";
@@ -45,6 +46,7 @@ export function HomeAwaySwitchWorkflow({
 
   const firstLeg = state.first_leg;
   const isCaptain = isHomeAwaySwitchCaptain(state);
+  const canRespond = hasHomeAwaySwitchRespondActions(state);
 
   async function handlePropose(e: React.FormEvent) {
     e.preventDefault();
@@ -137,9 +139,7 @@ export function HomeAwaySwitchWorkflow({
         </p>
       ) : null}
 
-      {!isCaptain ? (
-        <p className="text-sm text-zinc-600">{t("onlyCaptain")}</p>
-      ) : state.pending ? (
+      {state.pending ? (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-sm">
           <p className="font-medium text-amber-900">{t("pendingTitle")}</p>
           <p className="mt-1 text-amber-800">
@@ -182,7 +182,7 @@ export function HomeAwaySwitchWorkflow({
             ) : null}
           </div>
         </div>
-      ) : state.can_propose ? (
+      ) : state.can_propose && isCaptain ? (
         <form onSubmit={handlePropose} className="flex flex-col gap-3">
           {state.needs_switch ? (
             <p className="text-sm text-zinc-600">
@@ -225,6 +225,8 @@ export function HomeAwaySwitchWorkflow({
         </form>
       ) : isCaptain && state.needs_switch ? (
         <p className="text-sm text-amber-800">{t("blocked")}</p>
+      ) : !isCaptain && !canRespond ? (
+        <p className="text-sm text-zinc-600">{t("onlyCaptain")}</p>
       ) : null}
     </section>
   );

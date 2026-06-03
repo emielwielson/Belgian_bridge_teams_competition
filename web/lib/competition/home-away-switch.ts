@@ -138,3 +138,9 @@ export function canAccessHomeAwaySwitchWorkflow(
 export function isHomeAwaySwitchCaptain(state: MatchHomeAwaySwitchState): boolean {
   return state.captain_teams.length > 0;
 }
+
+export function hasHomeAwaySwitchRespondActions(
+  state: MatchHomeAwaySwitchState,
+): boolean {
+  return state.can_approve || state.can_reject || state.can_cancel;
+}
