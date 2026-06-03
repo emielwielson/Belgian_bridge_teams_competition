@@ -21,6 +21,7 @@ Development uses the **Supabase Dashboard** (no Docker or Supabase CLI required)
    - Site URL: `http://localhost:3000` (add production URL when deployed)
    - Redirect URLs: `http://localhost:3000/auth/callback`
    - **Providers:** enable **Email** (Magic Link / OTP)
+   - **Email Templates → Magic Link:** use `{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=email` in the sign-in link (see `supabase/templates/magic_link.html`). The default `{{ .ConfirmationURL }}` PKCE flow fails when the link is opened outside the browser that requested it.
 
 3. Copy keys from **Project Settings → [API Keys](https://supabase.com/dashboard/project/_/settings/api-keys)**:
    - Project URL → `NEXT_PUBLIC_SUPABASE_URL`

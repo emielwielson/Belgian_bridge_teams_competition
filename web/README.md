@@ -16,6 +16,11 @@ Next.js frontend for the Belgian Bridge Competition Platform.
    - Enable **Email** (Magic Link / OTP)
    - Site URL: `http://localhost:3000`
    - Redirect URLs: `http://localhost:3000/auth/callback`
+   - **Magic Link** email template (required for PKCE / cross-device login): use a link with `token_hash`, not only `{{ .ConfirmationURL }}`. Example:
+     ```html
+     <a href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=email">Sign in</a>
+     ```
+     Local Supabase already uses `supabase/templates/magic_link.html`. Copy the same template in the hosted project under **Authentication → Email Templates → Magic Link**.
 
 3. Install and run:
 

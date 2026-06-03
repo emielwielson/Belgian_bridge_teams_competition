@@ -23,9 +23,8 @@ export function LoginForm({ nextPath }: Props) {
 
     const supabase = createBrowserClient();
     const redirectTo = new URL("/auth/callback", window.location.origin);
-    if (nextPath) {
-      redirectTo.searchParams.set("next", nextPath);
-    }
+    // Always include ?next= so magic-link emails can append &token_hash=…&type=email
+    redirectTo.searchParams.set("next", nextPath ?? "/");
 
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim(),

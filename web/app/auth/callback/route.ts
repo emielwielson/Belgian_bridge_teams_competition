@@ -1,46 +1,64 @@
 import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import type { EmailOtpType } from "@supabase/supabase-js";
+import { NextResponse, type NextRequest } from "next/server";
 import { LOCALE_COOKIE, localeCookieOptions } from "@/lib/i18n/locale-cookie";
 import { getUserPreferredLocale } from "@/lib/i18n/user-locale";
 import { getSupabasePublicEnv } from "@/lib/supabase/env";
 
-export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url);
-  const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/";
+function safeNextPath(next: string | null): string {
+  if (next && next.startsWith("/") && !next.startsWith("//")) {
+    return next;
+  }
+  return "/";
+}
 
-  if (!code) {
+export async function GET(request: NextRequest) {
+  const requestUrl = new URL(request.url);
+  const { searchParams, origin } = requestUrl;
+  const token_hash = searchParams.get("token_hash");
+  const type = searchParams.get("type");
+  const code = searchParams.get("code");
+  const next = safeNextPath(searchParams.get("next"));
+
+  if (!token_hash && !code) {
     return NextResponse.redirect(`${origin}/login?error=missing_code`);
   }
 
-  const cookieStore = await cookies();
+  let response = NextResponse.redirect(`${origin}${next}`);
   const { url, publishableKey } = getSupabasePublicEnv();
 
   const supabase = createServerClient(url, publishableKey, {
     cookies: {
       getAll() {
-        return cookieStore.getAll();
+        return request.cookies.getAll();
       },
       setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) =>
-          cookieStore.set(name, value, options),
-        );
+        cookiesToSet.forEach(({ name, value, options }) => {
+          request.cookies.set(name, value);
+          response.cookies.set(name, value, options);
+        });
       },
     },
   });
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  let error: { message: string } | null = null;
+
+  if (token_hash && type) {
+    const result = await supabase.auth.verifyOtp({
+      token_hash,
+      type: type as EmailOtpType,
+    });
+    error = result.error;
+  } else if (code) {
+    const result = await supabase.auth.exchangeCodeForSession(code);
+    error = result.error;
+  }
 
   if (error) {
     return NextResponse.redirect(
       `${origin}/login?error=${encodeURIComponent(error.message)}`,
     );
   }
-
-  const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/";
-  const redirect = NextResponse.redirect(`${origin}${safeNext}`);
 
   const {
     data: { user },
@@ -50,12 +68,12 @@ export async function GET(request: NextRequest) {
     try {
       const preferred = await getUserPreferredLocale(supabase, user.id);
       if (preferred) {
-        redirect.cookies.set(LOCALE_COOKIE, preferred, localeCookieOptions());
+        response.cookies.set(LOCALE_COOKIE, preferred, localeCookieOptions());
       }
     } catch {
       // Login succeeds even if profile locale cannot be loaded.
     }
   }
 
-  return redirect;
+  return response;
 }
