@@ -17,9 +17,14 @@ vi.mock("@/lib/competition/season", () => ({
   requireActiveSeason: vi.fn(),
 }));
 
-vi.mock("@/lib/competition/season-setup", () => ({
-  requireSeasonInSetup: vi.fn(),
-}));
+vi.mock("@/lib/competition/league-roster-lock", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/lib/competition/league-roster-lock")>();
+  return {
+    ...actual,
+    assertTeamRosterEditable: vi.fn(),
+  };
+});
 
 vi.mock("@/lib/competition/team-roster", () => ({
   loadTeamRosterState: vi.fn(),

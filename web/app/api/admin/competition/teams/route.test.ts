@@ -18,11 +18,13 @@ vi.mock("@/lib/competition/season", () => ({
   }),
 }));
 
-vi.mock("@/lib/competition/season-setup", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/competition/season-setup")>();
+vi.mock("@/lib/competition/league-roster-lock", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/lib/competition/league-roster-lock")>();
   return {
     ...actual,
-    requireSeasonInSetup: vi.fn(),
+    assertGroupRosterEditable: vi.fn(),
+    assertTeamRosterEditable: vi.fn(),
   };
 });
 

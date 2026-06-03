@@ -10,6 +10,7 @@ import type { NationalScheduleKey } from "@/lib/competition/national-structure";
 import { NationalMatchDatesEditor } from "./NationalMatchDatesEditor";
 import { NationalStartLeagueSection } from "./NationalStartLeagueSection";
 import { NationalTeamsByDivision } from "./NationalTeamsByDivision";
+import { RosterLockSection } from "./RosterLockSection";
 
 const NATIONAL_SCHEDULE_KEYS: NationalScheduleKey[] = [
   "honor",
@@ -89,7 +90,8 @@ export function NationalCompetitionSetup() {
     await loadReadiness();
   }
 
-  const readOnly = readiness?.seasonStatus !== "setup";
+  const setupLocked = readiness?.seasonStatus !== "setup";
+  const teamsReadOnly = readiness?.rostersLocked ?? false;
 
   return (
     <main className="page-container flex flex-col gap-6">
@@ -164,7 +166,7 @@ export function NationalCompetitionSetup() {
                   scope={SCOPES.NATIONAL}
                   scheduleKey={key}
                   title={translateScheduleLabel(key, tDivisions)}
-                  readOnly={readOnly}
+                  readOnly={setupLocked}
                   onSaved={loadReadiness}
                 />
               ))}
@@ -177,11 +179,17 @@ export function NationalCompetitionSetup() {
             id="national-tab-teams"
             role="tabpanel"
             aria-labelledby="national-tab-teams-trigger"
-            className="pt-2"
+            className="flex flex-col gap-4 pt-2"
           >
+            <RosterLockSection
+              scope={SCOPES.NATIONAL}
+              leagueId={readiness?.leagueId ?? null}
+              rostersLocked={readiness?.rostersLocked ?? false}
+              onChanged={loadReadiness}
+            />
             <NationalTeamsByDivision
               divisions={readiness?.divisions ?? []}
-              readOnly={readOnly}
+              readOnly={teamsReadOnly}
               onTeamsChanged={loadReadiness}
             />
           </div>

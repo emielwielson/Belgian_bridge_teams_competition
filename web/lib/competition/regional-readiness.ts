@@ -39,6 +39,7 @@ export type RegionalReadiness = {
   seasonStatus: string;
   regionCode: RegionCode;
   leagueId: string | null;
+  rostersLocked: boolean;
   calendar: CalendarReadiness;
   groups: GroupReadiness[];
   allGroupsReady: boolean;
@@ -97,6 +98,7 @@ export function buildRegionalReadiness(input: {
   seasonStatus: string;
   regionCode: RegionCode;
   leagueId: string | null;
+  rostersLocked: boolean;
   calendarRoundCount: number;
   groups: GroupReadiness[];
 }): RegionalReadiness {
@@ -175,6 +177,7 @@ export function buildRegionalReadiness(input: {
     seasonStatus: input.seasonStatus,
     regionCode: input.regionCode,
     leagueId: input.leagueId,
+    rostersLocked: input.rostersLocked,
     calendar,
     groups: groupsWithReady,
     allGroupsReady,
@@ -208,6 +211,7 @@ export async function fetchRegionalReadiness(
       seasonStatus,
       regionCode,
       leagueId: null,
+      rostersLocked: false,
       calendarRoundCount: 0,
       groups: [],
     });
@@ -215,7 +219,7 @@ export async function fetchRegionalReadiness(
 
   const { data: league } = await supabase
     .from("leagues")
-    .select("id")
+    .select("id, rosters_locked")
     .eq("season_id", seasonId)
     .eq("scope", "regional")
     .eq("region_id", region.id)
@@ -226,6 +230,7 @@ export async function fetchRegionalReadiness(
       seasonStatus,
       regionCode,
       leagueId: null,
+      rostersLocked: false,
       calendarRoundCount: 0,
       groups: [],
     });
@@ -317,6 +322,7 @@ export async function fetchRegionalReadiness(
     seasonStatus,
     regionCode,
     leagueId: league.id,
+    rostersLocked: league.rosters_locked === true,
     calendarRoundCount: calendarCount ?? 0,
     groups,
   });

@@ -408,6 +408,17 @@
     "flandersRegional": "Flanders (regional)",
     "walloniaRegional": "Wallonia (regional)",
     "seasonStatus": "Season status: {status}",
+    "rosterLock": {
+      "title": "Team rosters",
+      "lockedDescription": "Rosters are locked. Teams, schedule slots, and player assignments cannot be changed until you unlock.",
+      "unlockedDescription": "Rosters are open. Lock when team compositions are final — after that, no more roster or team assignment changes.",
+      "lock": "Lock rosters",
+      "unlock": "Unlock rosters",
+      "lockConfirm": "Lock all team rosters for this competition? Team and roster changes will be blocked until you unlock.",
+      "unlockConfirm": "Unlock rosters so teams and player assignments can be edited again?",
+      "working": "Saving…",
+      "requestFailed": "Could not update roster lock"
+    },
     "settingUpStructure": " · Setting up structure…",
     "setupRegionalLeague": "Set up {leagueName} league",
     "activateSeason": "Activate season",
@@ -475,7 +486,7 @@
     "regionalStartLeague": {
       "loading": "Loading readiness…",
       "statusTitle": "League status",
-      "statusBody": "The season is {status}. Regional setup is complete; match days and teams are locked.",
+      "statusBody": "The season is {status}. Match days are locked after start; lock team rosters on the Teams tab when compositions are final.",
       "title": "Start league",
       "description": "When match days and all groups are ready, generate fixtures for every group and activate this regional league. The whole season becomes active (national setup will lock if not finished yet).",
       "calendarCheck": "Regional match days: {set}/{required}",
@@ -552,7 +563,7 @@
     "startLeague": {
       "loading": "Loading readiness…",
       "statusTitle": "League status",
-      "statusBody": "The season is {status}. Setup is complete; match days and teams are locked.",
+      "statusBody": "The season is {status}. Match days are locked after start; lock team rosters on the Teams tab when compositions are final.",
       "title": "Start league",
       "description": "When match days and teams are complete, generate all fixtures and activate the season.",
       "structureCheck": "National structure (8 divisions)",
@@ -880,7 +891,8 @@
       "invalidRequestBody": "Invalid request body",
       "clubIdRequired": "club_id is required",
       "captainIdInvalid": "captain_id must be a valid player id",
-      "seasonSetupLocked": "Season is active; setup changes are locked"
+      "seasonSetupLocked": "Season is active; setup changes are locked",
+      "rostersLocked": "Team rosters are locked for this competition"
     },
     "auth": {
       "unauthorized": "Unauthorized",

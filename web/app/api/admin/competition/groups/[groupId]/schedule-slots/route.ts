@@ -4,8 +4,7 @@ import {
   saveGroupScheduleSlots,
   type ScheduleSlotPayload,
 } from "@/lib/competition/group-schedule-slots";
-import { requireActiveSeason } from "@/lib/competition/season";
-import { requireSeasonInSetup } from "@/lib/competition/season-setup";
+import { assertGroupRosterEditable } from "@/lib/competition/league-roster-lock";
 import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
 import { ErrorCodes } from "@/lib/http/error-codes";
 
@@ -38,8 +37,7 @@ export async function PUT(request: Request, { params }: Params) {
   try {
     const { groupId } = await params;
     const { supabase } = await requireRoles([...COMPETITION_ADMIN_ROLES]);
-    const season = await requireActiveSeason(supabase);
-    requireSeasonInSetup(season);
+    await assertGroupRosterEditable(supabase, groupId);
 
     const body = await request.json();
     const slots = body.slots as ScheduleSlotPayload[] | undefined;

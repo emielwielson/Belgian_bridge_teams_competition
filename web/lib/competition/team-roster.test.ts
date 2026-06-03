@@ -32,6 +32,7 @@ describe("ensureCaptainOnTeamRoster", () => {
     let teamPlayersCalls = 0;
 
     const supabase = {
+      rpc: () => Promise.resolve({ data: false, error: null }),
       from: (table: string) => {
         if (table !== "team_players") throw new Error(`unexpected ${table}`);
         teamPlayersCalls += 1;

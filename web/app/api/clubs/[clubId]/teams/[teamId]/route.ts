@@ -2,7 +2,7 @@ import { requireAuth } from "@/lib/auth/route-auth";
 import { assertClubManagerForClub } from "@/lib/auth/user-access";
 import { loadClubTeamDetail } from "@/lib/competition/club-manager-queries";
 import { requireActiveSeason } from "@/lib/competition/season";
-import { requireSeasonInSetup } from "@/lib/competition/season-setup";
+import { assertTeamRosterEditable } from "@/lib/competition/league-roster-lock";
 import {
   addPlayerToTeamRoster,
   ensureCaptainOnTeamRoster,
@@ -54,6 +54,7 @@ export async function PATCH(request: Request, { params }: Params) {
 
     const captainId = parseCaptainId(body);
     if (captainId !== undefined) {
+      await assertTeamRosterEditable(supabase, teamId);
       if (captainId === null) {
         updates.captain_id = null;
       } else {
@@ -112,7 +113,7 @@ export async function POST(request: Request, { params }: Params) {
     }
 
     const season = await requireActiveSeason(supabase);
-    requireSeasonInSetup(season);
+    await assertTeamRosterEditable(supabase, teamId);
 
     const body = await request.json();
     const playerId = body.player_id as string | undefined;

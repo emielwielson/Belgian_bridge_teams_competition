@@ -1,5 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { TeamValidationError } from "@/lib/competition/team-captain";
+import {
+  assertTeamRosterEditable,
+  isTeamRosterLocked,
+} from "@/lib/competition/league-roster-lock";
 import { getActiveSeason, requireActiveSeason } from "@/lib/competition/season";
 
 export type RosterPlayer = {
@@ -26,7 +30,7 @@ export async function loadTeamRosterState(
   clubId: string,
 ): Promise<TeamRosterState> {
   const season = await getActiveSeason(supabase);
-  const roster_editable = season?.status === "setup";
+  const roster_editable = !(await isTeamRosterLocked(supabase, teamId));
   let roster: RosterPlayer[] = [];
   let available_players: RosterPlayer[] = [];
 
@@ -115,6 +119,7 @@ export async function addPlayerToTeamRoster(
   supabase: SupabaseClient,
   params: { teamId: string; playerId: string; seasonId: string },
 ): Promise<void> {
+  await assertTeamRosterEditable(supabase, params.teamId);
   const { error } = await supabase.from("team_players").insert({
     team_id: params.teamId,
     player_id: params.playerId,
@@ -165,6 +170,7 @@ export async function removePlayerFromTeamRoster(
   supabase: SupabaseClient,
   params: { teamId: string; playerId: string; seasonId: string },
 ): Promise<void> {
+  await assertTeamRosterEditable(supabase, params.teamId);
   const { error } = await supabase
     .from("team_players")
     .delete()

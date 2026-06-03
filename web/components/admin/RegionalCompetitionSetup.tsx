@@ -11,6 +11,7 @@ import { CompetitionManagement } from "./CompetitionManagement";
 import { RegionalStartLeagueSection } from "./RegionalStartLeagueSection";
 import { RegionalStructureSetup } from "./RegionalStructureSetup";
 import { RegionalTeamsSetup } from "./RegionalTeamsSetup";
+import { RosterLockSection } from "./RosterLockSection";
 
 type SetupTab = "dates" | "structure" | "teams" | "start";
 
@@ -129,7 +130,8 @@ export function RegionalCompetitionSetup({ regionCode, regionId }: Props) {
     await loadAll();
   }
 
-  const readOnly = readiness?.seasonStatus !== "setup";
+  const setupLocked = readiness?.seasonStatus !== "setup";
+  const teamsReadOnly = readiness?.rostersLocked ?? false;
 
   const filteredLeagues = leagues.map((league) => ({
     ...league,
@@ -212,7 +214,7 @@ export function RegionalCompetitionSetup({ regionCode, regionId }: Props) {
             <CompetitionManagement
               scope={SCOPES.REGIONAL}
               regionCode={regionCode}
-              readOnly={readOnly}
+              readOnly={setupLocked}
               onSaved={loadReadiness}
             />
           </div>
@@ -229,7 +231,7 @@ export function RegionalCompetitionSetup({ regionCode, regionId }: Props) {
             <RegionalStructureSetup
               leagues={filteredLeagues}
               divisionLevels={divisionLevels}
-              readOnly={readOnly}
+              readOnly={setupLocked}
               onChanged={loadAll}
             />
           </div>
@@ -240,12 +242,19 @@ export function RegionalCompetitionSetup({ regionCode, regionId }: Props) {
             id="regional-tab-teams"
             role="tabpanel"
             aria-labelledby="regional-tab-teams-trigger"
-            className="pt-2"
+            className="flex flex-col gap-4 pt-2"
           >
+            <RosterLockSection
+              scope={SCOPES.REGIONAL}
+              regionCode={regionCode}
+              leagueId={readiness?.leagueId ?? null}
+              rostersLocked={readiness?.rostersLocked ?? false}
+              onChanged={loadReadiness}
+            />
             <RegionalTeamsSetup
               regionId={regionId}
               leagues={filteredLeagues}
-              readOnly={readOnly}
+              readOnly={teamsReadOnly}
               onStructureChanged={loadAll}
               onTeamsChanged={loadReadiness}
             />

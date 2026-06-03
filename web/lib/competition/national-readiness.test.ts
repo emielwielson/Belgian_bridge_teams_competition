@@ -62,6 +62,8 @@ describe("national-readiness", () => {
 
     const result = buildNationalReadiness({
       seasonStatus: "setup",
+      leagueId: "league-1",
+      rostersLocked: false,
       structureDivisionCount: 8,
       structureGroupCount: 8,
       calendarRoundCounts: { honor: 21, first: 14, default: 14 },
@@ -81,6 +83,8 @@ describe("national-readiness", () => {
 
     const result = buildNationalReadiness({
       seasonStatus: "setup",
+      leagueId: "league-1",
+      rostersLocked: false,
       structureDivisionCount: 8,
       structureGroupCount: 8,
       calendarRoundCounts: { honor: 21, first: 14, default: 14 },
@@ -96,6 +100,8 @@ describe("national-readiness", () => {
   it("blocks when teams or calendars are incomplete", () => {
     const result = buildNationalReadiness({
       seasonStatus: "setup",
+      leagueId: "league-1",
+      rostersLocked: false,
       structureDivisionCount: 8,
       structureGroupCount: 8,
       calendarRoundCounts: { honor: 0, first: 14, default: 14 },

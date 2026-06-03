@@ -408,6 +408,17 @@
     "flandersRegional": "Flandre (régional)",
     "walloniaRegional": "Wallonie (régional)",
     "seasonStatus": "Statut de la saison : {status}",
+    "rosterLock": {
+      "title": "Effectifs des équipes",
+      "lockedDescription": "Les effectifs sont verrouillés. Équipes, créneaux et joueurs ne peuvent plus être modifiés tant que le verrou est actif.",
+      "unlockedDescription": "Les effectifs sont ouverts. Verrouillez quand les compositions sont finalisées — ensuite, plus aucune modification d’équipe ou d’effectif.",
+      "lock": "Verrouiller les effectifs",
+      "unlock": "Déverrouiller les effectifs",
+      "lockConfirm": "Verrouiller tous les effectifs pour cette compétition ? Les changements d’équipe et d’effectif seront bloqués jusqu’au déverrouillage.",
+      "unlockConfirm": "Déverrouiller les effectifs pour permettre à nouveau les modifications ?",
+      "working": "Enregistrement…",
+      "requestFailed": "Impossible de mettre à jour le verrouillage des effectifs"
+    },
     "settingUpStructure": " · Configuration de la structure…",
     "setupRegionalLeague": "Configurer la ligue {leagueName}",
     "activateSeason": "Activer la saison",
@@ -475,7 +486,7 @@
     "regionalStartLeague": {
       "loading": "Chargement de l'état…",
       "statusTitle": "Statut de la ligue",
-      "statusBody": "La saison est {status}. La configuration régionale est terminée ; journées et équipes sont verrouillées.",
+      "statusBody": "La saison est {status}. Les journées sont verrouillées après le démarrage ; verrouillez les effectifs dans l’onglet Équipes quand les compositions sont finalisées.",
       "title": "Démarrer la ligue",
       "description": "Lorsque les journées et tous les groupes sont prêts, générez les rencontres pour chaque groupe et activez cette ligue régionale. Toute la saison devient active (la configuration nationale sera verrouillée si elle n'est pas terminée).",
       "calendarCheck": "Journées régionales : {set}/{required}",
@@ -552,7 +563,7 @@
     "startLeague": {
       "loading": "Chargement de l'état de préparation…",
       "statusTitle": "Statut de la ligue",
-      "statusBody": "La saison est {status}. La configuration est terminée ; journées de jeu et équipes sont verrouillées.",
+      "statusBody": "La saison est {status}. Les journées sont verrouillées après le démarrage ; verrouillez les effectifs dans l’onglet Équipes quand les compositions sont finalisées.",
       "title": "Démarrer la ligue",
       "description": "Lorsque les journées de jeu et les équipes sont complètes, générez toutes les rencontres et activez la saison.",
       "structureCheck": "Structure nationale (8 divisions)",
@@ -880,7 +891,8 @@
       "invalidRequestBody": "Corps de requête invalide",
       "clubIdRequired": "club_id est obligatoire",
       "captainIdInvalid": "captain_id doit être un identifiant de joueur valide",
-      "seasonSetupLocked": "La saison est active ; les modifications de configuration sont verrouillées"
+      "seasonSetupLocked": "La saison est active ; les modifications de configuration sont verrouillées",
+      "rostersLocked": "Les effectifs sont verrouillés pour cette compétition"
     },
     "auth": {
       "unauthorized": "Non autorisé",

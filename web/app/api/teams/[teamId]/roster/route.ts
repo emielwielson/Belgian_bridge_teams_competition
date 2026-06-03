@@ -1,7 +1,7 @@
 import { requireAuth } from "@/lib/auth/route-auth";
 import { assertCanManageTeamRoster } from "@/lib/auth/team-access";
 import { requireActiveSeason } from "@/lib/competition/season";
-import { requireSeasonInSetup } from "@/lib/competition/season-setup";
+import { assertTeamRosterEditable } from "@/lib/competition/league-roster-lock";
 import {
   addPlayerToTeamRoster,
   loadTeamRosterState,
@@ -67,7 +67,7 @@ export async function POST(request: Request, { params }: TeamParams) {
     );
 
     const season = await requireActiveSeason(supabase);
-    requireSeasonInSetup(season);
+    await assertTeamRosterEditable(supabase, teamId);
 
     const body = await request.json();
     const playerId = body.player_id as string | undefined;

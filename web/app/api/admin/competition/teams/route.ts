@@ -1,8 +1,10 @@
 import { COMPETITION_ADMIN_ROLES, requireRoles } from "@/lib/auth/route-auth";
 import { assertNationalGroupCanAddTeam } from "@/lib/competition/national-teams";
-import { isNationalGroup } from "@/lib/competition/national-teams";
 import { requireActiveSeason } from "@/lib/competition/season";
-import { requireSeasonInSetup } from "@/lib/competition/season-setup";
+import {
+  assertGroupRosterEditable,
+  assertTeamRosterEditable,
+} from "@/lib/competition/league-roster-lock";
 import { teamLocationFromClub } from "@/lib/competition/team-location";
 import {
   assertCaptainIsClubMember,
@@ -90,6 +92,7 @@ export async function POST(request: Request) {
 
     if (body.action === "roster_add") {
       const season = await requireActiveSeason(supabase);
+      await assertTeamRosterEditable(supabase, body.team_id as string);
       const { error } = await supabase.from("team_players").insert({
         team_id: body.team_id,
         player_id: body.player_id,
@@ -101,6 +104,7 @@ export async function POST(request: Request) {
 
     if (body.action === "roster_remove") {
       const season = await requireActiveSeason(supabase);
+      await assertTeamRosterEditable(supabase, body.team_id as string);
       const { error } = await supabase
         .from("team_players")
         .delete()
@@ -112,11 +116,8 @@ export async function POST(request: Request) {
     }
 
     const season = await requireActiveSeason(supabase);
-    if (await isNationalGroup(supabase, body.group_id)) {
-      requireSeasonInSetup(season);
-    }
-
     const createInput = validateTeamCreateBody(body);
+    await assertGroupRosterEditable(supabase, createInput.group_id);
 
     try {
       await assertNationalGroupCanAddTeam(supabase, createInput.group_id);
@@ -207,6 +208,7 @@ export async function PATCH(request: Request) {
     if (error) return jsonError(error.message, 400);
 
     if (rosterCaptainId) {
+      await assertTeamRosterEditable(supabase, teamId);
       const season = await requireActiveSeason(supabase);
       await ensureCaptainOnTeamRoster(supabase, {
         teamId,
@@ -234,9 +236,8 @@ export async function DELETE(request: Request) {
       .eq("id", teamId)
       .maybeSingle();
 
-    const season = await requireActiveSeason(supabase);
-    if (team?.group_id && (await isNationalGroup(supabase, team.group_id))) {
-      requireSeasonInSetup(season);
+    if (team?.group_id) {
+      await assertGroupRosterEditable(supabase, team.group_id);
     }
 
     const [{ count: homeCount }, { count: awayCount }] = await Promise.all([

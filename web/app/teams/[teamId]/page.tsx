@@ -7,7 +7,7 @@ import { TeamMatchesList } from "@/components/teams/TeamMatchesList";
 import { TeamRosterSection } from "@/components/teams/TeamRosterSection";
 import { canManageTeamConventionCards, canManageTeamRoster } from "@/lib/auth/team-access";
 import { getUserRoles } from "@/lib/auth/session";
-import { getActiveSeason } from "@/lib/competition/season";
+import { isTeamRosterLocked } from "@/lib/competition/league-roster-lock";
 import { listConventionCards } from "@/lib/competition/convention-card-queries";
 import { loadTeamDetail } from "@/lib/competition/team-queries";
 import { createSessionClient } from "@/lib/supabase/server-client";
@@ -32,8 +32,7 @@ export default async function TeamPage({ params }: Props) {
     ? await canManageTeamConventionCards(supabase, teamId)
     : false;
 
-  const season = await getActiveSeason(supabase);
-  const rosterEditable = season?.status === "setup";
+  const rosterEditable = !(await isTeamRosterLocked(supabase, teamId));
   const canManageRoster = user
     ? await canManageTeamRoster(
         supabase,
