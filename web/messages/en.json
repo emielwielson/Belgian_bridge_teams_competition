@@ -314,6 +314,7 @@
     "playersTitle": "Players",
     "noPlayers": "No players on the roster yet.",
     "captainBadge": "Captain",
+    "matchesPlayed": "{count, plural, =0 {0 matches} one {# match} other {# matches}}",
     "rosterLocked": "Roster changes are locked while the season is active.",
     "rosterEditable": "Add unassigned club members to this team.",
     "remove": "Remove",

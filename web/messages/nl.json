@@ -314,6 +314,7 @@
     "playersTitle": "Spelers",
     "noPlayers": "Nog geen spelers op de selectie.",
     "captainBadge": "Aanvoerder",
+    "matchesPlayed": "{count, plural, =0 {0 wedstrijden} one {# wedstrijd} other {# wedstrijden}}",
     "rosterLocked": "Selectiewijzigingen zijn geblokkeerd zolang het seizoen actief is.",
     "rosterEditable": "Voeg niet-toegewezen clubleden toe aan dit team.",
     "remove": "Verwijderen",

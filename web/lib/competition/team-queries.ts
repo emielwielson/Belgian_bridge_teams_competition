@@ -8,6 +8,7 @@ export type TeamRosterPlayer = {
   id: string;
   name: string;
   member_number: string | null;
+  matches_played: number;
 };
 
 export type TeamMatchRow = {
@@ -62,6 +63,39 @@ function unwrapOne<T>(value: unknown): T | null {
   if (value == null) return null;
   if (Array.isArray(value)) return (value[0] ?? null) as T | null;
   return value as T;
+}
+
+/** Lineup appearances in played matches for this team (includes substitutes). */
+export async function loadTeamPlayerMatchesPlayed(
+  supabase: SupabaseClient,
+  teamId: string,
+  playedMatchIds: readonly string[],
+): Promise<Map<string, number>> {
+  const counts = new Map<string, number>();
+  if (playedMatchIds.length === 0) return counts;
+
+  const { data, error } = await supabase
+    .from("match_players")
+    .select("player_id")
+    .eq("team_id", teamId)
+    .in("match_id", [...playedMatchIds]);
+
+  if (error) throw error;
+
+  for (const row of data ?? []) {
+    counts.set(row.player_id, (counts.get(row.player_id) ?? 0) + 1);
+  }
+  return counts;
+}
+
+export function withMatchesPlayed(
+  roster: Omit<TeamRosterPlayer, "matches_played">[],
+  counts: Map<string, number>,
+): TeamRosterPlayer[] {
+  return roster.map((player) => ({
+    ...player,
+    matches_played: counts.get(player.id) ?? 0,
+  }));
 }
 
 export function mapRawMatchToTeamMatchRow(
@@ -144,7 +178,7 @@ export async function loadTeamDetail(
   if (!club) return null;
 
   const season = await getActiveSeason(supabase);
-  let roster: TeamRosterPlayer[] = [];
+  let rosterPlayers: Omit<TeamRosterPlayer, "matches_played">[] = [];
 
   if (season) {
     const { data: rosterRows, error: rosterError } = await supabase
@@ -155,7 +189,7 @@ export async function loadTeamDetail(
 
     if (rosterError) throw rosterError;
 
-    roster = (rosterRows ?? [])
+    rosterPlayers = (rosterRows ?? [])
       .map((row) =>
         unwrapOne<{
           id: string;
@@ -163,7 +197,7 @@ export async function loadTeamDetail(
           member_number: string | null;
         }>(row.player),
       )
-      .filter((p): p is TeamRosterPlayer => p != null)
+      .filter((p): p is Omit<TeamRosterPlayer, "matches_played"> => p != null)
       .sort((a, b) => a.name.localeCompare(b.name));
   }
 
@@ -215,6 +249,16 @@ export async function loadTeamDetail(
     mapRawMatchToTeamMatchRow(m, teamId, teamNames),
   );
 
+  const playedMatchIds = rawMatches
+    .filter((m) => m.played_at != null)
+    .map((m) => m.id);
+  const matchesPlayedByPlayer = await loadTeamPlayerMatchesPlayed(
+    supabase,
+    teamId,
+    playedMatchIds,
+  );
+  const roster = withMatchesPlayed(rosterPlayers, matchesPlayedByPlayer);
+
   return {
     team: {
       id: teamRow.id,
@@ -222,7 +266,12 @@ export async function loadTeamDetail(
       location: teamLocationFromClub(club),
       captain_id: teamRow.captain_id,
     },
-    captain: captainRaw,
+    captain: captainRaw
+      ? {
+          ...captainRaw,
+          matches_played: matchesPlayedByPlayer.get(captainRaw.id) ?? 0,
+        }
+      : null,
     club,
     group: { id: group.id, name: group.name },
     division: { id: division.id, name: division.name },

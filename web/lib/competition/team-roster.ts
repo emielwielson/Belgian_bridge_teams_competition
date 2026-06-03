@@ -4,12 +4,14 @@ import {
   assertTeamRosterEditable,
   isTeamRosterLocked,
 } from "@/lib/competition/league-roster-lock";
+import { loadTeamPlayerMatchesPlayed } from "@/lib/competition/team-queries";
 import { getActiveSeason, requireActiveSeason } from "@/lib/competition/season";
 
 export type RosterPlayer = {
   player_id: string;
   name: string;
   member_number: string | null;
+  matches_played?: number;
 };
 
 export type TeamRosterState = {
@@ -110,6 +112,25 @@ export async function loadTeamRosterState(
     }
 
     available_players.sort((a, b) => a.name.localeCompare(b.name));
+
+    const { data: playedMatches, error: playedError } = await supabase
+      .from("matches")
+      .select("id")
+      .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
+      .not("played_at", "is", null);
+
+    if (playedError) throw playedError;
+
+    const matchesPlayedByPlayer = await loadTeamPlayerMatchesPlayed(
+      supabase,
+      teamId,
+      (playedMatches ?? []).map((m) => m.id),
+    );
+
+    roster = roster.map((player) => ({
+      ...player,
+      matches_played: matchesPlayedByPlayer.get(player.player_id) ?? 0,
+    }));
   }
 
   return { roster, available_players, roster_editable };

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { loadTeamsForUser, mapRawMatchToTeamMatchRow } from "./team-queries";
+import {
+  loadTeamPlayerMatchesPlayed,
+  loadTeamsForUser,
+  mapRawMatchToTeamMatchRow,
+  withMatchesPlayed,
+} from "./team-queries";
 
 describe("loadTeamsForUser", () => {
   it("returns teams for linked player in active season", async () => {
@@ -47,6 +52,52 @@ describe("loadTeamsForUser", () => {
 
     await expect(loadTeamsForUser(supabase, "user-1")).resolves.toEqual([
       { id: "team-1", name: "Alpha" },
+    ]);
+  });
+});
+
+describe("loadTeamPlayerMatchesPlayed", () => {
+  it("counts lineup rows per player in played matches", async () => {
+    const supabase = {
+      from: (table: string) => {
+        if (table !== "match_players") throw new Error(`unexpected ${table}`);
+        return {
+          select: () => ({
+            eq: () => ({
+              in: () =>
+                Promise.resolve({
+                  data: [
+                    { player_id: "p1" },
+                    { player_id: "p1" },
+                    { player_id: "p2" },
+                  ],
+                  error: null,
+                }),
+            }),
+          }),
+        };
+      },
+    } as never;
+
+    const counts = await loadTeamPlayerMatchesPlayed(supabase, "team-1", [
+      "m1",
+      "m2",
+    ]);
+    expect(counts.get("p1")).toBe(2);
+    expect(counts.get("p2")).toBe(1);
+    expect(counts.get("p3")).toBeUndefined();
+  });
+});
+
+describe("withMatchesPlayed", () => {
+  it("defaults missing players to zero", () => {
+    expect(
+      withMatchesPlayed(
+        [{ id: "p1", name: "Alice", member_number: null }],
+        new Map([["p1", 3]]),
+      ),
+    ).toEqual([
+      { id: "p1", name: "Alice", member_number: null, matches_played: 3 },
     ]);
   });
 });
