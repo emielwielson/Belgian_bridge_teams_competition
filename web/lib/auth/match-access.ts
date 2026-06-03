@@ -260,5 +260,5 @@ export async function canEditLineupForTeam(
     return true;
   }
 
-  return isUserOnTeam(supabase, userId, teamId);
+  return isUserOnMatchTeam(supabase, userId, match);
 }
