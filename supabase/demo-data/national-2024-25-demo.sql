@@ -602,22 +602,4 @@ where l.scope = 'national'
       and vt.board_count = 24
   );
 
-insert into public.vp_table_rows (vp_table_id, imp_min, imp_max, vp_home, vp_away)
-select vt.id, bands.imp_min, bands.imp_max, bands.vp_home, bands.vp_away
-from public.vp_tables vt
-join public.groups g on g.id = vt.group_id
-join public.divisions d on d.id = g.division_id
-join public.leagues l on l.id = d.league_id
-cross join (
-  values
-    (-999::numeric, -50::numeric, 0::numeric, 24::numeric),
-    (-49::numeric, 0::numeric, 12::numeric, 12::numeric),
-    (1::numeric, 999::numeric, 24::numeric, 0::numeric)
-) as bands(imp_min, imp_max, vp_home, vp_away)
-where l.scope = 'national'
-  and vt.board_count = 24
-  and not exists (
-    select 1 from public.vp_table_rows r where r.vp_table_id = vt.id
-  );
-
 select 'national-2024-25-demo reset and loaded (last-season teams, 4 players/team + 3 unassigned/club; generate schedules via Admin or npm run demo:national)' as result;
