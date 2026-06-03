@@ -153,7 +153,7 @@
       "submitting": "Submitting…",
       "uploadBeforeSubmit": "Upload an attachment before submitting",
       "uploadedReady": "Attachment uploaded. You can submit the request.",
-      "submittedSuccess": "Arbiter request submitted. Arbiters were notified by email.",
+      "submittedSuccess": "Arbiter request submitted. Arbiters, both captains, and competition managers were notified by email.",
       "statusOpen": "Open",
       "statusResolved": "Resolved",
       "submittedAt": " · submitted {datetime}",

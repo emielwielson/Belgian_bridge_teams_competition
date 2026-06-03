@@ -21,9 +21,16 @@ function mockServiceClient() {
       if (table === "user_roles") {
         return {
           select: () => ({
-            eq: () =>
+            eq: (_col: string, role: string) =>
+              role === "arbiter"
+                ? Promise.resolve({
+                    data: [{ user_id: "arbiter-1" }],
+                    error: null,
+                  })
+                : Promise.resolve({ data: [], error: null }),
+            in: () =>
               Promise.resolve({
-                data: [{ user_id: "arbiter-1" }],
+                data: [{ user_id: "manager-1" }],
                 error: null,
               }),
           }),
@@ -78,6 +85,10 @@ function mockServiceClient() {
                     captain_id: "cap-1",
                     captain: { auth_user_id: "captain-user-1" },
                   },
+                  {
+                    captain_id: "cap-2",
+                    captain: { auth_user_id: "captain-user-2" },
+                  },
                 ],
                 error: null,
               }),
@@ -88,9 +99,18 @@ function mockServiceClient() {
     },
     auth: {
       admin: {
-        getUserById: vi.fn().mockResolvedValue({
-          data: { user: { email: "arbiter@example.com" } },
-          error: null,
+        getUserById: vi.fn().mockImplementation((userId: string) => {
+          const emails: Record<string, string> = {
+            "arbiter-1": "arbiter@example.com",
+            "manager-1": "manager@example.com",
+            "captain-user-1": "home-captain@example.com",
+            "captain-user-2": "away-captain@example.com",
+          };
+          const email = emails[userId];
+          return Promise.resolve({
+            data: email ? { user: { email } } : { user: null },
+            error: null,
+          });
         }),
       },
     },
@@ -110,7 +130,7 @@ describe("arbiter-request-email", () => {
     process.env = env;
   });
 
-  it("sends created event without board or description", async () => {
+  it("sends created event to arbiters, captains, and competition managers", async () => {
     await sendArbiterRequestCreatedEmail({ matchId: "m1" }, "en");
 
     expect(sendMakeWebhook).toHaveBeenCalledWith(
@@ -119,6 +139,12 @@ describe("arbiter-request-email", () => {
         match_url: "https://app.example.com/matches/m1",
         login_url: "https://app.example.com/login?next=%2Fmatches%2Fm1",
         subject: expect.stringContaining("Arbiter request:"),
+        cc: expect.arrayContaining([
+          "arbiter@example.com",
+          "manager@example.com",
+          "home-captain@example.com",
+          "away-captain@example.com",
+        ]),
       }),
       expect.objectContaining({ eventType: "arbiter_request_created" }),
     );
@@ -127,7 +153,7 @@ describe("arbiter-request-email", () => {
     expect(payload.description).toBeUndefined();
   });
 
-  it("sends resolved event with match links", async () => {
+  it("sends resolved event to arbiters, captains, and competition managers", async () => {
     await sendArbiterRequestResolvedEmail({ requestId: "req-1" }, "en");
 
     expect(sendMakeWebhook).toHaveBeenCalledWith(
@@ -135,6 +161,12 @@ describe("arbiter-request-email", () => {
         request_id: "req-1",
         match_id: "m1",
         match_url: "https://app.example.com/matches/m1",
+        cc: expect.arrayContaining([
+          "arbiter@example.com",
+          "manager@example.com",
+          "home-captain@example.com",
+          "away-captain@example.com",
+        ]),
       }),
       expect.objectContaining({ eventType: "arbiter_request_resolved" }),
     );

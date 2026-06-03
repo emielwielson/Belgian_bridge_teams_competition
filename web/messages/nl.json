@@ -153,7 +153,7 @@
       "submitting": "Indienen…",
       "uploadBeforeSubmit": "Upload een bijlage vóór indienen",
       "uploadedReady": "Bijlage geüpload. U kunt het verzoek indienen.",
-      "submittedSuccess": "Scheidsrechterverzoek ingediend. Scheidsrechters werden per e-mail verwittigd.",
+      "submittedSuccess": "Scheidsrechterverzoek ingediend. Scheidsrechters, beide aanvoerders en competitiebeheerders werden per e-mail verwittigd.",
       "statusOpen": "Open",
       "statusResolved": "Afgehandeld",
       "submittedAt": " · ingediend {datetime}",

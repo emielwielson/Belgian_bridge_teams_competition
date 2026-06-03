@@ -153,7 +153,7 @@
       "submitting": "Soumission…",
       "uploadBeforeSubmit": "Téléversez une pièce jointe avant de soumettre",
       "uploadedReady": "Pièce jointe téléversée. Vous pouvez soumettre la demande.",
-      "submittedSuccess": "Demande d'arbitre soumise. Les arbitres ont été notifiés par e-mail.",
+      "submittedSuccess": "Demande d'arbitre soumise. Les arbitres, les deux capitaines et les gestionnaires de compétition ont été notifiés par e-mail.",
       "statusOpen": "Ouverte",
       "statusResolved": "Traitée",
       "submittedAt": " · soumise le {datetime}",
