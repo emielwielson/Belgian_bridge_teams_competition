@@ -360,7 +360,6 @@ export type ArbiterRequestResolvedEmailBuildContext = {
   round: number;
   homeTeamName: string;
   awayTeamName: string;
-  board: number | null;
   description: string | null;
   matchUrl: string;
   loginUrl: string;
@@ -379,11 +378,6 @@ export function buildArbiterRequestResolvedEmail(
   });
 
   const detailLines: string[] = [];
-  if (ctx.board != null) {
-    detailLines.push(
-      t("arbiterRequestResolved.board", { board: ctx.board }),
-    );
-  }
   if (ctx.description) {
     detailLines.push(
       t("arbiterRequestResolved.description", {

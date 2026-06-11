@@ -2,7 +2,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type ArbiterRequestRow = {
   id: string;
-  board: number | null;
   description: string | null;
   image_path: string;
   status: string;
@@ -26,14 +25,9 @@ function parseState(raw: unknown): MatchArbiterRequestsState | null {
       const imagePath =
         row.image_path != null ? String(row.image_path).trim() : "";
       if (!imagePath) return null;
-      const boardRaw = row.board;
       const descriptionRaw = row.description;
       return {
         id: String(row.id),
-        board:
-          boardRaw != null && boardRaw !== "" && Number.isFinite(Number(boardRaw))
-            ? Number(boardRaw)
-            : null,
         description:
           descriptionRaw != null && String(descriptionRaw).trim() !== ""
             ? String(descriptionRaw)
@@ -88,15 +82,11 @@ export async function resolveArbiterRequest(
   requestId: string,
   params: {
     filePath: string;
-    board?: number | null;
-    rulingDate?: string | null;
   },
 ): Promise<string> {
   const { data, error } = await supabase.rpc("arbiter_request_resolve", {
     p_request_id: requestId,
     p_ruling_file_path: params.filePath,
-    p_board: params.board ?? null,
-    p_ruling_date: params.rulingDate ?? undefined,
   });
   if (error) throw error;
   return String(data);
@@ -105,7 +95,6 @@ export async function resolveArbiterRequest(
 export type OpenArbiterInboxItem = {
   id: string;
   match_id: string;
-  board: number | null;
   description: string | null;
   image_path: string | null;
   status: string;

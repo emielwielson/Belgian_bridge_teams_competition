@@ -76,7 +76,7 @@ describe("/api/arbiter/requests/[requestId]/resolve", () => {
       new Request("http://x", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ file_path: "rulings/m1/r.pdf", board: 2 }),
+        body: JSON.stringify({ file_path: "rulings/m1/r.pdf" }),
       }),
       { params: Promise.resolve({ requestId: "req-1" }) },
     );
@@ -84,8 +84,6 @@ describe("/api/arbiter/requests/[requestId]/resolve", () => {
     expect(res.status).toBe(200);
     expect(resolveArbiterRequest).toHaveBeenCalledWith(expect.anything(), "req-1", {
       filePath: "rulings/m1/r.pdf",
-      board: 2,
-      rulingDate: null,
     });
     expect(sendArbiterRequestResolvedEmail).toHaveBeenCalledWith(
       {

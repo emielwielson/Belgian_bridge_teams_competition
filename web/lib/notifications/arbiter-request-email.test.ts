@@ -44,7 +44,6 @@ function mockServiceClient() {
                 Promise.resolve({
                   data: {
                     match_id: "m1",
-                    board: null,
                     description: null,
                   },
                   error: null,

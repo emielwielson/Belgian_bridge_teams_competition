@@ -11,7 +11,6 @@ import { formatBrussels } from "@/lib/time/brussels";
 type InboxRequest = {
   id: string;
   match_id: string;
-  board: number | null;
   description: string | null;
   status: string;
   created_at: string;
@@ -29,8 +28,6 @@ type ResolveDraft = {
   uploadedPath: string | null;
   uploading: boolean;
   fileInputKey: number;
-  board: string;
-  rulingDate: string;
 };
 
 function emptyDraft(): ResolveDraft {
@@ -39,8 +36,6 @@ function emptyDraft(): ResolveDraft {
     uploadedPath: null,
     uploading: false,
     fileInputKey: 0,
-    board: "",
-    rulingDate: new Date().toISOString().slice(0, 10),
   };
 }
 
@@ -137,11 +132,6 @@ export function ArbiterInbox() {
     setMessage(null);
 
     try {
-      const board =
-        draft.board.trim() !== "" && Number.isFinite(Number(draft.board))
-          ? Number(draft.board)
-          : null;
-
       const res = await fetch(
         `/api/arbiter/requests/${request.id}/resolve`,
         {
@@ -149,8 +139,6 @@ export function ArbiterInbox() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             file_path: draft.uploadedPath,
-            board,
-            ruling_date: draft.rulingDate,
           }),
         },
       );
@@ -250,53 +238,26 @@ export function ArbiterInbox() {
                       {t("resolveTitle")}
                     </p>
                     <p className="mt-1 text-xs text-zinc-600">{t("resolveHint")}</p>
-                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                      <div className="sm:col-span-2">
-                        <FilePickerField
-                          key={draft.fileInputKey}
-                          id={`ruling-file-${r.id}`}
-                          file={draft.file}
-                          onFileChange={(next) =>
-                            void handleRulingFileChange(r, next)
-                          }
-                          hint={t("rulingFileHint")}
-                          disabled={busyId === r.id || draft.uploading}
-                        />
-                        {draft.uploading ? (
-                          <p className="mt-1 text-xs text-zinc-600">
-                            {t("uploadingRuling")}
-                          </p>
-                        ) : draft.uploadedPath ? (
-                          <p className="mt-1 text-xs text-emerald-800">
-                            {t("rulingUploaded")}
-                          </p>
-                        ) : null}
-                      </div>
-                      <label className="block text-xs font-medium text-zinc-600">
-                        {t("boardOptional")}
-                        <input
-                          type="number"
-                          min={1}
-                          value={draft.board}
-                          disabled={busyId === r.id}
-                          onChange={(e) =>
-                            updateDraft(r.id, { board: e.target.value })
-                          }
-                          className="mt-1 w-full rounded-md border border-zinc-300 px-2 py-2 text-sm"
-                        />
-                      </label>
-                      <label className="block text-xs font-medium text-zinc-600">
-                        {t("rulingDate")}
-                        <input
-                          type="date"
-                          value={draft.rulingDate}
-                          disabled={busyId === r.id}
-                          onChange={(e) =>
-                            updateDraft(r.id, { rulingDate: e.target.value })
-                          }
-                          className="mt-1 w-full rounded-md border border-zinc-300 px-2 py-2 text-sm"
-                        />
-                      </label>
+                    <div className="mt-3">
+                      <FilePickerField
+                        key={draft.fileInputKey}
+                        id={`ruling-file-${r.id}`}
+                        file={draft.file}
+                        onFileChange={(next) =>
+                          void handleRulingFileChange(r, next)
+                        }
+                        hint={t("rulingFileHint")}
+                        disabled={busyId === r.id || draft.uploading}
+                      />
+                      {draft.uploading ? (
+                        <p className="mt-1 text-xs text-zinc-600">
+                          {t("uploadingRuling")}
+                        </p>
+                      ) : draft.uploadedPath ? (
+                        <p className="mt-1 text-xs text-emerald-800">
+                          {t("rulingUploaded")}
+                        </p>
+                      ) : null}
                     </div>
                     <button
                       type="button"

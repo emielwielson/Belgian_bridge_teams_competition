@@ -181,11 +181,6 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
                   datetime: formatBrussels(r.created_at, intlLocale),
                 })}
               </span>
-              {r.board != null ? (
-                <p className="mt-1 text-zinc-600">
-                  {t("board", { board: r.board })}
-                </p>
-              ) : null}
               {r.description ? (
                 <p className="mt-1 text-zinc-700">{r.description}</p>
               ) : null}

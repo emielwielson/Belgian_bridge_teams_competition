@@ -24,7 +24,6 @@ describe("canAccessArbiterRequestWorkflow", () => {
         requests: [
           {
             id: "r1",
-            board: null,
             description: null,
             image_path: "arbiter/m1/file.pdf",
             status: "open",
@@ -36,14 +35,13 @@ describe("canAccessArbiterRequestWorkflow", () => {
     ).toBe(true);
   });
 
-  it("allows viewing legacy requests with board and description", () => {
+  it("allows viewing legacy requests with description", () => {
     expect(
       canAccessArbiterRequestWorkflow({
         ...base,
         requests: [
           {
             id: "r2",
-            board: 3,
             description: "Legacy note",
             image_path: "arbiter/m1/old.pdf",
             status: "resolved",

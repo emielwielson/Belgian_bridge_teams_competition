@@ -205,13 +205,12 @@ async function loadArbiterRequestSummary(
   round: number;
   homeTeamName: string;
   awayTeamName: string;
-  board: number | null;
   description: string | null;
 } | null> {
   const supabase = createServiceClient();
   const { data: row, error } = await supabase
     .from("arbiter_requests")
-    .select("match_id, board, description")
+    .select("match_id, description")
     .eq("id", requestId)
     .maybeSingle();
   if (error || !row) return null;
@@ -224,7 +223,6 @@ async function loadArbiterRequestSummary(
     round: match.round,
     homeTeamName: match.homeTeamName,
     awayTeamName: match.awayTeamName,
-    board: row.board,
     description: row.description?.trim() ? row.description : null,
   };
 }
@@ -252,7 +250,6 @@ export async function sendArbiterRequestResolvedEmail(
       round: summary.round,
       homeTeamName: summary.homeTeamName,
       awayTeamName: summary.awayTeamName,
-      board: summary.board,
       description: summary.description,
       matchUrl,
       loginUrl,
@@ -273,7 +270,6 @@ export async function sendArbiterRequestResolvedEmail(
       login_url: loginUrl,
       arbiter_inbox_url: inboxUrl,
       request_id: ctx.requestId,
-      board: summary.board,
       description: summary.description,
       ruling_url: ctx.rulingSignedUrl ?? null,
     },

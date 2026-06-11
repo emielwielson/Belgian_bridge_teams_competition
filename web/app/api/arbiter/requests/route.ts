@@ -15,7 +15,6 @@ export async function GET(request: Request) {
         `
         id,
         match_id,
-        board,
         description,
         image_path,
         status,

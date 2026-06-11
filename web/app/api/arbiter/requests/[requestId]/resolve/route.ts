@@ -21,25 +21,8 @@ export async function POST(request: Request, { params }: Params) {
       return jsonErrorCode(ErrorCodes.api.filePathRequired, 400);
     }
 
-    const boardRaw = body.board;
-    const board =
-      boardRaw != null && boardRaw !== "" && Number.isFinite(Number(boardRaw))
-        ? Number(boardRaw)
-        : null;
-    if (board != null && board <= 0) {
-      return jsonErrorCode(ErrorCodes.api.boardPositive, 400);
-    }
-
-    const rulingDateRaw = body.ruling_date ?? body.rulingDate;
-    const rulingDate =
-      rulingDateRaw != null && String(rulingDateRaw).trim() !== ""
-        ? String(rulingDateRaw).trim()
-        : null;
-
     const rulingId = await resolveArbiterRequest(supabase, requestId, {
       filePath,
-      board,
-      rulingDate,
     });
 
     const service = createServiceClient();
