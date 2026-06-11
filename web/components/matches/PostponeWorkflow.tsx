@@ -227,7 +227,7 @@ export function PostponeWorkflow({
           </div>
       ) : state.can_propose ? (
         <form onSubmit={handlePropose} className="flex flex-col gap-3">
-          {state.captain_teams.length > 1 ? (
+          {state.captain_teams.length !== 1 ? (
             <label className="flex flex-col gap-1 text-sm">
               <span className="text-zinc-600">{t("proposingAs")}</span>
               <select
