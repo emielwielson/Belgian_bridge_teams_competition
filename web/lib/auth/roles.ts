@@ -1,6 +1,5 @@
 export const ROLES = {
   PLAYER: "player",
-  CLUB_MANAGER: "club_manager",
   ARBITER: "arbiter",
   COMPETITION_MANAGER: "competition_manager",
   SYSTEM_ADMIN: "system_admin",

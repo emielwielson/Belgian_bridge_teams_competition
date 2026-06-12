@@ -5,7 +5,6 @@ import {
 } from "./route-auth";
 import { FINISHED_SCORE_EDIT_ROLES, hasAnyRole } from "./roles";
 import { resolveUserTeamIds } from "@/lib/competition/player-matches";
-import { getManagedClubIds } from "./user-access";
 
 export type MatchTeamPair = {
   id: string;
@@ -211,31 +210,6 @@ export async function isUserOnMatchTeam(
   return isUserOnTeam(supabase, userId, match.away_team_id);
 }
 
-export async function userManagesMatchClub(
-  supabase: SupabaseClient,
-  userId: string,
-  roles: string[],
-  match: MatchContext,
-): Promise<boolean> {
-  if (hasAnyRole(roles, [...COMPETITION_ADMIN_ROLES])) return true;
-  const clubIds = await getManagedClubIds(supabase, userId);
-  return (
-    clubIds.includes(match.home_team.club_id) ||
-    clubIds.includes(match.away_team.club_id)
-  );
-}
-
-export async function userManagesTeamClub(
-  supabase: SupabaseClient,
-  userId: string,
-  roles: string[],
-  clubId: string,
-): Promise<boolean> {
-  if (hasAnyRole(roles, [...COMPETITION_ADMIN_ROLES])) return true;
-  const clubIds = await getManagedClubIds(supabase, userId);
-  return clubIds.includes(clubId);
-}
-
 /** Whether the current user may edit lineup for one side of a match. */
 export async function canEditLineupForTeam(
   supabase: SupabaseClient,
@@ -248,16 +222,11 @@ export async function canEditLineupForTeam(
   if (!(await canEditLineup(supabase, match.id))) return false;
   if (hasAnyRole(roles, [...COMPETITION_ADMIN_ROLES])) return true;
 
-  const teamClubId =
-    teamId === match.home_team_id
-      ? match.home_team.club_id
-      : teamId === match.away_team_id
-        ? match.away_team.club_id
-        : null;
-  if (!teamClubId) return false;
-
-  if (await userManagesTeamClub(supabase, userId, roles, teamClubId)) {
-    return true;
+  if (
+    teamId !== match.home_team_id &&
+    teamId !== match.away_team_id
+  ) {
+    return false;
   }
 
   return isUserOnMatchTeam(supabase, userId, match);

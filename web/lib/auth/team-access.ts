@@ -1,7 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ROLES } from "./roles";
 import { AuthError } from "./route-auth";
-import { getManagedClubIds } from "./user-access";
 
 export async function isCaptainOfTeam(
   supabase: SupabaseClient,
@@ -25,11 +24,6 @@ export async function canManageTeamRoster(
     roles.includes(ROLES.SYSTEM_ADMIN) ||
     roles.includes(ROLES.COMPETITION_MANAGER)
   ) {
-    return true;
-  }
-
-  const managedClubIds = await getManagedClubIds(supabase, userId);
-  if (managedClubIds.includes(clubId)) {
     return true;
   }
 

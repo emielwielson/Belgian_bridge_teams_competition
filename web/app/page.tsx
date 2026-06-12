@@ -14,21 +14,7 @@ export default async function Home({ searchParams }: Props) {
       <h1 className="text-2xl font-semibold text-zinc-900">{t("title")}</h1>
       {error === "forbidden" ? (
         <p className="max-w-md rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-          {t.rich("forbidden", {
-            assignments: () => (
-              <code className="rounded bg-amber-100 px-1">
-                club_manager_assignments
-              </code>
-            ),
-            role: () => (
-              <code className="rounded bg-amber-100 px-1">club_manager</code>
-            ),
-            link: (chunks) => (
-              <Link href="/club-manager" className="font-medium underline">
-                {chunks}
-              </Link>
-            ),
-          })}
+          {t("forbidden")}
         </p>
       ) : null}
       <p className="max-w-md text-zinc-600">{t("tagline")}</p>

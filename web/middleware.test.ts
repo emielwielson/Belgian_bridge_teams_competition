@@ -46,7 +46,6 @@ describe("requiredRolesForPath", () => {
 
   it("maps role dashboards", () => {
     expect(requiredRolesForPath("/player")).toEqual([ROLES.PLAYER]);
-    expect(requiredRolesForPath("/club-manager")).toEqual([ROLES.CLUB_MANAGER]);
     expect(requiredRolesForPath("/arbiter")).toEqual([...ARBITER_ACCESS_ROLES]);
   });
 

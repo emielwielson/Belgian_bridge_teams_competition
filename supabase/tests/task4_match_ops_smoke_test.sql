@@ -10,7 +10,6 @@ begin
     values
       ('current_user_player_id'),
       ('current_user_on_match_team'),
-      ('current_user_manages_match_club'),
       ('current_user_can_submit_score'),
       ('current_user_can_edit_lineup'),
       ('lookup_vp_for_match')

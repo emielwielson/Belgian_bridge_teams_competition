@@ -11,7 +11,6 @@ type MeResponse = {
   user: { id: string; email?: string };
   roles: string[];
   teams?: { id: string; name: string }[];
-  clubs?: { id: string; name: string }[];
 };
 
 type Props = {
@@ -67,21 +66,6 @@ export function SiteHeader({ brand }: Props) {
           className={navLinkClass(pathname.startsWith("/teams/"))}
         >
           {t("myTeam")}
-        </Link>
-      ) : null}
-      {me?.clubs?.length === 1 ? (
-        <Link
-          href={`/club-manager/${me.clubs[0].id}`}
-          className={navLinkClass(pathname.startsWith("/club-manager"))}
-        >
-          {t("myClub")}
-        </Link>
-      ) : me?.clubs && me.clubs.length > 1 ? (
-        <Link
-          href="/club-manager"
-          className={navLinkClass(pathname.startsWith("/club-manager"))}
-        >
-          {t("myClubs")}
         </Link>
       ) : null}
       {showArbiterInbox ? (

@@ -1,4 +1,3 @@
-import { loadManagedClubsForUser } from "@/lib/auth/user-access";
 import { getUserRoles } from "@/lib/auth/session";
 import { loadTeamsForUser } from "@/lib/competition/team-queries";
 import { jsonOk, jsonErrorCode } from "@/lib/http/api-response";
@@ -17,17 +16,15 @@ export async function GET() {
     return jsonErrorCode(ErrorCodes.api.unauthorized, 401);
   }
 
-  const [roles, teams, clubs, preferredLocale] = await Promise.all([
+  const [roles, teams, preferredLocale] = await Promise.all([
     getUserRoles(supabase, user.id),
     loadTeamsForUser(supabase, user.id),
-    loadManagedClubsForUser(supabase, user.id),
     getUserPreferredLocale(supabase, user.id),
   ]);
   return jsonOk({
     user: { id: user.id, email: user.email },
     roles,
     teams,
-    clubs,
     preferredLocale,
   });
 }

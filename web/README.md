@@ -41,21 +41,8 @@ Deploy the `schedule-generate-rbbf` Edge Function from [`supabase/functions/sche
 |------|---------|
 | `/admin/competition` | Scope picker (national / regional) |
 | `/admin/competition/national` | Leagues, groups, dates, teams, generate schedule |
-| `/club-manager` | Assigned clubs and player memberships |
 
-Assign club managers in SQL (both steps required):
-
-```sql
--- 1. Role (middleware / dashboard access)
-insert into public.user_roles (user_id, role)
-values ('<auth.users.id>', 'club_manager')
-on conflict (user_id, role) do nothing;
-
--- 2. Which club they manage
-insert into public.club_manager_assignments (user_id, club_id)
-values ('<auth.users.id>', '<clubs.id>')
-on conflict (user_id, club_id) do nothing;
-```
+Competition managers create teams, assign captains, and manage club setup. Player club memberships are loaded via SQL/seeds.
 
 ## Auth routes
 
@@ -66,7 +53,7 @@ on conflict (user_id, club_id) do nothing;
 | `/api/auth/me` | Current user + roles |
 | `/api/auth/signout` | POST — sign out |
 
-Public: `/standings`, `/api/public/*`, `/api/standings/*`. Protected: `/admin`, `/player`, `/club-manager`, `/arbiter`. Postponement propose/approve: `/player/matches/[matchId]`.
+Public: `/standings`, `/api/public/*`, `/api/standings/*`. Protected: `/admin`, `/player`, `/arbiter`. Postponement propose/approve: `/player/matches/[matchId]`.
 
 ## Scripts
 

@@ -12,13 +12,6 @@ begin
 
   if not exists (
     select 1 from information_schema.tables
-    where table_schema = 'public' and table_name = 'club_manager_assignments'
-  ) then
-    raise exception 'Missing table: club_manager_assignments';
-  end if;
-
-  if not exists (
-    select 1 from information_schema.tables
     where table_schema = 'public' and table_name = 'group_schedule_slots'
   ) then
     raise exception 'Missing table: group_schedule_slots';

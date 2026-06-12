@@ -4,10 +4,6 @@ import {
   isPublicPath,
   requiredRolesForPath,
 } from "@/lib/auth/middleware-routes";
-import {
-  canAccessClubManagerRoute,
-  isClubManagerPath,
-} from "@/lib/auth/user-access";
 import { hasAnyRole } from "@/lib/auth/roles";
 import { getSupabasePublicEnv } from "@/lib/supabase/env";
 import { defaultLocale, isLocale, type Locale } from "./i18n/config";
@@ -94,41 +90,6 @@ export async function middleware(request: NextRequest) {
     .eq("user_id", user.id);
 
   const roles = roleRows?.map((row) => row.role) ?? [];
-
-  if (isClubManagerPath(pathname)) {
-    const allowed = await canAccessClubManagerRoute(
-      supabase,
-      user.id,
-      roles,
-      pathname,
-    );
-    if (!allowed) {
-      const home = request.nextUrl.clone();
-      home.pathname = "/";
-      home.searchParams.set("error", "forbidden");
-      const redirect = NextResponse.redirect(home);
-      applyLocaleCookie(request, redirect);
-      return redirect;
-    }
-
-    if (pathname === "/club-manager") {
-      const { data: assignments } = await supabase
-        .from("club_manager_assignments")
-        .select("club_id")
-        .eq("user_id", user.id);
-
-      if (assignments?.length === 1) {
-        const clubUrl = request.nextUrl.clone();
-        clubUrl.pathname = `/club-manager/${assignments[0].club_id}`;
-        const redirect = NextResponse.redirect(clubUrl);
-        applyLocaleCookie(request, redirect);
-        return redirect;
-      }
-    }
-
-    applyLocaleCookie(request, response);
-    return response;
-  }
 
   if (pathname.startsWith("/player/matches/")) {
     applyLocaleCookie(request, response);

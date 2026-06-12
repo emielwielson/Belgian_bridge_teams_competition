@@ -23,7 +23,6 @@ function mockSupabase(options: {
   canEditLineup?: boolean;
   playerId?: string | null;
   rosterTeamIds?: string[];
-  managedClubIds?: string[];
 }) {
   return {
     rpc: vi.fn().mockResolvedValue({
@@ -60,19 +59,6 @@ function mockSupabase(options: {
           }),
         };
       }
-      if (table === "club_manager_assignments") {
-        return {
-          select: () => ({
-            eq: () =>
-              Promise.resolve({
-                data: (options.managedClubIds ?? []).map((club_id) => ({
-                  club_id,
-                })),
-                error: null,
-              }),
-          }),
-        };
-      }
       throw new Error(`Unexpected table: ${table}`);
     },
   } as never;
@@ -103,20 +89,6 @@ describe("canEditLineupForTeam", () => {
         baseMatch.away_team_id,
       ),
     ).resolves.toBe(true);
-  });
-
-  it("limits club managers to their club's team", async () => {
-    const supabase = mockSupabase({
-      playerId: null,
-      managedClubIds: ["club-1"],
-    });
-
-    await expect(
-      canEditLineupForTeam(supabase, "user-1", [], baseMatch, baseMatch.home_team_id),
-    ).resolves.toBe(true);
-    await expect(
-      canEditLineupForTeam(supabase, "user-1", [], baseMatch, baseMatch.away_team_id),
-    ).resolves.toBe(false);
   });
 
   it("denies when match is already played", async () => {

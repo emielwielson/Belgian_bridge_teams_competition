@@ -8,7 +8,6 @@ import {
   canEditLineupForTeam,
   canSubmitScore,
   canViewMatchOps,
-  userManagesMatchClub,
   type MatchContext,
 } from "@/lib/auth/match-access";
 import { COMPETITION_ADMIN_ROLES } from "@/lib/auth/route-auth";
@@ -94,11 +93,6 @@ export async function MatchDetailView({
   const canAddPenalty = userId
     ? hasAnyRole(roles, [...ARBITER_ACCESS_ROLES])
     : false;
-  const managesClub =
-    userId && canOps
-      ? await userManagesMatchClub(supabase, userId, roles, match)
-      : false;
-
   const [canEditHome, canEditAway] =
     userId && canOps
       ? await Promise.all([
@@ -175,8 +169,8 @@ export async function MatchDetailView({
 
   const opsBackLink =
     userId && canOps
-      ? managesClub
-        ? { href: "/club-manager", label: t("backMyClub") }
+      ? isAdmin
+        ? { href: "/admin", label: t("backAdminDashboard") }
         : { href: "/player", label: t("backPlayerDashboard") }
       : null;
 

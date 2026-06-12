@@ -1,5 +1,4 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { getManagedClubIds } from "@/lib/auth/user-access";
 
 export type PlayerMatchSummary = {
   id: string;
@@ -110,16 +109,6 @@ export async function resolveUserTeamIds(
       .eq("player_id", player.id);
     if (teamError) throw teamError;
     for (const r of teamRows ?? []) teamIdSet.add(r.team_id);
-  }
-
-  const clubIds = await getManagedClubIds(supabase, userId);
-  if (clubIds.length > 0) {
-    const { data: clubTeams, error: clubTeamError } = await supabase
-      .from("teams")
-      .select("id")
-      .in("club_id", clubIds);
-    if (clubTeamError) throw clubTeamError;
-    for (const t of clubTeams ?? []) teamIdSet.add(t.id);
   }
 
   return teamIdSet;
