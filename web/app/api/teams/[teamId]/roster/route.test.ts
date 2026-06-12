@@ -81,7 +81,7 @@ describe("GET /api/teams/[teamId]/roster", () => {
     vi.clearAllMocks();
     vi.mocked(requireAuth).mockResolvedValue({
       user: { id: "user-1" },
-      roles: ["captain"],
+      roles: ["player"],
       supabase: mockSupabase({ id: "team-1", club_id: "club-1" }) as never,
     });
     vi.mocked(loadTeamRosterState).mockResolvedValue({
@@ -110,7 +110,7 @@ describe("GET /api/teams/[teamId]/roster", () => {
     expect(assertCanManageTeamRoster).toHaveBeenCalledWith(
       expect.anything(),
       "user-1",
-      ["captain"],
+      ["player"],
       "team-1",
       "club-1",
     );
@@ -119,7 +119,7 @@ describe("GET /api/teams/[teamId]/roster", () => {
   it("returns 404 when team is missing", async () => {
     vi.mocked(requireAuth).mockResolvedValue({
       user: { id: "user-1" },
-      roles: ["captain"],
+      roles: ["player"],
       supabase: mockSupabase(null) as never,
     });
 
@@ -135,7 +135,7 @@ describe("POST /api/teams/[teamId]/roster", () => {
     vi.clearAllMocks();
     vi.mocked(requireAuth).mockResolvedValue({
       user: { id: "user-1" },
-      roles: ["captain"],
+      roles: ["player"],
       supabase: mockSupabase({ id: "team-1", club_id: "club-1" }) as never,
     });
     vi.mocked(requireActiveSeason).mockResolvedValue(season);

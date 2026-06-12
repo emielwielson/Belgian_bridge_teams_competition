@@ -1,6 +1,5 @@
 export const ROLES = {
   PLAYER: "player",
-  CAPTAIN: "captain",
   CLUB_MANAGER: "club_manager",
   ARBITER: "arbiter",
   COMPETITION_MANAGER: "competition_manager",
@@ -9,7 +8,7 @@ export const ROLES = {
 
 export type Role = (typeof ROLES)[keyof typeof ROLES];
 
-/** Roles that may use the arbiter inbox and resolve captain requests. */
+/** Roles that may use the arbiter inbox and resolve match requests. */
 export const ARBITER_ACCESS_ROLES = [
   ROLES.ARBITER,
   ROLES.COMPETITION_MANAGER,

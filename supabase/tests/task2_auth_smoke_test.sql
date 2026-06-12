@@ -45,6 +45,29 @@ begin
   end if;
 end $$;
 
+-- captain is team-scoped (teams.captain_id), not a user_roles value
+do $$
+declare
+  v_check_clause text;
+begin
+  select pg_get_constraintdef(c.oid)
+  into v_check_clause
+  from pg_constraint c
+  join pg_class t on t.oid = c.conrelid
+  join pg_namespace n on n.oid = t.relnamespace
+  where n.nspname = 'public'
+    and t.relname = 'user_roles'
+    and c.conname = 'user_roles_role_check';
+
+  if v_check_clause is null then
+    raise exception 'Missing constraint: user_roles_role_check';
+  end if;
+
+  if v_check_clause ilike '%captain%' then
+    raise exception 'user_roles_role_check must not allow captain role';
+  end if;
+end $$;
+
 select 'task2_auth_smoke_test passed' as result;
 
 -- Manual checks after first signup:
