@@ -51,8 +51,10 @@ export function SiteHeader() {
   const primaryLinks = (
     <>
       <Link
-        href="/standings"
-        className={navLinkClass(pathname.startsWith("/standings"))}
+        href="/"
+        className={navLinkClass(
+          pathname === "/" || pathname.startsWith("/standings"),
+        )}
       >
         {t("standings")}
       </Link>
@@ -106,8 +108,10 @@ export function SiteHeader() {
       {loaded ? (
         <nav className="flex gap-4 overflow-x-auto border-t border-zinc-100 px-4 py-2 sm:hidden">
           <Link
-            href="/standings"
-            className={mobileLinkClass(pathname.startsWith("/standings"))}
+            href="/"
+            className={mobileLinkClass(
+              pathname === "/" || pathname.startsWith("/standings"),
+            )}
           >
             {t("standings")}
           </Link>

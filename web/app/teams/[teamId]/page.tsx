@@ -51,7 +51,7 @@ export default async function TeamPage({ params }: Props) {
   return (
     <main className="page-container flex flex-col gap-6">
       <header>
-        <Link href="/standings" className="link-back">
+        <Link href="/" className="link-back">
           {t("backStandings")}
         </Link>
         <nav className="mt-2 flex flex-wrap items-center gap-1 text-sm text-zinc-600">

@@ -5,6 +5,7 @@ export async function revalidateStandingsForGroup(
   supabase: SupabaseClient,
   groupId: string,
 ): Promise<void> {
+  revalidatePath("/");
   revalidatePath("/standings");
   revalidatePath(`/standings/group/${groupId}`);
 

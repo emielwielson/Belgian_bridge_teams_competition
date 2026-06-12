@@ -98,7 +98,7 @@ export async function middleware(request: NextRequest) {
 
   if (!hasAnyRole(roles, requiredRoles)) {
     const home = request.nextUrl.clone();
-    home.pathname = "/standings";
+    home.pathname = "/";
     home.searchParams.set("error", "forbidden");
     const redirect = NextResponse.redirect(home);
     applyLocaleCookie(request, redirect);

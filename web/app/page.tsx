@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import { StandingsHome } from "@/components/standings/StandingsHome";
 
 type Props = {
   searchParams: Promise<{ error?: string }>;
@@ -6,5 +6,5 @@ type Props = {
 
 export default async function Home({ searchParams }: Props) {
   const { error } = await searchParams;
-  redirect(error ? `/standings?error=${error}` : "/standings");
+  return <StandingsHome showForbidden={error === "forbidden"} />;
 }

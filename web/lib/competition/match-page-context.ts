@@ -38,7 +38,7 @@ export async function loadMatchStandingsBackLink(
 
   if (error) throw error;
   if (!group) {
-    return { href: "/standings", leagueName: null, groupName: null };
+    return { href: "/", leagueName: null, groupName: null };
   }
 
   const rawDivision = group.division as unknown;

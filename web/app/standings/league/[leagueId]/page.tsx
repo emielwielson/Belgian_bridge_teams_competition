@@ -22,7 +22,7 @@ export default async function LeagueStandingsPage({ params }: Props) {
   return (
     <main className="page-container flex flex-col gap-8">
       <header>
-        <Link href="/standings" className="link-back">
+        <Link href="/" className="link-back">
           {t("backToStandings")}
         </Link>
         <h1 className="mt-2 text-2xl font-semibold">{league.name}</h1>
