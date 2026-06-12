@@ -53,6 +53,9 @@ const baseMatch = {
   home_team_id: "home-1",
   away_team_id: "away-1",
   board_count: 24,
+  vp_board_count: null,
+  mis_seating: false,
+  selected_board_count: null,
   imps_home: null,
   imps_away: null,
   vp_home: null,
@@ -103,6 +106,10 @@ describe("POST /api/matches/[matchId]/score", () => {
       vp_home: 24,
       vp_away: 0,
       played_at: "2025-01-02T12:00:00Z",
+      board_count: 24,
+      vp_board_count: 24,
+      mis_seating: false,
+      selected_board_count: null,
     });
   });
 
@@ -140,6 +147,34 @@ describe("POST /api/matches/[matchId]/score", () => {
       { isAdminEdit: false },
     );
   });
+
+  it("forwards board options in payload", async () => {
+    const res = await POST(
+      new Request("http://x", {
+        method: "POST",
+        body: JSON.stringify({
+          imps_home: 10,
+          imps_away: 5,
+          mis_seating: true,
+          selected_board_count: 32,
+        }),
+      }),
+      { params: Promise.resolve({ matchId: "match-1" }) },
+    );
+    expect(res.status).toBe(201);
+    expect(submitMatchScore).toHaveBeenCalledWith(
+      expect.anything(),
+      baseMatch,
+      "user-1",
+      {
+        impsHome: 10,
+        impsAway: 5,
+        misSeating: true,
+        selectedBoardCount: 32,
+      },
+      { isAdminEdit: false },
+    );
+  });
 });
 
 describe("PATCH /api/matches/[matchId]/score", () => {
@@ -165,6 +200,10 @@ describe("PATCH /api/matches/[matchId]/score", () => {
       vp_home: 24,
       vp_away: 0,
       played_at: "2025-01-02T12:00:00Z",
+      board_count: 24,
+      vp_board_count: 24,
+      mis_seating: false,
+      selected_board_count: null,
     });
   });
 

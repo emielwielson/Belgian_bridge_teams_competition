@@ -1,6 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { MatchContext } from "@/lib/auth/match-access";
-import { lookupVpForMatch } from "./vp-lookup";
+import { loadGroupScoringContext } from "@/lib/competition/match-scoring-context";
+import {
+  allowsBoardChoice,
+  BoardCountValidationError,
+  validateScoreBoardOptions,
+} from "./board-count-rules";
+import { lookupVp } from "./vp-lookup";
+
+export { BoardCountValidationError };
 
 export type LineupPlayerInput = {
   player_id: string;
@@ -182,6 +190,8 @@ export async function replaceMatchLineup(
 export type ScorePayload = {
   impsHome: number;
   impsAway: number;
+  misSeating?: boolean;
+  selectedBoardCount?: number | null;
 };
 
 export type SubmittedMatchScore = {
@@ -191,6 +201,10 @@ export type SubmittedMatchScore = {
   vp_home: number;
   vp_away: number;
   played_at: string | null;
+  board_count: number;
+  vp_board_count: number;
+  mis_seating: boolean;
+  selected_board_count: number | null;
 };
 
 async function insertMatchLog(
@@ -219,16 +233,27 @@ export async function submitMatchScore(
   },
 ): Promise<SubmittedMatchScore> {
   const { impsHome, impsAway } = payload;
-  const { vpHome, vpAway } = await lookupVpForMatch(
-    supabase,
-    match.id,
-    impsHome,
-    impsAway,
-  );
 
   if (!options.isAdminEdit) {
     await assertLineupComplete(supabase, match);
   }
+
+  const scoringContext = await loadGroupScoringContext(supabase, match.group_id);
+  const boardOptions = validateScoreBoardOptions(scoringContext, {
+    selectedBoardCount: payload.selectedBoardCount,
+    misSeating: payload.misSeating,
+  });
+
+  const { vpHome, vpAway } = await lookupVp(supabase, {
+    groupId: match.group_id,
+    boardCount: boardOptions.vpBoardCount,
+    impsHome,
+    impsAway,
+  });
+
+  const selectedBoardCount = allowsBoardChoice(scoringContext)
+    ? boardOptions.nominal
+    : null;
 
   const { data, error } = await supabase
     .from("matches")
@@ -237,9 +262,14 @@ export async function submitMatchScore(
       imps_away: impsAway,
       vp_home: vpHome,
       vp_away: vpAway,
+      vp_board_count: boardOptions.vpBoardCount,
+      mis_seating: boardOptions.misSeating,
+      selected_board_count: selectedBoardCount,
     })
     .eq("id", match.id)
-    .select("id, imps_home, imps_away, vp_home, vp_away, played_at")
+    .select(
+      "id, imps_home, imps_away, vp_home, vp_away, played_at, board_count, vp_board_count, mis_seating, selected_board_count",
+    )
     .single();
 
   if (error) throw error;
@@ -249,6 +279,9 @@ export async function submitMatchScore(
     imps_away: impsAway,
     vp_home: vpHome,
     vp_away: vpAway,
+    vp_board_count: boardOptions.vpBoardCount,
+    mis_seating: boardOptions.misSeating,
+    selected_board_count: selectedBoardCount,
     ...(options.previous
       ? {
           previous: {

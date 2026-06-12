@@ -188,13 +188,7 @@ export async function PATCH(request: Request) {
 
     if (body.action === "start_national_league") {
       const season = await requireActiveSeason(supabase);
-      const boardCount =
-        typeof body.boardCount === "number" ? body.boardCount : 24;
-      const result = await startNationalLeague(
-        supabase,
-        season.id,
-        boardCount,
-      );
+      const result = await startNationalLeague(supabase, season.id);
       return jsonOk(result);
     }
 
@@ -250,13 +244,10 @@ export async function PATCH(request: Request) {
       if (!regionCode) {
         return jsonErrorCode(ErrorCodes.api.invalidRegionCode, 400);
       }
-      const boardCount =
-        typeof body.boardCount === "number" ? body.boardCount : 24;
       const result = await startRegionalLeague(
         supabase,
         season.id,
         regionCode,
-        boardCount,
       );
       return jsonOk(result);
     }

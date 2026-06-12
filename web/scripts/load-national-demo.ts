@@ -25,8 +25,13 @@ import {
   resolveNationalScheduleDivisionId,
 } from "../lib/competition/ensure-national-structure";
 import { parseBrusselsToUtc } from "../lib/time/brussels";
+import { loadGroupScoringContext } from "../lib/competition/match-scoring-context";
 import { generateGroupScheduleInDb } from "../lib/scheduling/generate-group-schedule-db";
-import { ensureStandardVpTable } from "../lib/scoring/standard-vp-bands";
+import {
+  scheduledBoardCount,
+  vpBoardCountsForGroup,
+} from "../lib/scoring/board-count-rules";
+import { ensureVpTablesForGroup } from "../lib/scoring/standard-vp-bands";
 import {
   NATIONAL_DEMO_DIVISIONS,
   nationalClubNameFromTeamName,
@@ -651,9 +656,14 @@ async function main() {
     required: true,
   });
 
-  console.log("Ensuring VP tables (24 boards)…");
+  console.log("Ensuring VP tables…");
   for (const group of groups) {
-    await ensureStandardVpTable(supabase, group.id);
+    const scoringContext = await loadGroupScoringContext(supabase, group.id);
+    await ensureVpTablesForGroup(
+      supabase,
+      group.id,
+      vpBoardCountsForGroup(scoringContext),
+    );
   }
 
   console.log("Generating schedules…");
@@ -678,7 +688,13 @@ async function main() {
     }
 
     try {
-      const result = await generateGroupScheduleInDb(supabase, group.id);
+      const scoringContext = await loadGroupScoringContext(supabase, group.id);
+      const boardCount = scheduledBoardCount(scoringContext);
+      const result = await generateGroupScheduleInDb(
+        supabase,
+        group.id,
+        boardCount,
+      );
       console.log(`  ${group.name}: ${result.matchesCreated} matches`);
     } catch (err) {
       console.error(

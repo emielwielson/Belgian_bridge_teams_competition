@@ -23,6 +23,10 @@ vi.mock("@/lib/scheduling/generate-group-schedule-db", () => ({
   generateGroupScheduleInDb,
 }));
 
+vi.mock("@/lib/scoring/standard-vp-bands", () => ({
+  ensureVpTablesForGroup: vi.fn().mockResolvedValue(undefined),
+}));
+
 import { NationalNotReadyError } from "./national-readiness";
 import { startNationalLeague } from "./start-national-league";
 
@@ -53,7 +57,7 @@ describe("startNationalLeague", () => {
       canStartLeague: true,
       blockers: [],
       divisions: [
-        { name: "Honor", groupId: "g1", scheduleComplete: false },
+        { name: "Honor Division", groupId: "g1", scheduleComplete: false },
         { name: "1st Division", groupId: "g2", scheduleComplete: true },
       ],
     });
@@ -92,6 +96,11 @@ describe("startNationalLeague", () => {
 
     expect(ensureNationalStructure).toHaveBeenCalled();
     expect(generateGroupScheduleInDb).toHaveBeenCalledTimes(1);
+    expect(generateGroupScheduleInDb).toHaveBeenCalledWith(
+      expect.anything(),
+      "g1",
+      16,
+    );
     expect(result.activated).toBe(true);
     expect(result.schedules).toHaveLength(2);
   });

@@ -1,9 +1,16 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { VpTableRow } from "./vp-lookup";
+import {
+  buildWbfVpBands,
+  getWbfVpBands,
+  SUPPORTED_WBF_BOARD_COUNTS,
+  vpTableName,
+} from "./wbf-vp-generator";
 
 /**
  * WBF VP scale for 24 boards (winner / loser VP per IMP margin).
  * Source: WBF VP scale 24 boards; net IMP = imps_home - imps_away.
+ * Kept as the canonical reference table; other counts are generated via wbf-vp-generator.
  */
 export const WBF_24_IMP_VP = [
   [0, 10, 10],
@@ -84,44 +91,19 @@ export const WBF_24_IMP_VP = [
 ] as const satisfies ReadonlyArray<readonly [number, number, number]>;
 
 export function buildStandard24BoardVpBands(): VpTableRow[] {
-  const bands: VpTableRow[] = [
-    { imp_min: -999, imp_max: -75, vp_home: 0, vp_away: 20 },
-  ];
-
-  for (let i = WBF_24_IMP_VP.length - 1; i >= 1; i--) {
-    const [imp, winner, loser] = WBF_24_IMP_VP[i];
-    bands.push({
-      imp_min: -imp,
-      imp_max: -imp,
-      vp_home: loser,
-      vp_away: winner,
-    });
-  }
-
-  const [_, drawHome, drawAway] = WBF_24_IMP_VP[0];
-  bands.push({ imp_min: 0, imp_max: 0, vp_home: drawHome, vp_away: drawAway });
-
-  for (let i = 1; i < WBF_24_IMP_VP.length; i++) {
-    const [imp, winner, loser] = WBF_24_IMP_VP[i];
-    bands.push({
-      imp_min: imp,
-      imp_max: imp,
-      vp_home: winner,
-      vp_away: loser,
-    });
-  }
-
-  bands.push({ imp_min: 75, imp_max: 999, vp_home: 20, vp_away: 0 });
-  return bands;
+  return buildWbfVpBands(WBF_24_IMP_VP);
 }
 
 export const STANDARD_24_BOARD_VP_BANDS: VpTableRow[] =
   buildStandard24BoardVpBands();
 
-export async function ensureStandardVpTable(
+/** @deprecated Use ensureVpTable */
+export const ensureStandardVpTable = ensureVpTable;
+
+export async function ensureVpTable(
   supabase: SupabaseClient,
   groupId: string,
-  boardCount = 24,
+  boardCount: number,
 ): Promise<void> {
   const { data: existing, error: lookupError } = await supabase
     .from("vp_tables")
@@ -139,7 +121,7 @@ export async function ensureStandardVpTable(
       .insert({
         group_id: groupId,
         board_count: boardCount,
-        name: "Standard 24 boards",
+        name: vpTableName(boardCount),
       })
       .select("id")
       .single();
@@ -155,8 +137,13 @@ export async function ensureStandardVpTable(
   if (countError) throw countError;
   if ((count ?? 0) > 0) return;
 
+  const bands =
+    boardCount === 24
+      ? STANDARD_24_BOARD_VP_BANDS
+      : getWbfVpBands(boardCount);
+
   const { error: rowsError } = await supabase.from("vp_table_rows").insert(
-    STANDARD_24_BOARD_VP_BANDS.map((band) => ({
+    bands.map((band) => ({
       vp_table_id: tableId,
       imp_min: band.imp_min,
       imp_max: band.imp_max,
@@ -166,3 +153,15 @@ export async function ensureStandardVpTable(
   );
   if (rowsError) throw rowsError;
 }
+
+export async function ensureVpTablesForGroup(
+  supabase: SupabaseClient,
+  groupId: string,
+  boardCounts: number[],
+): Promise<void> {
+  for (const boardCount of boardCounts) {
+    await ensureVpTable(supabase, groupId, boardCount);
+  }
+}
+
+export { SUPPORTED_WBF_BOARD_COUNTS };

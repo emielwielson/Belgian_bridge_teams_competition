@@ -1,10 +1,16 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { generateGroupScheduleInDb } from "@/lib/scheduling/generate-group-schedule-db";
+import {
+  scheduledBoardCount,
+  vpBoardCountsForGroup,
+} from "@/lib/scoring/board-count-rules";
+import { ensureVpTablesForGroup } from "@/lib/scoring/standard-vp-bands";
 import { ensureNationalStructure } from "./ensure-national-structure";
 import {
   assertCanStartNationalLeague,
   fetchNationalReadiness,
 } from "./national-readiness";
+import { NATIONAL_DIVISIONS } from "./national-structure";
 
 export type StartNationalLeagueResult = {
   schedules: { divisionName: string; matchesCreated: number }[];
@@ -14,7 +20,6 @@ export type StartNationalLeagueResult = {
 export async function startNationalLeague(
   supabase: SupabaseClient,
   seasonId: string,
-  boardCount = 24,
 ): Promise<StartNationalLeagueResult> {
   await ensureNationalStructure(supabase, seasonId);
 
@@ -27,6 +32,24 @@ export async function startNationalLeague(
     if (!div.groupId) {
       throw new Error(`${div.name}: group missing`);
     }
+
+    const spec = NATIONAL_DIVISIONS.find((d) => d.name === div.name);
+    if (!spec) {
+      throw new Error(`Unknown national division: ${div.name}`);
+    }
+
+    const scoringContext = {
+      leagueScope: "national" as const,
+      divisionLevelCode: spec.divisionLevelCode,
+    };
+    const boardCount = scheduledBoardCount(scoringContext);
+
+    await ensureVpTablesForGroup(
+      supabase,
+      div.groupId,
+      vpBoardCountsForGroup(scoringContext),
+    );
+
     if (div.scheduleComplete) {
       schedules.push({ divisionName: div.name, matchesCreated: 0 });
       continue;

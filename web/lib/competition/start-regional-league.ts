@@ -1,11 +1,17 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { generateGroupScheduleInDb } from "@/lib/scheduling/generate-group-schedule-db";
+import {
+  scheduledBoardCount,
+  vpBoardCountsForGroup,
+} from "@/lib/scoring/board-count-rules";
+import { ensureVpTablesForGroup } from "@/lib/scoring/standard-vp-bands";
+import { loadGroupScoringContext } from "./match-scoring-context";
 import { ensureRegionalLeague } from "./ensure-regional-league";
 import {
   assertCanStartRegionalLeague,
   fetchRegionalReadiness,
 } from "./regional-readiness";
 import { type RegionCode } from "./scopes";
-import { generateGroupScheduleInDb } from "@/lib/scheduling/generate-group-schedule-db";
 
 export type StartRegionalLeagueResult = {
   schedules: { label: string; matchesCreated: number }[];
@@ -16,7 +22,6 @@ export async function startRegionalLeague(
   supabase: SupabaseClient,
   seasonId: string,
   regionCode: RegionCode,
-  boardCount = 24,
 ): Promise<StartRegionalLeagueResult> {
   await ensureRegionalLeague(supabase, seasonId, regionCode);
 
@@ -31,6 +36,18 @@ export async function startRegionalLeague(
 
   for (const group of readiness.groups) {
     await supabase.rpc("sync_group_round_count", { p_group_id: group.groupId });
+
+    const scoringContext = await loadGroupScoringContext(
+      supabase,
+      group.groupId,
+    );
+    const boardCount = scheduledBoardCount(scoringContext);
+
+    await ensureVpTablesForGroup(
+      supabase,
+      group.groupId,
+      vpBoardCountsForGroup(scoringContext),
+    );
 
     if (group.scheduleComplete) {
       schedules.push({

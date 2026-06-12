@@ -10,6 +10,9 @@ export function matchResponseFields(match: {
   round?: number;
   datetime?: string;
   board_count?: number;
+  vp_board_count?: number | null;
+  mis_seating?: boolean;
+  selected_board_count?: number | null;
   played_at: string | null;
   imps_home?: number | null;
   imps_away?: number | null;

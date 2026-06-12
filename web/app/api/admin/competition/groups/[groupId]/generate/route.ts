@@ -1,17 +1,18 @@
 import { COMPETITION_ADMIN_ROLES, requireRoles } from "@/lib/auth/route-auth";
-import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
+import { loadGroupScoringContext } from "@/lib/competition/match-scoring-context";
+import { jsonFromError, jsonOk } from "@/lib/http/api-response";
+import { scheduledBoardCount } from "@/lib/scoring/board-count-rules";
 import { generateGroupScheduleInDb } from "@/lib/scheduling/generate-group-schedule-db";
 
 type Params = { params: Promise<{ groupId: string }> };
 
-export async function POST(request: Request, { params }: Params) {
+export async function POST(_request: Request, { params }: Params) {
   try {
     const { groupId } = await params;
     const { supabase } = await requireRoles([...COMPETITION_ADMIN_ROLES]);
 
-    const body = await request.json().catch(() => ({}));
-    const boardCount =
-      typeof body.boardCount === "number" ? body.boardCount : 24;
+    const scoringContext = await loadGroupScoringContext(supabase, groupId);
+    const boardCount = scheduledBoardCount(scoringContext);
 
     const result = await generateGroupScheduleInDb(
       supabase,

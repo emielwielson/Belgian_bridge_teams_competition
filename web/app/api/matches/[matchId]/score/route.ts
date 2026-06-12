@@ -13,20 +13,37 @@ import {
   revalidatePlayersForMatch,
   revalidateStandingsForGroup,
 } from "@/lib/competition/revalidate-standings";
-import { submitMatchScore } from "@/lib/scoring/match-operations";
+import { submitMatchScore, type ScorePayload } from "@/lib/scoring/match-operations";
 import { matchResponseFields } from "@/lib/scoring/match-state";
-import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
+import { jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
 import { ErrorCodes } from "@/lib/http/error-codes";
 
 type Params = { params: Promise<{ matchId: string }> };
 
-function parseImps(body: Record<string, unknown>): { impsHome: number; impsAway: number } | null {
+function parseScorePayload(
+  body: Record<string, unknown>,
+): ScorePayload | null {
   const impsHome = Number(body.imps_home ?? body.impsHome);
   const impsAway = Number(body.imps_away ?? body.impsAway);
   if (!Number.isFinite(impsHome) || !Number.isFinite(impsAway)) {
     return null;
   }
-  return { impsHome, impsAway };
+
+  const payload: ScorePayload = { impsHome, impsAway };
+
+  if (body.mis_seating != null || body.misSeating != null) {
+    payload.misSeating = Boolean(body.mis_seating ?? body.misSeating);
+  }
+
+  const rawBoard =
+    body.selected_board_count ?? body.selectedBoardCount ?? null;
+  if (rawBoard != null && rawBoard !== "") {
+    const selectedBoardCount = Number(rawBoard);
+    if (!Number.isFinite(selectedBoardCount)) return null;
+    payload.selectedBoardCount = selectedBoardCount;
+  }
+
+  return payload;
 }
 
 export async function GET(_request: Request, { params }: Params) {
@@ -40,6 +57,9 @@ export async function GET(_request: Request, { params }: Params) {
       match: matchResponseFields({
         id: match.id,
         board_count: match.board_count,
+        vp_board_count: match.vp_board_count,
+        mis_seating: match.mis_seating,
+        selected_board_count: match.selected_board_count,
         imps_home: match.imps_home,
         imps_away: match.imps_away,
         vp_home: match.vp_home,
@@ -60,12 +80,12 @@ export async function POST(request: Request, { params }: Params) {
     await assertCanSubmitScore(supabase, match);
 
     const body = await request.json();
-    const imps = parseImps(body);
-    if (!imps) {
+    const payload = parseScorePayload(body);
+    if (!payload) {
       return jsonErrorCode(ErrorCodes.api.impsMustBeNumbers, 400);
     }
 
-    const result = await submitMatchScore(supabase, match, user.id, imps, {
+    const result = await submitMatchScore(supabase, match, user.id, payload, {
       isAdminEdit: false,
     });
 
@@ -92,8 +112,8 @@ export async function PATCH(request: Request, { params }: Params) {
     }
 
     const body = await request.json();
-    const imps = parseImps(body);
-    if (!imps) {
+    const payload = parseScorePayload(body);
+    if (!payload) {
       return jsonErrorCode(ErrorCodes.api.impsMustBeNumbers, 400);
     }
 
@@ -115,7 +135,7 @@ export async function PATCH(request: Request, { params }: Params) {
       !roles.includes(ROLES.COMPETITION_MANAGER) &&
       !roles.includes(ROLES.SYSTEM_ADMIN);
 
-    const result = await submitMatchScore(supabase, match, user.id, imps, {
+    const result = await submitMatchScore(supabase, match, user.id, payload, {
       isAdminEdit: true,
       isArbiterEdit,
       previous,

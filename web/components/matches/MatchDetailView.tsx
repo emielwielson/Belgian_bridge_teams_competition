@@ -25,7 +25,9 @@ import {
   shouldShowHomeAwaySwitchSection,
 } from "@/lib/competition/home-away-switch";
 import type { MatchPageBackLink } from "@/lib/competition/match-page-context";
+import { loadGroupScoringContext } from "@/lib/competition/match-scoring-context";
 import { loadTeamRoster } from "@/lib/competition/player-matches";
+import { allowsBoardChoice } from "@/lib/scoring/board-count-rules";
 import { getMatchLineup, isLineupComplete } from "@/lib/scoring/match-operations";
 import { matchStatus } from "@/lib/scoring/match-state";
 import { toIntlLocale } from "@/i18n/intl-locale";
@@ -114,6 +116,8 @@ export async function MatchDetailView({
       : [false, false];
 
   const lineupsComplete = await isLineupComplete(supabase, match);
+  const scoringContext = await loadGroupScoringContext(supabase, match.group_id);
+  const showBoardChoice = allowsBoardChoice(scoringContext);
   const status = matchStatus(match.played_at);
 
   let postponementState = null;
@@ -283,11 +287,15 @@ export async function MatchDetailView({
 
       <MatchScoreForm
         matchId={matchId}
-        boardCount={match.board_count}
+        scheduledBoardCount={match.board_count}
+        allowsBoardChoice={showBoardChoice}
         initialImpsHome={match.imps_home}
         initialImpsAway={match.imps_away}
         initialVpHome={match.vp_home}
         initialVpAway={match.vp_away}
+        initialMisSeating={match.mis_seating}
+        initialSelectedBoardCount={match.selected_board_count}
+        initialVpBoardCount={match.vp_board_count}
         playedAt={match.played_at}
         isAdmin={isAdmin}
         canEditFinishedScore={canEditFinishedScore}
