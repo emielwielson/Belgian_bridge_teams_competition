@@ -226,6 +226,21 @@
       "saveFailedGeneric": "Failed to save penalty"
     }
   },
+  "players": {
+    "memberNumber": "Member no. {number}",
+    "assignedTeam": "Assigned team",
+    "notAssigned": "Not assigned to a team",
+    "appearancesTitle": "Match appearances",
+    "appearancesDescription": "Teams this player appeared for in played matches this season.",
+    "noAppearances": "No played match appearances yet.",
+    "backStandings": "← Standings",
+    "backTeam": "← Team",
+    "table": {
+      "team": "Team",
+      "matchesPlayed": "Matches",
+      "matchesAsSub": "As sub"
+    }
+  },
   "player": {
     "title": "Player",
     "signedInAs": "Signed in as {playerName}",

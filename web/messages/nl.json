@@ -226,6 +226,21 @@
       "saveFailedGeneric": "Straf opslaan mislukt"
     }
   },
+  "players": {
+    "memberNumber": "Lidnummer {number}",
+    "assignedTeam": "Toegewezen team",
+    "notAssigned": "Niet toegewezen aan een team",
+    "appearancesTitle": "Wedstrijdoptredens",
+    "appearancesDescription": "Teams waarvoor deze speler dit seizoen in gespeelde wedstrijden optrad.",
+    "noAppearances": "Nog geen gespeelde wedstrijdoptredens.",
+    "backStandings": "← Klassement",
+    "backTeam": "← Team",
+    "table": {
+      "team": "Team",
+      "matchesPlayed": "Wedstrijden",
+      "matchesAsSub": "Als invaller"
+    }
+  },
   "player": {
     "title": "Speler",
     "signedInAs": "Aangemeld als {playerName}",

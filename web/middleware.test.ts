@@ -29,6 +29,7 @@ describe("isPublicPath", () => {
   it("denies protected dashboards", () => {
     expect(isPublicPath("/admin")).toBe(false);
     expect(isPublicPath("/player")).toBe(false);
+    expect(isPublicPath("/players/player-1")).toBe(false);
   });
 });
 
@@ -46,6 +47,10 @@ describe("requiredRolesForPath", () => {
 
   it("maps role dashboards", () => {
     expect(requiredRolesForPath("/player")).toEqual([ROLES.PLAYER]);
+    expect(requiredRolesForPath("/players/player-1")).toEqual([
+      ROLES.SYSTEM_ADMIN,
+      ROLES.COMPETITION_MANAGER,
+    ]);
     expect(requiredRolesForPath("/arbiter")).toEqual([...ARBITER_ACCESS_ROLES]);
   });
 

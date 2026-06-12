@@ -5,6 +5,8 @@ import { TeamConventionCardsSection } from "@/components/teams/TeamConventionCar
 import { TeamInfoSection } from "@/components/teams/TeamInfoSection";
 import { TeamMatchesList } from "@/components/teams/TeamMatchesList";
 import { TeamRosterSection } from "@/components/teams/TeamRosterSection";
+import { COMPETITION_ADMIN_ROLES } from "@/lib/auth/route-auth";
+import { hasAnyRole } from "@/lib/auth/roles";
 import { canManageTeamConventionCards, canManageTeamRoster } from "@/lib/auth/team-access";
 import { getUserRoles } from "@/lib/auth/session";
 import { isTeamRosterLocked } from "@/lib/competition/league-roster-lock";
@@ -28,16 +30,20 @@ export default async function TeamPage({ params }: Props) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const roles = user ? await getUserRoles(supabase, user.id) : [];
+
   const canManageConventionCards = user
     ? await canManageTeamConventionCards(supabase, teamId)
     : false;
+
+  const canLinkToPlayers = hasAnyRole(roles, [...COMPETITION_ADMIN_ROLES]);
 
   const rosterEditable = !(await isTeamRosterLocked(supabase, teamId));
   const canManageRoster = user
     ? await canManageTeamRoster(
         supabase,
         user.id,
-        await getUserRoles(supabase, user.id),
+        roles,
         teamId,
         detail.club.id,
       )
@@ -75,6 +81,7 @@ export default async function TeamPage({ params }: Props) {
         group={group}
         division={division}
         league={league}
+        canLinkToPlayers={canLinkToPlayers}
       />
 
       <TeamRosterSection
@@ -83,6 +90,7 @@ export default async function TeamPage({ params }: Props) {
         initialRoster={roster}
         canManageRoster={canManageRoster}
         rosterEditable={rosterEditable}
+        canLinkToPlayers={canLinkToPlayers}
       />
 
       <TeamConventionCardsSection

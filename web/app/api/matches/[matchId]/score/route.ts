@@ -9,7 +9,10 @@ import {
   loadMatchContext,
 } from "@/lib/auth/match-access";
 import { FINISHED_SCORE_EDIT_ROLES, ROLES } from "@/lib/auth/roles";
-import { revalidateStandingsForGroup } from "@/lib/competition/revalidate-standings";
+import {
+  revalidatePlayersForMatch,
+  revalidateStandingsForGroup,
+} from "@/lib/competition/revalidate-standings";
 import { submitMatchScore } from "@/lib/scoring/match-operations";
 import { matchResponseFields } from "@/lib/scoring/match-state";
 import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
@@ -67,6 +70,7 @@ export async function POST(request: Request, { params }: Params) {
     });
 
     await revalidateStandingsForGroup(supabase, match.group_id);
+    await revalidatePlayersForMatch(supabase, matchId);
 
     return jsonOk({ match: matchResponseFields(result) }, { status: 201 });
   } catch (err) {
@@ -118,6 +122,7 @@ export async function PATCH(request: Request, { params }: Params) {
     });
 
     await revalidateStandingsForGroup(supabase, match.group_id);
+    await revalidatePlayersForMatch(supabase, matchId);
 
     return jsonOk({ match: matchResponseFields(result) });
   } catch (err) {

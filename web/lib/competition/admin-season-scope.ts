@@ -1,14 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireActiveSeason } from "./season";
 
-export async function activeSeasonGroupIds(
+export async function groupIdsForSeason(
   supabase: SupabaseClient,
+  seasonId: string,
 ): Promise<string[]> {
-  const season = await requireActiveSeason(supabase);
   const { data: leagues, error: leagueError } = await supabase
     .from("leagues")
     .select("id")
-    .eq("season_id", season.id);
+    .eq("season_id", seasonId);
   if (leagueError) throw leagueError;
 
   const leagueIds = leagues?.map((l) => l.id) ?? [];
@@ -30,6 +30,13 @@ export async function activeSeasonGroupIds(
   if (groupError) throw groupError;
 
   return groups?.map((g) => g.id) ?? [];
+}
+
+export async function activeSeasonGroupIds(
+  supabase: SupabaseClient,
+): Promise<string[]> {
+  const season = await requireActiveSeason(supabase);
+  return groupIdsForSeason(supabase, season.id);
 }
 
 export async function activeSeasonTeamIds(

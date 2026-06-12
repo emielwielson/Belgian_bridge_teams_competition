@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 import type { TeamRosterPlayer } from "@/lib/competition/team-queries";
@@ -12,6 +13,7 @@ type Props = {
   initialRoster: TeamRosterPlayer[];
   canManageRoster: boolean;
   rosterEditable: boolean;
+  canLinkToPlayers: boolean;
 };
 
 function toDisplayRoster(players: RosterPlayer[]): TeamRosterPlayer[] {
@@ -29,6 +31,7 @@ export function TeamRosterSection({
   initialRoster,
   canManageRoster,
   rosterEditable,
+  canLinkToPlayers,
 }: Props) {
   const t = useTranslations("team");
   const tc = useTranslations("common");
@@ -123,7 +126,16 @@ export function TeamRosterSection({
               className="flex flex-wrap items-baseline justify-between gap-2 rounded-md border border-zinc-100 px-3 py-2 text-sm"
             >
               <span className="font-medium text-zinc-900">
-                {player.name}
+                {canLinkToPlayers ? (
+                  <Link
+                    href={`/players/${player.id}?from=/teams/${teamId}`}
+                    className="hover:text-emerald-800 hover:underline"
+                  >
+                    {player.name}
+                  </Link>
+                ) : (
+                  player.name
+                )}
                 <span className="ml-2 font-normal text-zinc-500">
                   {t("matchesPlayed", { count: player.matches_played })}
                 </span>

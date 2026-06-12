@@ -29,6 +29,10 @@ vi.mock("@/lib/scoring/match-operations", async (importOriginal) => {
   };
 });
 
+vi.mock("@/lib/competition/revalidate-standings", () => ({
+  revalidatePlayersForMatch: vi.fn(),
+}));
+
 import { requireAuth } from "@/lib/auth/route-auth";
 import {
   loadMatchContext,

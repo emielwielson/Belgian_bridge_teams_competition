@@ -49,3 +49,20 @@ export async function revalidateStandingsForTeam(
     await revalidateStandingsForGroup(supabase, team.group_id);
   }
 }
+
+export async function revalidatePlayersForMatch(
+  supabase: SupabaseClient,
+  matchId: string,
+): Promise<void> {
+  const { data: rows, error } = await supabase
+    .from("match_players")
+    .select("player_id")
+    .eq("match_id", matchId);
+
+  if (error) throw error;
+
+  const playerIds = new Set((rows ?? []).map((row) => row.player_id));
+  for (const playerId of playerIds) {
+    revalidatePath(`/players/${playerId}`);
+  }
+}

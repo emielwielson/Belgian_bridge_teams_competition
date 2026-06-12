@@ -4,6 +4,7 @@ import {
   assertCanViewMatchOps,
   loadMatchContext,
 } from "@/lib/auth/match-access";
+import { revalidatePlayersForMatch } from "@/lib/competition/revalidate-standings";
 import { requireActiveSeason } from "@/lib/competition/season";
 import {
   getMatchLineup,
@@ -96,6 +97,8 @@ export async function PUT(request: Request, { params }: Params) {
       teamId,
       normalized,
     );
+
+    await revalidatePlayersForMatch(supabase, matchId);
 
     return jsonOk({
       match_id: matchId,

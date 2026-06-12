@@ -1,4 +1,5 @@
 import { ARBITER_ACCESS_ROLES, ROLES } from "./roles";
+import { COMPETITION_ADMIN_ROLES } from "./route-auth";
 
 const PUBLIC_EXACT = new Set([
   "/",
@@ -14,6 +15,7 @@ const PUBLIC_PREFIXES = ["/api/public/", "/standings", "/teams", "/matches"];
 
 const ROLE_ROUTES: { prefix: string; roles: string[] }[] = [
   { prefix: "/admin", roles: [ROLES.SYSTEM_ADMIN, ROLES.COMPETITION_MANAGER] },
+  { prefix: "/players", roles: [...COMPETITION_ADMIN_ROLES] },
   { prefix: "/player", roles: [ROLES.PLAYER] },
   { prefix: "/arbiter", roles: [...ARBITER_ACCESS_ROLES] },
 ];

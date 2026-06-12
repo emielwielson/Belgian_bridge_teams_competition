@@ -1,12 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { TeamDetail } from "@/lib/competition/team-queries";
 
 type Props = Pick<
   TeamDetail,
   "team" | "captain" | "club" | "group" | "division" | "league"
->;
+> & {
+  canLinkToPlayers: boolean;
+};
 
 export function TeamInfoSection({
   team,
@@ -15,6 +18,7 @@ export function TeamInfoSection({
   group,
   division,
   league,
+  canLinkToPlayers,
 }: Props) {
   const t = useTranslations("team");
 
@@ -31,7 +35,16 @@ export function TeamInfoSection({
           <dd className="mt-0.5 text-zinc-900">
             {captain ? (
               <>
-                {captain.name}
+                {canLinkToPlayers ? (
+                  <Link
+                    href={`/players/${captain.id}?from=/teams/${team.id}`}
+                    className="hover:text-emerald-800 hover:underline"
+                  >
+                    {captain.name}
+                  </Link>
+                ) : (
+                  captain.name
+                )}
                 {captain.member_number ? (
                   <span className="text-zinc-600"> · {captain.member_number}</span>
                 ) : null}

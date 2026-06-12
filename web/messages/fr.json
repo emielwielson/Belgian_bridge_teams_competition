@@ -226,6 +226,21 @@
       "saveFailedGeneric": "Échec de l'enregistrement de la pénalité"
     }
   },
+  "players": {
+    "memberNumber": "N° de membre {number}",
+    "assignedTeam": "Équipe assignée",
+    "notAssigned": "Non assigné à une équipe",
+    "appearancesTitle": "Apparitions en match",
+    "appearancesDescription": "Équipes pour lesquelles ce joueur est apparu dans des matchs joués cette saison.",
+    "noAppearances": "Aucune apparition en match joué pour l'instant.",
+    "backStandings": "← Classement",
+    "backTeam": "← Équipe",
+    "table": {
+      "team": "Équipe",
+      "matchesPlayed": "Matchs",
+      "matchesAsSub": "En remplaçant"
+    }
+  },
   "player": {
     "title": "Joueur",
     "signedInAs": "Connecté en tant que {playerName}",
