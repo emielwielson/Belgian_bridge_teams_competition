@@ -13,10 +13,6 @@ type MeResponse = {
   teams?: { id: string; name: string }[];
 };
 
-type Props = {
-  brand: string;
-};
-
 function navLinkClass(active: boolean): string {
   return active
     ? "text-sm font-medium text-zinc-900"
@@ -29,7 +25,7 @@ function mobileLinkClass(active: boolean): string {
     : "whitespace-nowrap text-sm font-medium text-zinc-600";
 }
 
-export function SiteHeader({ brand }: Props) {
+export function SiteHeader() {
   const t = useTranslations("nav");
   const pathname = usePathname();
   const [me, setMe] = useState<MeResponse | null>(null);
@@ -90,13 +86,6 @@ export function SiteHeader({ brand }: Props) {
   return (
     <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white shadow-sm">
       <div className="mx-auto flex h-14 max-w-3xl items-center gap-6 px-4">
-        <Link
-          href="/"
-          className="shrink-0 text-sm font-semibold tracking-tight text-zinc-900"
-        >
-          {brand}
-        </Link>
-
         <nav className="hidden min-w-0 flex-1 items-center gap-x-4 gap-y-1 overflow-hidden sm:flex sm:flex-wrap">
           {!loaded ? (
             <span className="text-sm text-zinc-400">{t("loading")}</span>

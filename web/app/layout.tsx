@@ -35,7 +35,6 @@ export default async function RootLayout({
 }>) {
   const locale = await getLocale();
   const messages = await getMessages();
-  const t = await getTranslations("nav");
 
   return (
     <html
@@ -45,7 +44,7 @@ export default async function RootLayout({
     >
       <body className="flex min-h-full flex-col bg-zinc-50 text-zinc-900 antialiased">
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <SiteHeader brand={t("brand")} />
+          <SiteHeader />
           <div className="flex flex-1 flex-col text-zinc-900">{children}</div>
         </NextIntlClientProvider>
       </body>
