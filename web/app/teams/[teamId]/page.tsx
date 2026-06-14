@@ -9,7 +9,6 @@ import { COMPETITION_ADMIN_ROLES } from "@/lib/auth/route-auth";
 import { hasAnyRole } from "@/lib/auth/roles";
 import { canManageTeamConventionCards, canManageTeamRoster } from "@/lib/auth/team-access";
 import { getUserRoles } from "@/lib/auth/session";
-import { isTeamRosterLocked } from "@/lib/competition/league-roster-lock";
 import { listConventionCards } from "@/lib/competition/convention-card-queries";
 import { loadTeamDetail } from "@/lib/competition/team-queries";
 import { createSessionClient } from "@/lib/supabase/server-client";
@@ -38,7 +37,6 @@ export default async function TeamPage({ params }: Props) {
 
   const canLinkToPlayers = hasAnyRole(roles, [...COMPETITION_ADMIN_ROLES]);
 
-  const rosterEditable = !(await isTeamRosterLocked(supabase, teamId));
   const canManageRoster = user
     ? await canManageTeamRoster(
         supabase,
@@ -89,7 +87,6 @@ export default async function TeamPage({ params }: Props) {
         captainId={team.captain_id}
         initialRoster={roster}
         canManageRoster={canManageRoster}
-        rosterEditable={rosterEditable}
         canLinkToPlayers={canLinkToPlayers}
       />
 

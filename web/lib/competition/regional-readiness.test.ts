@@ -64,7 +64,6 @@ describe("regional-readiness", () => {
       seasonStatus: "setup",
       regionCode: "flanders",
       leagueId: "league-1",
-      rostersLocked: false,
       calendarRoundCount: 14,
       groups: [
         groupRow({
@@ -113,7 +112,6 @@ describe("regional-readiness", () => {
       seasonStatus: "setup",
       regionCode: "wallonia",
       leagueId: "league-1",
-      rostersLocked: false,
       calendarRoundCount: 14,
       groups: [],
     });
@@ -149,7 +147,6 @@ describe("regional-readiness", () => {
       seasonStatus: "setup",
       regionCode: "flanders",
       leagueId: "league-1",
-      rostersLocked: false,
       calendarRoundCount: 14,
       groups,
     });

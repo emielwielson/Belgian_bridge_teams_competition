@@ -166,23 +166,15 @@ begin
       end if;
   end;
 
-  -- Active season blocks roster changes (FR 17–18)
+  -- Roster changes are allowed during an active season
   insert into public.players (name) values ('Smoke Player') returning id into v_player_id;
   insert into public.player_club_memberships (player_id, club_id, season_id)
   values (v_player_id, v_club_id, v_season_id);
 
   update public.seasons set status = 'active' where id = v_season_id;
 
-  begin
-    insert into public.team_players (team_id, player_id, season_id)
-    values (v_team_id, v_player_id, v_season_id);
-    raise exception 'team_players insert should fail when season is active';
-  exception
-    when others then
-      if sqlerrm not like '%roster cannot change%' then
-        raise;
-      end if;
-  end;
+  insert into public.team_players (team_id, player_id, season_id)
+  values (v_team_id, v_player_id, v_season_id);
 end $$;
 
 rollback;

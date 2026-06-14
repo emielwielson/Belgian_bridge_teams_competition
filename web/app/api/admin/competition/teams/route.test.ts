@@ -18,16 +18,6 @@ vi.mock("@/lib/competition/season", () => ({
   }),
 }));
 
-vi.mock("@/lib/competition/league-roster-lock", async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import("@/lib/competition/league-roster-lock")>();
-  return {
-    ...actual,
-    assertGroupRosterEditable: vi.fn(),
-    assertTeamRosterEditable: vi.fn(),
-  };
-});
-
 vi.mock("@/lib/competition/national-teams", () => ({
   isNationalGroup: vi.fn().mockResolvedValue(false),
   assertNationalGroupCanAddTeam: vi.fn().mockResolvedValue(undefined),
@@ -173,7 +163,7 @@ describe("POST /api/admin/competition/teams", () => {
     );
   });
 
-  it("rejects create when season is active", async () => {
+  it("creates team when season is active", async () => {
     const { requireActiveSeason } = await import("@/lib/competition/season");
     vi.mocked(requireActiveSeason).mockResolvedValueOnce({
       id: "season-1",
@@ -182,9 +172,39 @@ describe("POST /api/admin/competition/teams", () => {
       is_active: true,
     });
 
+    const membershipChain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockResolvedValue({ data: { id: "m1" }, error: null }),
+    };
+
+    const insertChain = {
+      select: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: {
+          id: "t1",
+          group_id: "g1",
+          club_id: "c1",
+          name: "Team A",
+          captain_id: "p1",
+        },
+        error: null,
+      }),
+    };
+
+    const from = vi.fn((table: string) => {
+      if (table === "player_club_memberships") return membershipChain;
+      if (table === "teams") {
+        return { insert: vi.fn().mockReturnValue(insertChain) };
+      }
+      return {};
+    });
+
+    const rpc = vi.fn().mockResolvedValue({ error: null });
+
     const { requireRoles } = await import("@/lib/auth/route-auth");
     vi.mocked(requireRoles).mockResolvedValue({
-      supabase: { from: vi.fn() } as never,
+      supabase: { from, rpc } as never,
       user: { id: "u1" } as never,
       roles: ["competition_manager"],
     });
@@ -200,9 +220,7 @@ describe("POST /api/admin/competition/teams", () => {
         }),
       }),
     );
-    expect(res.status).toBe(409);
-    const body = await res.json();
-    expect(body.error).toBe("api.seasonSetupLocked");
+    expect(res.status).toBe(201);
   });
 });
 

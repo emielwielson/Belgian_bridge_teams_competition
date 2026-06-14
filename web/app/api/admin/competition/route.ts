@@ -3,11 +3,6 @@ import { ensureNationalStructure } from "@/lib/competition/ensure-national-struc
 import { ensureRegionalLeague } from "@/lib/competition/ensure-regional-league";
 import { canonicalLeagueName } from "@/lib/competition/league-names";
 import { requireActiveSeason } from "@/lib/competition/season";
-import {
-  findNationalLeagueId,
-  findRegionalLeagueId,
-  setLeagueRostersLocked,
-} from "@/lib/competition/league-roster-lock";
 import { requireSeasonInSetup } from "@/lib/competition/season-setup";
 import {
   parseRegionParam,
@@ -26,7 +21,7 @@ export async function GET() {
 
     const { data: leagues, error: leaguesError } = await supabase
       .from("leagues")
-      .select("id, name, scope, region_id, season_id, rosters_locked")
+      .select("id, name, scope, region_id, season_id")
       .eq("season_id", season.id)
       .order("name");
 
@@ -190,52 +185,6 @@ export async function PATCH(request: Request) {
       const season = await requireActiveSeason(supabase);
       const result = await startNationalLeague(supabase, season.id);
       return jsonOk(result);
-    }
-
-    if (
-      body.action === "lock_national_rosters" ||
-      body.action === "unlock_national_rosters"
-    ) {
-      const season = await requireActiveSeason(supabase);
-      const leagueId = await findNationalLeagueId(supabase, season.id);
-      if (!leagueId) {
-        return jsonErrorCode(ErrorCodes.api.invalidPatch, 400);
-      }
-      await setLeagueRostersLocked(
-        supabase,
-        leagueId,
-        body.action === "lock_national_rosters",
-      );
-      return jsonOk({
-        rostersLocked: body.action === "lock_national_rosters",
-      });
-    }
-
-    if (
-      body.action === "lock_regional_rosters" ||
-      body.action === "unlock_regional_rosters"
-    ) {
-      const season = await requireActiveSeason(supabase);
-      const regionCode = parseRegionParam(body.regionCode ?? "");
-      if (!regionCode) {
-        return jsonErrorCode(ErrorCodes.api.invalidRegionCode, 400);
-      }
-      const leagueId = await findRegionalLeagueId(
-        supabase,
-        season.id,
-        regionCode,
-      );
-      if (!leagueId) {
-        return jsonErrorCode(ErrorCodes.api.invalidPatch, 400);
-      }
-      await setLeagueRostersLocked(
-        supabase,
-        leagueId,
-        body.action === "lock_regional_rosters",
-      );
-      return jsonOk({
-        rostersLocked: body.action === "lock_regional_rosters",
-      });
     }
 
     if (body.action === "start_regional_league") {

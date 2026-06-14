@@ -271,7 +271,6 @@
     "noPlayers": "No players on the roster yet.",
     "captainBadge": "Captain",
     "matchesPlayed": "{count, plural, =0 {0 matches} one {# match} other {# matches}}",
-    "rosterLocked": "Roster changes are locked while the season is active.",
     "rosterEditable": "Add unassigned club members to this team.",
     "remove": "Remove",
     "addFromClub": "Add from club",
@@ -386,21 +385,10 @@
     "flandersRegional": "Flanders (regional)",
     "walloniaRegional": "Wallonia (regional)",
     "seasonStatus": "Season status: {status}",
-    "rosterLock": {
-      "title": "Team rosters",
-      "lockedDescription": "Rosters are locked. Teams, schedule slots, and player assignments cannot be changed until you unlock.",
-      "unlockedDescription": "Rosters are open. Lock when team compositions are final — after that, no more roster or team assignment changes.",
-      "lock": "Lock rosters",
-      "unlock": "Unlock rosters",
-      "lockConfirm": "Lock all team rosters for this competition? Team and roster changes will be blocked until you unlock.",
-      "unlockConfirm": "Unlock rosters so teams and player assignments can be edited again?",
-      "working": "Saving…",
-      "requestFailed": "Could not update roster lock"
-    },
     "settingUpStructure": " · Setting up structure…",
     "setupRegionalLeague": "Set up {leagueName} league",
     "activateSeason": "Activate season",
-    "seasonActivated": "Season activated — rosters and memberships are now locked.",
+    "seasonActivated": "Season activated.",
     "leagueReady": "{leagueName} league is ready.",
     "addDivision": "Add division",
     "addGroup": "Add group",
@@ -464,7 +452,7 @@
     "regionalStartLeague": {
       "loading": "Loading readiness…",
       "statusTitle": "League status",
-      "statusBody": "The season is {status}. Divisions, groups, and teams are locked; you can still change captains. Lock rosters below when compositions are final.",
+      "statusBody": "The season is {status}. Divisions, groups, and match dates are locked; teams and rosters can still be edited.",
       "title": "Start league",
       "description": "When match days and all groups are ready, generate fixtures for every group and activate this regional league. The whole season becomes active (national setup will lock if not finished yet).",
       "calendarCheck": "Regional match days: {set}/{required}",
@@ -541,7 +529,7 @@
     "startLeague": {
       "loading": "Loading readiness…",
       "statusTitle": "League status",
-      "statusBody": "The season is {status}. Divisions, groups, and teams are locked; you can still change captains. Lock rosters below when compositions are final.",
+      "statusBody": "The season is {status}. Divisions, groups, and match dates are locked; teams and rosters can still be edited.",
       "title": "Start league",
       "description": "When match days and teams are complete, generate all fixtures and activate the season.",
       "structureCheck": "National structure (8 divisions)",
@@ -869,8 +857,7 @@
       "invalidRequestBody": "Invalid request body",
       "clubIdRequired": "club_id is required",
       "captainIdInvalid": "captain_id must be a valid player id",
-      "seasonSetupLocked": "Season is active; setup changes are locked",
-      "rostersLocked": "Team rosters are locked for this competition"
+      "seasonSetupLocked": "Season is active; setup changes are locked"
     },
     "auth": {
       "unauthorized": "Unauthorized",

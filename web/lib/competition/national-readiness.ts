@@ -37,7 +37,6 @@ export type DivisionReadiness = {
 export type NationalReadiness = {
   seasonStatus: string;
   leagueId: string | null;
-  rostersLocked: boolean;
   structureReady: boolean;
   calendars: Record<NationalScheduleKey, CalendarReadiness>;
   divisions: DivisionReadiness[];
@@ -88,7 +87,6 @@ export function divisionTeamsLabel(div: DivisionReadiness): string {
 export function buildNationalReadiness(input: {
   seasonStatus: string;
   leagueId: string | null;
-  rostersLocked: boolean;
   structureDivisionCount: number;
   structureGroupCount: number;
   calendarRoundCounts: Record<NationalScheduleKey, number>;
@@ -179,7 +177,6 @@ export function buildNationalReadiness(input: {
   return {
     seasonStatus: input.seasonStatus,
     leagueId: input.leagueId,
-    rostersLocked: input.rostersLocked,
     structureReady,
     calendars,
     divisions: input.divisions,
@@ -218,7 +215,7 @@ export async function fetchNationalReadiness(
 
   const { data: league } = await supabase
     .from("leagues")
-    .select("id, rosters_locked")
+    .select("id")
     .eq("season_id", seasonId)
     .eq("scope", "national")
     .eq("name", NATIONAL_LEAGUE_NAME)
@@ -228,7 +225,6 @@ export async function fetchNationalReadiness(
     return buildNationalReadiness({
       seasonStatus,
       leagueId: null,
-      rostersLocked: false,
       structureDivisionCount: 0,
       structureGroupCount: 0,
       calendarRoundCounts: { honor: 0, first: 0, default: 0 },
@@ -337,7 +333,6 @@ export async function fetchNationalReadiness(
   return buildNationalReadiness({
     seasonStatus,
     leagueId: league.id,
-    rostersLocked: league.rosters_locked === true,
     structureDivisionCount: divisionsData?.length ?? 0,
     structureGroupCount: groups?.length ?? 0,
     calendarRoundCounts,

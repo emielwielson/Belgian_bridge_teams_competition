@@ -1,6 +1,5 @@
 import { AuthError } from "@/lib/auth/route-auth";
 import { NationalNotReadyError } from "@/lib/competition/national-readiness";
-import { RosterLockedError } from "@/lib/competition/league-roster-lock";
 import { SetupLockedError } from "@/lib/competition/season-setup";
 import {
   TeamCaptainError,
@@ -13,7 +12,6 @@ import { VpLookupError } from "@/lib/scoring/vp-lookup";
 export function statusForError(err: unknown): number {
   if (err instanceof AuthError) return err.status;
   if (err instanceof SetupLockedError) return err.status;
-  if (err instanceof RosterLockedError) return err.status;
   if (err instanceof TeamCaptainError) return err.status;
   if (err instanceof TeamValidationError) return err.status;
   if (err instanceof NationalNotReadyError) return err.status;

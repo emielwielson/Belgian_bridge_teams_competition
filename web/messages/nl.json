@@ -271,7 +271,6 @@
     "noPlayers": "Nog geen spelers op de selectie.",
     "captainBadge": "Aanvoerder",
     "matchesPlayed": "{count, plural, =0 {0 wedstrijden} one {# wedstrijd} other {# wedstrijden}}",
-    "rosterLocked": "Selectiewijzigingen zijn geblokkeerd zolang het seizoen actief is.",
     "rosterEditable": "Voeg niet-toegewezen clubleden toe aan dit team.",
     "remove": "Verwijderen",
     "addFromClub": "Toevoegen uit club",
@@ -386,21 +385,10 @@
     "flandersRegional": "Vlaanderen (regionaal)",
     "walloniaRegional": "Wallonië (regionaal)",
     "seasonStatus": "Seizoensstatus: {status}",
-    "rosterLock": {
-      "title": "Teamroosters",
-      "lockedDescription": "Rosters zijn vergrendeld. Teams, slots en spelers kunnen niet meer gewijzigd worden tot je ontgrendelt.",
-      "unlockedDescription": "Rosters zijn open. Vergrendel wanneer de teamindeling definitief is — daarna zijn geen wijzigingen meer mogelijk.",
-      "lock": "Rosters vergrendelen",
-      "unlock": "Rosters ontgrendelen",
-      "lockConfirm": "Alle teamroosters voor deze competitie vergrendelen? Team- en rosterwijzigingen worden geblokkeerd tot je ontgrendelt.",
-      "unlockConfirm": "Rosters ontgrendelen zodat teams en spelers opnieuw bewerkt kunnen worden?",
-      "working": "Opslaan…",
-      "requestFailed": "Kon rostervergrendeling niet bijwerken"
-    },
     "settingUpStructure": " · Structuur opzetten…",
     "setupRegionalLeague": "Competitie {leagueName} opzetten",
     "activateSeason": "Seizoen activeren",
-    "seasonActivated": "Seizoen geactiveerd — selecties en lidmaatschappen zijn nu vergrendeld.",
+    "seasonActivated": "Seizoen geactiveerd.",
     "leagueReady": "Competitie {leagueName} is klaar.",
     "addDivision": "Afdeling toevoegen",
     "addGroup": "Groep toevoegen",
@@ -464,7 +452,7 @@
     "regionalStartLeague": {
       "loading": "Gereedheid laden…",
       "statusTitle": "Competitiestatus",
-      "statusBody": "Het seizoen is {status}. Divisies, groepen en teams zijn vergrendeld; kapiteins kunnen nog wel gewijzigd worden. Vergrendel selecties hieronder wanneer de samenstelling definitief is.",
+      "statusBody": "Het seizoen is {status}. Divisies, groepen en speeldagen zijn vergrendeld; teams en selecties kunnen nog wel gewijzigd worden.",
       "title": "Competitie starten",
       "description": "Als speeldagen en alle groepen klaar zijn, worden wedstrijden voor elke groep gegenereerd en wordt deze regionale competitie geactiveerd. Het hele seizoen wordt actief (nationale opzet wordt vergrendeld als die nog niet klaar is).",
       "calendarCheck": "Regionale speeldagen: {set}/{required}",
@@ -541,7 +529,7 @@
     "startLeague": {
       "loading": "Gereedheid laden…",
       "statusTitle": "Competitiestatus",
-      "statusBody": "Het seizoen is {status}. Divisies, groepen en teams zijn vergrendeld; kapiteins kunnen nog wel gewijzigd worden. Vergrendel selecties hieronder wanneer de samenstelling definitief is.",
+      "statusBody": "Het seizoen is {status}. Divisies, groepen en speeldagen zijn vergrendeld; teams en selecties kunnen nog wel gewijzigd worden.",
       "title": "Competitie starten",
       "description": "Wanneer speeldagen en teams compleet zijn, genereer alle wedstrijden en activeer het seizoen.",
       "structureCheck": "Nationale structuur (8 afdelingen)",
@@ -869,8 +857,7 @@
       "invalidRequestBody": "Ongeldig verzoek",
       "clubIdRequired": "club_id is verplicht",
       "captainIdInvalid": "captain_id moet een geldige speler-id zijn",
-      "seasonSetupLocked": "Seizoen is actief; setupwijzigingen zijn vergrendeld",
-      "rostersLocked": "Teamroosters zijn vergrendeld voor deze competitie"
+      "seasonSetupLocked": "Seizoen is actief; setupwijzigingen zijn vergrendeld"
     },
     "auth": {
       "unauthorized": "Niet geautoriseerd",

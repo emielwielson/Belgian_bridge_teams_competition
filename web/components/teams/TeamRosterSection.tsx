@@ -12,7 +12,6 @@ type Props = {
   captainId: string | null;
   initialRoster: TeamRosterPlayer[];
   canManageRoster: boolean;
-  rosterEditable: boolean;
   canLinkToPlayers: boolean;
 };
 
@@ -30,7 +29,6 @@ export function TeamRosterSection({
   captainId,
   initialRoster,
   canManageRoster,
-  rosterEditable,
   canLinkToPlayers,
 }: Props) {
   const t = useTranslations("team");
@@ -94,15 +92,11 @@ export function TeamRosterSection({
     await load();
   }
 
-  const showEditor = canManageRoster && rosterEditable;
+  const showEditor = canManageRoster;
 
   return (
     <section className="rounded-lg border border-zinc-200 bg-white p-4">
       <h2 className="text-sm font-semibold text-zinc-900">{t("playersTitle")}</h2>
-
-      {canManageRoster && !rosterEditable ? (
-        <p className="mt-2 text-sm text-zinc-600">{t("rosterLocked")}</p>
-      ) : null}
 
       {showEditor ? (
         <p className="mt-2 text-sm text-zinc-600">{t("rosterEditable")}</p>

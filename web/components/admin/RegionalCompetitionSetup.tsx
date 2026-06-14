@@ -11,7 +11,6 @@ import { CompetitionManagement } from "./CompetitionManagement";
 import { RegionalStartLeagueSection } from "./RegionalStartLeagueSection";
 import { RegionalStructureSetup } from "./RegionalStructureSetup";
 import { RegionalTeamsSetup } from "./RegionalTeamsSetup";
-import { RosterLockSection } from "./RosterLockSection";
 
 type SetupTab = "dates" | "structure" | "teams" | "start";
 
@@ -131,9 +130,6 @@ export function RegionalCompetitionSetup({ regionCode, regionId }: Props) {
   }
 
   const setupLocked = readiness?.seasonStatus !== "setup";
-  const rostersLocked = readiness?.rostersLocked ?? false;
-  const teamsLocked = setupLocked || rostersLocked;
-  const captainsEditable = !rostersLocked;
 
   const filteredLeagues = leagues.map((league) => ({
     ...league,
@@ -249,8 +245,6 @@ export function RegionalCompetitionSetup({ regionCode, regionId }: Props) {
             <RegionalTeamsSetup
               regionId={regionId}
               leagues={filteredLeagues}
-              teamsLocked={teamsLocked}
-              captainsEditable={captainsEditable}
               scheduleSettingsLocked={setupLocked}
               onStructureChanged={loadAll}
               onTeamsChanged={loadReadiness}
@@ -265,13 +259,6 @@ export function RegionalCompetitionSetup({ regionCode, regionId }: Props) {
             aria-labelledby="regional-tab-start-trigger"
             className="flex flex-col gap-4 pt-2"
           >
-            <RosterLockSection
-              scope={SCOPES.REGIONAL}
-              regionCode={regionCode}
-              leagueId={readiness?.leagueId ?? null}
-              rostersLocked={rostersLocked}
-              onChanged={loadReadiness}
-            />
             <RegionalStartLeagueSection
               readiness={readiness}
               loading={structureLoading}

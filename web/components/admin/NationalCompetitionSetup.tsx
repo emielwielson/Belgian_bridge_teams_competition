@@ -10,7 +10,6 @@ import type { NationalScheduleKey } from "@/lib/competition/national-structure";
 import { NationalMatchDatesEditor } from "./NationalMatchDatesEditor";
 import { NationalStartLeagueSection } from "./NationalStartLeagueSection";
 import { NationalTeamsByDivision } from "./NationalTeamsByDivision";
-import { RosterLockSection } from "./RosterLockSection";
 
 const NATIONAL_SCHEDULE_KEYS: NationalScheduleKey[] = [
   "honor",
@@ -91,9 +90,6 @@ export function NationalCompetitionSetup() {
   }
 
   const setupLocked = readiness?.seasonStatus !== "setup";
-  const rostersLocked = readiness?.rostersLocked ?? false;
-  const teamsLocked = setupLocked || rostersLocked;
-  const captainsEditable = !rostersLocked;
 
   return (
     <main className="page-container flex flex-col gap-6">
@@ -185,8 +181,6 @@ export function NationalCompetitionSetup() {
           >
             <NationalTeamsByDivision
               divisions={readiness?.divisions ?? []}
-              teamsLocked={teamsLocked}
-              captainsEditable={captainsEditable}
               onTeamsChanged={loadReadiness}
             />
           </div>
@@ -199,12 +193,6 @@ export function NationalCompetitionSetup() {
             aria-labelledby="national-tab-start-trigger"
             className="flex flex-col gap-4 pt-2"
           >
-            <RosterLockSection
-              scope={SCOPES.NATIONAL}
-              leagueId={readiness?.leagueId ?? null}
-              rostersLocked={rostersLocked}
-              onChanged={loadReadiness}
-            />
             <NationalStartLeagueSection
               readiness={readiness}
               loading={structureLoading}
