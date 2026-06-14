@@ -341,7 +341,30 @@
     "resolvedSuccess": "Demande traitée avec une décision officielle.",
     "viewPublishedRuling": "Voir la décision publiée",
     "resolveFailed": "Échec du traitement",
-    "uploadRulingFailed": "Échec du téléversement de la décision"
+    "uploadRulingFailed": "Échec du téléversement de la décision",
+    "adjustScore": "Modifier le score du match",
+    "addPenalty": "Attribuer une pénalité",
+    "addWarning": "Donner un avertissement",
+    "scoreRequiresPlayed": "La modification du score nécessite un score officiel.",
+    "scoreFieldsIncomplete": "Complétez tous les champs de score avant de clôturer.",
+    "penaltyFieldsIncomplete": "Complétez l'équipe, la date, la déduction VP et le motif de la pénalité.",
+    "warningFieldsIncomplete": "Complétez l'équipe, la date et le motif de l'avertissement.",
+    "score": {
+      "impsHome": "IMP domicile",
+      "impsAway": "IMP extérieur",
+      "misSeating": "Mauvais placement (3/4 des donnes pour les VP)",
+      "boardCountChoice": "Nombre de donnes",
+      "boardsOption": "{count} donnes",
+      "vpScaleBoards": "Échelle VP : {boardCount} donnes",
+      "vpScaleMisSeating": "Échelle VP : {scheduled} donnes prévues, {effective} pour les VP (mauvais placement)",
+      "currentVp": "VP actuels : {home} – {away}",
+      "boardCountRequired": "Choisissez 28 ou 32 donnes."
+    },
+    "warning": {
+      "team": "Équipe",
+      "date": "Date",
+      "reason": "Motif"
+    }
   },
   "admin": {
     "title": "Administration",

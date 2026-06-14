@@ -63,9 +63,27 @@ begin
     join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public'
       and p.proname = 'arbiter_request_resolve'
-      and pg_get_function_identity_arguments(p.oid) like '%uuid, text%'
+      and pg_get_function_identity_arguments(p.oid) like '%uuid, text, jsonb%'
   ) then
-    raise exception 'arbiter_request_resolve(uuid, text, ...) missing';
+    raise exception 'arbiter_request_resolve(uuid, text, jsonb) missing';
+  end if;
+
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'penalties'
+      and column_name = 'arbiter_request_id'
+  ) then
+    raise exception 'penalties.arbiter_request_id column missing';
+  end if;
+
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'warnings'
+      and column_name = 'arbiter_request_id'
+  ) then
+    raise exception 'warnings.arbiter_request_id column missing';
   end if;
 end;
 $$;

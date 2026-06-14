@@ -3,7 +3,30 @@
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
+import {
+  ArbiterResolveScoreFields,
+  emptyScoreCorrection,
+  isScoreCorrectionComplete,
+  scoreCorrectionToPayload,
+  type ScoreCorrectionValue,
+} from "@/components/arbiter/ArbiterResolveScoreFields";
+import {
+  DisciplinePenaltyFields,
+  emptyPenaltyFields,
+  isPenaltyFieldsComplete,
+  penaltyFieldsToPayload,
+  type PenaltyFieldsValue,
+  type TeamOption,
+} from "@/components/discipline/DisciplinePenaltyFields";
+import {
+  DisciplineWarningFields,
+  emptyWarningFields,
+  isWarningFieldsComplete,
+  warningFieldsToPayload,
+  type WarningFieldsValue,
+} from "@/components/discipline/DisciplineWarningFields";
 import { FilePickerField } from "@/components/files/FilePickerField";
+import type { InboxMatchContext } from "@/lib/competition/arbiter-request";
 import type { Locale } from "@/i18n/config";
 import { toIntlLocale } from "@/i18n/intl-locale";
 import { formatBrussels } from "@/lib/time/brussels";
@@ -15,12 +38,7 @@ type InboxRequest = {
   status: string;
   created_at: string;
   image_signed_url: string | null;
-  match: {
-    round: number;
-    datetime: string;
-    home_team: { name: string } | null;
-    away_team: { name: string } | null;
-  } | null;
+  match: InboxMatchContext | null;
 };
 
 type ResolveDraft = {
@@ -28,14 +46,45 @@ type ResolveDraft = {
   uploadedPath: string | null;
   uploading: boolean;
   fileInputKey: number;
+  adjustScore: boolean;
+  score: ScoreCorrectionValue | null;
+  addPenalty: boolean;
+  penalty: PenaltyFieldsValue | null;
+  addWarning: boolean;
+  warning: WarningFieldsValue | null;
 };
 
-function emptyDraft(): ResolveDraft {
+function emptyDraft(match: InboxMatchContext | null): ResolveDraft {
+  const homeTeamId = match?.home_team?.id ?? "";
   return {
     file: null,
     uploadedPath: null,
     uploading: false,
     fileInputKey: 0,
+    adjustScore: false,
+    score: match
+      ? emptyScoreCorrection(
+          match.imps_home,
+          match.imps_away,
+          match.mis_seating,
+          match.selected_board_count,
+        )
+      : null,
+    addPenalty: false,
+    penalty: homeTeamId ? emptyPenaltyFields(homeTeamId) : null,
+    addWarning: false,
+    warning: homeTeamId ? emptyWarningFields(homeTeamId) : null,
+  };
+}
+
+function teamOptions(match: InboxMatchContext): {
+  homeTeam: TeamOption;
+  awayTeam: TeamOption;
+} | null {
+  if (!match.home_team || !match.away_team) return null;
+  return {
+    homeTeam: { id: match.home_team.id, name: match.home_team.name },
+    awayTeam: { id: match.away_team.id, name: match.away_team.name },
   };
 }
 
@@ -70,10 +119,14 @@ export function ArbiterInbox() {
     void load();
   }, [load]);
 
-  function updateDraft(requestId: string, patch: Partial<ResolveDraft>) {
+  function getDraft(request: InboxRequest): ResolveDraft {
+    return resolveDrafts[request.id] ?? emptyDraft(request.match);
+  }
+
+  function updateDraft(request: InboxRequest, patch: Partial<ResolveDraft>) {
     setResolveDrafts((prev) => ({
       ...prev,
-      [requestId]: { ...(prev[requestId] ?? emptyDraft()), ...patch },
+      [request.id]: { ...getDraft(request), ...patch },
     }));
   }
 
@@ -82,9 +135,9 @@ export function ArbiterInbox() {
     next: File | null,
   ) {
     const requestId = request.id;
-    const draft = resolveDrafts[requestId] ?? emptyDraft();
+    const draft = getDraft(request);
 
-    updateDraft(requestId, {
+    updateDraft(request, {
       file: next,
       uploadedPath: null,
       uploading: Boolean(next),
@@ -105,13 +158,13 @@ export function ArbiterInbox() {
       if (!uploadRes.ok) {
         throw new Error(uploadBody.error ?? t("uploadRulingFailed"));
       }
-      updateDraft(requestId, {
+      updateDraft(request, {
         file: next,
         uploadedPath: uploadBody.path as string,
         uploading: false,
       });
     } catch (e) {
-      updateDraft(requestId, {
+      updateDraft(request, {
         file: null,
         uploadedPath: null,
         uploading: false,
@@ -121,10 +174,40 @@ export function ArbiterInbox() {
     }
   }
 
+  function validateDraft(request: InboxRequest, draft: ResolveDraft): string | null {
+    const match = request.match;
+    if (!match) return t("resolveFailed");
+
+    if (draft.adjustScore && draft.score) {
+      if (!match.played_at) return t("scoreRequiresPlayed");
+      if (
+        !isScoreCorrectionComplete(draft.score, match.allows_board_choice)
+      ) {
+        return t("scoreFieldsIncomplete");
+      }
+    }
+
+    if (draft.addPenalty && draft.penalty && !isPenaltyFieldsComplete(draft.penalty)) {
+      return t("penaltyFieldsIncomplete");
+    }
+
+    if (draft.addWarning && draft.warning && !isWarningFieldsComplete(draft.warning)) {
+      return t("warningFieldsIncomplete");
+    }
+
+    return null;
+  }
+
   async function resolve(request: InboxRequest) {
-    const draft = resolveDrafts[request.id] ?? emptyDraft();
+    const draft = getDraft(request);
     if (!draft.uploadedPath) {
       setMessage(t("uploadRulingFirst"));
+      return;
+    }
+
+    const validationError = validateDraft(request, draft);
+    if (validationError) {
+      setMessage(validationError);
       return;
     }
 
@@ -132,14 +215,32 @@ export function ArbiterInbox() {
     setMessage(null);
 
     try {
+      const match = request.match;
+      const payload: Record<string, unknown> = {
+        file_path: draft.uploadedPath,
+      };
+
+      if (draft.adjustScore && draft.score && match) {
+        payload.score_change = scoreCorrectionToPayload(
+          draft.score,
+          match.allows_board_choice,
+        );
+      }
+
+      if (draft.addPenalty && draft.penalty) {
+        payload.penalties = [penaltyFieldsToPayload(draft.penalty)];
+      }
+
+      if (draft.addWarning && draft.warning) {
+        payload.warnings = [warningFieldsToPayload(draft.warning)];
+      }
+
       const res = await fetch(
         `/api/arbiter/requests/${request.id}/resolve`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            file_path: draft.uploadedPath,
-          }),
+          body: JSON.stringify(payload),
         },
       );
       const body = await res.json();
@@ -186,8 +287,9 @@ export function ArbiterInbox() {
                   awayTeam: m.away_team?.name ?? "?",
                 })
               : t("matchFallback");
-            const draft = resolveDrafts[r.id] ?? emptyDraft();
+            const draft = getDraft(r);
             const rulingLink = rulingLinks[r.id];
+            const teams = m ? teamOptions(m) : null;
             const canResolve =
               Boolean(draft.uploadedPath) &&
               !draft.uploading &&
@@ -259,6 +361,97 @@ export function ArbiterInbox() {
                         </p>
                       ) : null}
                     </div>
+
+                    {m?.played_at && draft.score && teams ? (
+                      <div className="mt-4 rounded-md border border-zinc-200 bg-white p-3">
+                        <label className="flex items-center gap-2 text-sm font-medium text-zinc-900">
+                          <input
+                            type="checkbox"
+                            checked={draft.adjustScore}
+                            onChange={(e) =>
+                              updateDraft(r, { adjustScore: e.target.checked })
+                            }
+                            disabled={busyId === r.id}
+                          />
+                          {t("adjustScore")}
+                        </label>
+                        {draft.adjustScore ? (
+                          <div className="mt-3">
+                            <ArbiterResolveScoreFields
+                              scheduledBoardCount={m.board_count}
+                              allowsBoardChoice={m.allows_board_choice}
+                              initialVpHome={m.vp_home}
+                              initialVpAway={m.vp_away}
+                              value={draft.score}
+                              onChange={(score) => updateDraft(r, { score })}
+                              disabled={busyId === r.id}
+                              idPrefix={`score-${r.id}`}
+                            />
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
+
+                    {teams ? (
+                      <>
+                        <div className="mt-4 rounded-md border border-zinc-200 bg-white p-3">
+                          <label className="flex items-center gap-2 text-sm font-medium text-zinc-900">
+                            <input
+                              type="checkbox"
+                              checked={draft.addPenalty}
+                              onChange={(e) =>
+                                updateDraft(r, { addPenalty: e.target.checked })
+                              }
+                              disabled={busyId === r.id}
+                            />
+                            {t("addPenalty")}
+                          </label>
+                          {draft.addPenalty && draft.penalty ? (
+                            <div className="mt-3">
+                              <DisciplinePenaltyFields
+                                homeTeam={teams.homeTeam}
+                                awayTeam={teams.awayTeam}
+                                value={draft.penalty}
+                                onChange={(penalty) =>
+                                  updateDraft(r, { penalty })
+                                }
+                                disabled={busyId === r.id}
+                                idPrefix={`penalty-${r.id}`}
+                              />
+                            </div>
+                          ) : null}
+                        </div>
+
+                        <div className="mt-4 rounded-md border border-zinc-200 bg-white p-3">
+                          <label className="flex items-center gap-2 text-sm font-medium text-zinc-900">
+                            <input
+                              type="checkbox"
+                              checked={draft.addWarning}
+                              onChange={(e) =>
+                                updateDraft(r, { addWarning: e.target.checked })
+                              }
+                              disabled={busyId === r.id}
+                            />
+                            {t("addWarning")}
+                          </label>
+                          {draft.addWarning && draft.warning ? (
+                            <div className="mt-3">
+                              <DisciplineWarningFields
+                                homeTeam={teams.homeTeam}
+                                awayTeam={teams.awayTeam}
+                                value={draft.warning}
+                                onChange={(warning) =>
+                                  updateDraft(r, { warning })
+                                }
+                                disabled={busyId === r.id}
+                                idPrefix={`warning-${r.id}`}
+                              />
+                            </div>
+                          ) : null}
+                        </div>
+                      </>
+                    ) : null}
+
                     <button
                       type="button"
                       disabled={!canResolve}

@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import {
+  DisciplinePenaltyFields,
+  emptyPenaltyFields,
+  isPenaltyFieldsComplete,
+  penaltyFieldsToPayload,
+  type TeamOption,
+} from "@/components/discipline/DisciplinePenaltyFields";
 import { useTranslateApiError } from "@/lib/i18n/translate-api-error";
-
-type TeamOption = {
-  id: string;
-  name: string;
-};
 
 type Props = {
   homeTeam: TeamOption;
@@ -17,24 +19,14 @@ type Props = {
 export function MatchPenaltyForm({ homeTeam, awayTeam }: Props) {
   const t = useTranslations("match.penalty");
   const translateApiError = useTranslateApiError();
-  const [teamId, setTeamId] = useState(homeTeam.id);
-  const [penaltyDate, setPenaltyDate] = useState(
-    new Date().toISOString().slice(0, 10),
-  );
-  const [reason, setReason] = useState("");
-  const [vpDeduction, setVpDeduction] = useState("0");
+  const [fields, setFields] = useState(() => emptyPenaltyFields(homeTeam.id));
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   async function submit() {
-    if (!reason.trim()) {
+    if (!isPenaltyFieldsComplete(fields)) {
       setMessage(t("motivationRequired"));
-      return;
-    }
-    const vp = Number(vpDeduction);
-    if (!Number.isFinite(vp) || vp < 0) {
-      setMessage(t("vpNonNegative"));
       return;
     }
 
@@ -47,8 +39,8 @@ export function MatchPenaltyForm({ homeTeam, awayTeam }: Props) {
         const uploadData = new FormData();
         uploadData.append("file", file);
         uploadData.append("purpose", "penalty");
-        uploadData.append("matchId", teamId);
-        uploadData.append("teamId", teamId);
+        uploadData.append("matchId", fields.teamId);
+        uploadData.append("teamId", fields.teamId);
         const uploadRes = await fetch("/api/files/upload", {
           method: "POST",
           body: uploadData,
@@ -66,10 +58,7 @@ export function MatchPenaltyForm({ homeTeam, awayTeam }: Props) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          team_id: teamId,
-          penalty_date: penaltyDate,
-          reason: reason.trim(),
-          vp_deduction: vp,
+          ...penaltyFieldsToPayload(fields),
           file_path: filePath,
         }),
       });
@@ -80,8 +69,7 @@ export function MatchPenaltyForm({ homeTeam, awayTeam }: Props) {
         );
       }
 
-      setReason("");
-      setVpDeduction("0");
+      setFields(emptyPenaltyFields(homeTeam.id));
       setFile(null);
       setMessage(t("saved"));
     } catch (e) {
@@ -99,48 +87,15 @@ export function MatchPenaltyForm({ homeTeam, awayTeam }: Props) {
     <section className="rounded-lg border border-zinc-200 bg-white p-4">
       <h3 className="text-sm font-semibold text-zinc-900">{t("title")}</h3>
       <p className="mt-1 text-xs text-zinc-500">{t("description")}</p>
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        <label className="block text-xs font-medium text-zinc-600">
-          {t("team")}
-          <select
-            value={teamId}
-            onChange={(e) => setTeamId(e.target.value)}
-            className="mt-1 w-full rounded-md border border-zinc-300 px-2 py-2 text-sm"
-          >
-            <option value={homeTeam.id}>{homeTeam.name}</option>
-            <option value={awayTeam.id}>{awayTeam.name}</option>
-          </select>
-        </label>
-        <label className="block text-xs font-medium text-zinc-600">
-          {t("date")}
-          <input
-            type="date"
-            value={penaltyDate}
-            onChange={(e) => setPenaltyDate(e.target.value)}
-            className="mt-1 w-full rounded-md border border-zinc-300 px-2 py-2 text-sm"
-          />
-        </label>
-        <label className="block text-xs font-medium text-zinc-600 sm:col-span-2">
-          {t("vpDeduction")}
-          <input
-            type="number"
-            min={0}
-            step={0.1}
-            value={vpDeduction}
-            onChange={(e) => setVpDeduction(e.target.value)}
-            className="mt-1 w-full rounded-md border border-zinc-300 px-2 py-2 text-sm"
-          />
-        </label>
-        <label className="block text-xs font-medium text-zinc-600 sm:col-span-2">
-          {t("motivation")}
-          <textarea
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            rows={3}
-            className="mt-1 w-full rounded-md border border-zinc-300 px-2 py-2 text-sm"
-          />
-        </label>
-        <label className="block text-xs font-medium text-zinc-600 sm:col-span-2">
+      <div className="mt-3">
+        <DisciplinePenaltyFields
+          homeTeam={homeTeam}
+          awayTeam={awayTeam}
+          value={fields}
+          onChange={setFields}
+          disabled={busy}
+        />
+        <label className="mt-3 block text-xs font-medium text-zinc-600">
           {t("documentOptional")}
           <input
             type="file"

@@ -103,3 +103,35 @@ export function parsePenaltyInput(body: Record<string, unknown>): {
     filePath,
   };
 }
+
+export function parsePenaltyInputList(
+  items: unknown,
+): Array<{
+  teamId: string;
+  penaltyDate: string;
+  reason: string;
+  vpDeduction: number;
+  filePath: string | null;
+}> | { error: ErrorCode } {
+  if (items == null) return [];
+  if (!Array.isArray(items)) {
+    return { error: ErrorCodes.api.invalidRequestBody };
+  }
+
+  const parsed: Array<{
+    teamId: string;
+    penaltyDate: string;
+    reason: string;
+    vpDeduction: number;
+    filePath: string | null;
+  }> = [];
+  for (const item of items) {
+    if (!item || typeof item !== "object") {
+      return { error: ErrorCodes.api.invalidRequestBody };
+    }
+    const result = parsePenaltyInput(item as Record<string, unknown>);
+    if ("error" in result) return result;
+    parsed.push(result);
+  }
+  return parsed;
+}

@@ -342,7 +342,30 @@
     "resolvedSuccess": "Request resolved with official ruling.",
     "viewPublishedRuling": "View published ruling",
     "resolveFailed": "Failed to resolve",
-    "uploadRulingFailed": "Failed to upload ruling"
+    "uploadRulingFailed": "Failed to upload ruling",
+    "adjustScore": "Adjust match score",
+    "addPenalty": "Give a penalty",
+    "addWarning": "Give a warning",
+    "scoreRequiresPlayed": "Score adjustment requires an official match score.",
+    "scoreFieldsIncomplete": "Complete all score fields before resolving.",
+    "penaltyFieldsIncomplete": "Complete team, date, VP deduction, and reason for the penalty.",
+    "warningFieldsIncomplete": "Complete team, date, and reason for the warning.",
+    "score": {
+      "impsHome": "IMPs home",
+      "impsAway": "IMPs away",
+      "misSeating": "Mis-seating (3/4 boards for VP)",
+      "boardCountChoice": "Board count",
+      "boardsOption": "{count} boards",
+      "vpScaleBoards": "VP scale: {boardCount} boards",
+      "vpScaleMisSeating": "VP scale: {scheduled} boards scheduled, {effective} for VP (mis-seating)",
+      "currentVp": "Current VP: {home} – {away}",
+      "boardCountRequired": "Select 28 or 32 boards."
+    },
+    "warning": {
+      "team": "Team",
+      "date": "Date",
+      "reason": "Reason"
+    }
   },
   "admin": {
     "title": "Admin",

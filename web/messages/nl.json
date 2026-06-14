@@ -342,7 +342,30 @@
     "resolvedSuccess": "Verzoek afgehandeld met officiële uitspraak.",
     "viewPublishedRuling": "Gepubliceerde uitspraak bekijken",
     "resolveFailed": "Afhandelen mislukt",
-    "uploadRulingFailed": "Uitspraak uploaden mislukt"
+    "uploadRulingFailed": "Uitspraak uploaden mislukt",
+    "adjustScore": "Wedstrijdscore aanpassen",
+    "addPenalty": "Straf toekennen",
+    "addWarning": "Waarschuwing geven",
+    "scoreRequiresPlayed": "Scoreaanpassing vereist een officiële wedstrijdscore.",
+    "scoreFieldsIncomplete": "Vul alle scorevelden in voor u de aanvraag afhandelt.",
+    "penaltyFieldsIncomplete": "Vul team, datum, VP-aftrek en reden in voor de straf.",
+    "warningFieldsIncomplete": "Vul team, datum en reden in voor de waarschuwing.",
+    "score": {
+      "impsHome": "IMP thuis",
+      "impsAway": "IMP uit",
+      "misSeating": "Verkeerde zitplaatsen (3/4 borden voor VP)",
+      "boardCountChoice": "Aantal borden",
+      "boardsOption": "{count} borden",
+      "vpScaleBoards": "VP-schaal: {boardCount} borden",
+      "vpScaleMisSeating": "VP-schaal: {scheduled} borden gepland, {effective} voor VP (verkeerde zitplaatsen)",
+      "currentVp": "Huidige VP: {home} – {away}",
+      "boardCountRequired": "Kies 28 of 32 borden."
+    },
+    "warning": {
+      "team": "Team",
+      "date": "Datum",
+      "reason": "Reden"
+    }
   },
   "admin": {
     "title": "Beheer",
