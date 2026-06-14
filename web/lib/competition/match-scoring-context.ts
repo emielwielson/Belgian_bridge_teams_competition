@@ -106,10 +106,7 @@ export async function loadMatchScoringContext(
       board_count,
       vp_board_count,
       selected_board_count,
-      mis_seating,
-      group:groups (
-        ${GROUP_SCORING_SELECT.trim()}
-      )
+      mis_seating
     `,
     )
     .eq("id", matchId)
@@ -118,12 +115,7 @@ export async function loadMatchScoringContext(
   if (error) throw error;
   if (!data) throw new Error("Match not found");
 
-  const group = first(
-    data.group as GroupRow | GroupRow[] | null,
-  );
-  if (!group) throw new Error("Match group not found");
-
-  const scoring = parseScoringContextFromGroupRow(group);
+  const scoring = await loadGroupScoringContext(supabase, data.group_id);
 
   return {
     ...scoring,
