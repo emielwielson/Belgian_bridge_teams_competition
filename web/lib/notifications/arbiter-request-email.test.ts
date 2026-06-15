@@ -82,15 +82,33 @@ function mockServiceClient() {
                 data: [
                   {
                     captain_id: "cap-1",
-                    captain: { auth_user_id: "captain-user-1" },
+                    captain: { id: "cap-1", email: null },
                   },
                   {
                     captain_id: "cap-2",
-                    captain: { auth_user_id: "captain-user-2" },
+                    captain: { id: "cap-2", email: null },
                   },
                 ],
                 error: null,
               }),
+          }),
+        };
+      }
+      if (table === "player_auth_links") {
+        return {
+          select: () => ({
+            eq: (_col: string, playerId: string) => ({
+              limit: () =>
+                Promise.resolve({
+                  data:
+                    playerId === "cap-1"
+                      ? [{ auth_user_id: "captain-user-1" }]
+                      : playerId === "cap-2"
+                        ? [{ auth_user_id: "captain-user-2" }]
+                        : [],
+                  error: null,
+                }),
+            }),
           }),
         };
       }

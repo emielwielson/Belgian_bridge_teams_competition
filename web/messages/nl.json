@@ -8,6 +8,7 @@
     "myTeam": "Mijn team",
     "arbiterInbox": "Scheidsrechter",
     "dashboard": "Dashboard",
+    "playingAs": "Spelen als",
     "language": {
       "label": "Taal",
       "english": "English",
@@ -31,7 +32,15 @@
     "emailPlaceholder": "u@voorbeeld.be",
     "sendMagicLink": "Aanmeldingslink versturen",
     "sending": "Verzenden…",
-    "checkEmail": "Controleer uw e-mail voor de aanmeldingslink."
+    "checkEmail": "Controleer uw e-mail voor de aanmeldingslink.",
+    "selectPlayer": {
+      "title": "Kies uw spelersprofiel",
+      "subtitle": "Er zijn meerdere spelersprofielen gekoppeld aan dit e-mailadres. Selecteer als wie u zich aanmeldt.",
+      "memberNumber": "Lidnr. {number}",
+      "confirm": "Doorgaan",
+      "confirming": "Bezig…",
+      "failed": "Spelersprofiel kon niet worden geselecteerd"
+    }
   },
   "standings": {
     "title": "Klassement",
@@ -254,7 +263,7 @@
     "myTeamButton": "Mijn team — {teamName}",
     "myTeams": "Mijn teams",
     "scoreMatchTitle": "Wedstrijd scoren",
-    "notLinked": "Uw account is nog niet gekoppeld aan een spelersprofiel. Vraag een competitiebeheerder uw gebruiker aan uw spelersrecord te koppelen.",
+    "notLinked": "Uw account is nog niet gekoppeld aan een spelersprofiel. Als uw spelersrecord dit e-mailadres gebruikt, meld u af en opnieuw aan om automatisch te koppelen. Vraag anders een competitiebeheerder om hulp.",
     "loadingMatches": "Wedstrijden laden…",
     "noMatches": "Geen wedstrijden klaar om te scoren. Kom later terug wanneer een geplande wedstrijd aan u is toegewezen.",
     "loadFailed": "Wedstrijden laden mislukt",

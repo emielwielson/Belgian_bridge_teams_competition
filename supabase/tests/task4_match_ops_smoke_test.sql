@@ -24,19 +24,4 @@ begin
 end;
 $$;
 
--- players.auth_user_id column
-do $$
-begin
-  if not exists (
-    select 1
-    from information_schema.columns
-    where table_schema = 'public'
-      and table_name = 'players'
-      and column_name = 'auth_user_id'
-  ) then
-    raise exception 'players.auth_user_id column missing';
-  end if;
-end;
-$$;
-
 select 'task4_match_ops_smoke_test passed' as status;

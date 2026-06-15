@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getActivePlayerId } from "@/lib/auth/active-player";
 import { getActiveSeason } from "@/lib/competition/season";
 import { teamLocationFromClub } from "@/lib/competition/team-location";
 import { matchStatus, type MatchStatus } from "@/lib/scoring/match-state";
@@ -291,13 +292,8 @@ export async function loadTeamsForUser(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<PlayerTeamSummary[]> {
-  const { data: player } = await supabase
-    .from("players")
-    .select("id")
-    .eq("auth_user_id", userId)
-    .maybeSingle();
-
-  if (!player) return [];
+  const playerId = await getActivePlayerId(supabase, userId);
+  if (!playerId) return [];
 
   const season = await getActiveSeason(supabase);
   if (!season) return [];
@@ -305,7 +301,7 @@ export async function loadTeamsForUser(
   const { data: rows, error } = await supabase
     .from("team_players")
     .select("team:teams(id, name)")
-    .eq("player_id", player.id)
+    .eq("player_id", playerId)
     .eq("season_id", season.id);
 
   if (error) throw error;

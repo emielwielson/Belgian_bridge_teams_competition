@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getActivePlayerId } from "@/lib/auth/active-player";
 import {
   AuthError,
   COMPETITION_ADMIN_ROLES,
@@ -188,18 +189,13 @@ export async function isUserOnTeam(
   userId: string,
   teamId: string,
 ): Promise<boolean> {
-  const { data: player } = await supabase
-    .from("players")
-    .select("id")
-    .eq("auth_user_id", userId)
-    .maybeSingle();
-
-  if (!player) return false;
+  const playerId = await getActivePlayerId(supabase, userId);
+  if (!playerId) return false;
 
   const { data: roster } = await supabase
     .from("team_players")
     .select("team_id")
-    .eq("player_id", player.id)
+    .eq("player_id", playerId)
     .eq("team_id", teamId)
     .maybeSingle();
 

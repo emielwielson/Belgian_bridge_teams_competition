@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getActivePlayerId } from "@/lib/auth/active-player";
 
 export type PlayerMatchSummary = {
   id: string;
@@ -13,18 +14,13 @@ export async function loadUpcomingMatchesForUser(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<PlayerMatchSummary[]> {
-  const { data: player } = await supabase
-    .from("players")
-    .select("id")
-    .eq("auth_user_id", userId)
-    .maybeSingle();
-
-  if (!player) return [];
+  const playerId = await getActivePlayerId(supabase, userId);
+  if (!playerId) return [];
 
   const { data: teamRows, error: teamError } = await supabase
     .from("team_players")
     .select("team_id")
-    .eq("player_id", player.id);
+    .eq("player_id", playerId);
 
   if (teamError) throw teamError;
 
@@ -96,17 +92,13 @@ export async function resolveUserTeamIds(
 ): Promise<Set<string>> {
   const teamIdSet = new Set<string>();
 
-  const { data: player } = await supabase
-    .from("players")
-    .select("id")
-    .eq("auth_user_id", userId)
-    .maybeSingle();
+  const playerId = await getActivePlayerId(supabase, userId);
 
-  if (player) {
+  if (playerId) {
     const { data: teamRows, error: teamError } = await supabase
       .from("team_players")
       .select("team_id")
-      .eq("player_id", player.id);
+      .eq("player_id", playerId);
     if (teamError) throw teamError;
     for (const r of teamRows ?? []) teamIdSet.add(r.team_id);
   }

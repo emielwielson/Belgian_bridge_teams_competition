@@ -6,11 +6,14 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { AccountMenu } from "@/components/auth/AccountMenu";
 import { ARBITER_ACCESS_ROLES, hasAnyRole } from "@/lib/auth/roles";
+import type { ActivePlayer, LinkedPlayer } from "@/lib/auth/active-player";
 
 type MeResponse = {
   user: { id: string; email?: string };
   roles: string[];
   teams?: { id: string; name: string }[];
+  activePlayer?: ActivePlayer | null;
+  linkedPlayers?: LinkedPlayer[];
 };
 
 function navLinkClass(active: boolean): string {
@@ -100,7 +103,11 @@ export function SiteHeader() {
           {!loaded ? (
             <span className="inline-block h-9 w-9 animate-pulse rounded-md bg-zinc-100" />
           ) : (
-            <AccountMenu email={me?.user.email} />
+            <AccountMenu
+              email={me?.user.email}
+              activePlayer={me?.activePlayer}
+              linkedPlayers={me?.linkedPlayers}
+            />
           )}
         </div>
       </div>

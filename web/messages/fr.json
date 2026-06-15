@@ -8,6 +8,7 @@
     "myTeam": "Mon équipe",
     "arbiterInbox": "Boîte arbitre",
     "dashboard": "Tableau de bord",
+    "playingAs": "Jouer en tant que",
     "language": {
       "label": "Langue",
       "english": "English",
@@ -31,7 +32,15 @@
     "emailPlaceholder": "vous@exemple.be",
     "sendMagicLink": "Envoyer le lien de connexion",
     "sending": "Envoi…",
-    "checkEmail": "Consultez votre e-mail pour le lien de connexion."
+    "checkEmail": "Consultez votre e-mail pour le lien de connexion.",
+    "selectPlayer": {
+      "title": "Choisissez votre profil joueur",
+      "subtitle": "Plusieurs profils joueur sont liés à cette adresse e-mail. Sélectionnez qui vous êtes.",
+      "memberNumber": "N° membre {number}",
+      "confirm": "Continuer",
+      "confirming": "En cours…",
+      "failed": "Impossible de sélectionner le profil joueur"
+    }
   },
   "standings": {
     "title": "Classement",
@@ -254,7 +263,7 @@
     "myTeamButton": "Mon équipe — {teamName}",
     "myTeams": "Mes équipes",
     "scoreMatchTitle": "Marquer une rencontre",
-    "notLinked": "Votre compte n'est pas encore lié à un profil joueur. Demandez à un administrateur de compétition de lier votre utilisateur à votre fiche joueur.",
+    "notLinked": "Votre compte n'est pas encore lié à un profil joueur. Si votre fiche joueur utilise cette adresse e-mail, déconnectez-vous puis reconnectez-vous pour lier automatiquement. Sinon, demandez de l'aide à un administrateur de compétition.",
     "loadingMatches": "Chargement des rencontres…",
     "noMatches": "Aucune rencontre prête à marquer. Revenez lorsqu'une rencontre programmée vous sera assignée.",
     "loadFailed": "Échec du chargement des rencontres",

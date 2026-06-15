@@ -28,7 +28,7 @@ async function loadCaptainEmailsForMatch(matchId: string): Promise<string[]> {
   const teamIds = [match.home_team_id, match.away_team_id];
   const { data: teams, error: teamError } = await supabase
     .from("teams")
-    .select("captain_id, captain:players(auth_user_id)")
+    .select("captain_id, captain:players(id, email)")
     .in("id", teamIds);
   if (teamError) throw teamError;
 
@@ -37,13 +37,27 @@ async function loadCaptainEmailsForMatch(matchId: string): Promise<string[]> {
     const captain = Array.isArray(team.captain)
       ? team.captain[0]
       : team.captain;
-    const authUserId = (captain as { auth_user_id?: string | null } | null)
-      ?.auth_user_id;
-    if (!authUserId) continue;
-    const { data, error } = await supabase.auth.admin.getUserById(authUserId);
-    if (!error && data.user?.email) {
-      emails.push(data.user.email);
+    const captainPlayer = captain as { id?: string; email?: string | null } | null;
+    if (!captainPlayer?.id) continue;
+
+    const { data: links, error: linkError } = await supabase
+      .from("player_auth_links")
+      .select("auth_user_id")
+      .eq("player_id", captainPlayer.id)
+      .limit(1);
+    if (linkError) throw linkError;
+
+    const authUserId = links?.[0]?.auth_user_id;
+    if (authUserId) {
+      const { data, error } = await supabase.auth.admin.getUserById(authUserId);
+      if (!error && data.user?.email) {
+        emails.push(data.user.email);
+        continue;
+      }
     }
+
+    const playerEmail = captainPlayer.email?.trim();
+    if (playerEmail) emails.push(playerEmail);
   }
 
   const seen = new Set<string>();

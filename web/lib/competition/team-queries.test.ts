@@ -10,12 +10,27 @@ describe("loadTeamsForUser", () => {
   it("returns teams for linked player in active season", async () => {
     const supabase = {
       from: (table: string) => {
-        if (table === "players") {
+        if (table === "user_profiles") {
           return {
             select: () => ({
               eq: () => ({
                 maybeSingle: () =>
-                  Promise.resolve({ data: { id: "player-1" }, error: null }),
+                  Promise.resolve({
+                    data: { active_player_id: "player-1" },
+                    error: null,
+                  }),
+              }),
+            }),
+          };
+        }
+        if (table === "player_auth_links") {
+          return {
+            select: () => ({
+              eq: () => ({
+                eq: () => ({
+                  maybeSingle: () =>
+                    Promise.resolve({ data: { player_id: "player-1" }, error: null }),
+                }),
               }),
             }),
           };

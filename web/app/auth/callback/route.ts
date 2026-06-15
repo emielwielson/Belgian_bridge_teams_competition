@@ -1,6 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
+import {
+  getPlayerSelectionState,
+  resolvePostLoginPlayerSelection,
+} from "@/lib/auth/active-player";
 import { LOCALE_COOKIE, localeCookieOptions } from "@/lib/i18n/locale-cookie";
 import { getUserPreferredLocale } from "@/lib/i18n/user-locale";
 import { getSupabasePublicEnv } from "@/lib/supabase/env";
@@ -24,7 +28,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/login?error=missing_code`);
   }
 
-  let response = NextResponse.redirect(`${origin}${next}`);
+  let redirectPath = next;
+  let response = NextResponse.redirect(`${origin}${redirectPath}`);
   const { url, publishableKey } = getSupabasePublicEnv();
 
   const supabase = createServerClient(url, publishableKey, {
@@ -73,6 +78,24 @@ export async function GET(request: NextRequest) {
     } catch {
       // Login succeeds even if profile locale cannot be loaded.
     }
+
+    try {
+      await resolvePostLoginPlayerSelection(supabase, user.id);
+      const state = await getPlayerSelectionState(supabase, user.id);
+      if (state.needsSelection) {
+        redirectPath = `/auth/select-player?next=${encodeURIComponent(next)}`;
+      }
+    } catch {
+      // Login succeeds even if player linking cannot be resolved.
+    }
+  }
+
+  if (redirectPath !== next) {
+    const redirectResponse = NextResponse.redirect(`${origin}${redirectPath}`);
+    response.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie.name, cookie.value);
+    });
+    return redirectResponse;
   }
 
   return response;

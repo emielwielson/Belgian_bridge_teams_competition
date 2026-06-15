@@ -10,6 +10,7 @@ describe("isPublicPath", () => {
     expect(isPublicPath("/")).toBe(true);
     expect(isPublicPath("/login")).toBe(true);
     expect(isPublicPath("/auth/callback")).toBe(true);
+    expect(isPublicPath("/auth/select-player")).toBe(true);
     expect(isPublicPath("/api/health")).toBe(true);
   });
 

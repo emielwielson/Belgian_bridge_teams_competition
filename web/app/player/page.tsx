@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { redirect } from "next/navigation";
 import { RegularSeasonScoring } from "@/components/player/RegularSeasonScoring";
+import { getActivePlayer } from "@/lib/auth/active-player";
 import { loadTeamsForUser } from "@/lib/competition/team-queries";
 import { createSessionClient } from "@/lib/supabase/server-client";
 
@@ -16,11 +17,7 @@ export default async function PlayerPage() {
     redirect("/login?next=/player");
   }
 
-  const { data: player } = await supabase
-    .from("players")
-    .select("id, name")
-    .eq("auth_user_id", user.id)
-    .maybeSingle();
+  const player = await getActivePlayer(supabase, user.id);
 
   const teams = await loadTeamsForUser(supabase, user.id);
 

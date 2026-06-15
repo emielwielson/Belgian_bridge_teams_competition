@@ -33,15 +33,32 @@ function mockSupabase(options: {
       error: null,
     }),
     from: (table: string) => {
-      if (table === "players") {
+      if (table === "user_profiles") {
         return {
           select: () => ({
             eq: () => ({
               maybeSingle: () =>
                 Promise.resolve({
-                  data: options.playerId ? { id: options.playerId } : null,
+                  data: options.playerId
+                    ? { active_player_id: options.playerId }
+                    : { active_player_id: null },
                   error: null,
                 }),
+            }),
+          }),
+        };
+      }
+      if (table === "player_auth_links") {
+        return {
+          select: () => ({
+            eq: () => ({
+              eq: () => ({
+                maybeSingle: () =>
+                  Promise.resolve({
+                    data: options.playerId ? { player_id: options.playerId } : null,
+                    error: null,
+                  }),
+              }),
             }),
           }),
         };

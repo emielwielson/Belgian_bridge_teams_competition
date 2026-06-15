@@ -8,6 +8,7 @@
     "myTeam": "My team",
     "arbiterInbox": "Arbiter inbox",
     "dashboard": "Dashboard",
+    "playingAs": "Playing as",
     "language": {
       "label": "Language",
       "english": "English",
@@ -31,7 +32,15 @@
     "emailPlaceholder": "you@example.com",
     "sendMagicLink": "Send magic link",
     "sending": "Sending…",
-    "checkEmail": "Check your email for the magic link."
+    "checkEmail": "Check your email for the magic link.",
+    "selectPlayer": {
+      "title": "Choose your player profile",
+      "subtitle": "Multiple player profiles are linked to this email. Select who you are signing in as.",
+      "memberNumber": "Member no. {number}",
+      "confirm": "Continue",
+      "confirming": "Continuing…",
+      "failed": "Could not select player profile"
+    }
   },
   "standings": {
     "title": "Standings",
@@ -254,7 +263,7 @@
     "myTeamButton": "My team — {teamName}",
     "myTeams": "My teams",
     "scoreMatchTitle": "Score a match",
-    "notLinked": "Your account is not linked to a player profile yet. Ask a competition administrator to link your user to your player record.",
+    "notLinked": "Your account is not linked to a player profile yet. If your player record uses this email address, sign out and sign in again to link automatically. Otherwise ask a competition administrator for help.",
     "loadingMatches": "Loading matches…",
     "noMatches": "No matches ready to score. Check back when a scheduled match is assigned to you.",
     "loadFailed": "Failed to load matches",
