@@ -244,6 +244,12 @@ export async function DELETE(request: Request) {
       return jsonErrorCode(ErrorCodes.api.cannotDeleteTeamWithMatches, 409);
     }
 
+    const { error: rosterError } = await supabase
+      .from("team_players")
+      .delete()
+      .eq("team_id", teamId);
+    if (rosterError) return jsonError(rosterError.message, 400);
+
     const { error } = await supabase.from("teams").delete().eq("id", teamId);
     if (error) return jsonError(error.message, 400);
 
