@@ -1,6 +1,7 @@
 import { COMPETITION_ADMIN_ROLES, requireRoles } from "@/lib/auth/route-auth";
 import { ensureNationalStructure } from "@/lib/competition/ensure-national-structure";
 import { ensureRegionalLeague } from "@/lib/competition/ensure-regional-league";
+import { syncGroupRoundCount } from "@/lib/competition/group-match-rounds";
 import { canonicalLeagueName } from "@/lib/competition/league-names";
 import { requireActiveSeason } from "@/lib/competition/season";
 import { requireSeasonInSetup } from "@/lib/competition/season-setup";
@@ -272,10 +273,7 @@ export async function PATCH(request: Request) {
       if (error) return jsonError(error.message, 400);
 
       if (body.round_robin_count !== undefined) {
-        const { error: syncError } = await supabase.rpc("sync_group_round_count", {
-          p_group_id: body.id,
-        });
-        if (syncError) return jsonError(syncError.message, 400);
+        await syncGroupRoundCount(supabase, body.id);
       }
 
       return jsonOk({ updated: true });

@@ -1,4 +1,5 @@
 import { COMPETITION_ADMIN_ROLES, requireRoles } from "@/lib/auth/route-auth";
+import { syncGroupRoundCount } from "@/lib/competition/group-match-rounds";
 import { assertNationalGroupCanAddTeam } from "@/lib/competition/national-teams";
 import { requireActiveSeason } from "@/lib/competition/season";
 import { teamLocationFromClub } from "@/lib/competition/team-location";
@@ -143,9 +144,7 @@ export async function POST(request: Request) {
       seasonId: season.id,
     });
 
-    await supabase.rpc("sync_group_round_count", {
-      p_group_id: createInput.group_id,
-    });
+    await syncGroupRoundCount(supabase, createInput.group_id);
 
     return jsonOk({ team: data }, { status: 201 });
   } catch (err) {
@@ -254,9 +253,7 @@ export async function DELETE(request: Request) {
     if (error) return jsonError(error.message, 400);
 
     if (team?.group_id) {
-      await supabase.rpc("sync_group_round_count", {
-        p_group_id: team.group_id,
-      });
+      await syncGroupRoundCount(supabase, team.group_id);
     }
 
     return jsonOk({ deleted: true });

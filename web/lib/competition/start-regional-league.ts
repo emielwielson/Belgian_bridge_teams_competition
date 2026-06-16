@@ -7,6 +7,7 @@ import {
 import { ensureVpTablesForGroup } from "@/lib/scoring/standard-vp-bands";
 import { loadGroupScoringContext } from "./match-scoring-context";
 import { ensureRegionalLeague } from "./ensure-regional-league";
+import { syncGroupRoundCount } from "./group-match-rounds";
 import {
   assertCanStartRegionalLeague,
   fetchRegionalReadiness,
@@ -35,7 +36,7 @@ export async function startRegionalLeague(
   const schedules: { label: string; matchesCreated: number }[] = [];
 
   for (const group of readiness.groups) {
-    await supabase.rpc("sync_group_round_count", { p_group_id: group.groupId });
+    await syncGroupRoundCount(supabase, group.groupId);
 
     const scoringContext = await loadGroupScoringContext(
       supabase,

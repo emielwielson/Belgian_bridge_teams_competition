@@ -6,10 +6,18 @@ import {
 } from "@/lib/competition/group-schedule-slots";
 import { RBBF_ROUND_COUNT } from "@/lib/scheduling/rbbf-8-team-template";
 
-async function syncGroupRoundCount(
+export async function syncGroupRoundCount(
   supabase: SupabaseClient,
   groupId: string,
 ): Promise<void> {
+  const { count, error: countError } = await supabase
+    .from("teams")
+    .select("id", { count: "exact", head: true })
+    .eq("group_id", groupId);
+
+  if (countError) throw new Error(countError.message);
+  if ((count ?? 0) < 2) return;
+
   const { error } = await supabase.rpc("sync_group_round_count", {
     p_group_id: groupId,
   });
