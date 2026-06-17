@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { translateLeagueName } from "@/lib/i18n/labels";
 import { loadActiveSeasonLeagues } from "@/lib/competition/standings-queries";
 import { createSessionClient } from "@/lib/supabase/server-client";
 
@@ -8,9 +9,10 @@ type Props = {
 };
 
 export async function StandingsHome({ showForbidden = false }: Props) {
-  const [t, tHome] = await Promise.all([
+  const [t, tHome, tRegions] = await Promise.all([
     getTranslations("standings"),
     getTranslations("home"),
+    getTranslations("regions"),
   ]);
   const supabase = await createSessionClient();
   const leagues = await loadActiveSeasonLeagues(supabase);
@@ -36,7 +38,7 @@ export async function StandingsHome({ showForbidden = false }: Props) {
               href={`/standings/league/${league.id}`}
               className="card font-medium hover:border-zinc-400"
             >
-              {league.name}
+              {translateLeagueName(league.name, tRegions)}
             </Link>
           ))}
         </nav>

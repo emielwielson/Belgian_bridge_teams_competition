@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { TeamDetail } from "@/lib/competition/team-queries";
+import { translateLeagueName } from "@/lib/i18n/labels";
 
 type Props = Pick<
   TeamDetail,
@@ -21,11 +22,13 @@ export function TeamInfoSection({
   canLinkToPlayers,
 }: Props) {
   const t = useTranslations("team");
+  const tRegions = useTranslations("regions");
+  const leagueName = translateLeagueName(league.name, tRegions);
 
   return (
     <section className="rounded-lg border border-zinc-200 bg-white p-4">
       <p className="text-sm text-zinc-600">
-        {[league.name, division.name, group.name].join(" · ")}
+        {[leagueName, division.name, group.name].join(" · ")}
       </p>
       <h1 className="mt-1 text-2xl font-semibold text-zinc-900">{team.name}</h1>
       <p className="mt-1 text-sm text-zinc-600">{club.name}</p>

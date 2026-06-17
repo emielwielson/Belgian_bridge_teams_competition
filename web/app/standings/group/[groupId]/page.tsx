@@ -9,6 +9,7 @@ import {
 import { GroupStandingsGrid } from "@/components/standings/GroupStandingsGrid";
 import { buildGroupStandingsGrid } from "@/lib/competition/group-standings-grid";
 import { getCachedGroupStandingsGrid } from "@/lib/competition/standings-cache";
+import { translateLeagueName } from "@/lib/i18n/labels";
 import { toIntlLocale } from "@/i18n/intl-locale";
 import type { Locale } from "@/i18n/config";
 
@@ -16,8 +17,11 @@ type Props = { params: Promise<{ groupId: string }> };
 
 export default async function GroupStandingsPage({ params }: Props) {
   const { groupId } = await params;
-  const t = await getTranslations("standings");
-  const tTable = await getTranslations("standings.table");
+  const [t, tTable, tRegions] = await Promise.all([
+    getTranslations("standings"),
+    getTranslations("standings.table"),
+    getTranslations("regions"),
+  ]);
   const locale = (await getLocale()) as Locale;
   const intlLocale = toIntlLocale(locale);
   const data = await getCachedGroupStandingsGrid(groupId);
@@ -27,6 +31,7 @@ export default async function GroupStandingsPage({ params }: Props) {
   }
 
   const { group, division, league, standings, matches, byeRounds } = data;
+  const leagueName = translateLeagueName(league.name, tRegions);
   const grid = buildGroupStandingsGrid(
     standings,
     matches,
@@ -52,12 +57,12 @@ export default async function GroupStandingsPage({ params }: Props) {
           href={`/standings/league/${league.id}`}
           className="link-back"
         >
-          {t("backToLeagueStandings", { leagueName: league.name })}
+          {t("backToLeagueStandings", { leagueName })}
         </Link>
         <h1 className="mt-2 text-2xl font-semibold">{group.name}</h1>
         <p className="mt-1 text-sm text-zinc-600">
           {t("breadcrumb", {
-            leagueName: league.name,
+            leagueName,
             divisionName: division.name,
           })}
         </p>

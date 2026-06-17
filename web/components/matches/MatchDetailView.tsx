@@ -27,6 +27,7 @@ import {
 import type { MatchPageBackLink } from "@/lib/competition/match-page-context";
 import { loadGroupScoringContext } from "@/lib/competition/match-scoring-context";
 import { loadTeamRoster } from "@/lib/competition/player-matches";
+import { translateLeagueName } from "@/lib/i18n/labels";
 import { allowsBoardChoice } from "@/lib/scoring/board-count-rules";
 import { getMatchLineup, isLineupComplete } from "@/lib/scoring/match-operations";
 import { matchStatus } from "@/lib/scoring/match-state";
@@ -47,10 +48,11 @@ type Props = {
 function backLinkLabel(
   backLink: MatchPageBackLink,
   t: Awaited<ReturnType<typeof getTranslations>>,
+  tRegions: Awaited<ReturnType<typeof getTranslations>>,
 ): string {
   if (backLink.leagueName && backLink.groupName) {
     return t("backLeagueGroup", {
-      leagueName: backLink.leagueName,
+      leagueName: translateLeagueName(backLink.leagueName, tRegions),
       groupName: backLink.groupName,
     });
   }
@@ -68,8 +70,11 @@ export async function MatchDetailView({
   userId,
   roles,
 }: Props) {
-  const t = await getTranslations("match");
-  const tStatus = await getTranslations("match.status");
+  const [t, tStatus, tRegions] = await Promise.all([
+    getTranslations("match"),
+    getTranslations("match.status"),
+    getTranslations("regions"),
+  ]);
   const locale = (await getLocale()) as Locale;
   const intlLocale = toIntlLocale(locale);
 
@@ -182,7 +187,7 @@ export async function MatchDetailView({
     <main className="page-container flex flex-col gap-6">
       <header>
         <Link href={backLink.href} className="link-back">
-          {backLinkLabel(backLink, t)}
+          {backLinkLabel(backLink, t, tRegions)}
         </Link>
         {opsBackLink ? (
           <p className="mt-2">

@@ -11,13 +11,17 @@ import { canManageTeamConventionCards, canManageTeamRoster } from "@/lib/auth/te
 import { getUserRoles } from "@/lib/auth/session";
 import { listConventionCards } from "@/lib/competition/convention-card-queries";
 import { loadTeamDetail } from "@/lib/competition/team-queries";
+import { translateLeagueName } from "@/lib/i18n/labels";
 import { createSessionClient } from "@/lib/supabase/server-client";
 
 type Props = { params: Promise<{ teamId: string }> };
 
 export default async function TeamPage({ params }: Props) {
   const { teamId } = await params;
-  const t = await getTranslations("team");
+  const [t, tRegions] = await Promise.all([
+    getTranslations("team"),
+    getTranslations("regions"),
+  ]);
   const supabase = await createSessionClient();
   const detail = await loadTeamDetail(supabase, teamId);
 
@@ -51,6 +55,7 @@ export default async function TeamPage({ params }: Props) {
 
   const { team, captain, club, group, division, league, roster, matches } =
     detail;
+  const leagueName = translateLeagueName(league.name, tRegions);
 
   return (
     <main className="page-container flex flex-col gap-6">
@@ -60,7 +65,7 @@ export default async function TeamPage({ params }: Props) {
         </Link>
         <nav className="mt-2 flex flex-wrap items-center gap-1 text-sm text-zinc-600">
           <Link href={`/standings/league/${league.id}`} className="hover:text-zinc-900">
-            {league.name}
+            {leagueName}
           </Link>
           <span aria-hidden>·</span>
           <Link
