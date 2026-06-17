@@ -3,7 +3,7 @@ import { requireAuth } from "@/lib/auth/route-auth";
 import {
   canAccessArbiterRequestWorkflow,
   createArbiterRequest,
-  getMatchArbiterRequestsState,
+  loadMatchArbiterRequestsForUser,
 } from "@/lib/competition/arbiter-request";
 import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
 import { ErrorCodes } from "@/lib/http/error-codes";
@@ -15,13 +15,16 @@ export async function GET(_request: Request, { params }: Params) {
   try {
     const { matchId } = await params;
     const { supabase } = await requireAuth();
-    const state = await getMatchArbiterRequestsState(supabase, matchId);
+    const { state, canSubmitScore } = await loadMatchArbiterRequestsForUser(
+      supabase,
+      matchId,
+    );
 
     if (!state) {
       return jsonErrorCode(ErrorCodes.api.matchNotFound, 404);
     }
 
-    if (!canAccessArbiterRequestWorkflow(state)) {
+    if (!canAccessArbiterRequestWorkflow(state, canSubmitScore)) {
       return jsonErrorCode(ErrorCodes.api.forbidden, 403);
     }
 
@@ -50,7 +53,7 @@ export async function POST(request: Request, { params }: Params) {
 
     await createArbiterRequest(supabase, matchId, imagePath);
 
-    const state = await getMatchArbiterRequestsState(supabase, matchId);
+    const { state } = await loadMatchArbiterRequestsForUser(supabase, matchId);
 
     const locale = await getLocale();
     void sendArbiterRequestCreatedEmail({ matchId }, locale);

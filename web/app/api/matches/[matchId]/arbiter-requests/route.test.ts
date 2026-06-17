@@ -14,7 +14,7 @@ vi.mock("@/lib/auth/route-auth", async (importOriginal) => {
 });
 
 vi.mock("@/lib/competition/arbiter-request", () => ({
-  getMatchArbiterRequestsState: vi.fn(),
+  loadMatchArbiterRequestsForUser: vi.fn(),
   createArbiterRequest: vi.fn(),
   canAccessArbiterRequestWorkflow: vi.fn(),
 }));
@@ -27,7 +27,7 @@ import { requireAuth } from "@/lib/auth/route-auth";
 import {
   canAccessArbiterRequestWorkflow,
   createArbiterRequest,
-  getMatchArbiterRequestsState,
+  loadMatchArbiterRequestsForUser,
 } from "@/lib/competition/arbiter-request";
 import { sendArbiterRequestCreatedEmail } from "@/lib/notifications/arbiter-request-email";
 
@@ -49,7 +49,10 @@ describe("/api/matches/[matchId]/arbiter-requests", () => {
   });
 
   it("GET returns state when user may access workflow", async () => {
-    vi.mocked(getMatchArbiterRequestsState).mockResolvedValue(baseState);
+    vi.mocked(loadMatchArbiterRequestsForUser).mockResolvedValue({
+      state: baseState,
+      canSubmitScore: true,
+    });
     const res = await GET(new Request("http://x"), {
       params: Promise.resolve({ matchId: "match-1" }),
     });
@@ -60,20 +63,22 @@ describe("/api/matches/[matchId]/arbiter-requests", () => {
 
   it("POST submits with image_path only", async () => {
     vi.mocked(createArbiterRequest).mockResolvedValue("req-1");
-    vi.mocked(getMatchArbiterRequestsState).mockResolvedValue({
-      ...baseState,
-      can_submit: false,
-      requests: [
-        {
-          id: "req-1",
-          board: null,
-          description: null,
-          image_path: "arbiter/match-1/file.pdf",
-          status: "open",
-          created_at: "2025-01-01T00:00:00.000Z",
-          resolved_at: null,
-        },
-      ],
+    vi.mocked(loadMatchArbiterRequestsForUser).mockResolvedValue({
+      state: {
+        ...baseState,
+        can_submit: false,
+        requests: [
+          {
+            id: "req-1",
+            description: null,
+            image_path: "arbiter/match-1/file.pdf",
+            status: "open",
+            created_at: "2025-01-01T00:00:00.000Z",
+            resolved_at: null,
+          },
+        ],
+      },
+      canSubmitScore: true,
     });
 
     const res = await POST(

@@ -234,10 +234,56 @@ export async function getMatchArbiterRequestsState(
   return parseState(data);
 }
 
+export async function loadMatchArbiterRequestsForUser(
+  supabase: SupabaseClient,
+  matchId: string,
+): Promise<{
+  state: MatchArbiterRequestsState | null;
+  canSubmitScore: boolean;
+}> {
+  const { data: canSubmitScore, error: scoreError } = await supabase.rpc(
+    "current_user_can_submit_score",
+    { p_match_id: matchId },
+  );
+  if (scoreError) throw scoreError;
+  const maySubmitScore = Boolean(canSubmitScore);
+
+  try {
+    const state = await getMatchArbiterRequestsState(supabase, matchId);
+    if (!state) {
+      return { state: null, canSubmitScore: maySubmitScore };
+    }
+    return {
+      state: {
+        ...state,
+        can_submit: state.can_submit || maySubmitScore,
+      },
+      canSubmitScore: maySubmitScore,
+    };
+  } catch (err) {
+    if (
+      err instanceof Error &&
+      err.message.includes("Forbidden") &&
+      maySubmitScore
+    ) {
+      return {
+        state: {
+          match_id: matchId,
+          can_submit: true,
+          requests: [],
+        },
+        canSubmitScore: true,
+      };
+    }
+    throw err;
+  }
+}
+
 export function canAccessArbiterRequestWorkflow(
   state: MatchArbiterRequestsState,
+  canSubmitScore = false,
 ): boolean {
-  return state.can_submit || state.requests.length > 0;
+  return canSubmitScore || state.can_submit || state.requests.length > 0;
 }
 
 export async function createArbiterRequest(

@@ -18,7 +18,7 @@ import {
 } from "@/lib/competition/postponement";
 import {
   canAccessArbiterRequestWorkflow,
-  getMatchArbiterRequestsState,
+  loadMatchArbiterRequestsForUser,
 } from "@/lib/competition/arbiter-request";
 import {
   canAccessHomeAwaySwitchWorkflow,
@@ -139,10 +139,8 @@ export async function MatchDetailView({
       // Migration 0022 not applied yet.
     }
     try {
-      arbiterRequestsState = await getMatchArbiterRequestsState(
-        supabase,
-        matchId,
-      );
+      const loaded = await loadMatchArbiterRequestsForUser(supabase, matchId);
+      arbiterRequestsState = loaded.state;
     } catch {
       // Migration 0026 not applied yet.
     }
@@ -159,7 +157,10 @@ export async function MatchDetailView({
   const showArbiterRequests =
     canSubmitScoreForMatch ||
     (arbiterRequestsState != null &&
-      canAccessArbiterRequestWorkflow(arbiterRequestsState));
+      canAccessArbiterRequestWorkflow(
+        arbiterRequestsState,
+        canSubmitScoreForMatch,
+      ));
 
   const homeLineup = lineup
     .filter((e) => e.team_id === match.home_team_id)

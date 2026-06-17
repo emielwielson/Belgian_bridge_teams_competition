@@ -35,6 +35,7 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
     const res = await fetch(`/api/matches/${matchId}/arbiter-requests`);
     if (res.status === 403) {
       setState(null);
+      setError(t("loadFailed"));
       setLoading(false);
       return;
     }
@@ -133,7 +134,17 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
     );
   }
 
-  if (!state) return null;
+  if (!state) {
+    return (
+      <section className="card">
+        {error ? (
+          <p className="text-sm text-red-700" role="alert">
+            {error}
+          </p>
+        ) : null}
+      </section>
+    );
+  }
 
   return (
     <section className="card">
