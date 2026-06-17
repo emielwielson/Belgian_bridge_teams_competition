@@ -11,6 +11,7 @@ type Props = {
   teamId: string;
   captainId: string | null;
   initialRoster: TeamRosterPlayer[];
+  initialAvailablePlayers?: RosterPlayer[];
   canManageRoster: boolean;
   canLinkToPlayers: boolean;
 };
@@ -28,6 +29,7 @@ export function TeamRosterSection({
   teamId,
   captainId,
   initialRoster,
+  initialAvailablePlayers,
   canManageRoster,
   canLinkToPlayers,
 }: Props) {
@@ -35,64 +37,81 @@ export function TeamRosterSection({
   const tc = useTranslations("common");
   const translateApiError = useTranslateApiError();
   const [roster, setRoster] = useState<TeamRosterPlayer[]>(initialRoster);
-  const [availablePlayers, setAvailablePlayers] = useState<RosterPlayer[]>([]);
+  const [availablePlayers, setAvailablePlayers] = useState<RosterPlayer[]>(
+    initialAvailablePlayers ?? [],
+  );
   const [addPlayerId, setAddPlayerId] = useState("");
-  const [loading, setLoading] = useState(canManageRoster);
+  const [loadingAvailable, setLoadingAvailable] = useState(
+    canManageRoster && initialAvailablePlayers === undefined,
+  );
+  const [adding, setAdding] = useState(false);
+  const [savingPlayerId, setSavingPlayerId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  const applyRosterState = useCallback((body: TeamRosterState) => {
+    setRoster(toDisplayRoster(body.roster));
+    setAvailablePlayers(body.available_players);
+    setMessage(null);
+  }, []);
+
+  const loadAvailablePlayers = useCallback(async () => {
     if (!canManageRoster) return;
 
-    setLoading(true);
+    setLoadingAvailable(true);
     const res = await fetch(`/api/teams/${teamId}/roster`);
     if (res.ok) {
       const body = (await res.json()) as TeamRosterState;
-      setRoster(toDisplayRoster(body.roster));
-      setAvailablePlayers(body.available_players);
-      setMessage(null);
+      applyRosterState(body);
     } else {
       const err = (await res.json()) as { error?: string };
       setMessage(translateApiError(err.error ?? t("rosterLoadFailed")));
     }
-    setLoading(false);
-  }, [canManageRoster, teamId, t, translateApiError]);
+    setLoadingAvailable(false);
+  }, [applyRosterState, canManageRoster, teamId, t, translateApiError]);
 
   useEffect(() => {
-    if (canManageRoster) {
-      void load();
+    if (canManageRoster && initialAvailablePlayers === undefined) {
+      void loadAvailablePlayers();
     }
-  }, [canManageRoster, load]);
+  }, [canManageRoster, initialAvailablePlayers, loadAvailablePlayers]);
 
   async function addToRoster(playerId: string) {
+    setAdding(true);
     const res = await fetch(`/api/teams/${teamId}/roster`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ player_id: playerId }),
     });
+    setAdding(false);
     if (!res.ok) {
       const err = (await res.json()) as { error?: string };
       setMessage(translateApiError(err.error ?? t("addPlayerFailed")));
       return;
     }
+    const body = (await res.json()) as TeamRosterState;
+    applyRosterState(body);
     setAddPlayerId("");
-    await load();
   }
 
   async function removeFromRoster(playerId: string) {
+    setSavingPlayerId(playerId);
     const res = await fetch(`/api/teams/${teamId}/roster`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "roster_remove", player_id: playerId }),
     });
+    setSavingPlayerId(null);
     if (!res.ok) {
       const err = (await res.json()) as { error?: string };
       setMessage(translateApiError(err.error ?? t("removePlayerFailed")));
       return;
     }
-    await load();
+    const body = (await res.json()) as TeamRosterState;
+    applyRosterState(body);
   }
 
   const showEditor = canManageRoster;
+  const rosterBusy = adding || savingPlayerId !== null;
 
   return (
     <section className="rounded-lg border border-zinc-200 bg-white p-4">
@@ -108,9 +127,7 @@ export function TeamRosterSection({
         </p>
       ) : null}
 
-      {loading ? (
-        <p className="mt-2 text-sm text-zinc-600">{tc("loading")}</p>
-      ) : roster.length === 0 ? (
+      {roster.length === 0 ? (
         <p className="mt-2 text-sm text-zinc-500">{t("noPlayers")}</p>
       ) : (
         <ul className="mt-3 flex flex-col gap-2">
@@ -149,9 +166,10 @@ export function TeamRosterSection({
                   <button
                     type="button"
                     onClick={() => removeFromRoster(player.id)}
-                    className="text-xs text-amber-700 hover:underline"
+                    disabled={rosterBusy}
+                    className="text-xs text-amber-700 hover:underline disabled:opacity-50"
                   >
-                    {t("remove")}
+                    {savingPlayerId === player.id ? tc("saving") : t("remove")}
                   </button>
                 ) : null}
               </span>
@@ -160,17 +178,20 @@ export function TeamRosterSection({
         </ul>
       )}
 
-      {showEditor && !loading ? (
+      {showEditor ? (
         <div className="mt-4 flex flex-col gap-4 border-t border-zinc-100 pt-4">
           <h3 className="text-sm font-medium text-zinc-900">{t("addFromClub")}</h3>
-          {availablePlayers.length > 0 ? (
+          {loadingAvailable ? (
+            <p className="text-sm text-zinc-600">{tc("loading")}</p>
+          ) : availablePlayers.length > 0 ? (
             <div className="flex flex-wrap items-end gap-2">
               <label className="flex min-w-[12rem] flex-1 flex-col gap-1 text-sm">
                 <span className="sr-only">{tc("team")}</span>
                 <select
                   value={addPlayerId}
                   onChange={(e) => setAddPlayerId(e.target.value)}
-                  className="rounded-lg border border-zinc-300 px-3 py-2"
+                  disabled={rosterBusy}
+                  className="rounded-lg border border-zinc-300 px-3 py-2 disabled:opacity-50"
                 >
                   <option value="">{t("selectPlayer")}</option>
                   {availablePlayers.map((player) => (
@@ -184,10 +205,10 @@ export function TeamRosterSection({
               <button
                 type="button"
                 onClick={() => addPlayerId && addToRoster(addPlayerId)}
-                disabled={!addPlayerId}
+                disabled={!addPlayerId || rosterBusy}
                 className="btn-secondary"
               >
-                {t("addToTeam")}
+                {adding ? tc("saving") : t("addToTeam")}
               </button>
             </div>
           ) : (

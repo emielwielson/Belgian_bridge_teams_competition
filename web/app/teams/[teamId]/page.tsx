@@ -10,6 +10,7 @@ import { hasAnyRole } from "@/lib/auth/roles";
 import { canManageTeamConventionCards, canManageTeamRoster } from "@/lib/auth/team-access";
 import { getUserRoles } from "@/lib/auth/session";
 import { listConventionCards } from "@/lib/competition/convention-card-queries";
+import { loadTeamRosterState } from "@/lib/competition/team-roster";
 import { loadTeamDetail } from "@/lib/competition/team-queries";
 import { translateLeagueName } from "@/lib/i18n/labels";
 import { createSessionClient } from "@/lib/supabase/server-client";
@@ -51,7 +52,12 @@ export default async function TeamPage({ params }: Props) {
       )
     : false;
 
-  const conventionCards = await listConventionCards(supabase, teamId);
+  const [conventionCards, rosterState] = await Promise.all([
+    listConventionCards(supabase, teamId),
+    canManageRoster
+      ? loadTeamRosterState(supabase, teamId, detail.club.id)
+      : Promise.resolve(null),
+  ]);
 
   const { team, captain, club, group, division, league, roster, matches } =
     detail;
@@ -91,6 +97,7 @@ export default async function TeamPage({ params }: Props) {
         teamId={team.id}
         captainId={team.captain_id}
         initialRoster={roster}
+        initialAvailablePlayers={rosterState?.available_players}
         canManageRoster={canManageRoster}
         canLinkToPlayers={canLinkToPlayers}
       />

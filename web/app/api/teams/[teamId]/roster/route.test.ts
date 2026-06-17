@@ -34,6 +34,11 @@ import {
 
 const season = { id: "season-1", name: "2025–26", status: "setup", is_active: true };
 
+const rosterState = {
+  roster: [{ player_id: "p1", name: "Alice", member_number: "001" }],
+  available_players: [{ player_id: "p2", name: "Bob", member_number: "002" }],
+};
+
 function mockSupabase(team: { id: string; club_id: string } | null) {
   return {
     from: vi.fn((table: string) => {
@@ -129,6 +134,7 @@ describe("POST /api/teams/[teamId]/roster", () => {
       supabase: mockSupabase({ id: "team-1", club_id: "club-1" }) as never,
     });
     vi.mocked(requireActiveSeason).mockResolvedValue(season);
+    vi.mocked(loadTeamRosterState).mockResolvedValue(rosterState);
   });
 
   it("adds a player to the roster", async () => {
@@ -147,6 +153,14 @@ describe("POST /api/teams/[teamId]/roster", () => {
       playerId: "p2",
       seasonId: "season-1",
     });
+    const body = await res.json();
+    expect(body.roster).toHaveLength(1);
+    expect(body.available_players).toHaveLength(1);
+    expect(loadTeamRosterState).toHaveBeenCalledWith(
+      expect.anything(),
+      "team-1",
+      "club-1",
+    );
   });
 
   it("removes a player from the roster", async () => {
@@ -165,6 +179,14 @@ describe("POST /api/teams/[teamId]/roster", () => {
       playerId: "p1",
       seasonId: "season-1",
     });
+    const body = await res.json();
+    expect(body.roster).toHaveLength(1);
+    expect(body.available_players).toHaveLength(1);
+    expect(loadTeamRosterState).toHaveBeenCalledWith(
+      expect.anything(),
+      "team-1",
+      "club-1",
+    );
   });
 
   it("requires player_id", async () => {

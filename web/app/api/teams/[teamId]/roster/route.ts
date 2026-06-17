@@ -77,7 +77,8 @@ export async function POST(request: Request, { params }: TeamParams) {
         playerId,
         seasonId: season.id,
       });
-      return jsonOk({ removed: true });
+      const state = await loadTeamRosterState(supabase, teamId, teamRef.clubId);
+      return jsonOk(state);
     }
 
     const { data: membership } = await supabase
@@ -98,7 +99,8 @@ export async function POST(request: Request, { params }: TeamParams) {
       seasonId: season.id,
     });
 
-    return jsonOk({ added: true }, { status: 201 });
+    const state = await loadTeamRosterState(supabase, teamId, teamRef.clubId);
+    return jsonOk(state, { status: 201 });
   } catch (err) {
     return jsonFromError(err);
   }
