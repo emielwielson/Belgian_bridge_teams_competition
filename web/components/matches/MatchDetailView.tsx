@@ -178,10 +178,8 @@ export async function MatchDetailView({
     }));
 
   const opsBackLink =
-    userId && canOps
-      ? isAdmin
-        ? { href: "/admin", label: t("backAdminDashboard") }
-        : { href: "/player", label: t("backPlayerDashboard") }
+    userId && canOps && isAdmin
+      ? { href: "/admin", label: t("backAdminDashboard") }
       : null;
 
   return (
