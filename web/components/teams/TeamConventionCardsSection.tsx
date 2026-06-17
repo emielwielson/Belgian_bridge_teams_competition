@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 import type { Locale } from "@/i18n/config";
 import { toIntlLocale } from "@/i18n/intl-locale";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import type { ConventionCardListItem } from "@/lib/competition/convention-card-queries";
 import { formatBrussels } from "@/lib/time/brussels";
 
@@ -96,6 +97,11 @@ export function TeamConventionCardsSection({
   const [editName, setEditName] = useState("");
   const [editFile, setEditFile] = useState<File | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
@@ -165,21 +171,29 @@ export function TeamConventionCardsSection({
     setMessage(null);
   }
 
-  async function handleDelete(cardId: string, cardName: string) {
-    if (!window.confirm(t("deleteConfirm", { name: cardName }))) {
-      return;
-    }
+  function requestDelete(cardId: string, cardName: string) {
+    setPendingDelete({ id: cardId, name: cardName });
+    setMessage(null);
+  }
+
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    const { id: cardId } = pendingDelete;
+    setDeletingId(cardId);
     const res = await fetch(
       `/api/teams/${teamId}/convention-cards/${cardId}`,
       { method: "DELETE" },
     );
+    setDeletingId(null);
     if (!res.ok) {
       const err = await res.json();
       setMessage(err.error ?? t("deleteFailed"));
+      setPendingDelete(null);
       return;
     }
     const body = (await res.json()) as { cards: ConventionCardListItem[] };
     setCards(body.cards);
+    setPendingDelete(null);
     setMessage(null);
   }
 
@@ -272,7 +286,7 @@ export function TeamConventionCardsSection({
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleDelete(card.id, card.name)}
+                        onClick={() => requestDelete(card.id, card.name)}
                         className="text-xs text-amber-700 hover:underline"
                       >
                         {t("delete")}
@@ -318,6 +332,18 @@ export function TeamConventionCardsSection({
             {uploading ? t("uploading") : t("uploadButton")}
           </button>
         </form>
+      ) : null}
+
+      {pendingDelete ? (
+        <ConfirmDialog
+          title={t("delete")}
+          message={t("deleteConfirm", { name: pendingDelete.name })}
+          confirmLabel={t("delete")}
+          cancelLabel={t("cancel")}
+          onConfirm={confirmDelete}
+          onCancel={() => setPendingDelete(null)}
+          confirming={deletingId === pendingDelete.id}
+        />
       ) : null}
     </section>
   );
