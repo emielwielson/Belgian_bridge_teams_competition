@@ -11,7 +11,7 @@ describe("canAccessArbiterRequestWorkflow", () => {
     requests: [],
   };
 
-  it("allows captains who can submit", () => {
+  it("allows match players who can submit", () => {
     expect(
       canAccessArbiterRequestWorkflow({ ...base, can_submit: true }),
     ).toBe(true);

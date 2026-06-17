@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { COMPETITION_ADMIN_ROLES, requireAuth } from "@/lib/auth/route-auth";
+import { requireAuth } from "@/lib/auth/route-auth";
 import { ARBITER_ACCESS_ROLES, hasAnyRole } from "@/lib/auth/roles";
 import {
   buildOperationalStoragePath,
@@ -50,17 +50,12 @@ async function assertCanUploadForPurpose(
   if (matchError) throw matchError;
   if (!match) throw new Error("Match not found");
 
-  const [homeCap, awayCap] = await Promise.all([
-    supabase.rpc("current_user_is_captain_of_team", {
-      p_team_id: match.home_team_id,
-    }),
-    supabase.rpc("current_user_is_captain_of_team", {
-      p_team_id: match.away_team_id,
-    }),
-  ]);
-
-  const isCaptain = Boolean(homeCap.data) || Boolean(awayCap.data);
-  if (!isCaptain && !hasAnyRole(roles, [...COMPETITION_ADMIN_ROLES])) {
+  const { data: canSubmit, error: canSubmitError } = await supabase.rpc(
+    "current_user_can_submit_score",
+    { p_match_id: matchId },
+  );
+  if (canSubmitError) throw canSubmitError;
+  if (!canSubmit) {
     throw new Error("Forbidden");
   }
 }
