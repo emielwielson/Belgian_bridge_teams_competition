@@ -128,11 +128,14 @@ export function shouldShowHomeAwaySwitchSection(
   return state.played_at == null;
 }
 
-/** Client/API may load switch state (not only when captain actions exist). */
+/** Client/API may load switch state (captains and users who may respond to a pending request). */
 export function canAccessHomeAwaySwitchWorkflow(
   state: MatchHomeAwaySwitchState | null,
 ): boolean {
-  return shouldShowHomeAwaySwitchSection(state);
+  if (!shouldShowHomeAwaySwitchSection(state) || !state) return false;
+  return (
+    isHomeAwaySwitchCaptain(state) || hasHomeAwaySwitchRespondActions(state)
+  );
 }
 
 export function isHomeAwaySwitchCaptain(state: MatchHomeAwaySwitchState): boolean {

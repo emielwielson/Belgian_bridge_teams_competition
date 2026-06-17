@@ -54,8 +54,30 @@ describe("shouldShowHomeAwaySwitchSection", () => {
 });
 
 describe("canAccessHomeAwaySwitchWorkflow", () => {
-  it("matches section visibility for API GET", () => {
+  it("allows captains on unscored matches", () => {
     expect(canAccessHomeAwaySwitchWorkflow(baseState())).toBe(true);
+  });
+
+  it("allows users who may respond to a pending request", () => {
+    expect(
+      canAccessHomeAwaySwitchWorkflow(
+        baseState({ captain_teams: [], can_approve: true, can_reject: true }),
+      ),
+    ).toBe(true);
+  });
+
+  it("denies regular players without captain or respond actions", () => {
+    expect(
+      canAccessHomeAwaySwitchWorkflow(baseState({ captain_teams: [] })),
+    ).toBe(false);
+  });
+
+  it("denies when match is played", () => {
+    expect(
+      canAccessHomeAwaySwitchWorkflow(
+        baseState({ played_at: "2025-01-01T00:00:00.000Z" }),
+      ),
+    ).toBe(false);
     expect(canAccessHomeAwaySwitchWorkflow(null)).toBe(false);
   });
 });

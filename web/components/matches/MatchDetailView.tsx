@@ -21,8 +21,8 @@ import {
   getMatchArbiterRequestsState,
 } from "@/lib/competition/arbiter-request";
 import {
+  canAccessHomeAwaySwitchWorkflow,
   getMatchHomeAwaySwitchState,
-  shouldShowHomeAwaySwitchSection,
 } from "@/lib/competition/home-away-switch";
 import type { MatchPageBackLink } from "@/lib/competition/match-page-context";
 import { loadGroupScoringContext } from "@/lib/competition/match-scoring-context";
@@ -155,7 +155,7 @@ export async function MatchDetailView({
   const showHomeAwaySwitch =
     canOps &&
     homeAwaySwitchState != null &&
-    shouldShowHomeAwaySwitchSection(homeAwaySwitchState);
+    canAccessHomeAwaySwitchWorkflow(homeAwaySwitchState);
   const showArbiterRequests =
     canOps &&
     arbiterRequestsState != null &&
