@@ -94,7 +94,7 @@ export async function POST(request: Request, { params }: Params) {
     }
 
     const locale = await getLocale();
-    void sendArbiterRequestResolvedEmail(
+    await sendArbiterRequestResolvedEmail(
       {
         requestId,
         rulingSignedUrl,

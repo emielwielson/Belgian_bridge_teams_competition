@@ -61,7 +61,7 @@ export async function POST(request: Request, { params }: Params) {
         ? match.home_team.name
         : match.away_team.name;
     const locale = await getLocale();
-    void sendHomeAwaySwitchProposedEmail(
+    await sendHomeAwaySwitchProposedEmail(
       {
         matchId,
         round: match.round,
@@ -116,7 +116,7 @@ export async function PATCH(request: Request, { params }: Params) {
           ? matchBefore.home_team.name
           : matchBefore.away_team.name;
       const locale = await getLocale();
-      void sendHomeAwaySwitchDecisionEmail(
+      await sendHomeAwaySwitchDecisionEmail(
         {
           matchId,
           round: matchBefore.round,

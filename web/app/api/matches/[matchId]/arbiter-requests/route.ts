@@ -56,7 +56,7 @@ export async function POST(request: Request, { params }: Params) {
     const { state } = await loadMatchArbiterRequestsForUser(supabase, matchId);
 
     const locale = await getLocale();
-    void sendArbiterRequestCreatedEmail({ matchId }, locale);
+    await sendArbiterRequestCreatedEmail({ matchId }, locale);
 
     return jsonOk({ state });
   } catch (err) {
