@@ -102,7 +102,6 @@ export function canAccessPostponementWorkflow(
     state.can_propose ||
     state.can_approve ||
     state.can_reject ||
-    state.can_cancel ||
-    state.pending != null
+    state.can_cancel
   );
 }

@@ -157,9 +157,9 @@ export async function MatchDetailView({
     homeAwaySwitchState != null &&
     canAccessHomeAwaySwitchWorkflow(homeAwaySwitchState);
   const showArbiterRequests =
-    canOps &&
-    arbiterRequestsState != null &&
-    canAccessArbiterRequestWorkflow(arbiterRequestsState);
+    canSubmitScoreForMatch ||
+    (arbiterRequestsState != null &&
+      canAccessArbiterRequestWorkflow(arbiterRequestsState));
 
   const homeLineup = lineup
     .filter((e) => e.team_id === match.home_team_id)
