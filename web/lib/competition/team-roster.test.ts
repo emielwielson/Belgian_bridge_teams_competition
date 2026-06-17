@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { ensureCaptainOnTeamRoster } from "./team-roster";
+import { ensureCaptainOnTeamRoster, removePlayerFromTeamRoster } from "./team-roster";
 
 describe("ensureCaptainOnTeamRoster", () => {
   it("no-ops when captain is already on the team roster", async () => {
@@ -108,5 +108,70 @@ describe("ensureCaptainOnTeamRoster", () => {
         seasonId: "s1",
       }),
     ).rejects.toThrow(/another team/);
+  });
+});
+
+describe("removePlayerFromTeamRoster", () => {
+  it("rejects removing the team captain", async () => {
+    const supabase = {
+      from: (table: string) => {
+        if (table === "teams") {
+          return {
+            select: () => ({
+              eq: () => ({
+                maybeSingle: () =>
+                  Promise.resolve({ data: { captain_id: "p1" }, error: null }),
+              }),
+            }),
+          };
+        }
+        throw new Error(`unexpected ${table}`);
+      },
+    } as never;
+
+    await expect(
+      removePlayerFromTeamRoster(supabase, {
+        teamId: "t1",
+        playerId: "p1",
+        seasonId: "s1",
+      }),
+    ).rejects.toThrow(/captain/);
+  });
+
+  it("removes a non-captain player from the roster", async () => {
+    const del = vi.fn(() => ({
+      eq: () => ({
+        eq: () => ({
+          eq: () => Promise.resolve({ error: null }),
+        }),
+      }),
+    }));
+
+    const supabase = {
+      from: (table: string) => {
+        if (table === "teams") {
+          return {
+            select: () => ({
+              eq: () => ({
+                maybeSingle: () =>
+                  Promise.resolve({ data: { captain_id: "p1" }, error: null }),
+              }),
+            }),
+          };
+        }
+        if (table === "team_players") {
+          return { delete: del };
+        }
+        throw new Error(`unexpected ${table}`);
+      },
+    } as never;
+
+    await removePlayerFromTeamRoster(supabase, {
+      teamId: "t1",
+      playerId: "p2",
+      seasonId: "s1",
+    });
+
+    expect(del).toHaveBeenCalled();
   });
 });

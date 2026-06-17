@@ -184,6 +184,17 @@ export async function removePlayerFromTeamRoster(
   supabase: SupabaseClient,
   params: { teamId: string; playerId: string; seasonId: string },
 ): Promise<void> {
+  const { data: team, error: teamError } = await supabase
+    .from("teams")
+    .select("captain_id")
+    .eq("id", params.teamId)
+    .maybeSingle();
+
+  if (teamError) throw teamError;
+  if (team?.captain_id === params.playerId) {
+    throw new TeamValidationError("Cannot remove the team captain from the roster");
+  }
+
   const { error } = await supabase
     .from("team_players")
     .delete()

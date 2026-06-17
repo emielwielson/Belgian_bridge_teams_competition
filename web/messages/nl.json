@@ -866,6 +866,7 @@
       "penaltyFieldsRequired": "team_id, penalty_date en reason zijn verplicht",
       "captainNotClubMember": "Kapitein moet lid zijn van de club van het team",
       "captainAlreadyOnAnotherTeam": "De kapitein staat al op een ander team dit seizoen; verwijder hem eerst van die selectie",
+      "cannotRemoveCaptain": "De teamkapitein kan niet van de selectie worden verwijderd",
       "invalidRequestBody": "Ongeldig verzoek",
       "clubIdRequired": "club_id is verplicht",
       "captainIdInvalid": "captain_id moet een geldige speler-id zijn",

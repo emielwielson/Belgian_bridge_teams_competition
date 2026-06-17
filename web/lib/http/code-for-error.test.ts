@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { AuthError } from "@/lib/auth/route-auth";
-import { TeamCaptainError } from "@/lib/competition/team-captain";
+import { TeamCaptainError, TeamValidationError } from "@/lib/competition/team-captain";
 import { codeForError, paramsForError } from "./code-for-error";
 import { ErrorCodes } from "./error-codes";
 
@@ -34,6 +34,14 @@ describe("codeForError", () => {
         new TeamCaptainError("Captain must be a member of the team's club"),
       ),
     ).toBe(ErrorCodes.api.captainNotClubMember);
+  });
+
+  it("maps captain roster validation errors", () => {
+    expect(
+      codeForError(
+        new TeamValidationError("Cannot remove the team captain from the roster"),
+      ),
+    ).toBe(ErrorCodes.api.cannotRemoveCaptain);
   });
 
   it("returns null for unknown dynamic errors", () => {

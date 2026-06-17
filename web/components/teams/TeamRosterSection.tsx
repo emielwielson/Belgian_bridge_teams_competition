@@ -162,7 +162,7 @@ export function TeamRosterSection({
                     {player.member_number}
                   </span>
                 ) : null}
-                {showEditor ? (
+                {showEditor && player.id !== captainId ? (
                   <button
                     type="button"
                     onClick={() => removeFromRoster(player.id)}

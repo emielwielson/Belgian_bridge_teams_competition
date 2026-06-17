@@ -866,6 +866,7 @@
       "penaltyFieldsRequired": "team_id, penalty_date, and reason are required",
       "captainNotClubMember": "Captain must be a member of the team's club",
       "captainAlreadyOnAnotherTeam": "Captain is already on another team this season; remove them from that roster first",
+      "cannotRemoveCaptain": "Cannot remove the team captain from the roster",
       "invalidRequestBody": "Invalid request body",
       "clubIdRequired": "club_id is required",
       "captainIdInvalid": "captain_id must be a valid player id",

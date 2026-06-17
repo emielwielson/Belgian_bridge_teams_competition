@@ -8,7 +8,7 @@ import {
   parseCaptainId,
   validateTeamCreateBody,
 } from "@/lib/competition/team-captain";
-import { ensureCaptainOnTeamRoster } from "@/lib/competition/team-roster";
+import { ensureCaptainOnTeamRoster, removePlayerFromTeamRoster } from "@/lib/competition/team-roster";
 import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
 import { ErrorCodes } from "@/lib/http/error-codes";
 
@@ -100,13 +100,16 @@ export async function POST(request: Request) {
 
     if (body.action === "roster_remove") {
       const season = await requireActiveSeason(supabase);
-      const { error } = await supabase
-        .from("team_players")
-        .delete()
-        .eq("team_id", body.team_id)
-        .eq("player_id", body.player_id)
-        .eq("season_id", season.id);
-      if (error) return jsonError(error.message, 400);
+      const teamId = typeof body.team_id === "string" ? body.team_id : "";
+      const playerId = typeof body.player_id === "string" ? body.player_id : "";
+      if (!teamId || !playerId) {
+        return jsonErrorCode(ErrorCodes.api.playerIdRequired, 400);
+      }
+      await removePlayerFromTeamRoster(supabase, {
+        teamId,
+        playerId,
+        seasonId: season.id,
+      });
       return jsonOk({ removed: true });
     }
 
