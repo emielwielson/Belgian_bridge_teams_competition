@@ -52,6 +52,9 @@
     "noDivisions": "Nog geen afdelingen in deze competitie.",
     "breadcrumb": "{leagueName} · {divisionName}",
     "fullStandings": "Volledig klassement",
+    "disciplineLoading": {
+      "message": "Straffen en uitspraken laden…"
+    },
     "table": {
       "rank": "#",
       "team": "Team",

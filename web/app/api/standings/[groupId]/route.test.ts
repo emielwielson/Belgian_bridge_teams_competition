@@ -2,20 +2,20 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { GET } from "./route";
 
 vi.mock("@/lib/supabase/server-client", () => ({
-  createSessionClient: vi.fn(),
+  createPublicClient: vi.fn(),
 }));
 
 vi.mock("@/lib/competition/standings-queries", () => ({
   fetchGroupStandings: vi.fn(),
 }));
 
-import { createSessionClient } from "@/lib/supabase/server-client";
+import { createPublicClient } from "@/lib/supabase/server-client";
 import { fetchGroupStandings } from "@/lib/competition/standings-queries";
 
 describe("GET /api/standings/[groupId]", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(createSessionClient).mockResolvedValue({} as never);
+    vi.mocked(createPublicClient).mockReturnValue({} as never);
   });
 
   it("returns standings for group without auth", async () => {

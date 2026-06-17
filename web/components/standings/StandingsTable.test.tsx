@@ -1,7 +1,13 @@
-import { cleanup, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import { renderWithIntl } from "@/test/render-with-intl";
-import { StandingsTable } from "./StandingsTable";
+import { StandingsTable, type StandingsTableLabels } from "./StandingsTable";
+
+const labels: StandingsTableLabels = {
+  rank: "#",
+  team: "Team",
+  vp: "VP",
+  empty: "No scored matches yet.",
+};
 
 describe("StandingsTable", () => {
   afterEach(() => {
@@ -9,12 +15,13 @@ describe("StandingsTable", () => {
   });
 
   it("renders ranked rows with VP", () => {
-    renderWithIntl(
+    render(
       <StandingsTable
         rows={[
           { team_name: "Bravo", vp_total: 120 },
           { team_name: "Alpha", vp_total: 100 },
         ]}
+        labels={labels}
       />,
     );
 
@@ -26,7 +33,7 @@ describe("StandingsTable", () => {
   });
 
   it("shows empty message when there are no rows", () => {
-    renderWithIntl(<StandingsTable rows={[]} emptyMessage="Nothing yet." />);
+    render(<StandingsTable rows={[]} labels={labels} emptyMessage="Nothing yet." />);
     expect(screen.getByText("Nothing yet.")).toBeInTheDocument();
   });
 });

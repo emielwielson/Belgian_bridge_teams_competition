@@ -40,9 +40,12 @@ export type GroupStandingsContext = {
   standings: Omit<StandingsRow, "group_id">[];
 };
 
-export type GroupStandingsFullContext = GroupStandingsContext & {
+export type GroupStandingsGridData = GroupStandingsContext & {
   matches: GroupMatchRow[];
   byeRounds: GroupByeRoundRow[];
+};
+
+export type GroupStandingsFullContext = GroupStandingsGridData & {
   penalties: GroupPenaltyRow[];
   rulings: GroupRulingRow[];
 };
@@ -72,14 +75,20 @@ export type GroupRulingRow = {
   } | null;
 };
 
+type StandingsRpcRow = {
+  group_id: string;
+  team_id: string;
+  team_name: string;
+  match_vp_total: number | string;
+  penalty_vp: number | string;
+  vp_total: number | string;
+};
+
 const LEAGUE_PICKER_ORDER: LeagueName[] = [
   LEAGUE_NAMES.NATIONAL,
   LEAGUE_NAMES.FLANDERS,
   LEAGUE_NAMES.WALLONIA,
 ];
-
-const STANDINGS_SELECT =
-  "group_id, team_id, team_name, vp_total, penalty_vp" as const;
 
 function isMissingHostingTeamIdColumn(error: PostgrestError | null): boolean {
   if (!error) return false;
@@ -90,25 +99,51 @@ function isMissingHostingTeamIdColumn(error: PostgrestError | null): boolean {
   );
 }
 
-/** FR 40-43: scored matches + penalty corrections (penalties table) via standings_group view. */
+function sortStandingsRows<T extends { vp_total: number; team_name: string }>(
+  rows: T[],
+): T[] {
+  return [...rows].sort((a, b) => {
+    if (b.vp_total !== a.vp_total) return b.vp_total - a.vp_total;
+    return a.team_name.localeCompare(b.team_name);
+  });
+}
+
+function mapRpcRow(row: StandingsRpcRow): StandingsRow {
+  return {
+    group_id: row.group_id,
+    team_id: row.team_id,
+    team_name: row.team_name,
+    vp_total: Number(row.vp_total),
+    penalty_vp: Number(row.penalty_vp ?? 0),
+  };
+}
+
+async function fetchStandingsForGroups(
+  supabase: SupabaseClient,
+  groupIds: string[],
+): Promise<StandingsRow[]> {
+  if (groupIds.length === 0) return [];
+
+  const { data, error } = await supabase.rpc("standings_for_groups", {
+    p_group_ids: groupIds,
+  });
+
+  if (error) throw error;
+
+  return sortStandingsRows((data ?? []).map(mapRpcRow));
+}
+
+/** FR 40-43: scored matches + penalty corrections via standings_for_groups RPC. */
 export async function fetchGroupStandings(
   supabase: SupabaseClient,
   groupId: string,
 ): Promise<Omit<StandingsRow, "group_id">[]> {
-  const { data, error } = await supabase
-    .from("standings_group")
-    .select(STANDINGS_SELECT)
-    .eq("group_id", groupId)
-    .order("vp_total", { ascending: false })
-    .order("team_name", { ascending: true });
-
-  if (error) throw error;
-
-  return (data ?? []).map(({ team_id, team_name, vp_total, penalty_vp }) => ({
+  const rows = await fetchStandingsForGroups(supabase, [groupId]);
+  return rows.map(({ team_id, team_name, vp_total, penalty_vp }) => ({
     team_id,
     team_name,
     vp_total,
-    penalty_vp: Number(penalty_vp ?? 0),
+    penalty_vp,
   }));
 }
 
@@ -199,17 +234,8 @@ export async function loadLeagueStandings(
   const standingsByGroup = new Map<string, Omit<StandingsRow, "group_id">[]>();
 
   if (groupIds.length > 0) {
-    const { data: standings, error: standingsError } = await supabase
-      .from("standings_group")
-      .select(STANDINGS_SELECT)
-      .in("group_id", groupIds)
-      .order("vp_total", { ascending: false })
-      .order("team_name", { ascending: true });
-
-    if (standingsError) throw standingsError;
-    for (const [groupId, rows] of bucketStandingsByGroupId(
-      (standings ?? []) as StandingsRow[],
-    )) {
+    const standings = await fetchStandingsForGroups(supabase, groupIds);
+    for (const [groupId, rows] of bucketStandingsByGroupId(standings)) {
       standingsByGroup.set(groupId, rows);
     }
   }
@@ -235,10 +261,10 @@ export async function loadLeagueStandings(
   };
 }
 
-export async function loadGroupStandings(
+async function loadGroupContext(
   supabase: SupabaseClient,
   groupId: string,
-): Promise<GroupStandingsContext | null> {
+): Promise<Omit<GroupStandingsContext, "standings"> | null> {
   const { data: group, error: groupError } = await supabase
     .from("groups")
     .select(
@@ -273,23 +299,17 @@ export async function loadGroupStandings(
     ? division.league[0]
     : division.league;
 
-  const standings = await fetchGroupStandings(supabase, groupId);
-
   return {
     group: { id: group.id, name: group.name },
     division: { id: division.id, name: division.name },
     league,
-    standings,
   };
 }
 
-export async function loadGroupStandingsFull(
+async function fetchGroupMatches(
   supabase: SupabaseClient,
   groupId: string,
-): Promise<GroupStandingsFullContext | null> {
-  const context = await loadGroupStandings(supabase, groupId);
-  if (!context) return null;
-
+): Promise<GroupMatchRow[]> {
   let { data: matches, error: matchesError } = await supabase
     .from("matches")
     .select(
@@ -312,7 +332,13 @@ export async function loadGroupStandingsFull(
   }
 
   if (matchesError) throw matchesError;
+  return (matches ?? []) as GroupMatchRow[];
+}
 
+async function fetchGroupByeRounds(
+  supabase: SupabaseClient,
+  groupId: string,
+): Promise<GroupByeRoundRow[]> {
   const { data: byeRounds, error: byeError } = await supabase
     .from("group_bye_rounds")
     .select("round, team_id, vp, awarded_at")
@@ -320,69 +346,114 @@ export async function loadGroupStandingsFull(
     .order("round");
 
   if (byeError) throw byeError;
+  return (byeRounds ?? []) as GroupByeRoundRow[];
+}
 
-  const { data: teamRows, error: teamsError } = await supabase
-    .from("teams")
-    .select("id")
-    .eq("group_id", groupId);
-  if (teamsError) throw teamsError;
-
-  const teamIds = (teamRows ?? []).map((t) => t.id);
-  let penalties: GroupPenaltyRow[] = [];
-  if (teamIds.length > 0) {
-    const { data: penaltyRows, error: penaltyError } = await supabase
-      .from("penalties")
-      .select(
-        `
+export async function fetchGroupPenalties(
+  supabase: SupabaseClient,
+  groupId: string,
+): Promise<GroupPenaltyRow[]> {
+  const { data: penaltyRows, error: penaltyError } = await supabase
+    .from("penalties")
+    .select(
+      `
         id,
         team_id,
         penalty_date,
         reason,
         vp_deduction,
         file_path,
-        team:teams (id, name)
+        team:teams!inner (id, name, group_id)
       `,
-      )
-      .in("team_id", teamIds)
-      .order("penalty_date", { ascending: false });
-    if (penaltyError) throw penaltyError;
-    penalties = (penaltyRows ?? []) as unknown as GroupPenaltyRow[];
-  }
+    )
+    .eq("team.group_id", groupId)
+    .order("penalty_date", { ascending: false });
 
-  const matchIds = (matches ?? []).map((m) => m.id);
-  let rulings: GroupRulingRow[] = [];
-  if (matchIds.length > 0) {
-    const { data: rulingRows, error: rulingError } = await supabase
-      .from("rulings")
-      .select(
-        `
+  if (penaltyError) throw penaltyError;
+  return (penaltyRows ?? []) as unknown as GroupPenaltyRow[];
+}
+
+export async function fetchGroupRulings(
+  supabase: SupabaseClient,
+  groupId: string,
+): Promise<GroupRulingRow[]> {
+  const { data: rulingRows, error: rulingError } = await supabase
+    .from("rulings")
+    .select(
+      `
         id,
         match_id,
         board,
         ruling_date,
         file_path,
         arbiter_request_id,
-        match:matches (
+        match:matches!inner (
           round,
           home_team:teams!matches_home_team_id_fkey (name),
           away_team:teams!matches_away_team_id_fkey (name)
         )
       `,
-      )
-      .in("match_id", matchIds)
-      .order("ruling_date", { ascending: false });
-    if (rulingError) throw rulingError;
-    rulings = (rulingRows ?? []).map((row) => ({
-      ...row,
-      signed_url: null,
-    })) as unknown as GroupRulingRow[];
-  }
+    )
+    .eq("match.group_id", groupId)
+    .order("ruling_date", { ascending: false });
 
-  return {
-    ...context,
-    matches: (matches ?? []) as GroupMatchRow[],
-    byeRounds: (byeRounds ?? []) as GroupByeRoundRow[],
-    penalties,
-    rulings,
-  };
+  if (rulingError) throw rulingError;
+  return (rulingRows ?? []).map((row) => ({
+    ...row,
+    signed_url: null,
+  })) as unknown as GroupRulingRow[];
+}
+
+export async function loadGroupStandings(
+  supabase: SupabaseClient,
+  groupId: string,
+): Promise<GroupStandingsContext | null> {
+  const context = await loadGroupContext(supabase, groupId);
+  if (!context) return null;
+
+  const standings = await fetchGroupStandings(supabase, groupId);
+  return { ...context, standings };
+}
+
+export async function loadGroupStandingsGridData(
+  supabase: SupabaseClient,
+  groupId: string,
+): Promise<GroupStandingsGridData | null> {
+  const context = await loadGroupContext(supabase, groupId);
+  if (!context) return null;
+
+  const [standings, matches, byeRounds] = await Promise.all([
+    fetchGroupStandings(supabase, groupId),
+    fetchGroupMatches(supabase, groupId),
+    fetchGroupByeRounds(supabase, groupId),
+  ]);
+
+  return { ...context, standings, matches, byeRounds };
+}
+
+export async function loadGroupDisciplineData(
+  supabase: SupabaseClient,
+  groupId: string,
+): Promise<{ penalties: GroupPenaltyRow[]; rulings: GroupRulingRow[] }> {
+  const [penalties, rulings] = await Promise.all([
+    fetchGroupPenalties(supabase, groupId),
+    fetchGroupRulings(supabase, groupId),
+  ]);
+
+  return { penalties, rulings };
+}
+
+export async function loadGroupStandingsFull(
+  supabase: SupabaseClient,
+  groupId: string,
+): Promise<GroupStandingsFullContext | null> {
+  const gridData = await loadGroupStandingsGridData(supabase, groupId);
+  if (!gridData) return null;
+
+  const { penalties, rulings } = await loadGroupDisciplineData(
+    supabase,
+    groupId,
+  );
+
+  return { ...gridData, penalties, rulings };
 }

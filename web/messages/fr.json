@@ -52,6 +52,9 @@
     "noDivisions": "Aucune division dans cette ligue pour l'instant.",
     "breadcrumb": "{leagueName} · {divisionName}",
     "fullStandings": "Classement complet",
+    "disciplineLoading": {
+      "message": "Chargement des pénalités et décisions…"
+    },
     "table": {
       "rank": "#",
       "team": "Équipe",

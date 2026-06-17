@@ -2,22 +2,28 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { DivisionStandingsBlock } from "@/components/standings/DivisionStandingsBlock";
-import { loadLeagueStandings } from "@/lib/competition/standings-queries";
-import { createSessionClient } from "@/lib/supabase/server-client";
+import { getCachedLeagueStandings } from "@/lib/competition/standings-cache";
 
 type Props = { params: Promise<{ leagueId: string }> };
 
 export default async function LeagueStandingsPage({ params }: Props) {
   const { leagueId } = await params;
   const t = await getTranslations("standings");
-  const supabase = await createSessionClient();
-  const data = await loadLeagueStandings(supabase, leagueId);
+  const tTable = await getTranslations("standings.table");
+  const data = await getCachedLeagueStandings(leagueId);
 
   if (!data) {
     notFound();
   }
 
   const { league, divisions } = data;
+
+  const tableLabels = {
+    rank: tTable("rank"),
+    team: tTable("team"),
+    vp: tTable("vp"),
+    empty: tTable("empty"),
+  };
 
   return (
     <main className="page-container flex flex-col gap-8">
@@ -32,7 +38,12 @@ export default async function LeagueStandingsPage({ params }: Props) {
         <p className="text-sm text-zinc-500">{t("noDivisions")}</p>
       ) : (
         divisions.map((division) => (
-          <DivisionStandingsBlock key={division.id} division={division} />
+          <DivisionStandingsBlock
+            key={division.id}
+            division={division}
+            fullStandingsLabel={t("fullStandings")}
+            tableLabels={tableLabels}
+          />
         ))
       )}
     </main>

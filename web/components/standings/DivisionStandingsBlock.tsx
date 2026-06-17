@@ -1,16 +1,18 @@
-"use client";
-
 import Link from "next/link";
-import { useTranslations } from "next-intl";
 import type { LeagueStandingsDivision } from "@/lib/competition/standings-queries";
-import { StandingsTable } from "./StandingsTable";
+import { StandingsTable, type StandingsTableLabels } from "./StandingsTable";
 
 type Props = {
   division: LeagueStandingsDivision;
+  fullStandingsLabel: string;
+  tableLabels: StandingsTableLabels;
 };
 
-export function DivisionStandingsBlock({ division }: Props) {
-  const t = useTranslations("standings");
+export function DivisionStandingsBlock({
+  division,
+  fullStandingsLabel,
+  tableLabels,
+}: Props) {
   const showGroupNames = division.groups.length > 1;
   const fullStandingsGroup =
     division.groups.length === 1 ? division.groups[0] : null;
@@ -24,12 +26,12 @@ export function DivisionStandingsBlock({ division }: Props) {
             href={`/standings/group/${fullStandingsGroup.id}`}
             className="btn-secondary shrink-0 px-3 py-1.5 text-sm"
           >
-            {t("fullStandings")}
+            {fullStandingsLabel}
           </Link>
         ) : null}
       </div>
       {division.groups.length === 0 ? (
-        <StandingsTable rows={[]} />
+        <StandingsTable rows={[]} labels={tableLabels} />
       ) : (
         division.groups.map((group) => (
           <div key={group.id} className="flex flex-col gap-2">
@@ -40,11 +42,11 @@ export function DivisionStandingsBlock({ division }: Props) {
                   href={`/standings/group/${group.id}`}
                   className="btn-secondary shrink-0 px-3 py-1.5 text-sm"
                 >
-                  {t("fullStandings")}
+                  {fullStandingsLabel}
                 </Link>
               </div>
             ) : null}
-            <StandingsTable rows={group.standings} />
+            <StandingsTable rows={group.standings} labels={tableLabels} />
           </div>
         ))
       )}

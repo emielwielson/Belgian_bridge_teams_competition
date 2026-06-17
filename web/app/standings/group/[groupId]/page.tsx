@@ -1,32 +1,32 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { getLocale, getTranslations } from "next-intl/server";
-import { GroupPenaltiesSection } from "@/components/standings/GroupPenaltiesSection";
-import { GroupRulingsSection } from "@/components/standings/GroupRulingsSection";
+import {
+  GroupDisciplineSections,
+  GroupDisciplineSectionsFallback,
+} from "@/components/standings/GroupDisciplineSections";
 import { GroupStandingsGrid } from "@/components/standings/GroupStandingsGrid";
 import { buildGroupStandingsGrid } from "@/lib/competition/group-standings-grid";
-import { loadGroupStandingsFull } from "@/lib/competition/standings-queries";
-import { createOperationalSignedUrl } from "@/lib/files/operational-file-storage";
+import { getCachedGroupStandingsGrid } from "@/lib/competition/standings-cache";
 import { toIntlLocale } from "@/i18n/intl-locale";
 import type { Locale } from "@/i18n/config";
-import { createServiceClient, createSessionClient } from "@/lib/supabase/server-client";
 
 type Props = { params: Promise<{ groupId: string }> };
 
 export default async function GroupStandingsPage({ params }: Props) {
   const { groupId } = await params;
   const t = await getTranslations("standings");
+  const tTable = await getTranslations("standings.table");
   const locale = (await getLocale()) as Locale;
   const intlLocale = toIntlLocale(locale);
-  const supabase = await createSessionClient();
-  const data = await loadGroupStandingsFull(supabase, groupId);
+  const data = await getCachedGroupStandingsGrid(groupId);
 
   if (!data) {
     notFound();
   }
 
-  const { group, division, league, standings, matches, byeRounds, penalties, rulings } =
-    data;
+  const { group, division, league, standings, matches, byeRounds } = data;
   const grid = buildGroupStandingsGrid(
     standings,
     matches,
@@ -34,35 +34,16 @@ export default async function GroupStandingsPage({ params }: Props) {
     intlLocale,
   );
 
-  const service = createServiceClient();
-  const penaltiesWithUrls = await Promise.all(
-    penalties.map(async (penalty) => {
-      if (!penalty.file_path) return { ...penalty, signed_url: null };
-      try {
-        const signed_url = await createOperationalSignedUrl(
-          service,
-          penalty.file_path,
-        );
-        return { ...penalty, signed_url };
-      } catch {
-        return { ...penalty, signed_url: null };
-      }
-    }),
-  );
-
-  const rulingsWithUrls = await Promise.all(
-    rulings.map(async (ruling) => {
-      try {
-        const signed_url = await createOperationalSignedUrl(
-          service,
-          ruling.file_path,
-        );
-        return { ...ruling, signed_url };
-      } catch {
-        return { ...ruling, signed_url: null };
-      }
-    }),
-  );
+  const tableLabels = {
+    rank: tTable("rank"),
+    team: tTable("team"),
+    vp: tTable("vp"),
+    penaltyShort: tTable("penaltyShort"),
+    noTeamsInGroup: tTable("noTeamsInGroup"),
+    roundColumnsPending: tTable("roundColumnsPending"),
+    viewMatchAria: tTable("viewMatchAria"),
+    homeAria: tTable("homeAria"),
+  };
 
   return (
     <main className="page-container-full flex min-h-0 flex-1 flex-col gap-4 sm:gap-6">
@@ -81,9 +62,10 @@ export default async function GroupStandingsPage({ params }: Props) {
           })}
         </p>
       </header>
-      <GroupStandingsGrid grid={grid} />
-      <GroupPenaltiesSection penalties={penaltiesWithUrls} />
-      <GroupRulingsSection rulings={rulingsWithUrls} />
+      <GroupStandingsGrid grid={grid} labels={tableLabels} />
+      <Suspense fallback={<GroupDisciplineSectionsFallback />}>
+        <GroupDisciplineSections groupId={groupId} />
+      </Suspense>
     </main>
   );
 }

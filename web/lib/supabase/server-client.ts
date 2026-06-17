@@ -3,6 +3,17 @@ import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { getSupabasePublicEnv, getSupabaseSecretKey } from "./env";
 
+/** Publishable key without cookies — for public read-only pages (enables Next.js caching). */
+export function createPublicClient() {
+  const { url, publishableKey } = getSupabasePublicEnv();
+  return createClient(url, publishableKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+}
+
 /** Publishable key + cookies — RLS-aware; default for auth and APIs. */
 export async function createSessionClient() {
   const cookieStore = await cookies();

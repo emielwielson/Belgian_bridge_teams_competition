@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { revalidateStandingsForGroup } from "@/lib/competition/revalidate-standings";
 import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
 import { ErrorCodes } from "@/lib/http/error-codes";
 
@@ -41,9 +42,16 @@ export async function POST(request: Request) {
     if (error) return jsonError(error.message, 400);
 
     const row = Array.isArray(data) ? data[0] : data;
+    const groupIds = (row?.group_ids ?? []) as string[];
+
+    for (const groupId of groupIds) {
+      await revalidateStandingsForGroup(supabase, groupId);
+    }
+
     return jsonOk({
       awarded: row?.awarded ?? 0,
       pending: row?.pending ?? 0,
+      groupIds,
     });
   } catch (err) {
     return jsonFromError(err);

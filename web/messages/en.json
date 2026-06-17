@@ -52,6 +52,9 @@
     "noDivisions": "No divisions in this league yet.",
     "breadcrumb": "{leagueName} · {divisionName}",
     "fullStandings": "Full standings",
+    "disciplineLoading": {
+      "message": "Loading penalties and rulings…"
+    },
     "table": {
       "rank": "#",
       "team": "Team",

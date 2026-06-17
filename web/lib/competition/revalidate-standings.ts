@@ -1,12 +1,15 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import {
+  standingsGroupTag,
+  standingsLeagueTag,
+} from "./standings-cache";
 
 export async function revalidateStandingsForGroup(
   supabase: SupabaseClient,
   groupId: string,
 ): Promise<void> {
-  revalidatePath("/");
-  revalidatePath("/standings");
+  revalidateTag(standingsGroupTag(groupId), "max");
   revalidatePath(`/standings/group/${groupId}`);
 
   const { data: group } = await supabase
@@ -31,6 +34,7 @@ export async function revalidateStandingsForGroup(
   const leagueId = Array.isArray(league) ? league[0]?.id : league?.id;
 
   if (leagueId) {
+    revalidateTag(standingsLeagueTag(leagueId), "max");
     revalidatePath(`/standings/league/${leagueId}`);
   }
 }
