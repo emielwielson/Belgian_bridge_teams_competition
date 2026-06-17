@@ -139,7 +139,6 @@
       "reject": "Reject",
       "cancelRequest": "Cancel request",
       "needsSwitchHint": "This match still lists the same home team as round {firstLegRound}. Propose a swap so the other team hosts, as in the standard return leg.",
-      "alreadySwappedHint": "The listing already follows return-leg rules (home and away are swapped compared with round {firstLegRound}). Propose only if that is wrong or you agreed with the other captain to switch venues.",
       "proposingAs": "Proposing as",
       "selectTeam": "Select team",
       "proposeSwap": "Propose home/away swap",

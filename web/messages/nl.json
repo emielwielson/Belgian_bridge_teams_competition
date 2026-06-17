@@ -139,7 +139,6 @@
       "reject": "Afwijzen",
       "cancelRequest": "Aanvraag annuleren",
       "needsSwitchHint": "Deze wedstrijd vermeldt nog hetzelfde thuisteam als ronde {firstLegRound}. Stel een wissel voor zodat het andere team gastheer is, zoals in de standaardterugwedstrijd.",
-      "alreadySwappedHint": "De vermelding volgt al de terugwedstrijdregels (thuis en uit zijn omgewisseld t.o.v. ronde {firstLegRound}). Stel alleen voor als dat fout is of u met de andere aanvoerder akkoord ging om van locatie te wisselen.",
       "proposingAs": "Voorstel namens",
       "selectTeam": "Team kiezen",
       "proposeSwap": "Thuis/uit-wissel voorstellen",

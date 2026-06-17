@@ -190,13 +190,7 @@ export function HomeAwaySwitchWorkflow({
                 firstLegRound: state.first_leg_round ?? 0,
               })}
             </p>
-          ) : (
-            <p className="text-sm text-amber-800">
-              {t("alreadySwappedHint", {
-                firstLegRound: state.first_leg_round ?? 0,
-              })}
-            </p>
-          )}
+          ) : null}
           {state.captain_teams.length > 1 ? (
             <label className="flex flex-col gap-1 text-sm">
               <span className="text-zinc-600">{t("proposingAs")}</span>

@@ -139,7 +139,6 @@
       "reject": "Refuser",
       "cancelRequest": "Annuler la demande",
       "needsSwitchHint": "Cette rencontre indique encore la même équipe à domicile qu'à la journée {firstLegRound}. Proposez une inversion pour que l'autre équipe reçoive, comme au match retour standard.",
-      "alreadySwappedHint": "L'affichage suit déjà les règles du match retour (domicile et extérieur inversés par rapport à la journée {firstLegRound}). Proposez uniquement si c'est incorrect ou si vous êtes d'accord avec l'autre capitaine pour changer de lieu.",
       "proposingAs": "Proposition au nom de",
       "selectTeam": "Choisir l'équipe",
       "proposeSwap": "Proposer une inversion domicile/extérieur",
