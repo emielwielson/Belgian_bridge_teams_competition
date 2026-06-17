@@ -223,7 +223,7 @@ export function HomeAwaySwitchWorkflow({
             {busy ? t("sending") : t("proposeSwap")}
           </button>
         </form>
-      ) : isCaptain && state.needs_switch ? (
+      ) : isCaptain && !state.can_propose ? (
         <p className="text-sm text-amber-800">{t("blocked")}</p>
       ) : !isCaptain && !canRespond ? (
         <p className="text-sm text-zinc-600">{t("onlyCaptain")}</p>
