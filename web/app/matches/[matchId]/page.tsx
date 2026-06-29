@@ -5,28 +5,33 @@ import {
   loadMatchStandingsBackLink,
 } from "@/lib/competition/match-page-context";
 import { getUserRoles } from "@/lib/auth/session";
-import { createSessionClient } from "@/lib/supabase/server-client";
+import {
+  createPublicClient,
+  createSessionClient,
+} from "@/lib/supabase/server-client";
 
 type Props = { params: Promise<{ matchId: string }> };
 
 export default async function MatchPage({ params }: Props) {
   const { matchId } = await params;
-  const supabase = await createSessionClient();
-
-  const match = await loadMatchForPage(supabase, matchId);
+  const match = await loadMatchForPage(createPublicClient(), matchId);
   if (!match) {
     notFound();
   }
 
+  const sessionSupabase = await createSessionClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
-  const roles = user ? await getUserRoles(supabase, user.id) : [];
-  const backLink = await loadMatchStandingsBackLink(supabase, match.group_id);
+  } = await sessionSupabase.auth.getUser();
+  const roles = user ? await getUserRoles(sessionSupabase, user.id) : [];
+  const backLink = await loadMatchStandingsBackLink(
+    createPublicClient(),
+    match.group_id,
+  );
 
   return (
     <MatchDetailView
-      supabase={supabase}
+      supabase={sessionSupabase}
       match={match}
       matchId={matchId}
       backLink={backLink}

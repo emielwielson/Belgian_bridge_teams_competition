@@ -1,5 +1,6 @@
 import { COMPETITION_ADMIN_ROLES, requireRoles } from "@/lib/auth/route-auth";
 import { loadGroupScoringContext } from "@/lib/competition/match-scoring-context";
+import { revalidateStandingsForGroup } from "@/lib/competition/revalidate-standings";
 import { requireGroupInSetup } from "@/lib/competition/scope-setup";
 import { jsonFromError, jsonOk } from "@/lib/http/api-response";
 import { scheduledBoardCount } from "@/lib/scoring/board-count-rules";
@@ -21,6 +22,8 @@ export async function POST(_request: Request, { params }: Params) {
       groupId,
       boardCount,
     );
+
+    await revalidateStandingsForGroup(supabase, groupId);
 
     return jsonOk(result);
   } catch (err) {

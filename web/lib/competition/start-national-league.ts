@@ -11,6 +11,7 @@ import {
   fetchNationalReadiness,
 } from "./national-readiness";
 import { NATIONAL_DIVISIONS } from "./national-structure";
+import { revalidateStandingsForGroup } from "./revalidate-standings";
 
 export type StartNationalLeagueResult = {
   schedules: { divisionName: string; matchesCreated: number }[];
@@ -59,6 +60,7 @@ export async function startNationalLeague(
       div.groupId,
       boardCount,
     );
+    await revalidateStandingsForGroup(supabase, div.groupId);
     schedules.push({
       divisionName: div.name,
       matchesCreated: result.matchesCreated,
