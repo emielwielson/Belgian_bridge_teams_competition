@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import type { Locale } from "@/i18n/config";
@@ -48,6 +49,7 @@ export function MatchScoreForm({
   allowSubmit = true,
 }: Props) {
   const t = useTranslations("match.score");
+  const router = useRouter();
   const locale = useLocale() as Locale;
   const intlLocale = toIntlLocale(locale);
   const [impsHome, setImpsHome] = useState(
@@ -135,6 +137,7 @@ export function MatchScoreForm({
       if (responseBody.match.imps_away != null) {
         setImpsAway(String(responseBody.match.imps_away));
       }
+      router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : t("submitFailedGeneric"));
     } finally {

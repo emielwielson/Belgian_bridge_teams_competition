@@ -31,8 +31,7 @@ vi.mock("@/lib/scoring/match-operations", async (importOriginal) => {
 });
 
 vi.mock("@/lib/competition/revalidate-standings", () => ({
-  revalidateStandingsForGroup: vi.fn(),
-  revalidatePlayersForMatch: vi.fn(),
+  revalidateMatchDerivedViews: vi.fn(),
 }));
 
 import { requireAuth, requireRoles } from "@/lib/auth/route-auth";
@@ -44,6 +43,7 @@ import {
   assertCanEditFinishedScore,
 } from "@/lib/auth/match-access";
 import { submitMatchScore } from "@/lib/scoring/match-operations";
+import { revalidateMatchDerivedViews } from "@/lib/competition/revalidate-standings";
 
 const baseMatch = {
   id: "match-1",
@@ -146,6 +146,10 @@ describe("POST /api/matches/[matchId]/score", () => {
       { impsHome: 10, impsAway: 5 },
       { isAdminEdit: false },
     );
+    expect(revalidateMatchDerivedViews).toHaveBeenCalledWith(
+      expect.anything(),
+      baseMatch,
+    );
   });
 
   it("forwards board options in payload", async () => {
@@ -223,6 +227,10 @@ describe("PATCH /api/matches/[matchId]/score", () => {
       "admin-1",
       { impsHome: 12, impsAway: 8 },
       expect.objectContaining({ isAdminEdit: true }),
+    );
+    expect(revalidateMatchDerivedViews).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ id: "match-1", group_id: "group-1" }),
     );
   });
 });

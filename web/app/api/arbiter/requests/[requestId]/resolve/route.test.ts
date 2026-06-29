@@ -18,9 +18,13 @@ vi.mock("@/lib/competition/arbiter-request", () => ({
   resolveArbiterRequest: vi.fn(),
 }));
 
+vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn(),
+}));
+
 vi.mock("@/lib/competition/revalidate-standings", () => ({
+  revalidateMatchDerivedViews: vi.fn(),
   revalidateStandingsForGroup: vi.fn(),
-  revalidatePlayersForMatch: vi.fn(),
 }));
 
 vi.mock("@/lib/notifications/arbiter-request-email", () => ({
@@ -41,7 +45,7 @@ import {
   resolveArbiterRequest,
 } from "@/lib/competition/arbiter-request";
 import {
-  revalidatePlayersForMatch,
+  revalidateMatchDerivedViews,
   revalidateStandingsForGroup,
 } from "@/lib/competition/revalidate-standings";
 import { createOperationalSignedUrl } from "@/lib/files/operational-file-storage";
@@ -61,7 +65,11 @@ describe("/api/arbiter/requests/[requestId]/resolve", () => {
                 data: {
                   id: "req-1",
                   match_id: "match-1",
-                  match: { group_id: "group-1" },
+                  match: {
+                    group_id: "group-1",
+                    home_team_id: "home-1",
+                    away_team_id: "away-1",
+                  },
                 },
                 error: null,
               }),
@@ -212,8 +220,12 @@ describe("/api/arbiter/requests/[requestId]/resolve", () => {
         }),
       }),
     );
-    expect(revalidateStandingsForGroup).toHaveBeenCalled();
-    expect(revalidatePlayersForMatch).toHaveBeenCalled();
+    expect(revalidateMatchDerivedViews).toHaveBeenCalledWith(expect.anything(), {
+      id: "match-1",
+      group_id: "group-1",
+      home_team_id: "home-1",
+      away_team_id: "away-1",
+    });
     expect(json.score).toEqual(expect.objectContaining({ imps_home: 42 }));
     expect(json.penaltyIds).toEqual(["pen-1"]);
     expect(json.warningIds).toEqual(["warn-1"]);

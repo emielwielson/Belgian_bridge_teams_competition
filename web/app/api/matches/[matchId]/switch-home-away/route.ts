@@ -1,4 +1,3 @@
-import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 import { requireAuth } from "@/lib/auth/route-auth";
 import { loadMatchContext } from "@/lib/auth/match-access";
@@ -8,7 +7,7 @@ import {
   proposeMatchHomeAwaySwitch,
   respondMatchHomeAwaySwitch,
 } from "@/lib/competition/home-away-switch";
-import { revalidateStandingsForGroup } from "@/lib/competition/revalidate-standings";
+import { revalidateMatchDerivedViews } from "@/lib/competition/revalidate-standings";
 import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
 import { ErrorCodes } from "@/lib/http/error-codes";
 import {
@@ -105,8 +104,7 @@ export async function PATCH(request: Request, { params }: Params) {
     const state = await getMatchHomeAwaySwitchState(supabase, matchId);
 
     if (action === "approve") {
-      await revalidateStandingsForGroup(supabase, matchBefore.group_id);
-      revalidatePath(`/matches/${matchId}`);
+      await revalidateMatchDerivedViews(supabase, matchBefore);
     }
 
     const requestingTeamId = stateBefore?.pending?.requesting_team_id;

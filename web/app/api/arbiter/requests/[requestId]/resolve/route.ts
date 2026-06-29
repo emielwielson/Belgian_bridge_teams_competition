@@ -6,7 +6,7 @@ import {
   resolveArbiterRequest,
 } from "@/lib/competition/arbiter-request";
 import {
-  revalidatePlayersForMatch,
+  revalidateMatchDerivedViews,
   revalidateStandingsForGroup,
 } from "@/lib/competition/revalidate-standings";
 import { createOperationalSignedUrl } from "@/lib/files/operational-file-storage";
@@ -35,7 +35,9 @@ export async function POST(request: Request, { params }: Params) {
 
     const { data: arbiterRequest, error: requestError } = await supabase
       .from("arbiter_requests")
-      .select("id, match_id, match:matches ( group_id )")
+      .select(
+        "id, match_id, match:matches ( group_id, home_team_id, away_team_id )",
+      )
       .eq("id", requestId)
       .maybeSingle();
     if (requestError) return jsonError(requestError.message, 500);
@@ -44,17 +46,25 @@ export async function POST(request: Request, { params }: Params) {
     }
 
     const matchRaw = arbiterRequest.match as
-      | { group_id: string }
-      | { group_id: string }[]
+      | {
+          group_id: string;
+          home_team_id: string;
+          away_team_id: string;
+        }
+      | {
+          group_id: string;
+          home_team_id: string;
+          away_team_id: string;
+        }[]
       | null;
-    const match = Array.isArray(matchRaw) ? matchRaw[0] : matchRaw;
-    if (!match?.group_id) {
+    const matchRow = Array.isArray(matchRaw) ? matchRaw[0] : matchRaw;
+    if (!matchRow?.group_id) {
       return jsonErrorCode(ErrorCodes.api.matchNotFound, 404);
     }
 
     const actionsPayload = await buildResolveActionsPayload(
       supabase,
-      match.group_id,
+      matchRow.group_id,
       body,
     );
     if ("error" in actionsPayload) {
@@ -86,11 +96,15 @@ export async function POST(request: Request, { params }: Params) {
       }
     }
 
-    if (result.score || result.penaltyIds.length > 0) {
-      await revalidateStandingsForGroup(supabase, match.group_id);
-    }
     if (result.score) {
-      await revalidatePlayersForMatch(supabase, arbiterRequest.match_id);
+      await revalidateMatchDerivedViews(supabase, {
+        id: arbiterRequest.match_id,
+        group_id: matchRow.group_id,
+        home_team_id: matchRow.home_team_id,
+        away_team_id: matchRow.away_team_id,
+      });
+    } else if (result.penaltyIds.length > 0) {
+      await revalidateStandingsForGroup(supabase, matchRow.group_id);
     }
 
     const locale = await getLocale();

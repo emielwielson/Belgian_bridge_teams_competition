@@ -5,11 +5,21 @@ import {
   standingsLeagueTag,
 } from "./standings-cache";
 
+/** Immediate expiry — Next.js 16 "max" uses stale-while-revalidate and can serve old standings grids. */
+const STANDINGS_TAG_REVALIDATE = { expire: 0 } as const;
+
+export type MatchRevalidationContext = {
+  id: string;
+  group_id: string;
+  home_team_id: string;
+  away_team_id: string;
+};
+
 export async function revalidateStandingsForGroup(
   supabase: SupabaseClient,
   groupId: string,
 ): Promise<void> {
-  revalidateTag(standingsGroupTag(groupId), "max");
+  revalidateTag(standingsGroupTag(groupId), STANDINGS_TAG_REVALIDATE);
   revalidatePath(`/standings/group/${groupId}`);
 
   const { data: group } = await supabase
@@ -34,7 +44,7 @@ export async function revalidateStandingsForGroup(
   const leagueId = Array.isArray(league) ? league[0]?.id : league?.id;
 
   if (leagueId) {
-    revalidateTag(standingsLeagueTag(leagueId), "max");
+    revalidateTag(standingsLeagueTag(leagueId), STANDINGS_TAG_REVALIDATE);
     revalidatePath(`/standings/league/${leagueId}`);
   }
 }
@@ -69,4 +79,15 @@ export async function revalidatePlayersForMatch(
   for (const playerId of playerIds) {
     revalidatePath(`/players/${playerId}`);
   }
+}
+
+export async function revalidateMatchDerivedViews(
+  supabase: SupabaseClient,
+  match: MatchRevalidationContext,
+): Promise<void> {
+  await revalidateStandingsForGroup(supabase, match.group_id);
+  revalidatePath(`/matches/${match.id}`);
+  revalidatePath(`/teams/${match.home_team_id}`);
+  revalidatePath(`/teams/${match.away_team_id}`);
+  await revalidatePlayersForMatch(supabase, match.id);
 }

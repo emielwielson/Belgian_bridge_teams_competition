@@ -1,4 +1,3 @@
-import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 import { requireAuth } from "@/lib/auth/route-auth";
 import { loadMatchContext } from "@/lib/auth/match-access";
@@ -8,7 +7,7 @@ import {
   proposeMatchPostponement,
   respondMatchPostponement,
 } from "@/lib/competition/postponement";
-import { revalidateStandingsForGroup } from "@/lib/competition/revalidate-standings";
+import { revalidateMatchDerivedViews } from "@/lib/competition/revalidate-standings";
 import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
 import { ErrorCodes } from "@/lib/http/error-codes";
 import {
@@ -131,8 +130,7 @@ export async function PATCH(request: Request, { params }: Params) {
     const state = await getMatchPostponementState(supabase, matchId);
 
     if (action === "approve") {
-      await revalidateStandingsForGroup(supabase, matchBefore.group_id);
-      revalidatePath(`/matches/${matchId}`);
+      await revalidateMatchDerivedViews(supabase, matchBefore);
     }
 
     const pending = stateBefore?.pending;

@@ -1,10 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { GET, POST, PATCH } from "./route";
 
-vi.mock("next/cache", () => ({
-  revalidatePath: vi.fn(),
-}));
-
 vi.mock("next-intl/server", () => ({
   getLocale: vi.fn().mockResolvedValue("en"),
 }));
@@ -29,7 +25,7 @@ vi.mock("@/lib/competition/home-away-switch", () => ({
 }));
 
 vi.mock("@/lib/competition/revalidate-standings", () => ({
-  revalidateStandingsForGroup: vi.fn(),
+  revalidateMatchDerivedViews: vi.fn(),
 }));
 
 vi.mock("@/lib/notifications/home-away-switch-email", () => ({
@@ -45,8 +41,7 @@ import {
   respondMatchHomeAwaySwitch,
   canAccessHomeAwaySwitchWorkflow,
 } from "@/lib/competition/home-away-switch";
-import { revalidateStandingsForGroup } from "@/lib/competition/revalidate-standings";
-import { revalidatePath } from "next/cache";
+import { revalidateMatchDerivedViews } from "@/lib/competition/revalidate-standings";
 import {
   sendHomeAwaySwitchDecisionEmail,
   sendHomeAwaySwitchProposedEmail,
@@ -189,11 +184,10 @@ describe("/api/matches/[matchId]/switch-home-away", () => {
       "req-1",
       "approve",
     );
-    expect(revalidateStandingsForGroup).toHaveBeenCalledWith(
+    expect(revalidateMatchDerivedViews).toHaveBeenCalledWith(
       expect.anything(),
-      "group-1",
+      baseMatch,
     );
-    expect(revalidatePath).toHaveBeenCalledWith("/matches/match-1");
     expect(sendHomeAwaySwitchDecisionEmail).toHaveBeenCalledWith(
       expect.objectContaining({ action: "approve" }),
       "home-1",
