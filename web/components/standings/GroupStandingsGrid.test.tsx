@@ -102,4 +102,22 @@ describe("GroupStandingsGrid", () => {
       screen.getByText(/round columns appear after the match schedule/i),
     ).toBeInTheDocument();
   });
+
+  it("uses aligned sticky column layout classes", () => {
+    const { container } = render(
+      <GroupStandingsGrid grid={sampleGrid} labels={labels} />,
+    );
+
+    const penaltyCells = container.querySelectorAll(".left-\\[11\\.5rem\\]");
+    const vpCells = container.querySelectorAll(".left-\\[15\\.5rem\\]");
+    const teamCells = container.querySelectorAll(".w-\\[9rem\\]");
+
+    expect(penaltyCells.length).toBeGreaterThanOrEqual(3);
+    expect(vpCells.length).toBeGreaterThanOrEqual(3);
+    expect(teamCells.length).toBeGreaterThanOrEqual(3);
+
+    for (const cell of teamCells) {
+      expect(cell.className).not.toMatch(/min-w-\[9rem\]/);
+    }
+  });
 });

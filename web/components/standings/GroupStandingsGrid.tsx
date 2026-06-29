@@ -32,10 +32,19 @@ function HomeIcon({ linked, homeLabel }: { linked?: boolean; homeLabel: string }
   );
 }
 
-const stickyHead =
-  "sticky z-20 bg-white px-2 py-2 text-left font-medium text-zinc-500 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.08)]";
-const stickyCell =
-  "sticky z-10 bg-white px-2 py-1.5 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]";
+const STICKY_COLS = {
+  rank: { width: "w-10", left: "left-0" },
+  team: { width: "w-[9rem]", left: "left-10" },
+  penalty: { width: "w-16", left: "left-[11.5rem]" },
+  vp: { width: "w-16", left: "left-[15.5rem]" },
+} as const;
+
+const stickyHead = "sticky z-20 shrink-0 bg-white px-2 py-2 text-left font-medium text-zinc-500";
+const stickyHeadEdge =
+  "sticky z-20 shrink-0 bg-white px-2 py-2 text-left font-medium text-zinc-500 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.08)]";
+const stickyCell = "sticky z-10 shrink-0 bg-white px-2 py-1.5";
+const stickyCellEdge =
+  "sticky z-10 shrink-0 bg-white px-2 py-1.5 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]";
 
 export function GroupStandingsGrid({ grid, labels }: Props) {
   const { rounds, rows, hasMatches } = grid;
@@ -52,18 +61,26 @@ export function GroupStandingsGrid({ grid, labels }: Props) {
         <p className="text-sm text-zinc-500">{labels.roundColumnsPending}</p>
       ) : null}
       <div className="w-full min-w-0 flex-1 overflow-x-auto rounded-lg border border-zinc-200 bg-white">
-        <table className="w-full min-w-max border-collapse text-sm">
+        <table className="w-full min-w-max border-separate border-spacing-0 text-sm">
           <thead>
             <tr className="border-b border-zinc-200">
-              <th className={`${stickyHead} left-0 w-10`}>{labels.rank}</th>
-              <th className={`${stickyHead} left-10 min-w-[9rem]`}>{labels.team}</th>
               <th
-                className={`${stickyHead} left-[10.25rem] w-16 text-right`}
+                className={`${stickyHead} ${STICKY_COLS.rank.left} ${STICKY_COLS.rank.width}`}
+              >
+                {labels.rank}
+              </th>
+              <th
+                className={`${stickyHead} ${STICKY_COLS.team.left} ${STICKY_COLS.team.width}`}
+              >
+                {labels.team}
+              </th>
+              <th
+                className={`${stickyHead} ${STICKY_COLS.penalty.left} ${STICKY_COLS.penalty.width} text-right`}
               >
                 {labels.penaltyShort}
               </th>
               <th
-                className={`${stickyHead} left-[14.5rem] w-16 text-right`}
+                className={`${stickyHeadEdge} ${STICKY_COLS.vp.left} ${STICKY_COLS.vp.width} text-right`}
               >
                 {labels.vp}
               </th>
@@ -86,25 +103,28 @@ export function GroupStandingsGrid({ grid, labels }: Props) {
             {rows.map((row) => (
               <tr key={row.teamId} className="border-b border-zinc-100">
                 <td
-                  className={`${stickyCell} left-0 text-zinc-500`}
+                  className={`${stickyCell} ${STICKY_COLS.rank.left} ${STICKY_COLS.rank.width} text-zinc-500`}
                 >
                   {row.rank}
                 </td>
-                <td className={`${stickyCell} left-10 font-medium`}>
+                <td
+                  className={`${stickyCell} ${STICKY_COLS.team.left} ${STICKY_COLS.team.width} max-w-[9rem] font-medium`}
+                >
                   <Link
                     href={`/teams/${row.teamId}`}
-                    className="hover:text-emerald-800 hover:underline"
+                    title={row.teamName}
+                    className="block truncate hover:text-emerald-800 hover:underline"
                   >
                     {row.teamName}
                   </Link>
                 </td>
                 <td
-                  className={`${stickyCell} left-[10.25rem] text-right tabular-nums text-zinc-600`}
+                  className={`${stickyCell} ${STICKY_COLS.penalty.left} ${STICKY_COLS.penalty.width} text-right tabular-nums text-zinc-600`}
                 >
                   {row.penaltyVp > 0 ? `−${row.penaltyVp}` : "0"}
                 </td>
                 <td
-                  className={`${stickyCell} left-[14.5rem] text-right tabular-nums font-medium`}
+                  className={`${stickyCellEdge} ${STICKY_COLS.vp.left} ${STICKY_COLS.vp.width} text-right tabular-nums font-medium`}
                 >
                   {row.vpTotal}
                 </td>
