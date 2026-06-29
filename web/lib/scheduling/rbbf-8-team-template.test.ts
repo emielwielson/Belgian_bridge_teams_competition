@@ -36,6 +36,18 @@ describe("rbbf-8-team-template", () => {
     expect(rounds.reduce((n, r) => n + r.length, 0)).toBe(84);
   });
 
+  it("triple schedule mirrors leg 2 and repeats leg 1 home/away in leg 3", () => {
+    const rounds = getRbbfTripleRoundPairings();
+    for (let i = 0; i < 7; i++) {
+      const first = RBBF_FIRST_LEG[i];
+      expect(rounds[i]).toEqual(first.map((p) => ({ ...p })));
+      expect(rounds[i + 7]).toEqual(
+        first.map((p) => ({ home: p.away, away: p.home })),
+      );
+      expect(rounds[i + 14]).toEqual(first.map((p) => ({ ...p })));
+    }
+  });
+
   it("maps stale generic round counts to 14 or 21", () => {
     expect(rbbfFixtureRoundCount(12, 2)).toBe(14);
     expect(rbbfFixtureRoundCount(12, 3)).toBe(21);

@@ -2,8 +2,8 @@
 -- Run in Supabase SQL editor as postgres.
 --
 -- After running:
---   POST /api/admin/competition/groups/<honor_group_id>/generate
---   POST /api/admin/competition/groups/<honor_group_id>/revalidate
+--   POST /api/admin/competition/groups/549c7fab-997f-4755-8a1e-0315b77a5f0f/generate
+--   POST /api/admin/competition/groups/549c7fab-997f-4755-8a1e-0315b77a5f0f/revalidate
 
 do $$
 declare
@@ -105,7 +105,10 @@ begin
   end loop;
 
   update public.groups
-  set max_matches_per_day_per_team = 3
+  set
+    max_matches_per_day_per_team = 3,
+    round_count = 21,
+    round_robin_count = 3
   where id = v_group_id;
 
   if v_group_id is not null then

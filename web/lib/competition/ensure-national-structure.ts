@@ -91,10 +91,12 @@ export async function ensureNationalStructure(
 
     const { data: existingGroup } = await supabase
       .from("groups")
-      .select("id, max_matches_per_day_per_team, round_count")
+      .select("id, max_matches_per_day_per_team, round_count, round_robin_count")
       .eq("division_id", divisionId)
       .eq("name", spec.name)
       .maybeSingle();
+
+    const expectedRoundRobinCount = spec.roundCount === 21 ? 3 : 2;
 
     if (!existingGroup) {
       const { error: groupError } = await supabase.from("groups").insert({
@@ -102,24 +104,22 @@ export async function ensureNationalStructure(
         name: spec.name,
         max_matches_per_day_per_team: spec.maxMatchesPerDay,
         round_count: spec.roundCount,
+        round_robin_count: expectedRoundRobinCount,
       });
       if (groupError) throw groupError;
-    } else {
-      const patch: {
-        max_matches_per_day_per_team: number | null;
-        round_count?: number;
-      } = {
-        max_matches_per_day_per_team: spec.maxMatchesPerDay,
-      };
-      if (existingGroup.round_count !== spec.roundCount) {
-        patch.round_count = spec.roundCount;
-      }
-      if (
-        existingGroup.max_matches_per_day_per_team !== spec.maxMatchesPerDay ||
-        patch.round_count !== undefined
-      ) {
-        await supabase.from("groups").update(patch).eq("id", existingGroup.id);
-      }
+    } else if (
+      existingGroup.max_matches_per_day_per_team !== spec.maxMatchesPerDay ||
+      existingGroup.round_count !== spec.roundCount ||
+      existingGroup.round_robin_count !== expectedRoundRobinCount
+    ) {
+      await supabase
+        .from("groups")
+        .update({
+          max_matches_per_day_per_team: spec.maxMatchesPerDay,
+          round_count: spec.roundCount,
+          round_robin_count: expectedRoundRobinCount,
+        })
+        .eq("id", existingGroup.id);
     }
   }
 
