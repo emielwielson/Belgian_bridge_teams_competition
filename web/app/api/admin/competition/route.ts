@@ -4,7 +4,11 @@ import { ensureRegionalLeague } from "@/lib/competition/ensure-regional-league";
 import { syncGroupRoundCount } from "@/lib/competition/group-match-rounds";
 import { canonicalLeagueName } from "@/lib/competition/league-names";
 import { requireActiveSeason } from "@/lib/competition/season";
-import { requireSeasonInSetup } from "@/lib/competition/season-setup";
+import {
+  requireDivisionInSetup,
+  requireGroupInSetup,
+  requireLeagueIdInSetup,
+} from "@/lib/competition/scope-setup";
 import {
   parseRegionParam,
   SCOPES,
@@ -121,7 +125,7 @@ export async function POST(request: Request) {
     }
 
     if (body.type === "division") {
-      requireSeasonInSetup(season);
+      await requireLeagueIdInSetup(supabase, body.league_id);
       const { data, error } = await supabase
         .from("divisions")
         .insert({
@@ -136,7 +140,7 @@ export async function POST(request: Request) {
     }
 
     if (body.type === "group") {
-      requireSeasonInSetup(season);
+      await requireDivisionInSetup(supabase, body.division_id);
       const roundRobinCount =
         typeof body.round_robin_count === "number" ? body.round_robin_count : 2;
       const { data, error } = await supabase
@@ -217,6 +221,11 @@ export async function PATCH(request: Request) {
           .eq("season_id", season.id);
         const leagueIds = leagues?.map((l) => l.id) ?? [];
         if (leagueIds.length > 0) {
+          await supabase
+            .from("leagues")
+            .update({ status: "active" })
+            .in("id", leagueIds);
+
           const { data: divisions } = await supabase
             .from("divisions")
             .select("id")
@@ -244,8 +253,7 @@ export async function PATCH(request: Request) {
     }
 
     if (body.type === "division" && body.id) {
-      const season = await requireActiveSeason(supabase);
-      requireSeasonInSetup(season);
+      await requireDivisionInSetup(supabase, body.id);
       const { error } = await supabase
         .from("divisions")
         .update({ name: body.name })
@@ -255,8 +263,7 @@ export async function PATCH(request: Request) {
     }
 
     if (body.type === "group" && body.id) {
-      const season = await requireActiveSeason(supabase);
-      requireSeasonInSetup(season);
+      await requireGroupInSetup(supabase, body.id);
       const patch: Record<string, unknown> = {};
       if (body.name !== undefined) patch.name = body.name;
       if (body.status !== undefined) patch.status = body.status;
@@ -288,12 +295,11 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const { supabase } = await requireRoles([...COMPETITION_ADMIN_ROLES]);
-    const season = await requireActiveSeason(supabase);
-    requireSeasonInSetup(season);
     const body = await request.json();
 
     if (body.type === "group" && body.id) {
       const groupId = body.id as string;
+      await requireGroupInSetup(supabase, groupId);
       const { count } = await supabase
         .from("matches")
         .select("id", { count: "exact", head: true })

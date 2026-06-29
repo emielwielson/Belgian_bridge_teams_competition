@@ -37,6 +37,8 @@ export type GroupReadiness = {
 
 export type RegionalReadiness = {
   seasonStatus: string;
+  leagueStatus: string;
+  setupLocked: boolean;
   regionCode: RegionCode;
   leagueId: string | null;
   calendar: CalendarReadiness;
@@ -95,11 +97,14 @@ export function groupTeamsStatusLabel(group: GroupReadiness): string {
 
 export function buildRegionalReadiness(input: {
   seasonStatus: string;
+  leagueStatus?: string;
   regionCode: RegionCode;
   leagueId: string | null;
   calendarRoundCount: number;
   groups: GroupReadiness[];
 }): RegionalReadiness {
+  const leagueStatus = input.leagueStatus ?? "setup";
+  const setupLocked = leagueStatus !== "setup";
   const calendar = countRegionalCalendarDates(input.calendarRoundCount);
 
   const groupsWithReady = input.groups.map((g) => ({
@@ -116,8 +121,8 @@ export function buildRegionalReadiness(input: {
 
   const blockers: string[] = [];
 
-  if (input.seasonStatus !== "setup") {
-    blockers.push("Season is no longer in setup.");
+  if (setupLocked) {
+    blockers.push("This competition has already been started.");
   }
 
   if (!input.leagueId) {
@@ -165,7 +170,7 @@ export function buildRegionalReadiness(input: {
   }
 
   const canStartLeague =
-    input.seasonStatus === "setup" &&
+    !setupLocked &&
     input.leagueId !== null &&
     calendar.complete &&
     allGroupsReady &&
@@ -173,6 +178,8 @@ export function buildRegionalReadiness(input: {
 
   return {
     seasonStatus: input.seasonStatus,
+    leagueStatus,
+    setupLocked,
     regionCode: input.regionCode,
     leagueId: input.leagueId,
     calendar,
@@ -215,15 +222,18 @@ export async function fetchRegionalReadiness(
 
   const { data: league } = await supabase
     .from("leagues")
-    .select("id")
+    .select("id, status")
     .eq("season_id", seasonId)
     .eq("scope", "regional")
     .eq("region_id", region.id)
     .maybeSingle();
 
+  const leagueStatus = league?.status ?? "setup";
+
   if (!league) {
     return buildRegionalReadiness({
       seasonStatus,
+      leagueStatus,
       regionCode,
       leagueId: null,
       calendarRoundCount: 0,
@@ -315,6 +325,7 @@ export async function fetchRegionalReadiness(
 
   return buildRegionalReadiness({
     seasonStatus,
+    leagueStatus,
     regionCode,
     leagueId: league.id,
     calendarRoundCount: calendarCount ?? 0,

@@ -1,6 +1,6 @@
 import { AuthError } from "@/lib/auth/route-auth";
 import { NationalNotReadyError } from "@/lib/competition/national-readiness";
-import { SetupLockedError } from "@/lib/competition/season-setup";
+import { SetupLockedError } from "@/lib/competition/scope-setup";
 import {
   TeamCaptainError,
   TeamValidationError,

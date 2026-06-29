@@ -75,6 +75,12 @@ export async function startRegionalLeague(
   if (seasonError) throw new Error(seasonError.message);
 
   if (readiness.leagueId) {
+    const { error: leagueError } = await supabase
+      .from("leagues")
+      .update({ status: "active" })
+      .eq("id", readiness.leagueId);
+    if (leagueError) throw new Error(leagueError.message);
+
     const { data: divisions } = await supabase
       .from("divisions")
       .select("id")

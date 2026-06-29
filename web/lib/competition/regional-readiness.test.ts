@@ -59,6 +59,49 @@ describe("regional-readiness", () => {
     ).toBe(false);
   });
 
+  it("canStartLeague when season is active but league still in setup", () => {
+    const result = buildRegionalReadiness({
+      seasonStatus: "active",
+      leagueStatus: "setup",
+      regionCode: "wallonia",
+      leagueId: "league-1",
+      calendarRoundCount: 14,
+      groups: [
+        groupRow({
+          divisionName: "2nd A",
+          groupName: "A",
+          groupId: "g1",
+        }),
+      ],
+    });
+
+    expect(result.setupLocked).toBe(false);
+    expect(result.canStartLeague).toBe(true);
+  });
+
+  it("setupLocked when league is active regardless of season", () => {
+    const result = buildRegionalReadiness({
+      seasonStatus: "active",
+      leagueStatus: "active",
+      regionCode: "flanders",
+      leagueId: "league-1",
+      calendarRoundCount: 14,
+      groups: [
+        groupRow({
+          divisionName: "2nd A",
+          groupName: "A",
+          groupId: "g1",
+        }),
+      ],
+    });
+
+    expect(result.setupLocked).toBe(true);
+    expect(result.canStartLeague).toBe(false);
+    expect(
+      result.blockers.some((b) => b.includes("already been started")),
+    ).toBe(true);
+  });
+
   it("canStartLeague when calendar and all groups ready without fixtures", () => {
     const result = buildRegionalReadiness({
       seasonStatus: "setup",

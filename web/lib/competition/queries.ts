@@ -34,7 +34,8 @@ export async function getGroupLeagueContext(
           id,
           season_id,
           scope,
-          region_id
+          region_id,
+          status
         )
       )
     `,
@@ -51,11 +52,13 @@ export async function getGroupLeagueContext(
       season_id: string;
       scope: string;
       region_id: string | null;
+      status: string;
     } | {
       id: string;
       season_id: string;
       scope: string;
       region_id: string | null;
+      status: string;
     }[];
   };
   const league = Array.isArray(division.league)

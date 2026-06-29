@@ -55,6 +55,44 @@ describe("national-readiness", () => {
     expect(divisionTeamsComplete(div)).toBe(true);
   });
 
+  it("canStartLeague when season is active but league still in setup", () => {
+    const divisions = NATIONAL_DIVISIONS.map((spec) =>
+      divisionRow(spec.name, NATIONAL_TEAMS_PER_GROUP, 0),
+    );
+
+    const result = buildNationalReadiness({
+      seasonStatus: "active",
+      leagueStatus: "setup",
+      leagueId: "league-1",
+      structureDivisionCount: 8,
+      structureGroupCount: 8,
+      calendarRoundCounts: { honor: 21, first: 14, default: 14 },
+      divisions,
+    });
+
+    expect(result.setupLocked).toBe(false);
+    expect(result.canStartLeague).toBe(true);
+  });
+
+  it("setupLocked when league is active regardless of season", () => {
+    const divisions = NATIONAL_DIVISIONS.map((spec) =>
+      divisionRow(spec.name, NATIONAL_TEAMS_PER_GROUP, 0),
+    );
+
+    const result = buildNationalReadiness({
+      seasonStatus: "active",
+      leagueStatus: "active",
+      leagueId: "league-1",
+      structureDivisionCount: 8,
+      structureGroupCount: 8,
+      calendarRoundCounts: { honor: 21, first: 14, default: 14 },
+      divisions,
+    });
+
+    expect(result.setupLocked).toBe(true);
+    expect(result.canStartLeague).toBe(false);
+  });
+
   it("canStartLeague when teams and calendars ready and no fixtures yet", () => {
     const divisions = NATIONAL_DIVISIONS.map((spec) =>
       divisionRow(spec.name, NATIONAL_TEAMS_PER_GROUP, 0),

@@ -91,8 +91,8 @@ export function buildTranslatedNationalBlockers(
 ): string[] {
   const blockers: string[] = [];
 
-  if (readiness.seasonStatus !== "setup") {
-    blockers.push(tBlockers("seasonNotSetup"));
+  if (readiness.setupLocked) {
+    blockers.push(tBlockers("competitionNotSetup"));
   }
 
   if (!readiness.structureReady) {
@@ -204,8 +204,8 @@ export function buildTranslatedRegionalBlockers(
 ): string[] {
   const blockers: string[] = [];
 
-  if (readiness.seasonStatus !== "setup") {
-    blockers.push(tBlockers("seasonNotSetup"));
+  if (readiness.setupLocked) {
+    blockers.push(tBlockers("competitionNotSetup"));
   }
 
   if (!readiness.leagueId) {

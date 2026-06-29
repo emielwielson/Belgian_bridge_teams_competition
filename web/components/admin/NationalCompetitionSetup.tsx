@@ -89,7 +89,7 @@ export function NationalCompetitionSetup() {
     await loadReadiness();
   }
 
-  const setupLocked = readiness?.seasonStatus !== "setup";
+  const setupLocked = readiness?.setupLocked ?? false;
 
   return (
     <main className="page-container flex flex-col gap-6">
@@ -100,6 +100,8 @@ export function NationalCompetitionSetup() {
         <h1 className="mt-2 text-2xl font-semibold text-zinc-900">{t("national")}</h1>
         <p className="text-sm text-zinc-600">
           {t("seasonStatus", { status: readiness?.seasonStatus ?? "…" })}
+          {" · "}
+          {t("competitionStatus", { status: readiness?.leagueStatus ?? "…" })}
           {structureLoading && t("settingUpStructure")}
         </p>
       </header>

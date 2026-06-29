@@ -36,6 +36,8 @@ export type DivisionReadiness = {
 
 export type NationalReadiness = {
   seasonStatus: string;
+  leagueStatus: string;
+  setupLocked: boolean;
   leagueId: string | null;
   structureReady: boolean;
   calendars: Record<NationalScheduleKey, CalendarReadiness>;
@@ -86,12 +88,15 @@ export function divisionTeamsLabel(div: DivisionReadiness): string {
 
 export function buildNationalReadiness(input: {
   seasonStatus: string;
+  leagueStatus?: string;
   leagueId: string | null;
   structureDivisionCount: number;
   structureGroupCount: number;
   calendarRoundCounts: Record<NationalScheduleKey, number>;
   divisions: DivisionReadiness[];
 }): NationalReadiness {
+  const leagueStatus = input.leagueStatus ?? "setup";
+  const setupLocked = leagueStatus !== "setup";
   const calendars = {
     honor: countSetMatchDays("honor", input.calendarRoundCounts.honor),
     first: countSetMatchDays("first", input.calendarRoundCounts.first),
@@ -112,8 +117,8 @@ export function buildNationalReadiness(input: {
 
   const blockers: string[] = [];
 
-  if (input.seasonStatus !== "setup") {
-    blockers.push("Season is no longer in setup.");
+  if (setupLocked) {
+    blockers.push("This competition has already been started.");
   }
 
   if (!structureReady) {
@@ -168,7 +173,7 @@ export function buildNationalReadiness(input: {
     input.divisions.some((d) => d.scheduleComplete);
 
   const canStartLeague =
-    input.seasonStatus === "setup" &&
+    !setupLocked &&
     structureReady &&
     allCalendarsReady &&
     allTeamsReady &&
@@ -176,6 +181,8 @@ export function buildNationalReadiness(input: {
 
   return {
     seasonStatus: input.seasonStatus,
+    leagueStatus,
+    setupLocked,
     leagueId: input.leagueId,
     structureReady,
     calendars,
@@ -215,15 +222,18 @@ export async function fetchNationalReadiness(
 
   const { data: league } = await supabase
     .from("leagues")
-    .select("id")
+    .select("id, status")
     .eq("season_id", seasonId)
     .eq("scope", "national")
     .eq("name", NATIONAL_LEAGUE_NAME)
     .maybeSingle();
 
+  const leagueStatus = league?.status ?? "setup";
+
   if (!league) {
     return buildNationalReadiness({
       seasonStatus,
+      leagueStatus,
       leagueId: null,
       structureDivisionCount: 0,
       structureGroupCount: 0,
@@ -332,6 +342,7 @@ export async function fetchNationalReadiness(
 
   return buildNationalReadiness({
     seasonStatus,
+    leagueStatus,
     leagueId: league.id,
     structureDivisionCount: divisionsData?.length ?? 0,
     structureGroupCount: groups?.length ?? 0,

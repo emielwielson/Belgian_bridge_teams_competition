@@ -33,7 +33,7 @@ export function RegionalStartLeagueSection({
     [readiness, tBlockers],
   );
 
-  const isSetup = readiness?.seasonStatus === "setup";
+  const competitionInSetup = !(readiness?.setupLocked ?? true);
   const canStart = readiness?.canStartLeague ?? false;
   const schedulesExist = readiness?.allSchedulesReady ?? false;
   const partialSchedules = readiness
@@ -70,12 +70,15 @@ export function RegionalStartLeagueSection({
     );
   }
 
-  if (!isSetup) {
+  if (!competitionInSetup) {
     return (
       <section className="card flex flex-col gap-2">
         <h2 className="text-lg font-semibold text-zinc-900">{t("statusTitle")}</h2>
         <p className="text-sm text-zinc-600">
-          {t("statusBody", { status: readiness.seasonStatus })}
+          {t("statusBody", {
+            status: readiness.leagueStatus,
+            seasonStatus: readiness.seasonStatus,
+          })}
         </p>
       </section>
     );

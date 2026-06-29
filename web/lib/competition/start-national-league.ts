@@ -79,6 +79,12 @@ export async function startNationalLeague(
 
   const leagueIds = leagues?.map((l) => l.id) ?? [];
   if (leagueIds.length > 0) {
+    const { error: leagueError } = await supabase
+      .from("leagues")
+      .update({ status: "active" })
+      .in("id", leagueIds);
+    if (leagueError) throw new Error(leagueError.message);
+
     const { data: divisions } = await supabase
       .from("divisions")
       .select("id")

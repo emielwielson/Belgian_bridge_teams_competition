@@ -396,6 +396,7 @@
     "flandersRegional": "Vlaanderen (regionaal)",
     "walloniaRegional": "Wallonië (regionaal)",
     "seasonStatus": "Seizoensstatus: {status}",
+    "competitionStatus": "Competitiestatus: {status}",
     "settingUpStructure": " · Structuur opzetten…",
     "setupRegionalLeague": "Competitie {leagueName} opzetten",
     "activateSeason": "Seizoen activeren",
@@ -463,9 +464,9 @@
     "regionalStartLeague": {
       "loading": "Gereedheid laden…",
       "statusTitle": "Competitiestatus",
-      "statusBody": "Het seizoen is {status}. Divisies, groepen en speeldagen zijn vergrendeld; teams en selecties kunnen nog wel gewijzigd worden.",
+      "statusBody": "Deze competitie is {status} (seizoen: {seasonStatus}). Divisies, groepen en speeldagen zijn vergrendeld; teams en selecties kunnen nog wel gewijzigd worden.",
       "title": "Competitie starten",
-      "description": "Als speeldagen en alle groepen klaar zijn, worden wedstrijden voor elke groep gegenereerd en wordt deze regionale competitie geactiveerd. Het hele seizoen wordt actief (nationale opzet wordt vergrendeld als die nog niet klaar is).",
+      "description": "Als speeldagen en alle groepen klaar zijn, worden wedstrijden voor elke groep gegenereerd en wordt deze regionale competitie geactiveerd. Andere competities kunnen nog worden ingericht tot ze gestart worden.",
       "calendarCheck": "Regionale speeldagen: {set}/{required}",
       "groupReady": "{label}: klaar",
       "groupTeams": "{label}: {teamLabel}",
@@ -483,7 +484,7 @@
       "started": "Competitie gestart. Wedstrijden gegenereerd en seizoen is nu actief."
     },
     "regionalBlockers": {
-      "seasonNotSetup": "Seizoen is niet meer in opzet.",
+      "competitionNotSetup": "Deze competitie is al gestart.",
       "leagueMissing": "Regionale competitie is nog niet opgezet.",
       "calendarIncomplete": "Regionale speeldagen: {set}/{required} voltooid.",
       "noGroups": "Voeg minstens één divisie en groep met teams toe.",
@@ -540,9 +541,9 @@
     "startLeague": {
       "loading": "Gereedheid laden…",
       "statusTitle": "Competitiestatus",
-      "statusBody": "Het seizoen is {status}. Divisies, groepen en speeldagen zijn vergrendeld; teams en selecties kunnen nog wel gewijzigd worden.",
+      "statusBody": "Deze competitie is {status} (seizoen: {seasonStatus}). Divisies, groepen en speeldagen zijn vergrendeld; teams en selecties kunnen nog wel gewijzigd worden.",
       "title": "Competitie starten",
-      "description": "Wanneer speeldagen en teams compleet zijn, genereer alle wedstrijden en activeer het seizoen.",
+      "description": "Wanneer speeldagen en teams compleet zijn, genereer alle wedstrijden en activeer de nationale competitie. Andere competities kunnen nog worden ingericht tot ze gestart worden.",
       "structureCheck": "Nationale structuur (8 afdelingen)",
       "honorDays": "Ereklasse speeldagen: {set}/{required}",
       "firstDays": "1ste klasse speeldagen: {set}/{required}",
@@ -715,7 +716,7 @@
       "default": "2de & 3de klassen (14 speeldagen om 14:00)"
     },
     "nationalBlockers": {
-      "seasonNotSetup": "Seizoen is niet meer in opzet.",
+      "competitionNotSetup": "Deze competitie is al gestart.",
       "structureIncomplete": "Nationale structuur is onvolledig (8 afdelingen met groepen nodig).",
       "honorDays": "Ereklasse speeldagen: {set}/{required} voltooid.",
       "firstDays": "1ste klasse speeldagen: {set}/{required} voltooid.",
@@ -869,7 +870,7 @@
       "invalidRequestBody": "Ongeldig verzoek",
       "clubIdRequired": "club_id is verplicht",
       "captainIdInvalid": "captain_id moet een geldige speler-id zijn",
-      "seasonSetupLocked": "Seizoen is actief; setupwijzigingen zijn vergrendeld"
+      "competitionSetupLocked": "Competitie-opzet is vergrendeld"
     },
     "auth": {
       "unauthorized": "Niet geautoriseerd",

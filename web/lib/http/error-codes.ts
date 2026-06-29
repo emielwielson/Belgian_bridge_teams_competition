@@ -70,7 +70,7 @@ export const ErrorCodes = {
     invalidRequestBody: "api.invalidRequestBody",
     clubIdRequired: "api.clubIdRequired",
     captainIdInvalid: "api.captainIdInvalid",
-    seasonSetupLocked: "api.seasonSetupLocked",
+    competitionSetupLocked: "api.competitionSetupLocked",
   },
   auth: {
     unauthorized: "auth.unauthorized",

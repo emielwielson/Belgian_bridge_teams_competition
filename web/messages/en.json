@@ -396,6 +396,7 @@
     "flandersRegional": "Flanders (regional)",
     "walloniaRegional": "Wallonia (regional)",
     "seasonStatus": "Season status: {status}",
+    "competitionStatus": "Competition status: {status}",
     "settingUpStructure": " · Setting up structure…",
     "setupRegionalLeague": "Set up {leagueName} league",
     "activateSeason": "Activate season",
@@ -463,9 +464,9 @@
     "regionalStartLeague": {
       "loading": "Loading readiness…",
       "statusTitle": "League status",
-      "statusBody": "The season is {status}. Divisions, groups, and match dates are locked; teams and rosters can still be edited.",
+      "statusBody": "This competition is {status} (season: {seasonStatus}). Divisions, groups, and match dates are locked; teams and rosters can still be edited.",
       "title": "Start league",
-      "description": "When match days and all groups are ready, generate fixtures for every group and activate this regional league. The whole season becomes active (national setup will lock if not finished yet).",
+      "description": "When match days and all groups are ready, generate fixtures for every group and activate this regional league. Other competitions can still be configured until they are started.",
       "calendarCheck": "Regional match days: {set}/{required}",
       "groupReady": "{label}: ready",
       "groupTeams": "{label}: {teamLabel}",
@@ -483,7 +484,7 @@
       "started": "League started. Fixtures generated and season is now active."
     },
     "regionalBlockers": {
-      "seasonNotSetup": "Season is no longer in setup.",
+      "competitionNotSetup": "This competition has already been started.",
       "leagueMissing": "Regional league is not set up yet.",
       "calendarIncomplete": "Regional match days: {set}/{required} complete.",
       "noGroups": "Add at least one division and group with teams.",
@@ -540,9 +541,9 @@
     "startLeague": {
       "loading": "Loading readiness…",
       "statusTitle": "League status",
-      "statusBody": "The season is {status}. Divisions, groups, and match dates are locked; teams and rosters can still be edited.",
+      "statusBody": "This competition is {status} (season: {seasonStatus}). Divisions, groups, and match dates are locked; teams and rosters can still be edited.",
       "title": "Start league",
-      "description": "When match days and teams are complete, generate all fixtures and activate the season.",
+      "description": "When match days and teams are complete, generate all fixtures and activate the national league. Other competitions can still be configured until they are started.",
       "structureCheck": "National structure (8 divisions)",
       "honorDays": "Honor Division match days: {set}/{required}",
       "firstDays": "1st Division match days: {set}/{required}",
@@ -715,7 +716,7 @@
       "default": "2nd & 3rd divisions (14 match days at 14:00)"
     },
     "nationalBlockers": {
-      "seasonNotSetup": "Season is no longer in setup.",
+      "competitionNotSetup": "This competition has already been started.",
       "structureIncomplete": "National structure is incomplete (need 8 divisions with groups).",
       "honorDays": "Honor Division match days: {set}/{required} complete.",
       "firstDays": "1st Division match days: {set}/{required} complete.",
@@ -869,7 +870,7 @@
       "invalidRequestBody": "Invalid request body",
       "clubIdRequired": "club_id is required",
       "captainIdInvalid": "captain_id must be a valid player id",
-      "seasonSetupLocked": "Season is active; setup changes are locked"
+      "competitionSetupLocked": "Competition setup is locked"
     },
     "auth": {
       "unauthorized": "Unauthorized",

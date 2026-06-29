@@ -18,8 +18,10 @@ import {
 import type { NationalScheduleKey } from "@/lib/competition/national-structure";
 import { resolveRegionId } from "@/lib/competition/queries";
 import { requireActiveSeason } from "@/lib/competition/season";
-import { requireSeasonInSetup } from "@/lib/competition/season-setup";
-import { parseScopeParam, SCOPES } from "@/lib/competition/scopes";
+import {
+  requireUnitInSetup,
+} from "@/lib/competition/scope-setup";
+import { parseScopeParam, parseRegionParam, SCOPES } from "@/lib/competition/scopes";
 import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
 import { ErrorCodes } from "@/lib/http/error-codes";
 import { parseBrusselsToUtc } from "@/lib/time/brussels";
@@ -101,15 +103,26 @@ export async function PUT(request: Request) {
   try {
     const { supabase } = await requireRoles([...COMPETITION_ADMIN_ROLES]);
     const season = await requireActiveSeason(supabase);
-    requireSeasonInSetup(season);
     const body = await request.json();
     const scope = parseScopeParam(body.scope ?? "");
     if (!scope) return jsonErrorCode(ErrorCodes.api.invalidScope, 400);
 
+    const regionCode = parseRegionParam(body.region ?? "");
+    if (scope === SCOPES.REGIONAL && !regionCode) {
+      return jsonErrorCode(ErrorCodes.api.invalidRegionCode, 400);
+    }
+    await requireUnitInSetup(
+      supabase,
+      season.id,
+      scope === SCOPES.REGIONAL
+        ? { scope: SCOPES.REGIONAL, regionCode: regionCode! }
+        : { scope: SCOPES.NATIONAL },
+    );
+
     const regionId = await resolveRegionId(
       supabase,
       scope,
-      body.region ?? undefined,
+      regionCode ?? undefined,
     );
 
     let divisionId: string | null = null;

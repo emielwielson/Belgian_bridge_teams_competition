@@ -395,6 +395,7 @@
     "flandersRegional": "Flandre (régional)",
     "walloniaRegional": "Wallonie (régional)",
     "seasonStatus": "Statut de la saison : {status}",
+    "competitionStatus": "Statut de la compétition : {status}",
     "settingUpStructure": " · Configuration de la structure…",
     "setupRegionalLeague": "Configurer la ligue {leagueName}",
     "activateSeason": "Activer la saison",
@@ -462,9 +463,9 @@
     "regionalStartLeague": {
       "loading": "Chargement de l'état…",
       "statusTitle": "Statut de la ligue",
-      "statusBody": "La saison est {status}. Divisions, groupes et journées sont verrouillés ; les équipes et effectifs peuvent encore être modifiés.",
+      "statusBody": "Cette compétition est {status} (saison : {seasonStatus}). Divisions, groupes et journées sont verrouillés ; les équipes et effectifs peuvent encore être modifiés.",
       "title": "Démarrer la ligue",
-      "description": "Lorsque les journées et tous les groupes sont prêts, générez les rencontres pour chaque groupe et activez cette ligue régionale. Toute la saison devient active (la configuration nationale sera verrouillée si elle n'est pas terminée).",
+      "description": "Lorsque les journées et tous les groupes sont prêts, générez les rencontres pour chaque groupe et activez cette ligue régionale. Les autres compétitions peuvent encore être configurées jusqu'à leur démarrage.",
       "calendarCheck": "Journées régionales : {set}/{required}",
       "groupReady": "{label} : prêt",
       "groupTeams": "{label} : {teamLabel}",
@@ -482,7 +483,7 @@
       "started": "Ligue démarrée. Rencontres générées et saison maintenant active."
     },
     "regionalBlockers": {
-      "seasonNotSetup": "La saison n'est plus en configuration.",
+      "competitionNotSetup": "Cette compétition a déjà été démarrée.",
       "leagueMissing": "La ligue régionale n'est pas encore configurée.",
       "calendarIncomplete": "Journées régionales : {set}/{required} complètes.",
       "noGroups": "Ajoutez au moins une division et un groupe avec des équipes.",
@@ -539,9 +540,9 @@
     "startLeague": {
       "loading": "Chargement de l'état de préparation…",
       "statusTitle": "Statut de la ligue",
-      "statusBody": "La saison est {status}. Divisions, groupes et journées sont verrouillés ; les équipes et effectifs peuvent encore être modifiés.",
+      "statusBody": "Cette compétition est {status} (saison : {seasonStatus}). Divisions, groupes et journées sont verrouillés ; les équipes et effectifs peuvent encore être modifiés.",
       "title": "Démarrer la ligue",
-      "description": "Lorsque les journées de jeu et les équipes sont complètes, générez toutes les rencontres et activez la saison.",
+      "description": "Lorsque les journées de jeu et les équipes sont complètes, générez toutes les rencontres et activez la ligue nationale. Les autres compétitions peuvent encore être configurées jusqu'à leur démarrage.",
       "structureCheck": "Structure nationale (8 divisions)",
       "honorDays": "Journées Division d'honneur : {set}/{required}",
       "firstDays": "Journées 1re division : {set}/{required}",
@@ -714,7 +715,7 @@
       "default": "2e & 3e divisions (14 journées de jeu à 14:00)"
     },
     "nationalBlockers": {
-      "seasonNotSetup": "La saison n'est plus en configuration.",
+      "competitionNotSetup": "Cette compétition a déjà été démarrée.",
       "structureIncomplete": "La structure nationale est incomplète (8 divisions avec groupes requis).",
       "honorDays": "Journées Division d'honneur : {set}/{required} complètes.",
       "firstDays": "Journées 1re division : {set}/{required} complètes.",
@@ -868,7 +869,7 @@
       "invalidRequestBody": "Corps de requête invalide",
       "clubIdRequired": "club_id est obligatoire",
       "captainIdInvalid": "captain_id doit être un identifiant de joueur valide",
-      "seasonSetupLocked": "La saison est active ; les modifications de configuration sont verrouillées"
+      "competitionSetupLocked": "La configuration de la compétition est verrouillée"
     },
     "auth": {
       "unauthorized": "Non autorisé",

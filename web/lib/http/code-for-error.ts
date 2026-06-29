@@ -59,7 +59,7 @@ const MESSAGE_TO_CODE: Record<string, ErrorCode> = {
     ErrorCodes.api.captainAlreadyOnAnotherTeam,
   "Cannot remove the team captain from the roster":
     ErrorCodes.api.cannotRemoveCaptain,
-  "Season is active; setup changes are locked": ErrorCodes.api.seasonSetupLocked,
+  "Competition setup is locked": ErrorCodes.api.competitionSetupLocked,
 };
 
 const NATIONAL_EXPECTED_DAYS = /^Expected (\d+) match days for (\w+), got (\d+)$/;

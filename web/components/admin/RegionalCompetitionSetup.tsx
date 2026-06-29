@@ -129,7 +129,7 @@ export function RegionalCompetitionSetup({ regionCode, regionId }: Props) {
     await loadAll();
   }
 
-  const setupLocked = readiness?.seasonStatus !== "setup";
+  const setupLocked = readiness?.setupLocked ?? false;
 
   const filteredLeagues = leagues.map((league) => ({
     ...league,
@@ -150,6 +150,8 @@ export function RegionalCompetitionSetup({ regionCode, regionId }: Props) {
         </h1>
         <p className="text-sm text-zinc-600">
           {t("seasonStatus", { status: readiness?.seasonStatus ?? "…" })}
+          {" · "}
+          {t("competitionStatus", { status: readiness?.leagueStatus ?? "…" })}
           {structureLoading && t("settingUpStructure")}
         </p>
       </header>
