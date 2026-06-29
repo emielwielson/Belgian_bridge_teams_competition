@@ -26,28 +26,30 @@ export function expandMatchDaysToRounds(
   scheduleKey: NationalScheduleKey,
   matchDays: string[],
 ): { round: number; datetime: string }[] {
-  const expectedDays = NATIONAL_MATCH_DAY_COUNTS[scheduleKey];
-  if (matchDays.length !== expectedDays) {
+  const dayCount = NATIONAL_MATCH_DAY_COUNTS[scheduleKey];
+  if (matchDays.length !== dayCount) {
     throw new Error(
-      `Expected ${expectedDays} match days for ${scheduleKey}, got ${matchDays.length}`,
+      `Expected ${dayCount} match days for ${scheduleKey}, got ${matchDays.length}`,
     );
   }
 
   const times = NATIONAL_SLOT_TIMES[scheduleKey];
   const rows: { round: number; datetime: string }[] = [];
-  let round = 1;
 
-  for (const date of matchDays) {
+  for (let dayIndex = 0; dayIndex < matchDays.length; dayIndex++) {
+    const date = matchDays[dayIndex];
     if (!date) {
-      throw new Error(`Match day ${round} is missing a date`);
+      throw new Error(`Match day ${dayIndex + 1} is missing a date`);
     }
-    for (const time of times) {
-      rows.push({ round, datetime: `${date}T${time}` });
-      round += 1;
+    for (let slotIndex = 0; slotIndex < times.length; slotIndex++) {
+      // Stack legs on the same calendar day: day 1 → rounds 1 & 8 (1st div),
+      // day 1 → rounds 1, 8 & 15 (honor). Default (1 slot/day) stays sequential.
+      const round = dayIndex + 1 + slotIndex * dayCount;
+      rows.push({ round, datetime: `${date}T${times[slotIndex]}` });
     }
   }
 
-  return rows;
+  return rows.sort((a, b) => a.round - b.round);
 }
 
 /** Extract YYYY-MM-DD (Brussels) from stored round datetimes — one date per match day. */
@@ -56,13 +58,11 @@ export function collapseRoundsToMatchDays(
   rounds: { round: number; datetime: string }[],
 ): string[] {
   const dayCount = NATIONAL_MATCH_DAY_COUNTS[scheduleKey];
-  const perDay = slotsPerMatchDay(scheduleKey);
   const byRound = new Map(rounds.map((r) => [r.round, r.datetime]));
   const days: string[] = [];
 
   for (let dayIndex = 0; dayIndex < dayCount; dayIndex++) {
-    const firstRound = dayIndex * perDay + 1;
-    const iso = byRound.get(firstRound);
+    const iso = byRound.get(dayIndex + 1);
     days.push(iso ? toBrusselsDateInput(iso) : "");
   }
 
