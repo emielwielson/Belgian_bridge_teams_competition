@@ -318,29 +318,29 @@ begin
     raise exception 'Failed to create National divisions';
   end if;
 
-  -- Honor Division: 21 rounds on 7 days (11:00 / 13:50 / 16:40 each day; legs stacked)
+  -- Honor Division: 21 rounds on 7 days (11:00 / 13:50 / 16:40; rounds 1–3, 4–6, … per day)
   insert into public.competition_match_dates (season_id, scope, region_id, division_id, round, datetime)
   values
     (v_season_id, 'national', null, v_honor_division_id, 1,  ('2024-09-27 11:00'::timestamp at time zone 'Europe/Brussels')),
-    (v_season_id, 'national', null, v_honor_division_id, 8,  ('2024-09-27 13:50'::timestamp at time zone 'Europe/Brussels')),
-    (v_season_id, 'national', null, v_honor_division_id, 15, ('2024-09-27 16:40'::timestamp at time zone 'Europe/Brussels')),
-    (v_season_id, 'national', null, v_honor_division_id, 2,  ('2024-10-04 11:00'::timestamp at time zone 'Europe/Brussels')),
-    (v_season_id, 'national', null, v_honor_division_id, 9,  ('2024-10-04 13:50'::timestamp at time zone 'Europe/Brussels')),
-    (v_season_id, 'national', null, v_honor_division_id, 16, ('2024-10-04 16:40'::timestamp at time zone 'Europe/Brussels')),
-    (v_season_id, 'national', null, v_honor_division_id, 3,  ('2024-10-11 11:00'::timestamp at time zone 'Europe/Brussels')),
-    (v_season_id, 'national', null, v_honor_division_id, 10, ('2024-10-11 13:50'::timestamp at time zone 'Europe/Brussels')),
-    (v_season_id, 'national', null, v_honor_division_id, 17, ('2024-10-11 16:40'::timestamp at time zone 'Europe/Brussels')),
-    (v_season_id, 'national', null, v_honor_division_id, 4,  ('2024-10-18 11:00'::timestamp at time zone 'Europe/Brussels')),
+    (v_season_id, 'national', null, v_honor_division_id, 2,  ('2024-09-27 13:50'::timestamp at time zone 'Europe/Brussels')),
+    (v_season_id, 'national', null, v_honor_division_id, 3,  ('2024-09-27 16:40'::timestamp at time zone 'Europe/Brussels')),
+    (v_season_id, 'national', null, v_honor_division_id, 4,  ('2024-10-04 11:00'::timestamp at time zone 'Europe/Brussels')),
+    (v_season_id, 'national', null, v_honor_division_id, 5,  ('2024-10-04 13:50'::timestamp at time zone 'Europe/Brussels')),
+    (v_season_id, 'national', null, v_honor_division_id, 6,  ('2024-10-04 16:40'::timestamp at time zone 'Europe/Brussels')),
+    (v_season_id, 'national', null, v_honor_division_id, 7,  ('2024-10-11 11:00'::timestamp at time zone 'Europe/Brussels')),
+    (v_season_id, 'national', null, v_honor_division_id, 8,  ('2024-10-11 13:50'::timestamp at time zone 'Europe/Brussels')),
+    (v_season_id, 'national', null, v_honor_division_id, 9,  ('2024-10-11 16:40'::timestamp at time zone 'Europe/Brussels')),
+    (v_season_id, 'national', null, v_honor_division_id, 10, ('2024-10-18 11:00'::timestamp at time zone 'Europe/Brussels')),
     (v_season_id, 'national', null, v_honor_division_id, 11, ('2024-10-18 13:50'::timestamp at time zone 'Europe/Brussels')),
-    (v_season_id, 'national', null, v_honor_division_id, 18, ('2024-10-18 16:40'::timestamp at time zone 'Europe/Brussels')),
-    (v_season_id, 'national', null, v_honor_division_id, 5,  ('2024-11-08 11:00'::timestamp at time zone 'Europe/Brussels')),
-    (v_season_id, 'national', null, v_honor_division_id, 12, ('2024-11-08 13:50'::timestamp at time zone 'Europe/Brussels')),
-    (v_season_id, 'national', null, v_honor_division_id, 19, ('2024-11-08 16:40'::timestamp at time zone 'Europe/Brussels')),
-    (v_season_id, 'national', null, v_honor_division_id, 6,  ('2024-11-22 11:00'::timestamp at time zone 'Europe/Brussels')),
-    (v_season_id, 'national', null, v_honor_division_id, 13, ('2024-11-22 13:50'::timestamp at time zone 'Europe/Brussels')),
-    (v_season_id, 'national', null, v_honor_division_id, 20, ('2024-11-22 16:40'::timestamp at time zone 'Europe/Brussels')),
-    (v_season_id, 'national', null, v_honor_division_id, 7,  ('2024-11-29 11:00'::timestamp at time zone 'Europe/Brussels')),
-    (v_season_id, 'national', null, v_honor_division_id, 14, ('2024-11-29 13:50'::timestamp at time zone 'Europe/Brussels')),
+    (v_season_id, 'national', null, v_honor_division_id, 12, ('2024-10-18 16:40'::timestamp at time zone 'Europe/Brussels')),
+    (v_season_id, 'national', null, v_honor_division_id, 13, ('2024-11-08 11:00'::timestamp at time zone 'Europe/Brussels')),
+    (v_season_id, 'national', null, v_honor_division_id, 14, ('2024-11-08 13:50'::timestamp at time zone 'Europe/Brussels')),
+    (v_season_id, 'national', null, v_honor_division_id, 15, ('2024-11-08 16:40'::timestamp at time zone 'Europe/Brussels')),
+    (v_season_id, 'national', null, v_honor_division_id, 16, ('2024-11-22 11:00'::timestamp at time zone 'Europe/Brussels')),
+    (v_season_id, 'national', null, v_honor_division_id, 17, ('2024-11-22 13:50'::timestamp at time zone 'Europe/Brussels')),
+    (v_season_id, 'national', null, v_honor_division_id, 18, ('2024-11-22 16:40'::timestamp at time zone 'Europe/Brussels')),
+    (v_season_id, 'national', null, v_honor_division_id, 19, ('2024-11-29 11:00'::timestamp at time zone 'Europe/Brussels')),
+    (v_season_id, 'national', null, v_honor_division_id, 20, ('2024-11-29 13:50'::timestamp at time zone 'Europe/Brussels')),
     (v_season_id, 'national', null, v_honor_division_id, 21, ('2024-11-29 16:40'::timestamp at time zone 'Europe/Brussels'));
 
   -- 1st Division: 14 rounds on 7 days (13:00 / 16:00 each day; mirror leg same day)

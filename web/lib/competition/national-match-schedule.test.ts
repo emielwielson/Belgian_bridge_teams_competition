@@ -19,14 +19,30 @@ describe("national match schedule", () => {
     const rounds = expandMatchDaysToRounds("honor", days);
     expect(rounds).toHaveLength(21);
     const day1 = rounds.filter((r) => r.datetime.startsWith("2024-09-27"));
-    expect(day1.map((r) => r.round)).toEqual([1, 8, 15]);
+    expect(day1.map((r) => r.round)).toEqual([1, 2, 3]);
     expect(day1.map((r) => r.datetime)).toEqual([
       "2024-09-27T11:00",
       "2024-09-27T13:50",
       "2024-09-27T16:40",
     ]);
     const day2 = rounds.filter((r) => r.datetime.startsWith("2024-10-04"));
-    expect(day2.map((r) => r.round)).toEqual([2, 9, 16]);
+    expect(day2.map((r) => r.round)).toEqual([4, 5, 6]);
+  });
+
+  it("round-trips match days for honor division", () => {
+    const days = [
+      "2024-09-27",
+      "2024-10-04",
+      "2024-10-11",
+      "2024-10-18",
+      "2024-11-08",
+      "2024-11-22",
+      "2024-11-29",
+    ];
+    const rounds = expandMatchDaysToRounds("honor", days);
+    expect(rounds).toHaveLength(21);
+    const collapsed = collapseRoundsToMatchDays("honor", rounds);
+    expect(collapsed).toEqual(days);
   });
 
   it("round-trips match days for 1st division", () => {

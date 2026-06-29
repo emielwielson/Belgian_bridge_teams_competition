@@ -22,6 +22,33 @@ export function formatSlotTimesLabel(scheduleKey: NationalScheduleKey): string {
   return NATIONAL_SLOT_TIMES[scheduleKey].join(", ");
 }
 
+/** 1st Division stacks mirror legs on one day; Honor/Default use consecutive rounds per day. */
+export function usesStackedLegsPerDay(scheduleKey: NationalScheduleKey): boolean {
+  return scheduleKey === "first";
+}
+
+/** Fixture round number for a match-day slot (0-based day and slot indices). */
+export function roundForMatchDaySlot(
+  scheduleKey: NationalScheduleKey,
+  dayIndex: number,
+  slotIndex: number,
+): number {
+  const slots = slotsPerMatchDay(scheduleKey);
+  const dayCount = NATIONAL_MATCH_DAY_COUNTS[scheduleKey];
+  if (usesStackedLegsPerDay(scheduleKey)) {
+    return dayIndex + 1 + slotIndex * dayCount;
+  }
+  return dayIndex * slots + slotIndex + 1;
+}
+
+/** First fixture round on a match day — used when collapsing stored dates to match days. */
+export function anchorRoundForMatchDay(
+  scheduleKey: NationalScheduleKey,
+  dayIndex: number,
+): number {
+  return roundForMatchDaySlot(scheduleKey, dayIndex, 0);
+}
+
 export function expandMatchDaysToRounds(
   scheduleKey: NationalScheduleKey,
   matchDays: string[],
@@ -42,9 +69,7 @@ export function expandMatchDaysToRounds(
       throw new Error(`Match day ${dayIndex + 1} is missing a date`);
     }
     for (let slotIndex = 0; slotIndex < times.length; slotIndex++) {
-      // Stack legs on the same calendar day: day 1 → rounds 1 & 8 (1st div),
-      // day 1 → rounds 1, 8 & 15 (honor). Default (1 slot/day) stays sequential.
-      const round = dayIndex + 1 + slotIndex * dayCount;
+      const round = roundForMatchDaySlot(scheduleKey, dayIndex, slotIndex);
       rows.push({ round, datetime: `${date}T${times[slotIndex]}` });
     }
   }
@@ -62,7 +87,7 @@ export function collapseRoundsToMatchDays(
   const days: string[] = [];
 
   for (let dayIndex = 0; dayIndex < dayCount; dayIndex++) {
-    const iso = byRound.get(dayIndex + 1);
+    const iso = byRound.get(anchorRoundForMatchDay(scheduleKey, dayIndex));
     days.push(iso ? toBrusselsDateInput(iso) : "");
   }
 

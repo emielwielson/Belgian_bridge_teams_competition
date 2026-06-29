@@ -12,10 +12,10 @@ describe("demo national match dates", () => {
     expect(DEMO_DEFAULT_ROUNDS).toHaveLength(14);
   });
 
-  it("honor stacks all three legs on the same match day", () => {
+  it("honor places three consecutive rounds on each match day", () => {
     const day1 = DEMO_HONOR_ROUNDS.filter((r) => r.date === "2024-09-27");
     expect(day1).toHaveLength(3);
-    expect(day1.map((r) => r.round)).toEqual([1, 8, 15]);
+    expect(day1.map((r) => r.round)).toEqual([1, 2, 3]);
     expect(day1.map((r) => r.time)).toEqual(["11:00", "13:50", "16:40"]);
   });
 
