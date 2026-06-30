@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AccountMenu } from "@/components/auth/AccountMenu";
 import { ARBITER_ACCESS_ROLES, hasAnyRole } from "@/lib/auth/roles";
 import type { ActivePlayer, LinkedPlayer } from "@/lib/auth/active-player";
@@ -34,15 +34,19 @@ export function SiteHeader() {
   const [me, setMe] = useState<MeResponse | null>(null);
   const [loaded, setLoaded] = useState(false);
 
-  useEffect(() => {
-    fetch("/api/auth/me")
-      .then(async (res) => {
-        if (!res.ok) return null;
-        return res.json() as Promise<MeResponse>;
-      })
-      .then((data) => setMe(data))
-      .finally(() => setLoaded(true));
+  const refreshMe = useCallback(async () => {
+    const res = await fetch("/api/auth/me");
+    if (!res.ok) {
+      setMe(null);
+      return;
+    }
+    const data = (await res.json()) as MeResponse;
+    setMe(data);
   }, []);
+
+  useEffect(() => {
+    refreshMe().finally(() => setLoaded(true));
+  }, [refreshMe]);
 
   const showAdminDashboard =
     me?.roles.includes("system_admin") ||
@@ -115,6 +119,7 @@ export function SiteHeader() {
               email={me?.user.email}
               activePlayer={me?.activePlayer}
               linkedPlayers={me?.linkedPlayers}
+              onPlayerSwitched={refreshMe}
             />
           )}
         </div>

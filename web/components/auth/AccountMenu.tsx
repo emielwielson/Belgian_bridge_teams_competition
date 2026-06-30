@@ -11,6 +11,7 @@ type Props = {
   email?: string;
   activePlayer?: ActivePlayer | null;
   linkedPlayers?: LinkedPlayer[];
+  onPlayerSwitched?: () => void | Promise<void>;
 };
 
 function displayInitial(email: string | undefined, activePlayer?: ActivePlayer | null): string {
@@ -29,7 +30,12 @@ function displayLabel(email: string | undefined, activePlayer?: ActivePlayer | n
   return email.split("@")[0] ?? "";
 }
 
-export function AccountMenu({ email, activePlayer, linkedPlayers = [] }: Props) {
+export function AccountMenu({
+  email,
+  activePlayer,
+  linkedPlayers = [],
+  onPlayerSwitched,
+}: Props) {
   const t = useTranslations("nav");
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -72,6 +78,7 @@ export function AccountMenu({ email, activePlayer, linkedPlayers = [] }: Props) 
       });
       if (res.ok) {
         setOpen(false);
+        await onPlayerSwitched?.();
         router.refresh();
       }
     } finally {
