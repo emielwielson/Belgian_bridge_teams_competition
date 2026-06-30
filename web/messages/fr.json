@@ -6,6 +6,7 @@
     "signOut": "Se déconnecter",
     "loading": "…",
     "myTeam": "Mon équipe",
+    "manuals": "Guides",
     "arbiterInbox": "Boîte arbitre",
     "dashboard": "Tableau de bord",
     "playingAs": "Jouer en tant que",
@@ -935,5 +936,109 @@
     "statusSetup": "configuration",
     "open": "Ouverte",
     "bye": "Exempt"
+  },
+  "manuals": {
+    "title": "Guides",
+    "intro": "Guides pas à pas pour les tâches courantes sur la plateforme de compétition.",
+    "toc": {
+      "label": "Sur cette page"
+    },
+    "player": {
+      "enterScore": {
+        "title": "Saisir le score d'une rencontre",
+        "steps": {
+          "find-match": {
+            "title": "Ouvrir une rencontre",
+            "body": "Connectez-vous, puis ouvrez une rencontre depuis le tableau joueur, la page de votre équipe, le classement ou un lien direct vers la page de la rencontre."
+          },
+          "match-page": {
+            "title": "Consulter la page de la rencontre",
+            "body": "La page affiche les deux équipes, la date prévue et les sections pour définir les compositions et saisir le score."
+          },
+          "home-lineup": {
+            "title": "Enregistrer la composition domicile",
+            "body": "Sélectionnez au moins quatre joueurs de l'équipe à domicile. Ajoutez des remplaçants si nécessaire, puis enregistrez."
+          },
+          "away-lineup": {
+            "title": "Enregistrer la composition extérieur",
+            "body": "Faites de même pour l'équipe visiteuse : au moins quatre joueurs de l'effectif (et remplaçants optionnels), puis enregistrez."
+          },
+          "score-form": {
+            "title": "Saisir le score",
+            "body": "Une fois les deux compositions enregistrées, saisissez les IMP domicile et extérieur. Indiquez le nombre de donnes ou le mauvais placement uniquement si cela s'applique."
+          },
+          "score-submitted": {
+            "title": "Soumettre le score officiel",
+            "body": "Cliquez sur Soumettre le score officiel. La rencontre est marquée comme jouée et les points de victoire apparaissent au classement. Après soumission, les joueurs ne peuvent plus modifier le score—contactez un arbitre ou un responsable de compétition pour une correction."
+          }
+        }
+      }
+    },
+    "captain": {
+      "sectionTitle": "Guides capitaine",
+      "addMembers": {
+        "title": "Ajouter des membres à l'équipe",
+        "steps": {
+          "team-page": {
+            "title": "Ouvrir la page de votre équipe",
+            "body": "Accédez à votre équipe via Mon équipe dans la barre de navigation, ou ouvrez /teams/votre-equipe directement."
+          },
+          "add-player": {
+            "title": "Choisir un membre du club",
+            "body": "Dans la section Joueurs, utilisez Ajouter depuis le club pour choisir un membre non assigné de votre club."
+          },
+          "roster-updated": {
+            "title": "Ajouter à l'équipe",
+            "body": "Cliquez sur Ajouter à l'équipe. Le joueur apparaît dans l'effectif et peut être sélectionné pour les compositions."
+          },
+          "remove-player": {
+            "title": "Retirer un joueur (optionnel)",
+            "body": "Utilisez Retirer à côté d'un joueur si nécessaire. Le capitaine d'équipe ne peut pas être retiré de l'effectif."
+          }
+        }
+      },
+      "postpone": {
+        "title": "Reporter une rencontre",
+        "steps": {
+          "open-reschedule": {
+            "title": "Ouvrir le report",
+            "body": "Sur la page de la rencontre, cliquez sur Reporter la rencontre pour afficher le processus de report."
+          },
+          "propose-date": {
+            "title": "Proposer une nouvelle date",
+            "body": "Choisissez la nouvelle date et heure en Europe/Bruxelles."
+          },
+          "pending-approval": {
+            "title": "Soumettre la proposition",
+            "body": "Cliquez sur Proposer une nouvelle date. Les capitaines et responsables reçoivent un e-mail. La date officielle reste inchangée jusqu'à approbation."
+          },
+          "approve-reject": {
+            "title": "Approuver ou refuser",
+            "body": "L'autre capitaine ou un responsable peut Approuver ou Refuser. Le proposant peut Annuler tant que la demande est en attente."
+          },
+          "played-unavailable": {
+            "title": "Après la rencontre jouée",
+            "body": "Le report n'est plus possible une fois la rencontre scorée et marquée comme jouée."
+          }
+        }
+      },
+      "homeAway": {
+        "title": "Inverser domicile et extérieur",
+        "steps": {
+          "open-swap": {
+            "title": "Ouvrir l'inversion domicile/extérieur",
+            "body": "Sur une rencontre non jouée, cliquez sur Inversion domicile/extérieur. Cela concerne surtout les journées miroir d'un championnat aller-retour."
+          },
+          "propose-swap": {
+            "title": "Proposer l'inversion",
+            "body": "Cliquez sur Proposer l'inversion domicile/extérieur. Vous ne pouvez pas proposer tant qu'un report est en attente."
+          },
+          "approve-swap": {
+            "title": "Obtenir l'approbation",
+            "body": "L'autre capitaine ou un responsable doit approuver. Après approbation, l'équipe hôte affichée sur la page est mise à jour."
+          }
+        }
+      }
+    }
   }
 }

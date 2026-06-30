@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { loadTeamsForUser } from "@/lib/competition/team-queries";
 import { ROLES } from "./roles";
 import { AuthError } from "./route-auth";
 
@@ -11,6 +12,20 @@ export async function isCaptainOfTeam(
   });
   if (error) throw error;
   return Boolean(data);
+}
+
+/** True when the user's active player is captain of at least one team in the active season. */
+export async function isCaptainOfAnyTeam(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<boolean> {
+  const teams = await loadTeamsForUser(supabase, userId);
+  for (const team of teams) {
+    if (await isCaptainOfTeam(supabase, team.id)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 export async function canManageTeamRoster(

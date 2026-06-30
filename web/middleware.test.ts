@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  isAuthOnlyPath,
   isPublicPath,
   requiredRolesForPath,
 } from "./lib/auth/middleware-routes";
@@ -57,5 +58,18 @@ describe("requiredRolesForPath", () => {
 
   it("returns null for unguarded paths", () => {
     expect(requiredRolesForPath("/unknown")).toBeNull();
+  });
+});
+
+describe("isAuthOnlyPath", () => {
+  it("requires auth for manuals", () => {
+    expect(isAuthOnlyPath("/manuals")).toBe(true);
+    expect(isAuthOnlyPath("/manuals/players")).toBe(true);
+  });
+
+  it("does not apply to other paths", () => {
+    expect(isAuthOnlyPath("/")).toBe(false);
+    expect(isAuthOnlyPath("/player")).toBe(false);
+    expect(isAuthOnlyPath("/unknown")).toBe(false);
   });
 });

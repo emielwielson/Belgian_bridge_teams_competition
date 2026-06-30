@@ -6,6 +6,7 @@
     "signOut": "Afmelden",
     "loading": "…",
     "myTeam": "Mijn team",
+    "manuals": "Handleiding",
     "arbiterInbox": "Scheidsrechter",
     "dashboard": "Dashboard",
     "playingAs": "Spelen als",
@@ -936,5 +937,109 @@
     "statusSetup": "opzet",
     "open": "Open",
     "bye": "Vrij"
+  },
+  "manuals": {
+    "title": "Handleiding",
+    "intro": "Stap-voor-stap instructies voor veelvoorkomende taken op het competitieplatform.",
+    "toc": {
+      "label": "Op deze pagina"
+    },
+    "player": {
+      "enterScore": {
+        "title": "Een wedstrijdscore invoeren",
+        "steps": {
+          "find-match": {
+            "title": "Open een wedstrijd",
+            "body": "Meld u aan en open een wedstrijd via het spelersdashboard, uw teampagina, het klassement of een directe link naar de wedstrijdpagina."
+          },
+          "match-page": {
+            "title": "Bekijk de wedstrijdpagina",
+            "body": "De wedstrijdpagina toont beide teams, de geplande datum en secties om opstellingen in te stellen en de score in te voeren."
+          },
+          "home-lineup": {
+            "title": "Sla de thuisopstelling op",
+            "body": "Selecteer minstens vier spelers uit de thuisploeg. Voeg indien nodig vervangers toe en sla de opstelling op."
+          },
+          "away-lineup": {
+            "title": "Sla de uitopstelling op",
+            "body": "Doe hetzelfde voor de uitploeg: kies minstens vier spelers uit de selectie (en optionele vervangers), en sla op."
+          },
+          "score-form": {
+            "title": "Voer de score in",
+            "body": "Zodra beide opstellingen zijn opgeslagen, vult u de IMP's voor thuis en uit in. Stel het aantal borden of verkeerde zitplaatsen alleen in als dat van toepassing is."
+          },
+          "score-submitted": {
+            "title": "Dien de officiële score in",
+            "body": "Klik op Officiële score indienen. De wedstrijd wordt als gespeeld gemarkeerd en de overwinningspunten verschijnen in het klassement. Na indiening kunnen spelers de score niet meer wijzigen—neem contact op met een scheidsrechter of wedstrijdleider voor een correctie."
+          }
+        }
+      }
+    },
+    "captain": {
+      "sectionTitle": "Handleiding voor kapiteins",
+      "addMembers": {
+        "title": "Teamleden toevoegen",
+        "steps": {
+          "team-page": {
+            "title": "Open uw teampagina",
+            "body": "Ga naar uw team via Mijn team in de navigatiebalk, of open /teams/uw-team-id rechtstreeks."
+          },
+          "add-player": {
+            "title": "Kies een clublid",
+            "body": "Gebruik in de sectie Spelers Toevoegen uit club om een niet-toegewezen lid van uw club te kiezen."
+          },
+          "roster-updated": {
+            "title": "Toevoegen aan team",
+            "body": "Klik op Toevoegen aan team. De speler verschijnt op uw selectie en kan worden gekozen voor wedstrijdopstellingen."
+          },
+          "remove-player": {
+            "title": "Speler verwijderen (optioneel)",
+            "body": "Gebruik Verwijderen naast een speler indien nodig. De teamkapitein kan niet van de selectie worden verwijderd."
+          }
+        }
+      },
+      "postpone": {
+        "title": "Een wedstrijd uitstellen",
+        "steps": {
+          "open-reschedule": {
+            "title": "Open uitstel",
+            "body": "Klik op de wedstrijdpagina op Wedstrijd verplaatsen om het uitstelproces te openen."
+          },
+          "propose-date": {
+            "title": "Stel een nieuwe datum voor",
+            "body": "Kies de nieuwe datum en tijd in Europa/Brussel."
+          },
+          "pending-approval": {
+            "title": "Dien het voorstel in",
+            "body": "Klik op Nieuwe datum voorstellen. Kapiteins en wedstrijdleiders ontvangen een e-mail. De officiële datum blijft ongewijzigd tot goedkeuring."
+          },
+          "approve-reject": {
+            "title": "Goedkeuren of afwijzen",
+            "body": "De andere kapitein of een wedstrijdleider kan Goedkeuren of Afwijzen. De indiener kan Annuleren zolang het verzoek in behandeling is."
+          },
+          "played-unavailable": {
+            "title": "Na afloop van de wedstrijd",
+            "body": "Uitstel is niet meer mogelijk zodra de wedstrijd is gescoord en als gespeeld is gemarkeerd."
+          }
+        }
+      },
+      "homeAway": {
+        "title": "Thuis en uit wisselen",
+        "steps": {
+          "open-swap": {
+            "title": "Open thuis/uit-wissel",
+            "body": "Klik op een ongespeelde wedstrijdpagina op Thuis/uit wisselen. Dit wordt vooral gebruikt in spiegelrondes van een dubbele round-robin."
+          },
+          "propose-swap": {
+            "title": "Stel een wissel voor",
+            "body": "Klik op Thuis/uit-wissel voorstellen. U kunt niet voorstellen terwijl een uitstelverzoek in behandeling is."
+          },
+          "approve-swap": {
+            "title": "Goedkeuring verkrijgen",
+            "body": "De andere kapitein of een wedstrijdleider moet goedkeuren. Na goedkeuring wordt bijgewerkt welk team als gastheer wordt vermeld."
+          }
+        }
+      }
+    }
   }
 }

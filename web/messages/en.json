@@ -6,6 +6,7 @@
     "signOut": "Sign out",
     "loading": "…",
     "myTeam": "My team",
+    "manuals": "Manuals",
     "arbiterInbox": "Arbiter inbox",
     "dashboard": "Dashboard",
     "playingAs": "Playing as",
@@ -936,5 +937,109 @@
     "statusSetup": "setup",
     "open": "Open",
     "bye": "Bye"
+  },
+  "manuals": {
+    "title": "Manuals",
+    "intro": "Step-by-step guides for common tasks in the competition platform.",
+    "toc": {
+      "label": "On this page"
+    },
+    "player": {
+      "enterScore": {
+        "title": "Enter a match score",
+        "steps": {
+          "find-match": {
+            "title": "Open a match",
+            "body": "Sign in, then open a match from the player dashboard, your team page, the standings grid, or a direct link to the match page."
+          },
+          "match-page": {
+            "title": "Review the match page",
+            "body": "The match page shows both teams, the scheduled date, and sections to set lineups and enter the score."
+          },
+          "home-lineup": {
+            "title": "Save the home team lineup",
+            "body": "Select at least four players from the home team roster. You can add substitutes if needed, then save the lineup."
+          },
+          "away-lineup": {
+            "title": "Save the away team lineup",
+            "body": "Do the same for the away team: pick at least four roster players (and optional subs), then save."
+          },
+          "score-form": {
+            "title": "Enter the score",
+            "body": "Once both lineups are saved, fill in home and away IMPs. Set board count or mis-seating only if they apply to your match."
+          },
+          "score-submitted": {
+            "title": "Submit the official score",
+            "body": "Click Submit official score. The match is marked played and victory points appear in the standings. After submission, players cannot change the score—contact an arbiter or competition manager if a correction is needed."
+          }
+        }
+      }
+    },
+    "captain": {
+      "sectionTitle": "Captain guides",
+      "addMembers": {
+        "title": "Add team members",
+        "steps": {
+          "team-page": {
+            "title": "Open your team page",
+            "body": "Go to your team via My team in the navigation bar, or open /teams/your-team-id directly."
+          },
+          "add-player": {
+            "title": "Pick a club member",
+            "body": "In the Players section, use Add from club to choose an unassigned member of your club."
+          },
+          "roster-updated": {
+            "title": "Add to team",
+            "body": "Click Add to team. The player appears on your roster and can be selected for match lineups."
+          },
+          "remove-player": {
+            "title": "Remove a player (optional)",
+            "body": "Use Remove next to a roster player if needed. The team captain cannot be removed from the roster."
+          }
+        }
+      },
+      "postpone": {
+        "title": "Postpone a match",
+        "steps": {
+          "open-reschedule": {
+            "title": "Open reschedule",
+            "body": "On the match page, click Reschedule match to expand the postponement workflow."
+          },
+          "propose-date": {
+            "title": "Propose a new date",
+            "body": "Pick the new date and time in Europe/Brussels."
+          },
+          "pending-approval": {
+            "title": "Submit the proposal",
+            "body": "Click Propose new date. Captains and competition managers receive an email. The official date stays unchanged until approved."
+          },
+          "approve-reject": {
+            "title": "Approve or reject",
+            "body": "The other captain or a competition manager can Approve or Reject. The proposer can Cancel while the request is pending."
+          },
+          "played-unavailable": {
+            "title": "After the match is played",
+            "body": "Rescheduling is no longer available once the match has been scored and marked played."
+          }
+        }
+      },
+      "homeAway": {
+        "title": "Switch home and away",
+        "steps": {
+          "open-swap": {
+            "title": "Open home/away swap",
+            "body": "On an unplayed match page, click Home/away swap. This is mainly used in mirror rounds of a double round-robin schedule."
+          },
+          "propose-swap": {
+            "title": "Propose a swap",
+            "body": "Click Propose home/away swap. You cannot propose while a postponement request is pending."
+          },
+          "approve-swap": {
+            "title": "Get approval",
+            "body": "The other captain or a competition manager must approve. After approval, which team is marked as host updates on the match page."
+          }
+        }
+      }
+    }
   }
 }

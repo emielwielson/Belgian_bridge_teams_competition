@@ -14,6 +14,8 @@ const PUBLIC_EXACT = new Set([
 
 const PUBLIC_PREFIXES = ["/api/public/", "/standings", "/teams", "/matches"];
 
+const AUTH_ONLY_PREFIXES = ["/manuals"];
+
 const ROLE_ROUTES: { prefix: string; roles: string[] }[] = [
   { prefix: "/admin", roles: [ROLES.SYSTEM_ADMIN, ROLES.COMPETITION_MANAGER] },
   { prefix: "/players", roles: [...COMPETITION_ADMIN_ROLES] },
@@ -31,6 +33,13 @@ export function isPublicPath(pathname: string): boolean {
     return true;
   }
   return PUBLIC_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
+
+/** Paths that require a signed-in user but no specific role. */
+export function isAuthOnlyPath(pathname: string): boolean {
+  return AUTH_ONLY_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
 }

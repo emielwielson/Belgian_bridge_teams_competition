@@ -69,6 +69,14 @@ export function SiteHeader() {
           {t("myTeam")}
         </Link>
       ) : null}
+      {me ? (
+        <Link
+          href="/manuals"
+          className={navLinkClass(pathname.startsWith("/manuals"))}
+        >
+          {t("manuals")}
+        </Link>
+      ) : null}
       {showArbiterInbox ? (
         <Link
           href="/arbiter"
@@ -122,6 +130,14 @@ export function SiteHeader() {
           >
             {t("standings")}
           </Link>
+          {me ? (
+            <Link
+              href="/manuals"
+              className={mobileLinkClass(pathname.startsWith("/manuals"))}
+            >
+              {t("manuals")}
+            </Link>
+          ) : null}
           {showArbiterInbox ? (
             <Link
               href="/arbiter"

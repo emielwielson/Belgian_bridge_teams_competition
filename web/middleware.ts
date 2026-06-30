@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import {
+  isAuthOnlyPath,
   isPublicPath,
   requiredRolesForPath,
 } from "@/lib/auth/middleware-routes";
@@ -48,7 +49,9 @@ export async function middleware(request: NextRequest) {
   }
 
   const requiredRoles = requiredRolesForPath(pathname);
-  if (!requiredRoles) {
+  const authOnly = isAuthOnlyPath(pathname);
+
+  if (!requiredRoles && !authOnly) {
     const response = NextResponse.next();
     applyLocaleCookie(request, response);
     return response;
@@ -84,6 +87,11 @@ export async function middleware(request: NextRequest) {
     return redirect;
   }
 
+  if (authOnly && !requiredRoles) {
+    applyLocaleCookie(request, response);
+    return response;
+  }
+
   const { data: roleRows } = await supabase
     .from("user_roles")
     .select("role")
@@ -92,6 +100,11 @@ export async function middleware(request: NextRequest) {
   const roles = roleRows?.map((row) => row.role) ?? [];
 
   if (pathname.startsWith("/player/matches/")) {
+    applyLocaleCookie(request, response);
+    return response;
+  }
+
+  if (!requiredRoles) {
     applyLocaleCookie(request, response);
     return response;
   }
