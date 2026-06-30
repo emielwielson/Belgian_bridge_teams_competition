@@ -33,7 +33,7 @@
     "emailPlaceholder": "u@voorbeeld.be",
     "sendMagicLink": "Aanmeldingslink versturen",
     "sending": "Verzenden…",
-    "checkEmail": "Controleer uw e-mail voor de aanmeldingslink.",
+    "checkEmail": "Controleer uw e-mail voor de aanmeldingslink. Ziet u het bericht niet? Kijk dan ook in uw spammap.",
     "selectPlayer": {
       "title": "Kies uw spelersprofiel",
       "subtitle": "Er zijn meerdere spelersprofielen gekoppeld aan dit e-mailadres. Selecteer als wie u zich aanmeldt.",

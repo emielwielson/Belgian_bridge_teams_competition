@@ -33,7 +33,7 @@
     "emailPlaceholder": "vous@exemple.be",
     "sendMagicLink": "Envoyer le lien de connexion",
     "sending": "Envoi…",
-    "checkEmail": "Consultez votre e-mail pour le lien de connexion.",
+    "checkEmail": "Consultez votre e-mail pour le lien de connexion. Si vous ne le voyez pas, vérifiez votre dossier spam.",
     "selectPlayer": {
       "title": "Choisissez votre profil joueur",
       "subtitle": "Plusieurs profils joueur sont liés à cette adresse e-mail. Sélectionnez qui vous êtes.",

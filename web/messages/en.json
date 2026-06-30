@@ -33,7 +33,7 @@
     "emailPlaceholder": "you@example.com",
     "sendMagicLink": "Send magic link",
     "sending": "Sending…",
-    "checkEmail": "Check your email for the magic link.",
+    "checkEmail": "Check your email for the magic link. If you don't see it, check your spam folder.",
     "selectPlayer": {
       "title": "Choose your player profile",
       "subtitle": "Multiple player profiles are linked to this email. Select who you are signing in as.",
