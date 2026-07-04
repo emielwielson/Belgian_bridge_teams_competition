@@ -5,6 +5,13 @@ import {
   loadEmailTemplateContext,
 } from "@/lib/i18n/email-templates";
 import { createServiceClient } from "@/lib/supabase/server-client";
+import {
+  captainContactWebhookFields,
+  captainEmailsFromContacts,
+  loadCaptainContactsForTeams,
+  splitRequestingAndReceivingCaptains,
+  toCaptainContactFields,
+} from "./captain-contacts";
 import { loginThenMatchUrl, matchPostponementUrl } from "./postponement-email";
 import { sendMakeWebhook, type MakeWebhookEventType } from "./make-webhook";
 
@@ -14,6 +21,7 @@ export type HomeAwaySwitchProposedEmailContext = {
   homeTeamName: string;
   awayTeamName: string;
   requestingTeamName: string;
+  requestingTeamId: string;
 };
 
 export type HomeAwaySwitchDecision = "approve" | "reject" | "cancel";
@@ -24,35 +32,9 @@ export type HomeAwaySwitchDecisionEmailContext = {
   homeTeamName: string;
   awayTeamName: string;
   requestingTeamName: string;
+  requestingTeamId: string;
   action: HomeAwaySwitchDecision;
 };
-
-function unwrapOne<T>(value: T | T[] | null): T | null {
-  if (value == null) return null;
-  return Array.isArray(value) ? (value[0] ?? null) : value;
-}
-
-async function loadCaptainEmailsForTeams(
-  supabase: SupabaseClient,
-  teamIds: string[],
-): Promise<string[]> {
-  if (teamIds.length === 0) return [];
-  const { data: teams, error } = await supabase
-    .from("teams")
-    .select("captain:players(email)")
-    .in("id", teamIds);
-  if (error) throw error;
-
-  const emails: string[] = [];
-  for (const team of teams ?? []) {
-    const captain = unwrapOne(
-      team.captain as { email: string | null } | { email: string | null }[] | null,
-    );
-    const email = captain?.email?.trim();
-    if (email) emails.push(email);
-  }
-  return emails;
-}
 
 async function loadCompetitionManagerEmails(
   supabase: SupabaseClient,
@@ -89,11 +71,33 @@ async function loadHomeAwaySwitchCc(
   awayTeamId: string,
 ): Promise<string[]> {
   const supabase = createServiceClient();
-  const [captainEmails, managerEmails] = await Promise.all([
-    loadCaptainEmailsForTeams(supabase, [homeTeamId, awayTeamId]),
+  const [contacts, managerEmails] = await Promise.all([
+    loadCaptainContactsForTeams(supabase, [homeTeamId, awayTeamId]),
     loadCompetitionManagerEmails(supabase),
   ]);
-  return uniqueEmails([...captainEmails, ...managerEmails]);
+  return uniqueEmails([...captainEmailsFromContacts(contacts), ...managerEmails]);
+}
+
+async function loadCaptainContactFields(
+  homeTeamId: string,
+  awayTeamId: string,
+  requestingTeamId: string,
+) {
+  const supabase = createServiceClient();
+  const contacts = await loadCaptainContactsForTeams(supabase, [
+    homeTeamId,
+    awayTeamId,
+  ]);
+  const { requesting, receiving } = splitRequestingAndReceivingCaptains(
+    contacts,
+    homeTeamId,
+    awayTeamId,
+    requestingTeamId,
+  );
+  return {
+    captainFields: toCaptainContactFields(requesting, receiving),
+    webhookFields: captainContactWebhookFields(requesting, receiving),
+  };
 }
 
 async function sendPayload(
@@ -104,14 +108,25 @@ async function sendPayload(
     homeTeamName: string;
     awayTeamName: string;
     requestingTeamName: string;
+    requestingTeamId: string;
     action?: HomeAwaySwitchDecision;
   },
+  homeTeamId: string,
+  awayTeamId: string,
   cc: string[],
   locale?: string | null,
 ): Promise<boolean> {
+  const { captainFields, webhookFields } = await loadCaptainContactFields(
+    homeTeamId,
+    awayTeamId,
+    ctx.requestingTeamId,
+  );
+
   const emailContext = await loadEmailTemplateContext(locale);
   const matchUrl = matchPostponementUrl(ctx.matchId);
   const loginUrl = loginThenMatchUrl(ctx.matchId);
+
+  const buildCtx = { ...ctx, ...captainFields };
 
   const { subject, bodyText, bodyHtml } = ctx.action
     ? buildHomeAwaySwitchDecisionEmail(
@@ -122,13 +137,14 @@ async function sendPayload(
           awayTeamName: ctx.awayTeamName,
           requestingTeamName: ctx.requestingTeamName,
           action: ctx.action,
+          ...captainFields,
         },
         matchUrl,
         loginUrl,
         emailContext,
       )
     : buildHomeAwaySwitchProposedEmail(
-        ctx,
+        buildCtx,
         matchUrl,
         loginUrl,
         emailContext,
@@ -156,6 +172,7 @@ async function sendPayload(
       away_team_name: ctx.awayTeamName,
       requesting_team_name: ctx.requestingTeamName,
       action: actionLabel,
+      ...webhookFields,
     },
     { eventType },
   );
@@ -170,7 +187,7 @@ export async function sendHomeAwaySwitchProposedEmail(
 ): Promise<void> {
   const cc = await loadHomeAwaySwitchCc(homeTeamId, awayTeamId);
   if (cc.length === 0) return;
-  await sendPayload("home_away_switch_proposed", ctx, cc, locale);
+  await sendPayload("home_away_switch_proposed", ctx, homeTeamId, awayTeamId, cc, locale);
 }
 
 /** Send Make notification when a home/away switch request is approved/rejected/cancelled. */
@@ -192,6 +209,8 @@ export async function sendHomeAwaySwitchDecisionEmail(
   await sendPayload(
     eventTypeByAction[ctx.action],
     { ...ctx, action: ctx.action },
+    homeTeamId,
+    awayTeamId,
     cc,
     locale,
   );

@@ -5,6 +5,13 @@ import {
   loadEmailTemplateContext,
 } from "@/lib/i18n/email-templates";
 import { createServiceClient } from "@/lib/supabase/server-client";
+import {
+  captainContactWebhookFields,
+  captainEmailsFromContacts,
+  loadCaptainContactsForTeams,
+  splitRequestingAndReceivingCaptains,
+  toCaptainContactFields,
+} from "./captain-contacts";
 import { sendMakeWebhook } from "./make-webhook";
 
 export type PostponementProposedEmailContext = {
@@ -15,6 +22,7 @@ export type PostponementProposedEmailContext = {
   previousDatetime: string;
   proposedDatetime: string;
   proposingTeamName: string;
+  requestingTeamId: string;
 };
 
 export type PostponementDecision = "approve" | "reject" | "cancel";
@@ -27,13 +35,9 @@ export type PostponementDecisionEmailContext = {
   previousDatetime: string;
   proposedDatetime: string;
   proposingTeamName: string;
+  requestingTeamId: string;
   action: PostponementDecision;
 };
-
-function unwrapOne<T>(value: T | T[] | null): T | null {
-  if (value == null) return null;
-  return Array.isArray(value) ? (value[0] ?? null) : value;
-}
 
 export function getAppBaseUrl(): string {
   const fromEnv =
@@ -53,30 +57,6 @@ export function matchPostponementUrl(matchId: string): string {
 export function loginThenMatchUrl(matchId: string): string {
   const next = encodeURIComponent(`/matches/${matchId}`);
   return `${getAppBaseUrl()}/login?next=${next}`;
-}
-
-async function loadCaptainEmailsForTeams(
-  supabase: SupabaseClient,
-  teamIds: string[],
-): Promise<string[]> {
-  if (teamIds.length === 0) return [];
-
-  const { data: teams, error } = await supabase
-    .from("teams")
-    .select("captain_id, captain:players(email)")
-    .in("id", teamIds);
-
-  if (error) throw error;
-
-  const emails: string[] = [];
-  for (const team of teams ?? []) {
-    const captain = unwrapOne(
-      team.captain as { email: string | null } | { email: string | null }[] | null,
-    );
-    const email = captain?.email?.trim();
-    if (email) emails.push(email);
-  }
-  return emails;
 }
 
 async function loadCompetitionManagerEmails(
@@ -113,16 +93,38 @@ function uniqueEmails(addresses: string[]): string[] {
   return out;
 }
 
-export async function loadPostponementProposedCc(
+async function loadWorkflowCc(
   homeTeamId: string,
   awayTeamId: string,
 ): Promise<string[]> {
   const supabase = createServiceClient();
-  const [captainEmails, managerEmails] = await Promise.all([
-    loadCaptainEmailsForTeams(supabase, [homeTeamId, awayTeamId]),
+  const [contacts, managerEmails] = await Promise.all([
+    loadCaptainContactsForTeams(supabase, [homeTeamId, awayTeamId]),
     loadCompetitionManagerEmails(supabase),
   ]);
-  return uniqueEmails([...captainEmails, ...managerEmails]);
+  return uniqueEmails([...captainEmailsFromContacts(contacts), ...managerEmails]);
+}
+
+async function loadCaptainContactFields(
+  homeTeamId: string,
+  awayTeamId: string,
+  requestingTeamId: string,
+) {
+  const supabase = createServiceClient();
+  const contacts = await loadCaptainContactsForTeams(supabase, [
+    homeTeamId,
+    awayTeamId,
+  ]);
+  const { requesting, receiving } = splitRequestingAndReceivingCaptains(
+    contacts,
+    homeTeamId,
+    awayTeamId,
+    requestingTeamId,
+  );
+  return {
+    captainFields: toCaptainContactFields(requesting, receiving),
+    webhookFields: captainContactWebhookFields(requesting, receiving),
+  };
 }
 
 /** Sends postponement-proposed email via Make.com (CC: both captains + competition managers). */
@@ -132,13 +134,19 @@ export async function sendPostponementProposedEmail(
   awayTeamId: string,
   locale?: string | null,
 ): Promise<void> {
-  const cc = await loadPostponementProposedCc(homeTeamId, awayTeamId);
+  const cc = await loadWorkflowCc(homeTeamId, awayTeamId);
   if (cc.length === 0) return;
+
+  const { captainFields, webhookFields } = await loadCaptainContactFields(
+    homeTeamId,
+    awayTeamId,
+    ctx.requestingTeamId,
+  );
 
   const emailContext = await loadEmailTemplateContext(locale);
   const matchUrl = matchPostponementUrl(ctx.matchId);
   const { subject, bodyText, bodyHtml } = buildPostponementProposedEmail(
-    ctx,
+    { ...ctx, ...captainFields },
     matchUrl,
     emailContext,
   );
@@ -157,6 +165,7 @@ export async function sendPostponementProposedEmail(
       proposing_team_name: ctx.proposingTeamName,
       previous_datetime: ctx.previousDatetime,
       proposed_datetime: ctx.proposedDatetime,
+      ...webhookFields,
     },
     { eventType: "postponement_proposed" },
   );
@@ -169,14 +178,20 @@ export async function sendPostponementDecisionEmail(
   awayTeamId: string,
   locale?: string | null,
 ): Promise<void> {
-  const cc = await loadPostponementProposedCc(homeTeamId, awayTeamId);
+  const cc = await loadWorkflowCc(homeTeamId, awayTeamId);
   if (cc.length === 0) return;
+
+  const { captainFields, webhookFields } = await loadCaptainContactFields(
+    homeTeamId,
+    awayTeamId,
+    ctx.requestingTeamId,
+  );
 
   const emailContext = await loadEmailTemplateContext(locale);
   const matchUrl = matchPostponementUrl(ctx.matchId);
   const loginUrl = loginThenMatchUrl(ctx.matchId);
   const { subject, bodyText, bodyHtml } = buildPostponementDecisionEmail(
-    ctx,
+    { ...ctx, ...captainFields },
     matchUrl,
     loginUrl,
     emailContext,
@@ -212,6 +227,7 @@ export async function sendPostponementDecisionEmail(
       previous_datetime: ctx.previousDatetime,
       proposed_datetime: ctx.proposedDatetime,
       action: actionLabelByAction[ctx.action],
+      ...webhookFields,
     },
     { eventType: eventTypeByAction[ctx.action] },
   );

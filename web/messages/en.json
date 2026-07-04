@@ -732,6 +732,12 @@
     }
   },
   "emails": {
+    "captainContacts": {
+      "doNotReply": "Please do not reply to this email. For questions about this request, contact the other captain directly using the details below.",
+      "requestingCaptain": "Requesting captain: {name} ({email})",
+      "receivingCaptain": "Receiving captain: {name} ({email})",
+      "emailUnavailable": "email not on file"
+    },
     "arbiterRequestCreated": {
       "subject": "Arbiter request: {matchLine}",
       "bodyIntro": "A team captain submitted an arbiter request with an attachment.",

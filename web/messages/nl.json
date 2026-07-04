@@ -732,6 +732,12 @@
     }
   },
   "emails": {
+    "captainContacts": {
+      "doNotReply": "Antwoord niet op deze e-mail. Voor vragen over dit verzoek, neem rechtstreeks contact op met de andere aanvoerder via de gegevens hieronder.",
+      "requestingCaptain": "Aanvragende aanvoerder: {name} ({email})",
+      "receivingCaptain": "Ontvangende aanvoerder: {name} ({email})",
+      "emailUnavailable": "e-mailadres niet bekend"
+    },
     "arbiterRequestCreated": {
       "subject": "Scheidsrechterverzoek: {matchLine}",
       "bodyIntro": "Een teamaanvoerder diende een scheidsrechterverzoek in met bijlage.",

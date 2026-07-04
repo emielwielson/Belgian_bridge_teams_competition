@@ -24,11 +24,34 @@ function mockServiceClient() {
             in: () =>
               Promise.resolve({
                 data: [
-                  { captain: { email: "captain-home@example.com" } },
-                  { captain: { email: "captain-away@example.com" } },
+                  {
+                    id: "home-1",
+                    captain: {
+                      id: "cap-home",
+                      name: "Home Captain",
+                      email: "captain-home@example.com",
+                    },
+                  },
+                  {
+                    id: "away-1",
+                    captain: {
+                      id: "cap-away",
+                      name: "Away Captain",
+                      email: "captain-away@example.com",
+                    },
+                  },
                 ],
                 error: null,
               }),
+          }),
+        };
+      }
+      if (table === "player_auth_links") {
+        return {
+          select: () => ({
+            eq: () => ({
+              limit: () => Promise.resolve({ data: [], error: null }),
+            }),
           }),
         };
       }
@@ -77,6 +100,7 @@ describe("home-away-switch-email", () => {
         homeTeamName: "Home FC",
         awayTeamName: "Away FC",
         requestingTeamName: "Home FC",
+        requestingTeamId: "home-1",
       },
       "home-1",
       "away-1",
@@ -89,6 +113,13 @@ describe("home-away-switch-email", () => {
         match_url: "https://app.example.com/matches/m1",
         login_url: "https://app.example.com/login?next=%2Fmatches%2Fm1",
         cc: expect.arrayContaining(["captain-home@example.com", "manager@example.com"]),
+        requesting_captain_name: "Home Captain",
+        requesting_captain_email: "captain-home@example.com",
+        receiving_captain_name: "Away Captain",
+        receiving_captain_email: "captain-away@example.com",
+        body_text: expect.stringMatching(
+          /Please do not reply to this email[\s\S]*Home Captain/,
+        ),
       }),
       expect.objectContaining({ eventType: "home_away_switch_proposed" }),
     );
@@ -102,6 +133,7 @@ describe("home-away-switch-email", () => {
         homeTeamName: "Home FC",
         awayTeamName: "Away FC",
         requestingTeamName: "Home FC",
+        requestingTeamId: "home-1",
         action: "approve",
       },
       "home-1",
@@ -110,7 +142,10 @@ describe("home-away-switch-email", () => {
     );
 
     expect(sendMakeWebhook).toHaveBeenCalledWith(
-      expect.objectContaining({ action: "approved" }),
+      expect.objectContaining({
+        action: "approved",
+        receiving_captain_name: "Away Captain",
+      }),
       expect.objectContaining({ eventType: "home_away_switch_approved" }),
     );
   });

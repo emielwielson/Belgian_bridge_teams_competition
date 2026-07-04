@@ -23,7 +23,14 @@ export type EmailTemplateContext = {
 
 type WorkflowDecision = "approve" | "reject" | "cancel";
 
-export type PostponementProposedEmailBuildContext = {
+export type CaptainContactFields = {
+  requestingCaptainName: string;
+  requestingCaptainEmail: string | null;
+  receivingCaptainName: string;
+  receivingCaptainEmail: string | null;
+};
+
+export type PostponementProposedEmailBuildContext = CaptainContactFields & {
   matchId: string;
   round: number;
   homeTeamName: string;
@@ -38,7 +45,7 @@ export type PostponementDecisionEmailBuildContext =
     action: WorkflowDecision;
   };
 
-export type HomeAwaySwitchProposedEmailBuildContext = {
+export type HomeAwaySwitchProposedEmailBuildContext = CaptainContactFields & {
   matchId: string;
   round: number;
   homeTeamName: string;
@@ -124,6 +131,39 @@ async function loadEmailMessages(locale: Locale): Promise<EmailMessages> {
   }
 }
 
+function formatCaptainEmail(
+  t: EmailTranslator,
+  email: string | null,
+): string {
+  return email ?? t("captainContacts.emailUnavailable");
+}
+
+function buildCaptainContactBlock(
+  ctx: CaptainContactFields,
+  { t }: Pick<EmailTemplateContext, "t">,
+): { textLines: string[]; htmlBlock: string } {
+  const requestingEmail = formatCaptainEmail(t, ctx.requestingCaptainEmail);
+  const receivingEmail = formatCaptainEmail(t, ctx.receivingCaptainEmail);
+
+  const requestingLine = t("captainContacts.requestingCaptain", {
+    name: ctx.requestingCaptainName,
+    email: requestingEmail,
+  });
+  const receivingLine = t("captainContacts.receivingCaptain", {
+    name: ctx.receivingCaptainName,
+    email: receivingEmail,
+  });
+  const doNotReply = t("captainContacts.doNotReply");
+
+  return {
+    textLines: ["", doNotReply, requestingLine, receivingLine, ""],
+    htmlBlock: [
+      `<p>${doNotReply}</p>`,
+      `<p>${requestingLine}<br>${receivingLine}</p>`,
+    ].join(""),
+  };
+}
+
 export function buildPostponementProposedEmail(
   ctx: PostponementProposedEmailBuildContext,
   matchUrl: string,
@@ -143,11 +183,13 @@ export function buildPostponementProposedEmail(
     round: ctx.round,
   });
 
+  const captainBlock = buildCaptainContactBlock(ctx, { t });
+
   const bodyText = [
     t("postponementProposed.bodyIntro", {
       proposingTeam: ctx.proposingTeamName,
     }),
-    "",
+    ...captainBlock.textLines,
     roundLine,
     t("postponementProposed.currentDate", { datetime: previous }),
     t("postponementProposed.proposedDate", { datetime: proposed }),
@@ -158,6 +200,7 @@ export function buildPostponementProposedEmail(
 
   const bodyHtml = [
     `<p>${t("postponementProposed.bodyIntro", { proposingTeam: ctx.proposingTeamName })}</p>`,
+    captainBlock.htmlBlock,
     `<p><strong>${roundLine}</strong><br>`,
     `${t("postponementProposed.currentDate", { datetime: previous })}<br>`,
     `${t("postponementProposed.proposedDate", { datetime: proposed })}</p>`,
@@ -191,12 +234,14 @@ export function buildPostponementDecisionEmail(
     round: ctx.round,
   });
 
+  const captainBlock = buildCaptainContactBlock(ctx, { t });
+
   const bodyText = [
     t("postponementDecision.bodyIntro", {
       proposingTeam: ctx.proposingTeamName,
       action: actionLabel,
     }),
-    "",
+    ...captainBlock.textLines,
     roundLine,
     t("postponementDecision.currentDate", { datetime: previous }),
     t("postponementDecision.proposedDate", { datetime: proposed }),
@@ -210,6 +255,7 @@ export function buildPostponementDecisionEmail(
       proposingTeam: ctx.proposingTeamName,
       action: actionLabel,
     })}</p>`,
+    captainBlock.htmlBlock,
     `<p><strong>${roundLine}</strong><br>`,
     `${t("postponementDecision.currentDate", { datetime: previous })}<br>`,
     `${t("postponementDecision.proposedDate", { datetime: proposed })}</p>`,
@@ -238,11 +284,13 @@ export function buildHomeAwaySwitchProposedEmail(
     round: ctx.round,
   });
 
+  const captainBlock = buildCaptainContactBlock(ctx, { t });
+
   const bodyText = [
     t("homeAwaySwitchProposed.bodyProposed", {
       requestingTeam: ctx.requestingTeamName,
     }),
-    "",
+    ...captainBlock.textLines,
     matchLine,
     "",
     t("homeAwaySwitchProposed.openMatch", { url: matchUrl }),
@@ -253,6 +301,7 @@ export function buildHomeAwaySwitchProposedEmail(
     `<p>${t("homeAwaySwitchProposed.bodyProposed", {
       requestingTeam: ctx.requestingTeamName,
     })}</p>`,
+    captainBlock.htmlBlock,
     `<p><strong>${matchLine}</strong></p>`,
     `<p><a href="${matchUrl}">${t("homeAwaySwitchDecision.openMatch")}</a><br>`,
     `<a href="${loginUrl}">${t("homeAwaySwitchDecision.loginFirst")}</a></p>`,
@@ -283,12 +332,14 @@ export function buildHomeAwaySwitchDecisionEmail(
     round: ctx.round,
   });
 
+  const captainBlock = buildCaptainContactBlock(ctx, { t });
+
   const bodyText = [
     t("homeAwaySwitchDecision.bodyDecision", {
       requestingTeam: ctx.requestingTeamName,
       action: actionLabel,
     }),
-    "",
+    ...captainBlock.textLines,
     matchLine,
     "",
     `${t("homeAwaySwitchDecision.openMatch")}: ${matchUrl}`,
@@ -300,6 +351,7 @@ export function buildHomeAwaySwitchDecisionEmail(
       requestingTeam: ctx.requestingTeamName,
       action: actionLabel,
     })}</p>`,
+    captainBlock.htmlBlock,
     `<p><strong>${matchLine}</strong></p>`,
     `<p><a href="${matchUrl}">${t("homeAwaySwitchDecision.openMatch")}</a><br>`,
     `<a href="${loginUrl}">${t("homeAwaySwitchDecision.loginFirst")}</a></p>`,

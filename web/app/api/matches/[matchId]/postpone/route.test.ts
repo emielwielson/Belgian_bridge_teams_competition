@@ -30,6 +30,7 @@ vi.mock("@/lib/competition/postponement", () => ({
 
 vi.mock("@/lib/competition/revalidate-standings", () => ({
   revalidateStandingsForGroup: vi.fn(),
+  revalidateMatchDerivedViews: vi.fn(),
 }));
 
 vi.mock("@/lib/notifications/postponement-email", () => ({
@@ -171,7 +172,10 @@ describe("/api/matches/[matchId]/postpone", () => {
       "approve",
     );
     expect(sendPostponementDecisionEmail).toHaveBeenCalledWith(
-      expect.objectContaining({ action: "approve" }),
+      expect.objectContaining({
+        action: "approve",
+        requestingTeamId: "home-1",
+      }),
       "home-1",
       "away-1",
       "en",

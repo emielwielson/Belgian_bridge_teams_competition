@@ -731,6 +731,12 @@
     }
   },
   "emails": {
+    "captainContacts": {
+      "doNotReply": "Ne répondez pas à cet e-mail. Pour toute question concernant cette demande, contactez directement l'autre capitaine via les coordonnées ci-dessous.",
+      "requestingCaptain": "Capitaine demandeur : {name} ({email})",
+      "receivingCaptain": "Capitaine destinataire : {name} ({email})",
+      "emailUnavailable": "e-mail non renseigné"
+    },
     "arbiterRequestCreated": {
       "subject": "Demande d'arbitre : {matchLine}",
       "bodyIntro": "Un capitaine d'équipe a soumis une demande d'arbitre avec une pièce jointe.",
