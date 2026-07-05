@@ -3,8 +3,10 @@
 -- Duplicate player emails allowed
 do $$
 begin
-  insert into public.players (name, email) values ('Smoke A', 'shared-smoke@example.com');
-  insert into public.players (name, email) values ('Smoke B', 'shared-smoke@example.com');
+  insert into public.players (name, email, federation)
+  values ('Smoke A', 'shared-smoke@example.com', 'vbl');
+  insert into public.players (name, email, federation)
+  values ('Smoke B', 'shared-smoke@example.com', 'vbl');
 exception
   when unique_violation then
     raise exception 'Duplicate player emails should be allowed';
