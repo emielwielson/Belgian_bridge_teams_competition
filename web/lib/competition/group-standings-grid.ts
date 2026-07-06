@@ -68,22 +68,49 @@ function pairingClassForIndex(index: number): string {
   return PAIRING_BG_CLASSES[index % PAIRING_BG_CLASSES.length];
 }
 
+/** Column header date: most common fixture time in the round (official schedule date). */
+function roundColumnDatetime(datetimes: string[]): string | null {
+  if (datetimes.length === 0) return null;
+
+  const counts = new Map<string, number>();
+  for (const dt of datetimes) {
+    counts.set(dt, (counts.get(dt) ?? 0) + 1);
+  }
+
+  let best = datetimes[0];
+  let bestCount = 0;
+  for (const [dt, count] of counts) {
+    if (
+      count > bestCount ||
+      (count === bestCount && dt.localeCompare(best) < 0)
+    ) {
+      best = dt;
+      bestCount = count;
+    }
+  }
+  return best;
+}
+
 function buildRoundColumns(
   matches: GroupMatchRow[],
+  roundNumbers: number[],
   intlLocale: string,
 ): RoundColumn[] {
   const byRound = new Map<number, string[]>();
   for (const match of matches) {
+    if (!match.home_team_id) continue;
     const list = byRound.get(match.round) ?? [];
     list.push(match.datetime);
     byRound.set(match.round, list);
   }
 
-  return [...byRound.entries()]
-    .sort(([a], [b]) => a - b)
-    .map(([round, datetimes]) => {
-      const earliest = datetimes.sort()[0];
-      const { date, time } = formatBrusselsRoundHeader(earliest, intlLocale);
+  return [...roundNumbers]
+    .sort((a, b) => a - b)
+    .map((round) => {
+      const anchor =
+        roundColumnDatetime(byRound.get(round) ?? []) ??
+        new Date(0).toISOString();
+      const { date, time } = formatBrusselsRoundHeader(anchor, intlLocale);
       return { round, dateLabel: date, timeLabel: time };
     });
 }
@@ -110,21 +137,9 @@ export function buildGroupStandingsGrid(
       roundDatetimes.set(bye.round, []);
     }
   }
-  const syntheticMatches: GroupMatchRow[] = [...roundDatetimes.keys()]
-    .sort((a, b) => a - b)
-    .filter((round) => !matches.some((m) => m.round === round))
-    .map((round) => ({
-      id: `bye-round-${round}`,
-      round,
-      datetime: new Date(0).toISOString(),
-      home_team_id: "",
-      away_team_id: "",
-      vp_home: null,
-      vp_away: null,
-      played_at: null,
-    }));
   const rounds = buildRoundColumns(
-    [...matches, ...syntheticMatches],
+    matches,
+    [...roundDatetimes.keys()],
     intlLocale,
   );
   const roundDateLabelByRound = new Map(

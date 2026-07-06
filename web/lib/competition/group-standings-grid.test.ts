@@ -105,6 +105,65 @@ describe("buildGroupStandingsGrid", () => {
     expect(lateHome.scheduledLabel).not.toBe(grid.rounds[0].dateLabel);
   });
 
+  it("keeps round column on majority date when one fixture is postponed", () => {
+    const officialDate = "2026-12-05T13:00:00+00:00";
+    const postponedDate = "2026-10-31T12:00:00+00:00";
+    const roundTeams: StandingsTeamRow[] = [
+      { team_id: "t1", team_name: "Alpha", vp_total: 0 },
+      { team_id: "t2", team_name: "Bravo", vp_total: 0 },
+      { team_id: "t3", team_name: "Charlie", vp_total: 0 },
+      { team_id: "t4", team_name: "Delta", vp_total: 0 },
+      { team_id: "t5", team_name: "Echo", vp_total: 0 },
+      { team_id: "t6", team_name: "Foxtrot", vp_total: 0 },
+      { team_id: "t7", team_name: "Namur", vp_total: 0 },
+      { team_id: "t8", team_name: "Kwadraat", vp_total: 0 },
+    ];
+    const matches = [
+      match({
+        round: 9,
+        id: "majority-1",
+        played_at: null,
+        datetime: officialDate,
+        home_team_id: "t1",
+        away_team_id: "t2",
+      }),
+      match({
+        round: 9,
+        id: "majority-2",
+        played_at: null,
+        datetime: officialDate,
+        home_team_id: "t3",
+        away_team_id: "t4",
+      }),
+      match({
+        round: 9,
+        id: "majority-3",
+        played_at: null,
+        datetime: officialDate,
+        home_team_id: "t5",
+        away_team_id: "t6",
+      }),
+      match({
+        round: 9,
+        id: "postponed",
+        played_at: null,
+        datetime: postponedDate,
+        home_team_id: "t7",
+        away_team_id: "t8",
+      }),
+    ];
+    const grid = buildGroupStandingsGrid(roundTeams, matches, [], "nl-BE");
+    expect(grid.rounds[0].dateLabel).toBe("05/12/26");
+
+    expect(grid.rows.find((r) => r.teamId === "t1")!.cells[0].scheduledLabel).toBeNull();
+    expect(grid.rows.find((r) => r.teamId === "t7")!.cells[0].scheduledLabel).toBe(
+      "31/10/26",
+    );
+    expect(grid.rows.find((r) => r.teamId === "t8")!.cells[0].scheduledLabel).toBe(
+      "31/10/26",
+    );
+  });
+
   it("omits scheduled label when match is scored", () => {
     const matches = [match({ round: 1 })];
     const grid = buildGroupStandingsGrid(teams, matches);
