@@ -76,8 +76,10 @@ describe("buildGroupStandingsGrid", () => {
   it("omits scheduled label when match date matches round column", () => {
     const matches = [match({ round: 1, played_at: null })];
     const grid = buildGroupStandingsGrid(teams, matches);
-    expect(grid.rows[0].cells[0].scheduledLabel).toBeNull();
-    expect(grid.rows[1].cells[0].scheduledLabel).toBeNull();
+    expect(grid.rows[0].cells[0].scheduledDateLabel).toBeNull();
+    expect(grid.rows[0].cells[0].scheduledTimeLabel).toBeNull();
+    expect(grid.rows[1].cells[0].scheduledDateLabel).toBeNull();
+    expect(grid.rows[1].cells[0].scheduledTimeLabel).toBeNull();
   });
 
   it("shows scheduled label when match date differs from round column", () => {
@@ -100,9 +102,11 @@ describe("buildGroupStandingsGrid", () => {
     const grid = buildGroupStandingsGrid(teams, matches);
     const earlyHome = grid.rows.find((r) => r.teamId === "t1")!.cells[0];
     const lateHome = grid.rows.find((r) => r.teamId === "t3")!.cells[0];
-    expect(earlyHome.scheduledLabel).toBeNull();
-    expect(lateHome.scheduledLabel).toBeTruthy();
-    expect(lateHome.scheduledLabel).not.toBe(grid.rounds[0].dateLabel);
+    expect(earlyHome.scheduledDateLabel).toBeNull();
+    expect(earlyHome.scheduledTimeLabel).toBeNull();
+    expect(lateHome.scheduledDateLabel).toBeTruthy();
+    expect(lateHome.scheduledTimeLabel).toBeTruthy();
+    expect(lateHome.scheduledDateLabel).not.toBe(grid.rounds[0].dateLabel);
   });
 
   it("keeps round column on majority date when one fixture is postponed", () => {
@@ -154,20 +158,52 @@ describe("buildGroupStandingsGrid", () => {
     ];
     const grid = buildGroupStandingsGrid(roundTeams, matches, [], "nl-BE");
     expect(grid.rounds[0].dateLabel).toBe("05/12/26");
+    expect(grid.rounds[0].timeLabel).toBe("14:00");
 
-    expect(grid.rows.find((r) => r.teamId === "t1")!.cells[0].scheduledLabel).toBeNull();
-    expect(grid.rows.find((r) => r.teamId === "t7")!.cells[0].scheduledLabel).toBe(
+    expect(grid.rows.find((r) => r.teamId === "t1")!.cells[0].scheduledDateLabel).toBeNull();
+    expect(grid.rows.find((r) => r.teamId === "t7")!.cells[0].scheduledDateLabel).toBe(
       "31/10/26",
     );
-    expect(grid.rows.find((r) => r.teamId === "t8")!.cells[0].scheduledLabel).toBe(
+    expect(grid.rows.find((r) => r.teamId === "t7")!.cells[0].scheduledTimeLabel).toBe(
+      "13:00",
+    );
+    expect(grid.rows.find((r) => r.teamId === "t8")!.cells[0].scheduledDateLabel).toBe(
       "31/10/26",
     );
+    expect(grid.rows.find((r) => r.teamId === "t8")!.cells[0].scheduledTimeLabel).toBe(
+      "13:00",
+    );
+  });
+
+  it("shows scheduled time when only the hour differs on the same day", () => {
+    const matches = [
+      match({
+        round: 1,
+        id: "m1",
+        played_at: null,
+        datetime: "2024-10-04T12:00:00.000Z",
+      }),
+      match({
+        round: 1,
+        id: "m2",
+        played_at: null,
+        datetime: "2024-10-04T16:00:00.000Z",
+        home_team_id: "t3",
+        away_team_id: "t4",
+      }),
+    ];
+    const grid = buildGroupStandingsGrid(teams, matches);
+    const lateHome = grid.rows.find((r) => r.teamId === "t3")!.cells[0];
+    expect(lateHome.scheduledDateLabel).toBeNull();
+    expect(lateHome.scheduledTimeLabel).toBeTruthy();
+    expect(lateHome.scheduledTimeLabel).not.toBe(grid.rounds[0].timeLabel);
   });
 
   it("omits scheduled label when match is scored", () => {
     const matches = [match({ round: 1 })];
     const grid = buildGroupStandingsGrid(teams, matches);
-    expect(grid.rows[0].cells[0].scheduledLabel).toBeNull();
+    expect(grid.rows[0].cells[0].scheduledDateLabel).toBeNull();
+    expect(grid.rows[0].cells[0].scheduledTimeLabel).toBeNull();
     expect(grid.rows[0].cells[0].vp).toBe(12);
   });
 

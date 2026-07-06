@@ -31,8 +31,8 @@ const sampleGrid: GroupStandingsGridData = {
       vpTotal: 20,
       penaltyVp: 0,
       cells: [
-        { vp: 14, isHome: true, pairingClass: "bg-sky-100", matchId: "m1", scheduledLabel: null },
-        { vp: null, isHome: false, pairingClass: "bg-amber-100", matchId: null, scheduledLabel: null },
+        { vp: 14, isHome: true, pairingClass: "bg-sky-100", matchId: "m1", scheduledDateLabel: null, scheduledTimeLabel: null },
+        { vp: null, isHome: false, pairingClass: "bg-amber-100", matchId: null, scheduledDateLabel: null, scheduledTimeLabel: null },
       ],
     },
     {
@@ -42,8 +42,8 @@ const sampleGrid: GroupStandingsGridData = {
       vpTotal: 12,
       penaltyVp: 0,
       cells: [
-        { vp: 6, isHome: false, pairingClass: "bg-sky-100", matchId: null, scheduledLabel: null },
-        { vp: 10, isHome: true, pairingClass: "bg-amber-100", matchId: "m2", scheduledLabel: null },
+        { vp: 6, isHome: false, pairingClass: "bg-sky-100", matchId: null, scheduledDateLabel: null, scheduledTimeLabel: null },
+        { vp: 10, isHome: true, pairingClass: "bg-amber-100", matchId: "m2", scheduledDateLabel: null, scheduledTimeLabel: null },
       ],
     },
   ],

@@ -39,8 +39,10 @@ export type GridCell = {
   pairingClass: string | null;
   /** Home fixture in this round; links to match scoring. */
   matchId: string | null;
-  /** Compact date when unscored and different from the round column date. */
-  scheduledLabel: string | null;
+  /** Postponed fixture date when unscored and different from the round column. */
+  scheduledDateLabel: string | null;
+  /** Postponed fixture time when unscored and different from the round column. */
+  scheduledTimeLabel: string | null;
 };
 
 export type RoundColumn = {
@@ -142,9 +144,7 @@ export function buildGroupStandingsGrid(
     [...roundDatetimes.keys()],
     intlLocale,
   );
-  const roundDateLabelByRound = new Map(
-    rounds.map((col) => [col.round, col.dateLabel]),
-  );
+  const roundColumnByRound = new Map(rounds.map((col) => [col.round, col]));
   const hasMatches = matches.length > 0 || byeRounds.length > 0;
 
   const cellMaps = new Map<string, Map<number, GridCell>>();
@@ -168,13 +168,16 @@ export function buildGroupStandingsGrid(
       const awayVp = scored ? match.vp_away : null;
       const hostTeamId = match.hosting_team_id ?? match.home_team_id;
 
-      const matchDateLabel = formatBrusselsRoundHeader(
-        match.datetime,
-        intlLocale,
-      ).date;
-      const roundDateLabel = roundDateLabelByRound.get(round);
-      const scheduledLabel =
-        scored || matchDateLabel === roundDateLabel ? null : matchDateLabel;
+      const matchHeader = formatBrusselsRoundHeader(match.datetime, intlLocale);
+      const roundCol = roundColumnByRound.get(round);
+      const dateDiffers =
+        roundCol != null && matchHeader.date !== roundCol.dateLabel;
+      const timeDiffers =
+        roundCol != null && matchHeader.time !== roundCol.timeLabel;
+      const postponed = !scored && (dateDiffers || timeDiffers);
+      const scheduledDateLabel = postponed && dateDiffers ? matchHeader.date : null;
+      const scheduledTimeLabel =
+        postponed && (dateDiffers || timeDiffers) ? matchHeader.time : null;
 
       const setCell = (
         teamId: string,
@@ -192,7 +195,8 @@ export function buildGroupStandingsGrid(
           isHome,
           pairingClass,
           matchId,
-          scheduledLabel,
+          scheduledDateLabel,
+          scheduledTimeLabel,
         });
       };
 
@@ -216,7 +220,8 @@ export function buildGroupStandingsGrid(
     isHome: false,
     pairingClass: null,
     matchId: null,
-    scheduledLabel: null,
+    scheduledDateLabel: null,
+    scheduledTimeLabel: null,
   };
 
   for (const bye of byeRounds) {
@@ -231,7 +236,8 @@ export function buildGroupStandingsGrid(
       isHome: false,
       pairingClass: null,
       matchId: null,
-      scheduledLabel: null,
+      scheduledDateLabel: null,
+      scheduledTimeLabel: null,
     });
   }
 
@@ -245,7 +251,8 @@ export function buildGroupStandingsGrid(
           isHome: false,
           pairingClass: null,
           matchId: null,
-          scheduledLabel: null,
+          scheduledDateLabel: null,
+          scheduledTimeLabel: null,
         };
       }
       return teamCells?.get(round) ?? emptyCell;

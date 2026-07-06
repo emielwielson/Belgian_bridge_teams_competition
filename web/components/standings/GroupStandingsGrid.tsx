@@ -154,9 +154,16 @@ export function GroupStandingsGrid({ grid, labels }: Props) {
                       ) : null}
                       {cell.vp != null ? (
                         <span>{cell.vp}</span>
-                      ) : cell.scheduledLabel ? (
-                        <span className="text-[11px] text-zinc-600">
-                          {cell.scheduledLabel}
+                      ) : cell.scheduledDateLabel || cell.scheduledTimeLabel ? (
+                        <span className="text-[11px] leading-tight text-zinc-600 tabular-nums">
+                          <span className="block whitespace-nowrap">
+                            {cell.scheduledDateLabel}
+                          </span>
+                          {cell.scheduledTimeLabel ? (
+                            <span className="block whitespace-nowrap">
+                              {cell.scheduledTimeLabel}
+                            </span>
+                          ) : null}
                         </span>
                       ) : null}
                     </div>
