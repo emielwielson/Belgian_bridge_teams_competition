@@ -277,7 +277,7 @@
     "backStandings": "← Standings",
     "captain": "Captain",
     "captainNotSet": "Not set",
-    "location": "Location",
+    "location": "Competition location",
     "locationNotSet": "Not set",
     "playersTitle": "Players",
     "noPlayers": "No players on the roster yet.",
@@ -559,6 +559,24 @@
       "confirmGenerate": "Generate fixtures for all 8 divisions and start the league? Rosters will be locked after this.",
       "started": "League started. Fixtures generated and season is now active.",
       "calendarsFooter": "Calendars: {honorLabel}; {firstLabel}; {defaultLabel}."
+    },
+    "clubLocations": {
+      "title": "Competition locations",
+      "description": "Set where each club plays its home matches. Leave blank to use the club location from membership management.",
+      "club": "Club",
+      "defaultLocation": "Club location (membership)",
+      "defaultNotSet": "Not set",
+      "competitionLocation": "Competition location",
+      "competitionLocationPlaceholder": "Override (optional)",
+      "competitionLocationHint": "Changes are saved when you leave the field.",
+      "centralizedVenue": "Centralized venue",
+      "centralizedVenuePlaceholder": "Venue for all Honor Division matches",
+      "centralizedVenueHint": "All teams in this division play at this location. Club locations are not used.",
+      "honorDivisionVenueNote": "Honor Division matches are played at one centralized venue, not at individual club locations.",
+      "noClubs": "No clubs found.",
+      "loadFailed": "Failed to load club locations",
+      "saveFailed": "Failed to save location",
+      "saved": "Venue saved."
     },
     "teamsPanel": {
       "teamsProgress": "{current}/{max} teams",

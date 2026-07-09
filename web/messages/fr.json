@@ -277,7 +277,7 @@
     "backStandings": "← Classement",
     "captain": "Capitaine",
     "captainNotSet": "Non défini",
-    "location": "Lieu",
+    "location": "Lieu de compétition",
     "locationNotSet": "Non défini",
     "playersTitle": "Joueurs",
     "noPlayers": "Aucun joueur dans l'effectif pour l'instant.",
@@ -558,6 +558,24 @@
       "confirmGenerate": "Générer les rencontres pour les 8 divisions et démarrer la ligue ? Les effectifs seront verrouillés ensuite.",
       "started": "Ligue démarrée. Rencontres générées et saison maintenant active.",
       "calendarsFooter": "Calendriers : {honorLabel} ; {firstLabel} ; {defaultLabel}."
+    },
+    "clubLocations": {
+      "title": "Lieux de compétition",
+      "description": "Indiquez où chaque club joue ses matchs à domicile. Laissez vide pour utiliser le lieu du club depuis la gestion des membres.",
+      "club": "Club",
+      "defaultLocation": "Lieu du club (adhésions)",
+      "defaultNotSet": "Non défini",
+      "competitionLocation": "Lieu de compétition",
+      "competitionLocationPlaceholder": "Dérogation (facultatif)",
+      "competitionLocationHint": "Les modifications sont enregistrées lorsque vous quittez le champ.",
+      "centralizedVenue": "Lieu centralisé",
+      "centralizedVenuePlaceholder": "Lieu pour tous les matchs de Division d'Honneur",
+      "centralizedVenueHint": "Toutes les équipes de cette division jouent à ce lieu. Les lieux des clubs ne sont pas utilisés.",
+      "honorDivisionVenueNote": "Les matchs de Division d'Honneur se jouent sur un lieu centralisé, et non dans les clubs individuels.",
+      "noClubs": "Aucun club trouvé.",
+      "loadFailed": "Échec du chargement des lieux de compétition",
+      "saveFailed": "Échec de l'enregistrement du lieu",
+      "saved": "Lieu enregistré."
     },
     "teamsPanel": {
       "teamsProgress": "{current}/{max} équipes",

@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getActivePlayerId } from "@/lib/auth/active-player";
 import { getActiveSeason } from "@/lib/competition/season";
-import { teamLocationFromClub } from "@/lib/competition/team-location";
+import { resolveTeamMatchLocation } from "@/lib/competition/team-location";
 import { matchStatus, type MatchStatus } from "@/lib/scoring/match-state";
 import type { PostgrestError } from "@supabase/supabase-js";
 
@@ -134,13 +134,14 @@ export async function loadTeamDetail(
       name,
       captain_id,
       captain:players(id, name, member_number),
-      club:clubs(id, name, location),
+      club:clubs(id, name, location, competition_location),
       group:groups (
         id,
         name,
         division:divisions (
           id,
           name,
+          centralized_location,
           league:leagues (
             id,
             name
@@ -160,9 +161,12 @@ export async function loadTeamDetail(
   );
   if (!group) return null;
 
-  const division = unwrapOne<{ id: string; name: string; league: unknown }>(
-    group.division,
-  );
+  const division = unwrapOne<{
+    id: string;
+    name: string;
+    centralized_location: string | null;
+    league: unknown;
+  }>(group.division);
   if (!division) return null;
 
   const league = unwrapOne<{ id: string; name: string }>(division.league);
@@ -173,9 +177,12 @@ export async function loadTeamDetail(
     name: string;
     member_number: string | null;
   }>(teamRow.captain);
-  const club = unwrapOne<{ id: string; name: string; location: string | null }>(
-    teamRow.club,
-  );
+  const club = unwrapOne<{
+    id: string;
+    name: string;
+    location: string | null;
+    competition_location: string | null;
+  }>(teamRow.club);
   if (!club) return null;
 
   const season = await getActiveSeason(supabase);
@@ -264,7 +271,7 @@ export async function loadTeamDetail(
     team: {
       id: teamRow.id,
       name: teamRow.name,
-      location: teamLocationFromClub(club),
+      location: resolveTeamMatchLocation(club, division),
       captain_id: teamRow.captain_id,
     },
     captain: captainRaw

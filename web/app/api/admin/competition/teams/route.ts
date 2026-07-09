@@ -2,7 +2,7 @@ import { COMPETITION_ADMIN_ROLES, requireRoles } from "@/lib/auth/route-auth";
 import { syncGroupRoundCount } from "@/lib/competition/group-match-rounds";
 import { assertNationalGroupCanAddTeam } from "@/lib/competition/national-teams";
 import { requireActiveSeason } from "@/lib/competition/season";
-import { teamLocationFromClub } from "@/lib/competition/team-location";
+import { resolveTeamMatchLocation } from "@/lib/competition/team-location";
 import {
   assertCaptainIsClubMember,
   parseCaptainId,
@@ -26,10 +26,21 @@ export async function GET(request: Request) {
     const groupId = new URL(request.url).searchParams.get("groupId");
     if (!groupId) return jsonErrorCode(ErrorCodes.api.groupIdRequired, 400);
 
+    const { data: groupRow } = await supabase
+      .from("groups")
+      .select("division:divisions(centralized_location)")
+      .eq("id", groupId)
+      .maybeSingle();
+
+    const rawDivision = groupRow?.division as unknown;
+    const division = Array.isArray(rawDivision)
+      ? (rawDivision[0] as { centralized_location?: string | null } | undefined)
+      : (rawDivision as { centralized_location?: string | null } | null);
+
     const { data: teams, error } = await supabase
       .from("teams")
       .select(
-        "id, name, club_id, captain_id, club:clubs(id, name, region_id, location), captain:players(id, name, member_number)",
+        "id, name, club_id, captain_id, club:clubs(id, name, region_id, location, competition_location), captain:players(id, name, member_number)",
       )
       .eq("group_id", groupId)
       .order("name");
@@ -66,12 +77,18 @@ export async function GET(request: Request) {
       teams: (teams ?? []).map((t) => {
         const rawClub = t.club as unknown;
         const club = Array.isArray(rawClub)
-          ? (rawClub[0] as { location?: string | null } | undefined)
-          : (rawClub as { location?: string | null } | null);
+          ? (rawClub[0] as {
+              location?: string | null;
+              competition_location?: string | null;
+            } | undefined)
+          : (rawClub as {
+              location?: string | null;
+              competition_location?: string | null;
+            } | null);
         const { club: _club, captain: _captain, ...rest } = t;
         return {
           ...rest,
-          location: teamLocationFromClub(club),
+          location: resolveTeamMatchLocation(club, division),
           captain: unwrapCaptain(t.captain),
           roster: rosters[t.id] ?? [],
         };

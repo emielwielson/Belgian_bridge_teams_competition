@@ -44,7 +44,7 @@ export async function GET() {
 
     const { data: divisions, error: divError } = await supabase
       .from("divisions")
-      .select("id, name, league_id, division_level_id")
+      .select("id, name, league_id, division_level_id, centralized_location")
       .in("league_id", leagueIds);
 
     if (divError) return jsonError(divError.message, 500);
@@ -254,9 +254,22 @@ export async function PATCH(request: Request) {
 
     if (body.type === "division" && body.id) {
       await requireDivisionInSetup(supabase, body.id);
+      const patch: Record<string, unknown> = {};
+      if (body.name !== undefined) patch.name = body.name;
+      if (body.centralized_location !== undefined) {
+        if (body.centralized_location === null) {
+          patch.centralized_location = null;
+        } else if (typeof body.centralized_location === "string") {
+          const trimmed = body.centralized_location.trim();
+          patch.centralized_location = trimmed ? trimmed : null;
+        }
+      }
+      if (Object.keys(patch).length === 0) {
+        return jsonErrorCode(ErrorCodes.api.noFieldsToUpdate, 400);
+      }
       const { error } = await supabase
         .from("divisions")
-        .update({ name: body.name })
+        .update(patch)
         .eq("id", body.id);
       if (error) return jsonError(error.message, 400);
       return jsonOk({ updated: true });

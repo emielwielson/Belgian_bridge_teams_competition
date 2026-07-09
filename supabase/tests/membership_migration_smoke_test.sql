@@ -44,7 +44,8 @@ begin
     'players.id', 'players.name', 'players.member_number', 'players.email', 'players.created_at',
     'player_club_memberships.player_id', 'player_club_memberships.club_id',
     'player_club_memberships.season_id', 'player_club_memberships.created_at',
-    'clubs.id', 'clubs.name', 'clubs.region_id', 'clubs.location'
+    'clubs.id', 'clubs.name', 'clubs.region_id', 'clubs.location',
+    'clubs.competition_location'
   ]) as col
   where not exists (
     select 1

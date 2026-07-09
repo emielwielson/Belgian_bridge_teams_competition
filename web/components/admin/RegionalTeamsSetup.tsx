@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { sortDivisionsByCanonicalName } from "@/lib/competition/sort-divisions";
+import { ClubCompetitionLocationsPanel } from "./ClubCompetitionLocationsPanel";
 import { RegionalGroupScheduleSettings } from "./RegionalGroupScheduleSettings";
 import { TeamsSetupPanel } from "./TeamsSetupPanel";
 
@@ -149,6 +150,7 @@ export function RegionalTeamsSetup({
 
       {selectedGroup && (
         <section className="card flex flex-col gap-4">
+          <ClubCompetitionLocationsPanel regionId={regionId} />
           <RegionalGroupScheduleSettings
             groupId={selectedGroup.groupId}
             teamCount={teamCount}

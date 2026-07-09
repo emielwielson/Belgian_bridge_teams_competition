@@ -277,7 +277,7 @@
     "backStandings": "← Klassement",
     "captain": "Aanvoerder",
     "captainNotSet": "Niet ingesteld",
-    "location": "Locatie",
+    "location": "Competitielocatie",
     "locationNotSet": "Niet ingesteld",
     "playersTitle": "Spelers",
     "noPlayers": "Nog geen spelers op de selectie.",
@@ -559,6 +559,24 @@
       "confirmGenerate": "Wedstrijden genereren voor alle 8 afdelingen en competitie starten? Selecties worden daarna vergrendeld.",
       "started": "Competitie gestart. Wedstrijden gegenereerd en seizoen is nu actief.",
       "calendarsFooter": "Kalenders: {honorLabel}; {firstLabel}; {defaultLabel}."
+    },
+    "clubLocations": {
+      "title": "Competitielocaties",
+      "description": "Stel in waar elke club zijn thuiswedstrijden speelt. Laat leeg om de clublocatie uit het ledenbeheer te gebruiken.",
+      "club": "Club",
+      "defaultLocation": "Clublocatie (ledenbeheer)",
+      "defaultNotSet": "Niet ingesteld",
+      "competitionLocation": "Competitielocatie",
+      "competitionLocationPlaceholder": "Afwijking (optioneel)",
+      "competitionLocationHint": "Wijzigingen worden opgeslagen wanneer u het veld verlaat.",
+      "centralizedVenue": "Gecentraliseerde locatie",
+      "centralizedVenuePlaceholder": "Locatie voor alle Eerste Klasse-wedstrijden",
+      "centralizedVenueHint": "Alle teams in deze divisie spelen op deze locatie. Clublocaties worden niet gebruikt.",
+      "honorDivisionVenueNote": "Wedstrijden in de Eerste Klasse worden op één gecentraliseerde locatie gespeeld, niet op individuele clublocaties.",
+      "noClubs": "Geen clubs gevonden.",
+      "loadFailed": "Competitielocaties laden mislukt",
+      "saveFailed": "Locatie opslaan mislukt",
+      "saved": "Locatie opgeslagen."
     },
     "teamsPanel": {
       "teamsProgress": "{current}/{max} teams",
