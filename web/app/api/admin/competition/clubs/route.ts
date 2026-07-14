@@ -9,7 +9,7 @@ export async function GET(request: Request) {
     let query = supabase
       .from("clubs")
       .select(
-        "id, name, location, competition_location, region_id, region:regions(code, name)",
+        "id, name, address, postal_code, location, competition_location, region_id, region:regions(code, name)",
       )
       .order("name");
 

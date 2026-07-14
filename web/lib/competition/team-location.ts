@@ -1,5 +1,6 @@
-type ClubLocationFields = {
-  location?: string | null;
+import { formatClubAddress, type ClubAddressFields } from "./club-address";
+
+type ClubLocationFields = ClubAddressFields & {
   competition_location?: string | null;
 };
 
@@ -23,7 +24,7 @@ export function resolveTeamMatchLocation(
   const override = trimmedOrNull(club?.competition_location);
   if (override) return override;
 
-  return trimmedOrNull(club?.location);
+  return formatClubAddress(club);
 }
 
 /** @deprecated Use resolveTeamMatchLocation */

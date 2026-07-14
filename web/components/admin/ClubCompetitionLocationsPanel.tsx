@@ -3,11 +3,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 
+import { formatClubAddress } from "@/lib/competition/club-address";
+
 type RegionInfo = { code: string; name: string };
 
 type ClubRow = {
   id: string;
   name: string;
+  address: string | null;
+  postal_code: string | null;
   location: string | null;
   competition_location: string | null;
   region?: RegionInfo | RegionInfo[] | null;
@@ -128,6 +132,7 @@ export function ClubCompetitionLocationsPanel({
           <tbody>
             {clubs.map((club) => {
               const region = unwrapRegion(club.region);
+              const defaultAddress = formatClubAddress(club);
               return (
                 <tr key={club.id} className="border-b border-zinc-100">
                   <td className="py-2 pr-4 font-medium text-zinc-900">
@@ -139,8 +144,8 @@ export function ClubCompetitionLocationsPanel({
                     </td>
                   ) : null}
                   <td className="py-2 pr-4 text-zinc-600">
-                    {club.location?.trim() ? (
-                      club.location
+                    {defaultAddress ? (
+                      defaultAddress
                     ) : (
                       <span className="text-zinc-400">{t("defaultNotSet")}</span>
                     )}

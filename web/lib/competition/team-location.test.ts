@@ -20,10 +20,12 @@ describe("resolveTeamMatchLocation", () => {
   it("falls back to membership club location when override is empty", () => {
     expect(
       resolveTeamMatchLocation({
-        location: "  Membership address  ",
+        address: "Veldstraat 3",
+        postal_code: "9000",
+        location: "Gent",
         competition_location: "   ",
       }),
-    ).toBe("Membership address");
+    ).toBe("Veldstraat 3 - 9000 - Gent");
   });
 
   it("returns null when no location is available", () => {
@@ -36,11 +38,18 @@ describe("teamLocationFromClub", () => {
   it("returns override or membership location without division context", () => {
     expect(
       teamLocationFromClub({
-        location: "Membership address",
+        address: "Street 1",
+        postal_code: "1000",
+        location: "Brussels",
         competition_location: "Override venue",
       }),
     ).toBe("Override venue");
-    expect(teamLocationFromClub({ location: "  Clubhouse  " })).toBe("Clubhouse");
+    expect(
+      teamLocationFromClub({
+        address: "Street 1",
+        location: "  Clubhouse city  ",
+      }),
+    ).toBe("Street 1 - Clubhouse city");
   });
 
   it("returns null when club location is empty", () => {

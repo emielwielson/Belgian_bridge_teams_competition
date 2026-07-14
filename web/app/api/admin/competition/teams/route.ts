@@ -40,7 +40,7 @@ export async function GET(request: Request) {
     const { data: teams, error } = await supabase
       .from("teams")
       .select(
-        "id, name, club_id, captain_id, club:clubs(id, name, region_id, location, competition_location), captain:players(id, name, member_number)",
+        "id, name, club_id, captain_id, club:clubs(id, name, region_id, address, postal_code, location, competition_location), captain:players(id, name, member_number)",
       )
       .eq("group_id", groupId)
       .order("name");
@@ -78,10 +78,14 @@ export async function GET(request: Request) {
         const rawClub = t.club as unknown;
         const club = Array.isArray(rawClub)
           ? (rawClub[0] as {
+              address?: string | null;
+              postal_code?: string | null;
               location?: string | null;
               competition_location?: string | null;
             } | undefined)
           : (rawClub as {
+              address?: string | null;
+              postal_code?: string | null;
               location?: string | null;
               competition_location?: string | null;
             } | null);

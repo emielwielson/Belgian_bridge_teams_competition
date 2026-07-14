@@ -1,55 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ClubCompetitionLocationsPanel } from "@/components/admin/ClubCompetitionLocationsPanel";
-import { DivisionCentralizedVenuePanel } from "@/components/admin/DivisionCentralizedVenuePanel";
 import { translateRegionalScopeTitle } from "@/lib/i18n/labels";
 import { REGION_CODES, type RegionCode } from "@/lib/competition/scopes";
 
 type RegionRow = { id: string; code: string; name: string };
 
-type DivisionMeta = {
-  id: string;
-  name: string;
-  centralized_location: string | null;
-};
-
 type Props = {
   regions: RegionRow[];
 };
-
-const HONOR_DIVISION_NAME = "Honor Division";
 
 export function AdminClubLocationsPage({ regions }: Props) {
   const t = useTranslations("admin");
 
   const [selectedRegionId, setSelectedRegionId] = useState("");
-  const [honorDivision, setHonorDivision] = useState<DivisionMeta | null>(null);
-  const [honorLoading, setHonorLoading] = useState(true);
-
-  const loadHonorDivision = useCallback(async () => {
-    setHonorLoading(true);
-    try {
-      const res = await fetch("/api/admin/competition");
-      if (!res.ok) return;
-      const body = await res.json();
-      const nationalLeague = (body.leagues ?? []).find(
-        (l: { scope: string }) => l.scope === "national",
-      );
-      const divisions = (nationalLeague?.divisions ?? []) as DivisionMeta[];
-      setHonorDivision(
-        divisions.find((d) => d.name === HONOR_DIVISION_NAME) ?? null,
-      );
-    } finally {
-      setHonorLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadHonorDivision();
-  }, [loadHonorDivision]);
 
   const regionLabel = useCallback(
     (code: string, name: string) => {
@@ -83,20 +50,6 @@ export function AdminClubLocationsPage({ regions }: Props) {
           {t("clubLocationsPageDescription")}
         </p>
       </header>
-
-      <section className="card flex flex-col gap-4">
-        {!honorLoading && honorDivision ? (
-          <DivisionCentralizedVenuePanel
-            divisionId={honorDivision.id}
-            initialLocation={honorDivision.centralized_location}
-            onSaved={loadHonorDivision}
-          />
-        ) : honorLoading ? (
-          <p className="text-sm text-zinc-600">{t("clubLocationsLoadingHonor")}</p>
-        ) : (
-          <p className="text-sm text-amber-800">{t("clubLocationsHonorNotFound")}</p>
-        )}
-      </section>
 
       <section className="card flex flex-col gap-4">
         <label className="flex flex-col gap-1">

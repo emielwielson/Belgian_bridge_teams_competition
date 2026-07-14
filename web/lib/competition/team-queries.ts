@@ -134,7 +134,7 @@ export async function loadTeamDetail(
       name,
       captain_id,
       captain:players(id, name, member_number),
-      club:clubs(id, name, location, competition_location),
+      club:clubs(id, name, address, postal_code, location, competition_location),
       group:groups (
         id,
         name,
@@ -180,6 +180,8 @@ export async function loadTeamDetail(
   const club = unwrapOne<{
     id: string;
     name: string;
+    address: string | null;
+    postal_code: string | null;
     location: string | null;
     competition_location: string | null;
   }>(teamRow.club);
