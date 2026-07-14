@@ -56,7 +56,7 @@ export function DivisionCentralizedVenuePanel({
   }
 
   return (
-    <section className="flex flex-col gap-3 border-b border-zinc-200 pb-4">
+    <div className="flex flex-col gap-3">
       <div>
         <h3 className="text-sm font-semibold text-zinc-900">
           {t("centralizedVenue")}
@@ -97,6 +97,6 @@ export function DivisionCentralizedVenuePanel({
       {saving && (
         <p className="text-xs text-zinc-500">{tCommon("loading")}</p>
       )}
-    </section>
+    </div>
   );
 }

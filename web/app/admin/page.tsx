@@ -14,6 +14,12 @@ export default async function AdminPage() {
             {t("competitionSetupDescription")}
           </p>
         </Link>
+        <Link href="/admin/locations" className="card hover:border-zinc-400">
+          <span className="font-medium">{t("clubLocationsHub")}</span>
+          <p className="mt-1 text-sm font-normal text-zinc-600">
+            {t("clubLocationsHubDescription")}
+          </p>
+        </Link>
         <Link href="/admin/discipline" className="card hover:border-zinc-400">
           <span className="font-medium">{t("disciplineHub")}</span>
           <p className="mt-1 text-sm font-normal text-zinc-600">

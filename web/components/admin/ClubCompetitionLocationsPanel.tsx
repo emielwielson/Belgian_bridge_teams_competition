@@ -3,18 +3,33 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 
+type RegionInfo = { code: string; name: string };
+
 type ClubRow = {
   id: string;
   name: string;
   location: string | null;
   competition_location: string | null;
+  region?: RegionInfo | RegionInfo[] | null;
 };
 
 type Props = {
   regionId?: string;
+  showRegionColumn?: boolean;
 };
 
-export function ClubCompetitionLocationsPanel({ regionId }: Props) {
+function unwrapRegion(
+  region: RegionInfo | RegionInfo[] | null | undefined,
+): RegionInfo | null {
+  if (!region) return null;
+  if (Array.isArray(region)) return region[0] ?? null;
+  return region;
+}
+
+export function ClubCompetitionLocationsPanel({
+  regionId,
+  showRegionColumn = false,
+}: Props) {
   const t = useTranslations("admin.clubLocations");
   const tCommon = useTranslations("common");
 
@@ -91,12 +106,7 @@ export function ClubCompetitionLocationsPanel({ regionId }: Props) {
   }
 
   return (
-    <section className="flex flex-col gap-3 border-b border-zinc-200 pb-4">
-      <div>
-        <h3 className="text-sm font-semibold text-zinc-900">{t("title")}</h3>
-        <p className="mt-1 text-xs text-zinc-600">{t("description")}</p>
-      </div>
-
+    <div className="flex flex-col gap-3">
       {error && (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">
           {error}
@@ -108,45 +118,56 @@ export function ClubCompetitionLocationsPanel({ regionId }: Props) {
           <thead>
             <tr className="border-b border-zinc-200 text-left text-xs text-zinc-500">
               <th className="pb-2 pr-4 font-medium">{t("club")}</th>
+              {showRegionColumn ? (
+                <th className="pb-2 pr-4 font-medium">{t("region")}</th>
+              ) : null}
               <th className="pb-2 pr-4 font-medium">{t("defaultLocation")}</th>
               <th className="pb-2 font-medium">{t("competitionLocation")}</th>
             </tr>
           </thead>
           <tbody>
-            {clubs.map((club) => (
-              <tr key={club.id} className="border-b border-zinc-100">
-                <td className="py-2 pr-4 font-medium text-zinc-900">
-                  {club.name}
-                </td>
-                <td className="py-2 pr-4 text-zinc-600">
-                  {club.location?.trim() ? (
-                    club.location
-                  ) : (
-                    <span className="text-zinc-400">{t("defaultNotSet")}</span>
-                  )}
-                </td>
-                <td className="py-2">
-                  <input
-                    type="text"
-                    className="input w-full min-w-[12rem] text-sm"
-                    value={drafts[club.id] ?? ""}
-                    placeholder={t("competitionLocationPlaceholder")}
-                    disabled={savingId === club.id}
-                    onChange={(e) =>
-                      setDrafts((prev) => ({
-                        ...prev,
-                        [club.id]: e.target.value,
-                      }))
-                    }
-                    onBlur={() => void saveClub(club.id)}
-                  />
-                </td>
-              </tr>
-            ))}
+            {clubs.map((club) => {
+              const region = unwrapRegion(club.region);
+              return (
+                <tr key={club.id} className="border-b border-zinc-100">
+                  <td className="py-2 pr-4 font-medium text-zinc-900">
+                    {club.name}
+                  </td>
+                  {showRegionColumn ? (
+                    <td className="py-2 pr-4 text-zinc-600">
+                      {region?.name ?? "—"}
+                    </td>
+                  ) : null}
+                  <td className="py-2 pr-4 text-zinc-600">
+                    {club.location?.trim() ? (
+                      club.location
+                    ) : (
+                      <span className="text-zinc-400">{t("defaultNotSet")}</span>
+                    )}
+                  </td>
+                  <td className="py-2">
+                    <input
+                      type="text"
+                      className="input w-full min-w-[12rem] text-sm"
+                      value={drafts[club.id] ?? ""}
+                      placeholder={t("competitionLocationPlaceholder")}
+                      disabled={savingId === club.id}
+                      onChange={(e) =>
+                        setDrafts((prev) => ({
+                          ...prev,
+                          [club.id]: e.target.value,
+                        }))
+                      }
+                      onBlur={() => void saveClub(club.id)}
+                    />
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
       <p className="text-xs text-zinc-500">{t("competitionLocationHint")}</p>
-    </section>
+    </div>
   );
 }
