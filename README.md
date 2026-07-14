@@ -20,7 +20,7 @@ Development uses the **Supabase Dashboard** (no Docker or Supabase CLI required)
 2. Configure **Authentication** → **URL configuration**:
    - Site URL: `http://localhost:3000` (add production URL when deployed)
    - Redirect URLs: `http://localhost:3000/auth/callback`
-   - **Providers:** enable **Email** (Magic Link / OTP)
+   - **Providers:** enable **Email** (Magic Link / OTP); **disable sign ups** so only emails validated by the app can receive a magic link (Authentication → Providers → Email → Disable sign ups, or `enable_signup = false` in [`supabase/config.toml`](supabase/config.toml))
    - **Email Templates → Magic Link:** use `{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=email` in the sign-in link (see `supabase/templates/magic_link.html`). The default `{{ .ConfirmationURL }}` PKCE flow fails when the link is opened outside the browser that requested it.
 
 3. Copy keys from **Project Settings → [API Keys](https://supabase.com/dashboard/project/_/settings/api-keys)**:

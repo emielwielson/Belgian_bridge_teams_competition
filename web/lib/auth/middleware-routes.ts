@@ -8,6 +8,7 @@ const PUBLIC_EXACT = new Set([
   "/auth/select-player",
   "/api/health",
   "/api/auth/me",
+  "/api/auth/login",
   "/api/auth/signout",
   "/api/cron/award-bye-scores",
 ]);

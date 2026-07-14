@@ -73,6 +73,7 @@ export const ErrorCodes = {
     competitionSetupLocked: "api.competitionSetupLocked",
   },
   auth: {
+    emailNotRegistered: "auth.emailNotRegistered",
     unauthorized: "auth.unauthorized",
     forbidden: "auth.forbidden",
     matchNotFound: "auth.matchNotFound",

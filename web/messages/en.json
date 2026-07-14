@@ -34,6 +34,7 @@
     "sendMagicLink": "Send magic link",
     "sending": "Sending…",
     "checkEmail": "Check your email for the magic link. If you don't see it, check your spam folder.",
+    "emailNotRegistered": "This email address is not registered in our database. If you are a bridge player, your federation (VBL or LBF) may have a different email address on file — try another address or contact your club.",
     "selectPlayer": {
       "title": "Choose your player profile",
       "subtitle": "Multiple player profiles are linked to this email. Select who you are signing in as.",
@@ -898,6 +899,7 @@
       "competitionSetupLocked": "Competition setup is locked"
     },
     "auth": {
+      "emailNotRegistered": "This email address is not registered in our database. If you are a bridge player, your federation (VBL or LBF) may have a different email address on file — try another address or contact your club.",
       "unauthorized": "Unauthorized",
       "forbidden": "Forbidden",
       "matchNotFound": "Match not found",

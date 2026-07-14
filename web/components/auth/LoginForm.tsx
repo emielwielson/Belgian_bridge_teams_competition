@@ -2,14 +2,21 @@
 
 import { useTranslations } from "next-intl";
 import { useState } from "react";
-import { createBrowserClient } from "@/lib/supabase/browser-client";
+import { ErrorCodes } from "@/lib/http/error-codes";
+import { useTranslateApiError } from "@/lib/i18n/translate-api-error";
 
 type Props = {
   nextPath?: string;
 };
 
+type LoginResponse = {
+  ok?: boolean;
+  error?: string;
+};
+
 export function LoginForm({ nextPath }: Props) {
   const t = useTranslations("auth");
+  const translateApiError = useTranslateApiError();
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "sent" | "error">(
     "idle",
@@ -21,19 +28,23 @@ export function LoginForm({ nextPath }: Props) {
     setStatus("loading");
     setMessage(null);
 
-    const supabase = createBrowserClient();
-    const redirectTo = new URL("/auth/callback", window.location.origin);
-    // Always include ?next= so magic-link emails can append &token_hash=…&type=email
-    redirectTo.searchParams.set("next", nextPath ?? "/");
-
-    const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      options: { emailRedirectTo: redirectTo.toString() },
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email.trim(), next: nextPath ?? "/" }),
     });
 
-    if (error) {
+    const body = (await res.json()) as LoginResponse;
+
+    if (res.status === 404 && body.error === ErrorCodes.auth.emailNotRegistered) {
       setStatus("error");
-      setMessage(error.message);
+      setMessage(t("emailNotRegistered"));
+      return;
+    }
+
+    if (!res.ok) {
+      setStatus("error");
+      setMessage(translateApiError(body.error));
       return;
     }
 

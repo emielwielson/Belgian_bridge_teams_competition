@@ -34,6 +34,7 @@
     "sendMagicLink": "Envoyer le lien de connexion",
     "sending": "Envoi…",
     "checkEmail": "Consultez votre e-mail pour le lien de connexion. Si vous ne le voyez pas, vérifiez votre dossier spam.",
+    "emailNotRegistered": "Cette adresse e-mail n'est pas enregistrée dans notre base de données. Si vous êtes joueur de bridge, votre fédération (VBL ou LBF) peut avoir une autre adresse e-mail — essayez une autre adresse ou contactez votre club.",
     "selectPlayer": {
       "title": "Choisissez votre profil joueur",
       "subtitle": "Plusieurs profils joueur sont liés à cette adresse e-mail. Sélectionnez qui vous êtes.",
@@ -897,6 +898,7 @@
       "competitionSetupLocked": "La configuration de la compétition est verrouillée"
     },
     "auth": {
+      "emailNotRegistered": "Cette adresse e-mail n'est pas enregistrée dans notre base de données. Si vous êtes joueur de bridge, votre fédération (VBL ou LBF) peut avoir une autre adresse e-mail — essayez une autre adresse ou contactez votre club.",
       "unauthorized": "Non autorisé",
       "forbidden": "Interdit",
       "matchNotFound": "Rencontre introuvable",

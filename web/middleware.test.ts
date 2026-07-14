@@ -13,6 +13,7 @@ describe("isPublicPath", () => {
     expect(isPublicPath("/auth/callback")).toBe(true);
     expect(isPublicPath("/auth/select-player")).toBe(true);
     expect(isPublicPath("/api/health")).toBe(true);
+    expect(isPublicPath("/api/auth/login")).toBe(true);
   });
 
   it("allows public APIs and standings", () => {

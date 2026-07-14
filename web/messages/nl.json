@@ -34,6 +34,7 @@
     "sendMagicLink": "Aanmeldingslink versturen",
     "sending": "Verzenden…",
     "checkEmail": "Controleer uw e-mail voor de aanmeldingslink. Ziet u het bericht niet? Kijk dan ook in uw spammap.",
+    "emailNotRegistered": "Dit e-mailadres staat niet in onze database. Als u bridgespeler bent, kan uw federatie (VBL of LBF) een ander e-mailadres hebben — probeer een ander adres of neem contact op met uw club.",
     "selectPlayer": {
       "title": "Kies uw spelersprofiel",
       "subtitle": "Er zijn meerdere spelersprofielen gekoppeld aan dit e-mailadres. Selecteer als wie u zich aanmeldt.",
@@ -898,6 +899,7 @@
       "competitionSetupLocked": "Competitie-opzet is vergrendeld"
     },
     "auth": {
+      "emailNotRegistered": "Dit e-mailadres staat niet in onze database. Als u bridgespeler bent, kan uw federatie (VBL of LBF) een ander e-mailadres hebben — probeer een ander adres of neem contact op met uw club.",
       "unauthorized": "Niet geautoriseerd",
       "forbidden": "Geen toegang",
       "matchNotFound": "Wedstrijd niet gevonden",
