@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   isEmailAllowedForLogin,
+  isEmailNotRegisteredError,
+  isSignupNotAllowedAuthError,
   isValidLoginEmailFormat,
   normalizeLoginEmail,
 } from "./login-email";
@@ -66,6 +68,35 @@ describe("isValidLoginEmailFormat", () => {
   it("rejects invalid emails", () => {
     expect(isValidLoginEmailFormat("not-an-email")).toBe(false);
     expect(isValidLoginEmailFormat("")).toBe(false);
+  });
+});
+
+describe("isSignupNotAllowedAuthError", () => {
+  it("detects Supabase signup disabled errors", () => {
+    expect(
+      isSignupNotAllowedAuthError({
+        message: "Signups not allowed for this instance",
+      }),
+    ).toBe(true);
+    expect(
+      isSignupNotAllowedAuthError({
+        code: "otp_disabled",
+        message: "Signups not allowed for otp",
+      }),
+    ).toBe(true);
+    expect(isSignupNotAllowedAuthError({ message: "Rate limited" })).toBe(
+      false,
+    );
+  });
+});
+
+describe("isEmailNotRegisteredError", () => {
+  it("detects error codes and Supabase signup messages", () => {
+    expect(isEmailNotRegisteredError("auth.emailNotRegistered")).toBe(true);
+    expect(
+      isEmailNotRegisteredError("Signups not allowed for this instance"),
+    ).toBe(true);
+    expect(isEmailNotRegisteredError("Rate limited")).toBe(false);
   });
 });
 

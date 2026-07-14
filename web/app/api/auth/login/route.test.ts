@@ -3,14 +3,22 @@ import { POST } from "./route";
 import { ErrorCodes } from "@/lib/http/error-codes";
 
 const isEmailAllowedForLogin = vi.fn();
+const ensureAuthUserForLogin = vi.fn();
 const createServiceClient = vi.fn();
 const signInWithOtp = vi.fn();
 
-vi.mock("@/lib/auth/login-email", () => ({
-  isEmailAllowedForLogin: (...args: unknown[]) => isEmailAllowedForLogin(...args),
-  isValidLoginEmailFormat: (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),
-  normalizeLoginEmail: (email: string) => email.trim().toLowerCase(),
-}));
+vi.mock("@/lib/auth/login-email", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/auth/login-email")>();
+  return {
+    ...actual,
+    isEmailAllowedForLogin: (...args: unknown[]) => isEmailAllowedForLogin(...args),
+    ensureAuthUserForLogin: (...args: unknown[]) =>
+      ensureAuthUserForLogin(...args),
+    isValidLoginEmailFormat: (email: string) =>
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),
+    normalizeLoginEmail: (email: string) => email.trim().toLowerCase(),
+  };
+});
 
 vi.mock("@/lib/supabase/server-client", () => ({
   createServiceClient: () => createServiceClient(),
@@ -22,6 +30,7 @@ describe("POST /api/auth/login", () => {
     createServiceClient.mockReturnValue({
       auth: { signInWithOtp },
     });
+    ensureAuthUserForLogin.mockResolvedValue(undefined);
   });
 
   it("returns 400 for invalid email", async () => {
@@ -67,16 +76,39 @@ describe("POST /api/auth/login", () => {
     );
 
     expect(res.status).toBe(200);
+    expect(ensureAuthUserForLogin).toHaveBeenCalled();
     expect(signInWithOtp).toHaveBeenCalledWith({
       email: "player@example.com",
       options: {
-        emailRedirectTo:
-          "http://localhost/auth/callback?next=%2Fplayer",
+        emailRedirectTo: "http://localhost/auth/callback?next=%2Fplayer",
+        shouldCreateUser: false,
       },
     });
   });
 
-  it("propagates Supabase OTP errors", async () => {
+  it("maps Supabase signup disabled errors to emailNotRegistered", async () => {
+    isEmailAllowedForLogin.mockResolvedValue(true);
+    signInWithOtp.mockResolvedValue({
+      error: {
+        message: "Signups not allowed for this instance",
+        code: "otp_disabled",
+        status: 422,
+      },
+    });
+
+    const res = await POST(
+      new Request("http://localhost/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email: "unknown@example.com" }),
+      }),
+    );
+
+    expect(res.status).toBe(404);
+    const body = await res.json();
+    expect(body.error).toBe(ErrorCodes.auth.emailNotRegistered);
+  });
+
+  it("propagates other Supabase OTP errors", async () => {
     isEmailAllowedForLogin.mockResolvedValue(true);
     signInWithOtp.mockResolvedValue({
       error: { message: "Rate limited", status: 429 },

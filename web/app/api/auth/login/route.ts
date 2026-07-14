@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import {
+  ensureAuthUserForLogin,
   isEmailAllowedForLogin,
+  isSignupNotAllowedAuthError,
   isValidLoginEmailFormat,
   normalizeLoginEmail,
 } from "@/lib/auth/login-email";
@@ -46,12 +48,25 @@ export async function POST(request: Request) {
   const redirectTo = new URL("/auth/callback", origin);
   redirectTo.searchParams.set("next", next);
 
+  try {
+    await ensureAuthUserForLogin(supabase, normalizedEmail);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+
   const { error } = await supabase.auth.signInWithOtp({
     email: normalizedEmail,
-    options: { emailRedirectTo: redirectTo.toString() },
+    options: {
+      emailRedirectTo: redirectTo.toString(),
+      shouldCreateUser: false,
+    },
   });
 
   if (error) {
+    if (isSignupNotAllowedAuthError(error)) {
+      return jsonErrorCode(ErrorCodes.auth.emailNotRegistered, 404);
+    }
     const status = error.status === 429 ? 429 : 500;
     return NextResponse.json({ error: error.message }, { status });
   }

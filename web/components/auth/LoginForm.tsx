@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { ErrorCodes } from "@/lib/http/error-codes";
+import { isEmailNotRegisteredError } from "@/lib/auth/login-email";
 import { useTranslateApiError } from "@/lib/i18n/translate-api-error";
 
 type Props = {
@@ -36,7 +37,10 @@ export function LoginForm({ nextPath }: Props) {
 
     const body = (await res.json()) as LoginResponse;
 
-    if (res.status === 404 && body.error === ErrorCodes.auth.emailNotRegistered) {
+    if (
+      (res.status === 404 && body.error === ErrorCodes.auth.emailNotRegistered) ||
+      isEmailNotRegisteredError(body.error)
+    ) {
       setStatus("error");
       setMessage(t("emailNotRegistered"));
       return;

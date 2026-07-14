@@ -67,6 +67,26 @@ describe("LoginForm", () => {
     expect(screen.getByRole("status")).toHaveTextContent(/VBL or LBF/i);
   });
 
+  it("shows friendly message for Supabase signup disabled errors", async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => ({
+        error: "Signups not allowed for this instance",
+      }),
+    });
+    const user = userEvent.setup();
+
+    renderLoginForm();
+    await user.type(screen.getByLabelText(/email/i), "unknown@example.com");
+    await user.click(screen.getByRole("button", { name: /send magic link/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("status")).toHaveTextContent(/not registered/i);
+    });
+    expect(screen.getByRole("status")).toHaveTextContent(/VBL or LBF/i);
+  });
+
   it("shows error when sign-in fails", async () => {
     fetchMock.mockResolvedValue({
       ok: false,
