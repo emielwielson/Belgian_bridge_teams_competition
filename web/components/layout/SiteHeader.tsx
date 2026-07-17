@@ -135,6 +135,14 @@ export function SiteHeader() {
           >
             {t("standings")}
           </Link>
+          {me?.teams?.length === 1 ? (
+            <Link
+              href={`/teams/${me.teams[0].id}`}
+              className={mobileLinkClass(pathname.startsWith("/teams/"))}
+            >
+              {t("myTeam")}
+            </Link>
+          ) : null}
           {me ? (
             <Link
               href="/manuals"
