@@ -337,6 +337,7 @@ async function ensureNationalClubMap(
       .select("id")
       .eq("name", name)
       .eq("region_id", regionId)
+      .is("deleted_at", null)
       .maybeSingle();
 
     if (existing) {
@@ -407,7 +408,8 @@ async function seedDemoPlayers(supabase: SupabaseClient, seasonId: string) {
     .from("clubs")
     .select("id, name")
     .eq("region_id", region.id)
-    .in("name", sortedClubNames);
+    .in("name", sortedClubNames)
+    .is("deleted_at", null);
   if (clubsError) throw clubsError;
   if (!clubs?.length) return;
 

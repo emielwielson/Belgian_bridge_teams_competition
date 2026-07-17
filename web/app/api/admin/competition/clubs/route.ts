@@ -11,6 +11,7 @@ export async function GET(request: Request) {
       .select(
         "id, name, address, postal_code, location, competition_location, region_id, region:regions(code, name)",
       )
+      .is("deleted_at", null)
       .order("name");
 
     if (regionId) {

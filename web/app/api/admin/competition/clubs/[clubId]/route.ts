@@ -33,6 +33,7 @@ export async function PATCH(
       .from("clubs")
       .update({ competition_location: competitionLocation })
       .eq("id", clubId)
+      .is("deleted_at", null)
       .select("id, name, location, competition_location, region_id")
       .maybeSingle();
 

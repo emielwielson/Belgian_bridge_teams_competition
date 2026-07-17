@@ -299,6 +299,7 @@ async function ensureFlandersClubMap(
       .select("id")
       .eq("name", name)
       .eq("region_id", regionId)
+      .is("deleted_at", null)
       .maybeSingle();
 
     if (existing) {
@@ -358,7 +359,8 @@ async function seedFlandersPlayers(supabase: SupabaseClient, seasonId: string) {
     .from("clubs")
     .select("id, name")
     .eq("region_id", regionId)
-    .in("name", sortedClubNames);
+    .in("name", sortedClubNames)
+    .is("deleted_at", null);
   if (clubsError) throw clubsError;
   if (!clubs?.length) return;
 
