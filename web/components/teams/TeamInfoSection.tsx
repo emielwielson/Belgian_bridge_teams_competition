@@ -10,7 +10,13 @@ type Props = Pick<
   "team" | "captain" | "club" | "group" | "division" | "league"
 > & {
   canLinkToPlayers: boolean;
+  showCaptainContacts: boolean;
 };
+
+function trimmed(value: string | null | undefined): string | null {
+  const next = value?.trim();
+  return next ? next : null;
+}
 
 export function TeamInfoSection({
   team,
@@ -20,10 +26,17 @@ export function TeamInfoSection({
   division,
   league,
   canLinkToPlayers,
+  showCaptainContacts,
 }: Props) {
   const t = useTranslations("team");
   const tRegions = useTranslations("regions");
   const leagueName = translateLeagueName(league.name, tRegions);
+
+  const email = showCaptainContacts ? trimmed(captain?.email) : null;
+  const phone = showCaptainContacts ? trimmed(captain?.phone) : null;
+  const mobilePhone = showCaptainContacts
+    ? trimmed(captain?.mobile_phone)
+    : null;
 
   return (
     <section className="rounded-lg border border-zinc-200 bg-white p-4">
@@ -56,6 +69,51 @@ export function TeamInfoSection({
               <span className="text-zinc-500">{t("captainNotSet")}</span>
             )}
           </dd>
+          {email || phone || mobilePhone ? (
+            <dl className="mt-2 space-y-1.5 text-sm">
+              {email ? (
+                <div>
+                  <dt className="font-medium text-zinc-500">{t("captainEmail")}</dt>
+                  <dd className="mt-0.5">
+                    <a
+                      href={`mailto:${email}`}
+                      className="text-zinc-900 hover:text-emerald-800 hover:underline"
+                    >
+                      {email}
+                    </a>
+                  </dd>
+                </div>
+              ) : null}
+              {phone ? (
+                <div>
+                  <dt className="font-medium text-zinc-500">{t("captainPhone")}</dt>
+                  <dd className="mt-0.5">
+                    <a
+                      href={`tel:${phone}`}
+                      className="text-zinc-900 hover:text-emerald-800 hover:underline"
+                    >
+                      {phone}
+                    </a>
+                  </dd>
+                </div>
+              ) : null}
+              {mobilePhone ? (
+                <div>
+                  <dt className="font-medium text-zinc-500">
+                    {t("captainMobilePhone")}
+                  </dt>
+                  <dd className="mt-0.5">
+                    <a
+                      href={`tel:${mobilePhone}`}
+                      className="text-zinc-900 hover:text-emerald-800 hover:underline"
+                    >
+                      {mobilePhone}
+                    </a>
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
+          ) : null}
         </div>
         <div>
           <dt className="font-medium text-zinc-500">{t("location")}</dt>

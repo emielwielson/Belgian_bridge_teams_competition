@@ -24,15 +24,17 @@ export default async function TeamPage({ params }: Props) {
     getTranslations("regions"),
   ]);
   const supabase = await createSessionClient();
-  const detail = await loadTeamDetail(supabase, teamId);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const detail = await loadTeamDetail(supabase, teamId, {
+    includeCaptainContacts: Boolean(user),
+  });
 
   if (!detail) {
     notFound();
   }
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
   const roles = user ? await getUserRoles(supabase, user.id) : [];
 
@@ -91,6 +93,7 @@ export default async function TeamPage({ params }: Props) {
         division={division}
         league={league}
         canLinkToPlayers={canLinkToPlayers}
+        showCaptainContacts={Boolean(user)}
       />
 
       <TeamRosterSection

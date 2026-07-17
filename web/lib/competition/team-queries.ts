@@ -12,6 +12,12 @@ export type TeamRosterPlayer = {
   matches_played: number;
 };
 
+export type TeamCaptain = TeamRosterPlayer & {
+  email?: string | null;
+  phone?: string | null;
+  mobile_phone?: string | null;
+};
+
 export type TeamMatchRow = {
   id: string;
   round: number;
@@ -30,13 +36,17 @@ export type TeamDetail = {
     location: string | null;
     captain_id: string | null;
   };
-  captain: TeamRosterPlayer | null;
+  captain: TeamCaptain | null;
   club: { id: string; name: string };
   group: { id: string; name: string };
   division: { id: string; name: string };
   league: { id: string; name: string };
   roster: TeamRosterPlayer[];
   matches: TeamMatchRow[];
+};
+
+export type LoadTeamDetailOptions = {
+  includeCaptainContacts?: boolean;
 };
 
 type RawMatch = {
@@ -125,7 +135,13 @@ export function mapRawMatchToTeamMatchRow(
 export async function loadTeamDetail(
   supabase: SupabaseClient,
   teamId: string,
+  options: LoadTeamDetailOptions = {},
 ): Promise<TeamDetail | null> {
+  const includeCaptainContacts = options.includeCaptainContacts === true;
+  const captainSelect = includeCaptainContacts
+    ? "captain:players(id, name, member_number, email, phone, mobile_phone)"
+    : "captain:players(id, name, member_number)";
+
   const { data: teamRow, error: teamError } = await supabase
     .from("teams")
     .select(
@@ -133,7 +149,7 @@ export async function loadTeamDetail(
       id,
       name,
       captain_id,
-      captain:players(id, name, member_number),
+      ${captainSelect},
       club:clubs(id, name, address, postal_code, location, competition_location),
       group:groups (
         id,
@@ -176,6 +192,9 @@ export async function loadTeamDetail(
     id: string;
     name: string;
     member_number: string | null;
+    email?: string | null;
+    phone?: string | null;
+    mobile_phone?: string | null;
   }>(teamRow.captain);
   const club = unwrapOne<{
     id: string;
@@ -278,8 +297,17 @@ export async function loadTeamDetail(
     },
     captain: captainRaw
       ? {
-          ...captainRaw,
+          id: captainRaw.id,
+          name: captainRaw.name,
+          member_number: captainRaw.member_number,
           matches_played: matchesPlayedByPlayer.get(captainRaw.id) ?? 0,
+          ...(includeCaptainContacts
+            ? {
+                email: captainRaw.email ?? null,
+                phone: captainRaw.phone ?? null,
+                mobile_phone: captainRaw.mobile_phone ?? null,
+              }
+            : {}),
         }
       : null,
     club,

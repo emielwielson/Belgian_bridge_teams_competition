@@ -1,10 +1,180 @@
 import { describe, expect, it } from "vitest";
 import {
+  loadTeamDetail,
   loadTeamPlayerMatchesPlayed,
   loadTeamsForUser,
   mapRawMatchToTeamMatchRow,
   withMatchesPlayed,
 } from "./team-queries";
+
+function createLoadTeamDetailSupabase(options: {
+  onTeamSelect: (columns: string) => void;
+  captain: {
+    id: string;
+    name: string;
+    member_number: string | null;
+    email?: string | null;
+    phone?: string | null;
+    mobile_phone?: string | null;
+  };
+}) {
+  return {
+    from: (table: string) => {
+      if (table === "teams") {
+        return {
+          select: (columns: string) => {
+            options.onTeamSelect(columns);
+            return {
+              eq: () => ({
+                maybeSingle: () =>
+                  Promise.resolve({
+                    data: {
+                      id: "team-1",
+                      name: "Alpha",
+                      captain_id: options.captain.id,
+                      captain: options.captain,
+                      club: {
+                        id: "club-1",
+                        name: "Club",
+                        address: null,
+                        postal_code: null,
+                        location: "Brussels",
+                        competition_location: null,
+                      },
+                      group: {
+                        id: "group-1",
+                        name: "Group A",
+                        division: {
+                          id: "div-1",
+                          name: "Division 1",
+                          centralized_location: null,
+                          league: { id: "league-1", name: "League" },
+                        },
+                      },
+                    },
+                    error: null,
+                  }),
+                in: () => Promise.resolve({ data: [], error: null }),
+              }),
+            };
+          },
+        };
+      }
+      if (table === "seasons") {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: () =>
+                Promise.resolve({
+                  data: {
+                    id: "season-1",
+                    name: "2024-25",
+                    status: "active",
+                    is_active: true,
+                  },
+                  error: null,
+                }),
+            }),
+          }),
+        };
+      }
+      if (table === "team_players") {
+        return {
+          select: () => ({
+            eq: () => ({
+              eq: () => Promise.resolve({ data: [], error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "matches") {
+        return {
+          select: () => ({
+            or: () => ({
+              order: () => ({
+                order: () => Promise.resolve({ data: [], error: null }),
+              }),
+            }),
+          }),
+        };
+      }
+      if (table === "match_players") {
+        return {
+          select: () => ({
+            eq: () => ({
+              in: () => Promise.resolve({ data: [], error: null }),
+            }),
+          }),
+        };
+      }
+      throw new Error(`unexpected table ${table}`);
+    },
+  } as never;
+}
+
+describe("loadTeamDetail", () => {
+  const captainBase = {
+    id: "player-1",
+    name: "Alice",
+    member_number: "100",
+    email: "alice@example.com",
+    phone: "+321111",
+    mobile_phone: "+322222",
+  };
+
+  it("omits captain contact fields from select and result by default", async () => {
+    let teamSelect = "";
+    const supabase = createLoadTeamDetailSupabase({
+      onTeamSelect: (columns) => {
+        teamSelect = columns;
+      },
+      captain: captainBase,
+    });
+
+    const detail = await loadTeamDetail(supabase, "team-1");
+
+    expect(teamSelect).toContain("captain:players(id, name, member_number)");
+    expect(teamSelect).not.toContain("email");
+    expect(teamSelect).not.toContain("phone");
+    expect(teamSelect).not.toContain("mobile_phone");
+    expect(detail?.captain).toEqual({
+      id: "player-1",
+      name: "Alice",
+      member_number: "100",
+      matches_played: 0,
+    });
+    expect(detail?.captain).not.toHaveProperty("email");
+    expect(detail?.captain).not.toHaveProperty("phone");
+    expect(detail?.captain).not.toHaveProperty("mobile_phone");
+  });
+
+  it("includes captain contact fields when includeCaptainContacts is true", async () => {
+    let teamSelect = "";
+    const supabase = createLoadTeamDetailSupabase({
+      onTeamSelect: (columns) => {
+        teamSelect = columns;
+      },
+      captain: captainBase,
+    });
+
+    const detail = await loadTeamDetail(supabase, "team-1", {
+      includeCaptainContacts: true,
+    });
+
+    expect(teamSelect).toContain(
+      "captain:players(id, name, member_number, email, phone, mobile_phone)",
+    );
+    expect(detail?.captain).toEqual({
+      id: "player-1",
+      name: "Alice",
+      member_number: "100",
+      matches_played: 0,
+      email: "alice@example.com",
+      phone: "+321111",
+      mobile_phone: "+322222",
+    });
+  });
+});
 
 describe("loadTeamsForUser", () => {
   it("returns teams for linked player in active season", async () => {
