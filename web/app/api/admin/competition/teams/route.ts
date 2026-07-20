@@ -78,12 +78,16 @@ export async function GET(request: Request) {
         const rawClub = t.club as unknown;
         const club = Array.isArray(rawClub)
           ? (rawClub[0] as {
+              id?: string;
+              name?: string;
               address?: string | null;
               postal_code?: string | null;
               location?: string | null;
               competition_location?: string | null;
             } | undefined)
           : (rawClub as {
+              id?: string;
+              name?: string;
               address?: string | null;
               postal_code?: string | null;
               location?: string | null;
@@ -94,6 +98,8 @@ export async function GET(request: Request) {
           ...rest,
           location: resolveTeamMatchLocation(club, division),
           captain: unwrapCaptain(t.captain),
+          club:
+            club?.id && club?.name ? { id: club.id, name: club.name } : null,
           roster: rosters[t.id] ?? [],
         };
       }),

@@ -396,10 +396,14 @@
     "disciplineHubDescription": "Straffen, waarschuwingen en officiële uitspraken per groep.",
     "auditLogHub": "Auditlog",
     "auditLogHubDescription": "Geschiedenis van wedstrijdwijzigingen per groep.",
+    "teamCaptainsHub": "Teamkapiteins",
+    "teamCaptainsHubDescription": "Wijzig teamkapiteins per groep zonder de competitie-wizard te openen.",
     "disciplineScopesTitle": "Discipline — kies scope",
     "auditLogScopesTitle": "Auditlog — kies scope",
+    "teamCaptainsScopesTitle": "Teamkapiteins — kies scope",
     "backDiscipline": "← Discipline",
     "backAuditLog": "← Auditlog",
+    "backTeamCaptains": "← Teamkapiteins",
     "scopesTitle": "Competitiescopes",
     "backAdmin": "← Beheer",
     "backScopes": "← Competitiescopes",
@@ -548,6 +552,12 @@
     "auditLogPage": {
       "title": "Auditlog",
       "description": "Bekijk de geschiedenis van wedstrijdwijzigingen voor de geselecteerde groep."
+    },
+    "teamCaptainsPage": {
+      "title": "Teamkapiteins",
+      "description": "Wijzig de kapitein van elk team in de geselecteerde groep. Kapiteins moeten lid zijn van de club van het team.",
+      "loadingTeams": "Teams laden…",
+      "noTeams": "Nog geen teams in deze groep."
     },
     "startLeague": {
       "loading": "Gereedheid laden…",

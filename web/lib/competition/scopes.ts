@@ -54,3 +54,11 @@ export function adminAuditLogPath(
   if (scope === SCOPES.NATIONAL) return "/admin/audit-log/national";
   return `/admin/audit-log/regional/${regionCode ?? REGION_CODES.FLANDERS}`;
 }
+
+export function adminTeamCaptainsPath(
+  scope: CompetitionScope,
+  regionCode?: string,
+): string {
+  if (scope === SCOPES.NATIONAL) return "/admin/team-captains/national";
+  return `/admin/team-captains/regional/${regionCode ?? REGION_CODES.FLANDERS}`;
+}

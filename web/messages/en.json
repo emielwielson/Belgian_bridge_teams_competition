@@ -396,10 +396,14 @@
     "disciplineHubDescription": "Penalties, warnings, and official rulings per group.",
     "auditLogHub": "Audit log",
     "auditLogHubDescription": "Match change history and operational actions per group.",
+    "teamCaptainsHub": "Team captains",
+    "teamCaptainsHubDescription": "Change team captains per group without opening competition setup.",
     "disciplineScopesTitle": "Discipline — choose scope",
     "auditLogScopesTitle": "Audit log — choose scope",
+    "teamCaptainsScopesTitle": "Team captains — choose scope",
     "backDiscipline": "← Discipline",
     "backAuditLog": "← Audit log",
+    "backTeamCaptains": "← Team captains",
     "scopesTitle": "Competition scopes",
     "backAdmin": "← Admin",
     "backScopes": "← Scopes",
@@ -548,6 +552,12 @@
     "auditLogPage": {
       "title": "Audit log",
       "description": "View match change history for the selected group."
+    },
+    "teamCaptainsPage": {
+      "title": "Team captains",
+      "description": "Change the captain of any team in the selected group. Captains must be members of the team's club.",
+      "loadingTeams": "Loading teams…",
+      "noTeams": "No teams in this group yet."
     },
     "startLeague": {
       "loading": "Loading readiness…",

@@ -395,10 +395,14 @@
     "disciplineHubDescription": "Pénalités, avertissements et décisions officielles par groupe.",
     "auditLogHub": "Journal d'audit",
     "auditLogHubDescription": "Historique des modifications de rencontres par groupe.",
+    "teamCaptainsHub": "Capitaines d'équipe",
+    "teamCaptainsHubDescription": "Modifier les capitaines par groupe sans ouvrir la configuration de la compétition.",
     "disciplineScopesTitle": "Discipline — choisir le périmètre",
     "auditLogScopesTitle": "Journal d'audit — choisir le périmètre",
+    "teamCaptainsScopesTitle": "Capitaines d'équipe — choisir le périmètre",
     "backDiscipline": "← Discipline",
     "backAuditLog": "← Journal d'audit",
+    "backTeamCaptains": "← Capitaines d'équipe",
     "scopesTitle": "Périmètres de compétition",
     "backAdmin": "← Administration",
     "backScopes": "← Périmètres",
@@ -547,6 +551,12 @@
     "auditLogPage": {
       "title": "Journal d'audit",
       "description": "Consultez l'historique des modifications de rencontres pour le groupe sélectionné."
+    },
+    "teamCaptainsPage": {
+      "title": "Capitaines d'équipe",
+      "description": "Modifiez le capitaine de chaque équipe du groupe sélectionné. Le capitaine doit être membre du club de l'équipe.",
+      "loadingTeams": "Chargement des équipes…",
+      "noTeams": "Aucune équipe dans ce groupe pour l'instant."
     },
     "startLeague": {
       "loading": "Chargement de l'état de préparation…",
