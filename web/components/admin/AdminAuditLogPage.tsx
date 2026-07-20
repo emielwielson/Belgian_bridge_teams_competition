@@ -54,6 +54,7 @@ export function AdminAuditLogPage({ scope, regionCode }: Props) {
         scope={scope}
         regionCode={regionCode}
         onGroupChange={handleGroupChange}
+        skipTeamLoad
       />
 
       <MatchLogViewer groupId={groupId} />

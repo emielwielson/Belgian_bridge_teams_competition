@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { DivisionReadiness } from "@/lib/competition/national-readiness";
 import type { GroupReadiness } from "@/lib/competition/regional-readiness";
@@ -18,16 +18,22 @@ type Props = {
   scope: CompetitionScope;
   regionCode?: RegionCode;
   onGroupChange: (groupId: string | null, teams: AdminGroupTeam[]) => void;
+  /** When true, only notify groupId changes; the parent loads team details. */
+  skipTeamLoad?: boolean;
 };
 
 export function AdminScopeGroupPicker({
   scope,
   regionCode,
   onGroupChange,
+  skipTeamLoad = false,
 }: Props) {
   const t = useTranslations("admin.nationalDiscipline");
   const tDiscipline = useTranslations("admin.disciplinePage");
   const tDivisions = useTranslations("divisions");
+
+  const onGroupChangeRef = useRef(onGroupChange);
+  onGroupChangeRef.current = onGroupChange;
 
   const [loading, setLoading] = useState(true);
   const [groupId, setGroupId] = useState<string | null>(null);
@@ -36,8 +42,24 @@ export function AdminScopeGroupPicker({
   );
   const [regionalOptions, setRegionalOptions] = useState<GroupReadiness[]>([]);
 
-  const loadTeams = useCallback(
-    async (gid: string) => {
+  const notifyGroupChange = useCallback(
+    (gid: string | null, teams: AdminGroupTeam[] = []) => {
+      onGroupChangeRef.current(gid, teams);
+    },
+    [],
+  );
+
+  const applyGroupSelection = useCallback(
+    async (gid: string | null) => {
+      setGroupId(gid);
+      if (!gid) {
+        notifyGroupChange(null, []);
+        return;
+      }
+      if (skipTeamLoad) {
+        notifyGroupChange(gid, []);
+        return;
+      }
       const res = await fetch(`/api/admin/competition/teams?groupId=${gid}`);
       const body = await res.json();
       if (res.ok) {
@@ -45,12 +67,12 @@ export function AdminScopeGroupPicker({
           id: row.id,
           name: row.name,
         }));
-        onGroupChange(gid, teams);
+        notifyGroupChange(gid, teams);
       } else {
-        onGroupChange(gid, []);
+        notifyGroupChange(gid, []);
       }
     },
-    [onGroupChange],
+    [notifyGroupChange, skipTeamLoad],
   );
 
   useEffect(() => {
@@ -64,7 +86,7 @@ export function AdminScopeGroupPicker({
         if (!res.ok) {
           setNationalOptions([]);
           setLoading(false);
-          onGroupChange(null, []);
+          notifyGroupChange(null, []);
           return;
         }
         const body = await res.json();
@@ -72,9 +94,8 @@ export function AdminScopeGroupPicker({
         const withGroups = divisions.filter((d) => d.groupId);
         setNationalOptions(withGroups);
         const first = withGroups[0]?.groupId ?? null;
-        setGroupId(first);
-        if (first) await loadTeams(first);
-        else onGroupChange(null, []);
+        if (first) await applyGroupSelection(first);
+        else notifyGroupChange(null, []);
       } else if (regionCode) {
         const res = await fetch(
           `/api/admin/competition/regional/readiness?region=${regionCode}`,
@@ -83,16 +104,15 @@ export function AdminScopeGroupPicker({
         if (!res.ok) {
           setRegionalOptions([]);
           setLoading(false);
-          onGroupChange(null, []);
+          notifyGroupChange(null, []);
           return;
         }
         const body = await res.json();
         const groups = (body.groups ?? []) as GroupReadiness[];
         setRegionalOptions(groups);
         const first = groups[0]?.groupId ?? null;
-        setGroupId(first);
-        if (first) await loadTeams(first);
-        else onGroupChange(null, []);
+        if (first) await applyGroupSelection(first);
+        else notifyGroupChange(null, []);
       }
       if (!cancelled) setLoading(false);
     })();
@@ -100,13 +120,10 @@ export function AdminScopeGroupPicker({
     return () => {
       cancelled = true;
     };
-  }, [scope, regionCode, loadTeams, onGroupChange]);
+  }, [scope, regionCode, applyGroupSelection, notifyGroupChange]);
 
   async function handleGroupChange(nextId: string) {
-    const gid = nextId || null;
-    setGroupId(gid);
-    if (gid) await loadTeams(gid);
-    else onGroupChange(null, []);
+    await applyGroupSelection(nextId || null);
   }
 
   if (loading) {

@@ -9,7 +9,7 @@ import {
   type RegionCode,
 } from "@/lib/competition/scopes";
 import { translateRegionalScopeTitle } from "@/lib/i18n/labels";
-import { AdminScopeGroupPicker } from "./AdminScopeGroupPicker";
+import { AdminScopeGroupPicker, type AdminGroupTeam } from "./AdminScopeGroupPicker";
 import { TeamCaptainsPanel } from "./TeamCaptainsPanel";
 
 type Props = {
@@ -28,9 +28,12 @@ export function AdminTeamCaptainsPage({ scope, regionCode }: Props) {
 
   const [groupId, setGroupId] = useState<string | null>(null);
 
-  const handleGroupChange = useCallback((gid: string | null) => {
-    setGroupId(gid);
-  }, []);
+  const handleGroupChange = useCallback(
+    (gid: string | null, _teams: AdminGroupTeam[]) => {
+      setGroupId(gid);
+    },
+    [],
+  );
 
   return (
     <main className="page-container flex flex-col gap-6">
@@ -47,7 +50,8 @@ export function AdminTeamCaptainsPage({ scope, regionCode }: Props) {
       <AdminScopeGroupPicker
         scope={scope}
         regionCode={regionCode}
-        onGroupChange={(gid) => handleGroupChange(gid)}
+        onGroupChange={handleGroupChange}
+        skipTeamLoad
       />
 
       <TeamCaptainsPanel groupId={groupId} />
