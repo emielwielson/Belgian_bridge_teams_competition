@@ -13,14 +13,14 @@ Next.js frontend for the Belgian Bridge Competition Platform.
    Or create `web/.env.local` with the same keys as [`.env.example`](../.env.example).
 
 2. Configure Supabase **Authentication** (Dashboard):
-   - Enable **Email** (Magic Link / OTP)
+   - Enable **Email** (Magic Link / OTP); email OTP length **8**
    - Site URL: `http://localhost:3000`
-   - Redirect URLs: `http://localhost:3000/auth/callback`
-   - **Magic Link** email template (required for PKCE / cross-device login): use a link with `token_hash`, not only `{{ .ConfirmationURL }}`. Example:
+   - Redirect URLs: `http://localhost:3000/auth/confirm` (add production `/auth/confirm`; optional legacy `/auth/callback`)
+   - **Magic Link** email template (Safe Links / shared Auth with Ledenbeheer): do **not** use `{{ .ConfirmationURL }}`. Example:
      ```html
-     <a href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=email">Sign in</a>
+     <a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email">Sign in</a>
      ```
-     Local Supabase already uses `supabase/templates/magic_link.html`. Copy the same template in the hosted project under **Authentication → Email Templates → Magic Link**.
+     Also include `{{ .Token }}` (8-digit OTP). See `supabase/templates/magic_link.html`. Hosted Auth → Email Templates must match.
 
 3. Install and run:
 
@@ -48,8 +48,11 @@ Competition managers create teams, assign captains, and manage club setup. Playe
 
 | Path | Purpose |
 |------|---------|
-| `/login` | Magic link sign-in |
-| `/auth/callback` | OAuth callback (sets session cookies) |
+| `/login` | Magic link sign-in (+ 8-digit OTP fallback) |
+| `/auth/confirm` | Magic link interstitial; verify only on button click |
+| `/auth/callback` | Legacy PKCE / older links (sets session cookies) |
+| `/api/auth/confirm` | POST — `verifyOtp` with `token_hash` |
+| `/api/auth/verify-otp` | POST — `verifyOtp` with email + 8-digit token |
 | `/api/auth/me` | Current user + roles |
 | `/api/auth/signout` | POST — sign out |
 

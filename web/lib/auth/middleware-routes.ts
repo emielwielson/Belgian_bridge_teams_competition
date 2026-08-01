@@ -5,10 +5,13 @@ const PUBLIC_EXACT = new Set([
   "/",
   "/login",
   "/auth/callback",
+  "/auth/confirm",
   "/auth/select-player",
   "/api/health",
   "/api/auth/me",
   "/api/auth/login",
+  "/api/auth/confirm",
+  "/api/auth/verify-otp",
   "/api/auth/signout",
   "/api/cron/award-bye-scores",
 ]);

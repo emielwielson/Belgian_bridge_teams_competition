@@ -47,6 +47,45 @@ describe("LoginForm", () => {
       });
     });
     expect(screen.getByRole("status")).toHaveTextContent(/check your email/i);
+    expect(
+      screen.getByRole("button", { name: /use code instead/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("verifies 8-digit OTP fallback", async () => {
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ ok: true }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ ok: true, redirectTo: "/player" }),
+      });
+    const assign = vi.fn();
+    vi.stubGlobal("location", { ...window.location, assign });
+    const user = userEvent.setup();
+
+    renderLoginForm();
+    await user.type(screen.getByLabelText(/email/i), "test@example.com");
+    await user.click(screen.getByRole("button", { name: /send magic link/i }));
+    await user.click(screen.getByRole("button", { name: /use code instead/i }));
+    await user.type(screen.getByLabelText(/8-digit code/i), "12345678");
+    await user.click(screen.getByRole("button", { name: /verify code/i }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenLastCalledWith("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: "test@example.com",
+          token: "12345678",
+        }),
+      });
+    });
+    expect(assign).toHaveBeenCalledWith("/player");
   });
 
   it("shows message when email is not registered", async () => {

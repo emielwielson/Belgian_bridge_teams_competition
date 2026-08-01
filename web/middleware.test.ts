@@ -7,13 +7,16 @@ import {
 import { ARBITER_ACCESS_ROLES, ROLES } from "./lib/auth/roles";
 
 describe("isPublicPath", () => {
-  it("allows home, login, callback, health", () => {
+  it("allows home, login, callback, confirm, health", () => {
     expect(isPublicPath("/")).toBe(true);
     expect(isPublicPath("/login")).toBe(true);
     expect(isPublicPath("/auth/callback")).toBe(true);
+    expect(isPublicPath("/auth/confirm")).toBe(true);
     expect(isPublicPath("/auth/select-player")).toBe(true);
     expect(isPublicPath("/api/health")).toBe(true);
     expect(isPublicPath("/api/auth/login")).toBe(true);
+    expect(isPublicPath("/api/auth/confirm")).toBe(true);
+    expect(isPublicPath("/api/auth/verify-otp")).toBe(true);
   });
 
   it("allows public APIs and standings", () => {

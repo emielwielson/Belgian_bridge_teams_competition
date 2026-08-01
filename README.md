@@ -19,9 +19,9 @@ Development uses the **Supabase Dashboard** (no Docker or Supabase CLI required)
 
 2. Configure **Authentication** → **URL configuration**:
    - Site URL: `http://localhost:3000` (add production URL when deployed)
-   - Redirect URLs: `http://localhost:3000/auth/callback`
-   - **Providers:** enable **Email** (Magic Link / OTP); **disable sign ups** so only emails validated by the app can receive a magic link (Authentication → Providers → Email → Disable sign ups, or `enable_signup = false` in [`supabase/config.toml`](supabase/config.toml))
-   - **Email Templates → Magic Link:** use `{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=email` in the sign-in link (see `supabase/templates/magic_link.html`). The default `{{ .ConfirmationURL }}` PKCE flow fails when the link is opened outside the browser that requested it.
+   - Redirect URLs: `http://localhost:3000/auth/confirm` (and production `/auth/confirm`; keep `/auth/callback` for legacy if needed)
+   - **Providers:** enable **Email** (Magic Link / OTP); set email OTP length to **8**; **disable sign ups** so only emails validated by the app can receive a magic link (Authentication → Providers → Email → Disable sign ups, or `enable_signup = false` in [`supabase/config.toml`](supabase/config.toml))
+   - **Email Templates → Magic Link:** do **not** use `{{ .ConfirmationURL }}` (first GET verifies the token; Outlook Safe Links breaks both link and code). Use `{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email` plus `{{ .Token }}` for the 8-digit OTP fallback (see [`supabase/templates/magic_link.html`](supabase/templates/magic_link.html)). Shared Auth with Ledenbeheer must keep this template shape; `emailRedirectTo` is a bare `/auth/confirm` URL (no query).
 
 3. Copy keys from **Project Settings → [API Keys](https://supabase.com/dashboard/project/_/settings/api-keys)**:
    - Project URL → `NEXT_PUBLIC_SUPABASE_URL`

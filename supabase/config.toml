@@ -156,6 +156,8 @@ site_url = "http://localhost:3000"
 # external_url = ""
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
 additional_redirect_urls = [
+  "http://localhost:3000/auth/confirm",
+  "http://127.0.0.1:3000/auth/confirm",
   "http://localhost:3000/auth/callback",
   "http://127.0.0.1:3000/auth/callback",
 ]
@@ -226,8 +228,8 @@ enable_confirmations = false
 secure_password_change = false
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
 max_frequency = "1s"
-# Number of characters used in the email OTP.
-otp_length = 6
+# Number of characters used in the email OTP (must match shared hosted Auth / Ledenbeheer).
+otp_length = 8
 # Number of seconds before the email OTP expires (defaults to 1 hour).
 otp_expiry = 3600
 
@@ -241,8 +243,8 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
-# Magic link uses token_hash so login works when the email is opened in another
-# browser or device (PKCE code exchange needs the original browser's cookies).
+# Magic link uses RedirectTo + token_hash (not ConfirmationURL) so Outlook Safe Links
+# prefetch does not consume the one-time token. Hosted Auth email template must match.
 [auth.email.template.magic_link]
 subject = "Your sign-in link"
 content_path = "./supabase/templates/magic_link.html"

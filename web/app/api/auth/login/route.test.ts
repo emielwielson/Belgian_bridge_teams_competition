@@ -80,10 +80,12 @@ describe("POST /api/auth/login", () => {
     expect(signInWithOtp).toHaveBeenCalledWith({
       email: "player@example.com",
       options: {
-        emailRedirectTo: "http://localhost/auth/callback?next=%2Fplayer",
+        emailRedirectTo: "http://localhost/auth/confirm",
         shouldCreateUser: false,
       },
     });
+    const setCookie = res.headers.get("set-cookie") ?? "";
+    expect(setCookie).toMatch(/auth_next=%2Fplayer/);
   });
 
   it("maps Supabase signup disabled errors to emailNotRegistered", async () => {

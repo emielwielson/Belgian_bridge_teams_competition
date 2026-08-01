@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 import {
+  AUTH_NEXT_COOKIE,
+  authNextCookieOptions,
+  safeNextPath,
+} from "@/lib/auth/auth-next";
+import {
   ensureAuthUserForLogin,
   isEmailAllowedForLogin,
   isSignupNotAllowedAuthError,
@@ -44,9 +49,9 @@ export async function POST(request: Request) {
   }
 
   const origin = new URL(request.url).origin;
-  const next = body.next?.trim() || "/";
-  const redirectTo = new URL("/auth/callback", origin);
-  redirectTo.searchParams.set("next", next);
+  // Bare confirm URL — shared Magic Link template appends ?token_hash=…
+  const redirectTo = new URL("/auth/confirm", origin).toString();
+  const next = safeNextPath(body.next?.trim() || "/");
 
   try {
     await ensureAuthUserForLogin(supabase, normalizedEmail);
@@ -58,7 +63,7 @@ export async function POST(request: Request) {
   const { error } = await supabase.auth.signInWithOtp({
     email: normalizedEmail,
     options: {
-      emailRedirectTo: redirectTo.toString(),
+      emailRedirectTo: redirectTo,
       shouldCreateUser: false,
     },
   });
@@ -71,5 +76,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status });
   }
 
-  return jsonOk({ ok: true });
+  const response = jsonOk({ ok: true });
+  response.cookies.set(AUTH_NEXT_COOKIE, next, authNextCookieOptions());
+  return response;
 }
