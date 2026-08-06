@@ -24,15 +24,18 @@ function mockSupabase(options: {
       };
     }
     if (table === "player_club_memberships") {
+      // select → eq(club) → in(players) → eq(type) → eq(status)
       return {
         select: () => ({
           eq: () => ({
-            eq: () => ({
-              in: () =>
-                Promise.resolve({
-                  data: options.clubMemberIds.map((id) => ({ player_id: id })),
-                  error: null,
-                }),
+            in: () => ({
+              eq: () => ({
+                eq: () =>
+                  Promise.resolve({
+                    data: options.clubMemberIds.map((id) => ({ player_id: id })),
+                    error: null,
+                  }),
+              }),
             }),
           }),
         }),

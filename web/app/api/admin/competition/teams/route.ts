@@ -152,7 +152,6 @@ export async function POST(request: Request) {
     await assertCaptainIsClubMember(supabase, {
       clubId: createInput.club_id,
       playerId: createInput.captain_id,
-      seasonId: season.id,
     });
 
     const { data, error } = await supabase
@@ -211,11 +210,9 @@ export async function PATCH(request: Request) {
       if (captainId === null) {
         return jsonErrorCode(ErrorCodes.api.captainIdRequired, 400);
       }
-      const season = await requireActiveSeason(supabase);
       await assertCaptainIsClubMember(supabase, {
         clubId: team.club_id,
         playerId: captainId,
-        seasonId: season.id,
       });
       patch.captain_id = captainId;
       rosterCaptainId = captainId;

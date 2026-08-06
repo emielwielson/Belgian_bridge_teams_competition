@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { MatchContext } from "@/lib/auth/match-access";
+import { loadActivePrimaryPlayerIdsAtClub } from "@/lib/competition/active-primary-membership";
 import { loadGroupScoringContext } from "@/lib/competition/match-scoring-context";
 import {
   allowsBoardChoice,
@@ -80,16 +81,11 @@ export async function validateLineupPayload(
 
   if (subIds.length === 0) return;
 
-  const { data: memberships, error: memberError } = await supabase
-    .from("player_club_memberships")
-    .select("player_id")
-    .eq("club_id", clubId)
-    .eq("season_id", seasonId)
-    .in("player_id", subIds);
-
-  if (memberError) throw memberError;
-
-  const memberIds = new Set(memberships?.map((m) => m.player_id) ?? []);
+  const memberIds = await loadActivePrimaryPlayerIdsAtClub(
+    supabase,
+    clubId,
+    subIds,
+  );
   for (const id of subIds) {
     if (!memberIds.has(id)) {
       throw new LineupValidationError(

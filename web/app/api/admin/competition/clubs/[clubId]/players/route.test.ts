@@ -9,21 +9,12 @@ vi.mock("@/lib/auth/route-auth", async (importOriginal) => {
   };
 });
 
-vi.mock("@/lib/competition/season", () => ({
-  requireActiveSeason: vi.fn().mockResolvedValue({
-    id: "season-1",
-    name: "2025-26",
-    status: "setup",
-    is_active: true,
-  }),
-}));
-
 describe("GET /api/admin/competition/clubs/[clubId]/players", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("returns club members for active season", async () => {
+  it("returns active primary club members", async () => {
     const chain = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
@@ -60,5 +51,8 @@ describe("GET /api/admin/competition/clubs/[clubId]/players", () => {
     expect(body.players).toHaveLength(2);
     expect(body.players[0].name).toBe("Alice");
     expect(from).toHaveBeenCalledWith("player_club_memberships");
+    expect(chain.eq).toHaveBeenCalledWith("club_id", "c1");
+    expect(chain.eq).toHaveBeenCalledWith("membership_type", "primary");
+    expect(chain.eq).toHaveBeenCalledWith("status", "active");
   });
 });

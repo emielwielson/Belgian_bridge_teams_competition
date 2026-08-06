@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getActivePlayerId } from "@/lib/auth/active-player";
+import { loadActivePrimaryClubMembers } from "@/lib/competition/active-primary-membership";
 
 export type PlayerMatchSummary = {
   id: string;
@@ -199,7 +200,7 @@ export type ClubSubCandidate = {
   member_number: string | null;
 };
 
-/** Club members in the active season who are not on the team roster (FR 30). */
+/** Active primary club members who are not on the team roster (FR 30). */
 export async function loadClubSubCandidates(
   supabase: SupabaseClient,
   clubId: string,
@@ -216,17 +217,15 @@ export async function loadClubSubCandidates(
 
   const rosterIds = new Set(rosterRows?.map((r) => r.player_id) ?? []);
 
-  const { data: memberships, error } = await supabase
-    .from("player_club_memberships")
-    .select("player:players(id, name, member_number)")
-    .eq("club_id", clubId)
-    .eq("season_id", seasonId);
+  const memberships = await loadActivePrimaryClubMembers(
+    supabase,
+    clubId,
+    "player:players(id, name, member_number)",
+  );
 
-  if (error) throw error;
-
-  const players = (memberships ?? [])
+  const players = memberships
     .map((row) => {
-      const raw = row.player as unknown;
+      const raw = (row as { player: unknown }).player;
       const p = Array.isArray(raw) ? raw[0] : raw;
       return p as {
         id: string;

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { loadActivePrimaryClubMembers } from "@/lib/competition/active-primary-membership";
 import { TeamValidationError } from "@/lib/competition/team-captain";
 import { loadTeamPlayerMatchesPlayed } from "@/lib/competition/team-queries";
 import { getActiveSeason, requireActiveSeason } from "@/lib/competition/season";
@@ -56,13 +57,11 @@ export async function loadTeamRosterState(
       .filter((p): p is RosterPlayer => p != null)
       .sort((a, b) => a.name.localeCompare(b.name));
 
-    const { data: memberships, error: membershipsError } = await supabase
-      .from("player_club_memberships")
-      .select("player_id, player:players(id, name, member_number)")
-      .eq("club_id", clubId)
-      .eq("season_id", season.id);
-
-    if (membershipsError) throw membershipsError;
+    const memberships = await loadActivePrimaryClubMembers(
+      supabase,
+      clubId,
+      "player_id, player:players(id, name, member_number)",
+    );
 
     const { data: clubTeams, error: clubTeamsError } = await supabase
       .from("teams")
@@ -90,12 +89,12 @@ export async function loadTeamRosterState(
 
     const onRoster = new Set(roster.map((r) => r.player_id));
 
-    for (const m of memberships ?? []) {
+    for (const m of memberships) {
       const p = unwrapOne<{
         id: string;
         name: string;
         member_number: string | null;
-      }>(m.player);
+      }>((m as { player: unknown }).player);
       if (!p || onRoster.has(p.id) || assignedPlayerIds.has(p.id)) continue;
 
       available_players.push({

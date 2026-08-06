@@ -55,12 +55,18 @@ function mockSupabase(team: { id: string; club_id: string } | null) {
         };
       }
       if (table === "player_club_memberships") {
+        // select → eq(club) → eq(player) → eq(type) → eq(status) → maybeSingle
         return {
           select: vi.fn(() => ({
             eq: vi.fn(() => ({
               eq: vi.fn(() => ({
                 eq: vi.fn(() => ({
-                  maybeSingle: vi.fn(async () => ({ data: { id: "m1" }, error: null })),
+                  eq: vi.fn(() => ({
+                    maybeSingle: vi.fn(async () => ({
+                      data: { id: "m1" },
+                      error: null,
+                    })),
+                  })),
                 })),
               })),
             })),

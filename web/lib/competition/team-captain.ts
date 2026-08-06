@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { findActivePrimaryClubMember } from "@/lib/competition/active-primary-membership";
 
 export class TeamCaptainError extends Error {
   readonly status = 403;
@@ -46,17 +47,13 @@ export function validateTeamCreateBody(body: unknown): TeamCreateInput {
 
 export async function assertCaptainIsClubMember(
   supabase: SupabaseClient,
-  input: { clubId: string; playerId: string; seasonId: string },
+  input: { clubId: string; playerId: string },
 ): Promise<void> {
-  const { data, error } = await supabase
-    .from("player_club_memberships")
-    .select("id")
-    .eq("club_id", input.clubId)
-    .eq("player_id", input.playerId)
-    .eq("season_id", input.seasonId)
-    .maybeSingle();
+  const data = await findActivePrimaryClubMember(supabase, {
+    clubId: input.clubId,
+    playerId: input.playerId,
+  });
 
-  if (error) throw error;
   if (!data) {
     throw new TeamCaptainError("Captain must be a member of the team's club");
   }

@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { getActiveSeason } from "@/lib/competition/season";
+import { loadActivePrimaryMembershipsForPlayers } from "@/lib/competition/active-primary-membership";
 
 export type LinkedPlayer = {
   id: string;
@@ -115,7 +115,6 @@ export async function getLinkedPlayers(
   if (error) throw error;
   if (!links?.length) return [];
 
-  const season = await getActiveSeason(supabase);
   const playerIds = links
     .map((row) => {
       const raw = row.player as unknown;
@@ -125,20 +124,19 @@ export async function getLinkedPlayers(
     .filter(Boolean);
 
   const clubByPlayer = new Map<string, string>();
-  if (season && playerIds.length > 0) {
-    const { data: memberships, error: membershipError } = await supabase
-      .from("player_club_memberships")
-      .select("player_id, club:clubs(name)")
-      .eq("season_id", season.id)
-      .in("player_id", playerIds);
+  if (playerIds.length > 0) {
+    const memberships = await loadActivePrimaryMembershipsForPlayers(
+      supabase,
+      playerIds,
+      "player_id, club:clubs(name)",
+    );
 
-    if (membershipError) throw membershipError;
-
-    for (const row of memberships ?? []) {
+    for (const row of memberships) {
       const raw = row.club as unknown;
       const club = Array.isArray(raw) ? raw[0] : raw;
       const name = (club as { name: string } | null)?.name;
-      if (name) clubByPlayer.set(row.player_id, name);
+      const playerId = row.player_id as string;
+      if (name) clubByPlayer.set(playerId, name);
     }
   }
 

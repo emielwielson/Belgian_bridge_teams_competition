@@ -96,6 +96,8 @@ describe("POST /api/admin/competition/teams", () => {
     expect(res.status).toBe(403);
     const body = await res.json();
     expect(body.error).toBe("api.captainNotClubMember");
+    expect(membershipChain.eq).toHaveBeenCalledWith("membership_type", "primary");
+    expect(membershipChain.eq).toHaveBeenCalledWith("status", "active");
   });
 
   it("creates team when captain is a club member", async () => {
@@ -122,7 +124,12 @@ describe("POST /api/admin/competition/teams", () => {
     const from = vi.fn((table: string) => {
       if (table === "player_club_memberships") return membershipChain;
       if (table === "teams") {
-        return { insert: vi.fn().mockReturnValue(insertChain) };
+        return {
+          insert: vi.fn().mockReturnValue(insertChain),
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ count: 0, error: null }),
+          }),
+        };
       }
       return {};
     });
@@ -147,8 +154,8 @@ describe("POST /api/admin/competition/teams", () => {
         }),
       }),
     );
-    expect(res.status).toBe(201);
     const body = await res.json();
+    expect(res.status).toBe(201);
     expect(body.team.captain_id).toBe("p1");
     const { ensureCaptainOnTeamRoster } = await import(
       "@/lib/competition/team-roster"
@@ -195,7 +202,12 @@ describe("POST /api/admin/competition/teams", () => {
     const from = vi.fn((table: string) => {
       if (table === "player_club_memberships") return membershipChain;
       if (table === "teams") {
-        return { insert: vi.fn().mockReturnValue(insertChain) };
+        return {
+          insert: vi.fn().mockReturnValue(insertChain),
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ count: 0, error: null }),
+          }),
+        };
       }
       return {};
     });

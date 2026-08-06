@@ -1,5 +1,6 @@
 import { requireAuth } from "@/lib/auth/route-auth";
 import { assertCanManageTeamRoster } from "@/lib/auth/team-access";
+import { findActivePrimaryClubMember } from "@/lib/competition/active-primary-membership";
 import { requireActiveSeason } from "@/lib/competition/season";
 import {
   addPlayerToTeamRoster,
@@ -81,13 +82,10 @@ export async function POST(request: Request, { params }: TeamParams) {
       return jsonOk(state);
     }
 
-    const { data: membership } = await supabase
-      .from("player_club_memberships")
-      .select("id")
-      .eq("club_id", teamRef.clubId)
-      .eq("player_id", playerId)
-      .eq("season_id", season.id)
-      .maybeSingle();
+    const membership = await findActivePrimaryClubMember(supabase, {
+      clubId: teamRef.clubId,
+      playerId,
+    });
 
     if (!membership) {
       return jsonErrorCode(ErrorCodes.api.playerNotClubMember, 403);
