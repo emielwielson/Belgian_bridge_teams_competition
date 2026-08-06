@@ -217,15 +217,13 @@ export async function loadClubSubCandidates(
 
   const rosterIds = new Set(rosterRows?.map((r) => r.player_id) ?? []);
 
-  const memberships = await loadActivePrimaryClubMembers(
-    supabase,
-    clubId,
-    "player:players(id, name, member_number)",
-  );
+  const memberships = await loadActivePrimaryClubMembers<{
+    player: unknown;
+  }>(supabase, clubId, "player:players(id, name, member_number)");
 
   const players = memberships
     .map((row) => {
-      const raw = (row as { player: unknown }).player;
+      const raw = row.player;
       const p = Array.isArray(raw) ? raw[0] : raw;
       return p as {
         id: string;

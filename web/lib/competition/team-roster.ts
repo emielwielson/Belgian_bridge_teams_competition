@@ -57,7 +57,9 @@ export async function loadTeamRosterState(
       .filter((p): p is RosterPlayer => p != null)
       .sort((a, b) => a.name.localeCompare(b.name));
 
-    const memberships = await loadActivePrimaryClubMembers(
+    const memberships = await loadActivePrimaryClubMembers<{
+      player: unknown;
+    }>(
       supabase,
       clubId,
       "player_id, player:players(id, name, member_number)",
@@ -94,7 +96,7 @@ export async function loadTeamRosterState(
         id: string;
         name: string;
         member_number: string | null;
-      }>((m as { player: unknown }).player);
+      }>(m.player);
       if (!p || onRoster.has(p.id) || assignedPlayerIds.has(p.id)) continue;
 
       available_players.push({

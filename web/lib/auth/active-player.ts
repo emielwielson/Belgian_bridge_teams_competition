@@ -125,18 +125,16 @@ export async function getLinkedPlayers(
 
   const clubByPlayer = new Map<string, string>();
   if (playerIds.length > 0) {
-    const memberships = await loadActivePrimaryMembershipsForPlayers(
-      supabase,
-      playerIds,
-      "player_id, club:clubs(name)",
-    );
+    const memberships = await loadActivePrimaryMembershipsForPlayers<{
+      player_id: string;
+      club: unknown;
+    }>(supabase, playerIds, "player_id, club:clubs(name)");
 
     for (const row of memberships) {
-      const raw = row.club as unknown;
+      const raw = row.club;
       const club = Array.isArray(raw) ? raw[0] : raw;
       const name = (club as { name: string } | null)?.name;
-      const playerId = row.player_id as string;
-      if (name) clubByPlayer.set(playerId, name);
+      if (name) clubByPlayer.set(row.player_id, name);
     }
   }
 

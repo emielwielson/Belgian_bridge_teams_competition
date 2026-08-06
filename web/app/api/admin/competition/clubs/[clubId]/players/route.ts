@@ -9,15 +9,13 @@ export async function GET(_request: Request, { params }: Params) {
     const { clubId } = await params;
     const { supabase } = await requireRoles([...COMPETITION_ADMIN_ROLES]);
 
-    const memberships = await loadActivePrimaryClubMembers(
-      supabase,
-      clubId,
-      "player_id, player:players(id, name, member_number)",
-    );
+    const memberships = await loadActivePrimaryClubMembers<{
+      player: unknown;
+    }>(supabase, clubId, "player_id, player:players(id, name, member_number)");
 
     const players = memberships
       .map((row) => {
-        const raw = (row as { player: unknown }).player;
+        const raw = row.player;
         const player = Array.isArray(raw)
           ? (raw[0] as { id: string; name: string; member_number: string | null } | undefined)
           : (raw as { id: string; name: string; member_number: string | null } | null);

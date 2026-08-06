@@ -6,11 +6,11 @@ export const ACTIVE_PRIMARY = {
   status: "active",
 } as const;
 
-export async function loadActivePrimaryClubMembers(
+export async function loadActivePrimaryClubMembers<T = Record<string, unknown>>(
   supabase: SupabaseClient,
   clubId: string,
   select: string,
-) {
+): Promise<T[]> {
   const { data, error } = await supabase
     .from("player_club_memberships")
     .select(select)
@@ -19,7 +19,7 @@ export async function loadActivePrimaryClubMembers(
     .eq("status", ACTIVE_PRIMARY.status);
 
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []) as T[];
 }
 
 export async function findActivePrimaryClubMember(
@@ -39,11 +39,13 @@ export async function findActivePrimaryClubMember(
   return data;
 }
 
-export async function loadActivePrimaryMembershipsForPlayers(
+export async function loadActivePrimaryMembershipsForPlayers<
+  T = Record<string, unknown>,
+>(
   supabase: SupabaseClient,
   playerIds: string[],
   select: string,
-) {
+): Promise<T[]> {
   if (playerIds.length === 0) return [];
 
   const { data, error } = await supabase
@@ -54,7 +56,7 @@ export async function loadActivePrimaryMembershipsForPlayers(
     .eq("status", ACTIVE_PRIMARY.status);
 
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []) as T[];
 }
 
 export async function loadActivePrimaryPlayerIdsAtClub(
