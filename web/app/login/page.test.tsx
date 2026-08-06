@@ -47,6 +47,7 @@ describe("LoginForm", () => {
       });
     });
     expect(screen.getByRole("status")).toHaveTextContent(/check your email/i);
+    expect(screen.getByText(/Telenet|Skynet/i)).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /use code instead/i }),
     ).toBeInTheDocument();

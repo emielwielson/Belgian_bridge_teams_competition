@@ -34,6 +34,7 @@
     "sendMagicLink": "Send magic link",
     "sending": "Sending…",
     "checkEmail": "Check your email for the magic link. If you don't see it, check your spam folder.",
+    "emailDelayHint": "With some providers (e.g. Telenet, Skynet), the email may arrive several minutes to several hours later. Also check spam/junk.",
     "emailNotRegistered": "This email address is not registered in our database. If you are a bridge player, your federation (VBL or LBF) may have a different email address on file — try another address or contact your club.",
     "useCodeInstead": "Use code instead",
     "codeLabel": "8-digit code from email",

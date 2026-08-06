@@ -96,6 +96,7 @@ export function LoginForm({ nextPath }: Props) {
             <p className="text-sm text-zinc-600" role="status">
               {message}
             </p>
+            <p className="text-sm text-zinc-600">{t("emailDelayHint")}</p>
             <button
               type="button"
               className="btn-secondary w-full"

@@ -34,6 +34,7 @@
     "sendMagicLink": "Envoyer le lien de connexion",
     "sending": "Envoi…",
     "checkEmail": "Consultez votre e-mail pour le lien de connexion. Si vous ne le voyez pas, vérifiez votre dossier spam.",
+    "emailDelayHint": "Chez certains fournisseurs (p.ex. Telenet, Skynet), l’e-mail peut arriver avec un délai de quelques minutes à quelques heures. Vérifiez aussi les indésirables.",
     "emailNotRegistered": "Cette adresse e-mail n'est pas enregistrée dans notre base de données. Si vous êtes joueur de bridge, votre fédération (VBL ou LBF) peut avoir une autre adresse e-mail — essayez une autre adresse ou contactez votre club.",
     "useCodeInstead": "Utiliser le code à la place",
     "codeLabel": "Code à 8 chiffres de l'e-mail",

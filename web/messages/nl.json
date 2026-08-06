@@ -34,6 +34,7 @@
     "sendMagicLink": "Aanmeldingslink versturen",
     "sending": "Verzenden…",
     "checkEmail": "Controleer uw e-mail voor de aanmeldingslink. Ziet u het bericht niet? Kijk dan ook in uw spammap.",
+    "emailDelayHint": "Bij sommige providers (o.a. Telenet, Skynet) kan de e-mail enkele minuten tot enkele uren later aankomen. Controleer ook spam/ongewenst.",
     "emailNotRegistered": "Dit e-mailadres staat niet in onze database. Als u bridgespeler bent, kan uw federatie (VBL of LBF) een ander e-mailadres hebben — probeer een ander adres of neem contact op met uw club.",
     "useCodeInstead": "Gebruik in plaats daarvan de code",
     "codeLabel": "8-cijferige code uit de e-mail",
