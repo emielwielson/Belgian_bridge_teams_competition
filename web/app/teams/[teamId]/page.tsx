@@ -54,6 +54,8 @@ export default async function TeamPage({ params }: Props) {
       )
     : false;
 
+  const canManageLocation = canManageRoster;
+
   const [conventionCards, rosterState] = await Promise.all([
     listConventionCards(supabase, teamId),
     canManageRoster
@@ -61,7 +63,7 @@ export default async function TeamPage({ params }: Props) {
       : Promise.resolve(null),
   ]);
 
-  const { team, captain, club, group, division, league, roster, matches } =
+  const { team, captain, club, group, division, league, roster, matches, clubLocation, hasCentralizedVenue } =
     detail;
   const leagueName = translateLeagueName(league.name, tRegions);
 
@@ -92,8 +94,11 @@ export default async function TeamPage({ params }: Props) {
         group={group}
         division={division}
         league={league}
+        clubLocation={clubLocation}
+        hasCentralizedVenue={hasCentralizedVenue}
         canLinkToPlayers={canLinkToPlayers}
         showCaptainContacts={Boolean(user)}
+        canManageLocation={canManageLocation}
       />
 
       <TeamRosterSection

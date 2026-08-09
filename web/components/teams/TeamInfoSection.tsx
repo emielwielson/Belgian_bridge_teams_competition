@@ -2,15 +2,18 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { useState } from "react";
 import type { TeamDetail } from "@/lib/competition/team-queries";
 import { translateLeagueName } from "@/lib/i18n/labels";
+import { TeamLocationModal } from "./TeamLocationModal";
 
 type Props = Pick<
   TeamDetail,
-  "team" | "captain" | "club" | "group" | "division" | "league"
+  "team" | "captain" | "club" | "group" | "division" | "league" | "clubLocation" | "hasCentralizedVenue"
 > & {
   canLinkToPlayers: boolean;
   showCaptainContacts: boolean;
+  canManageLocation: boolean;
 };
 
 function trimmed(value: string | null | undefined): string | null {
@@ -25,8 +28,11 @@ export function TeamInfoSection({
   group,
   division,
   league,
+  clubLocation,
+  hasCentralizedVenue,
   canLinkToPlayers,
   showCaptainContacts,
+  canManageLocation,
 }: Props) {
   const t = useTranslations("team");
   const tRegions = useTranslations("regions");
@@ -37,6 +43,15 @@ export function TeamInfoSection({
   const mobilePhone = showCaptainContacts
     ? trimmed(captain?.mobile_phone)
     : null;
+
+  const [displayLocation, setDisplayLocation] = useState(team.location);
+  const [locationOverride, setLocationOverride] = useState(
+    team.locationOverride,
+  );
+  const [clubLocationDisplay, setClubLocationDisplay] = useState(clubLocation);
+  const [modalOpen, setModalOpen] = useState(false);
+
+  const showChangeLocation = canManageLocation && !hasCentralizedVenue;
 
   return (
     <section className="rounded-lg border border-zinc-200 bg-white p-4">
@@ -118,12 +133,35 @@ export function TeamInfoSection({
         <div>
           <dt className="font-medium text-zinc-500">{t("location")}</dt>
           <dd className="mt-0.5 text-zinc-900">
-            {team.location?.trim() ? team.location : (
+            {displayLocation?.trim() ? displayLocation : (
               <span className="text-zinc-500">{t("locationNotSet")}</span>
             )}
           </dd>
+          {showChangeLocation ? (
+            <button
+              type="button"
+              onClick={() => setModalOpen(true)}
+              className="btn-secondary mt-2 px-3 py-1.5 text-sm"
+            >
+              {t("locationEdit.changeButton")}
+            </button>
+          ) : null}
         </div>
       </dl>
+
+      {modalOpen ? (
+        <TeamLocationModal
+          teamId={team.id}
+          locationOverride={locationOverride}
+          clubLocation={clubLocationDisplay}
+          onClose={() => setModalOpen(false)}
+          onSaved={(result) => {
+            setDisplayLocation(result.location);
+            setLocationOverride(result.locationOverride);
+            setClubLocationDisplay(result.clubLocation);
+          }}
+        />
+      ) : null}
     </section>
   );
 }

@@ -1,7 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getActivePlayerId } from "@/lib/auth/active-player";
 import { getActiveSeason } from "@/lib/competition/season";
-import { resolveTeamMatchLocation } from "@/lib/competition/team-location";
+import {
+  resolveClubMatchLocation,
+  resolveTeamMatchLocation,
+} from "@/lib/competition/team-location";
 import { matchStatus, type MatchStatus } from "@/lib/scoring/match-state";
 import type { PostgrestError } from "@supabase/supabase-js";
 
@@ -33,11 +36,17 @@ export type TeamDetail = {
   team: {
     id: string;
     name: string;
+    /** Resolved display location (division → team → club). */
     location: string | null;
+    /** Raw per-team override; null means use club location. */
+    locationOverride: string | null;
     captain_id: string | null;
   };
   captain: TeamCaptain | null;
   club: { id: string; name: string };
+  /** Club venue without team/division overrides (for the change-location modal). */
+  clubLocation: string | null;
+  hasCentralizedVenue: boolean;
   group: { id: string; name: string };
   division: { id: string; name: string };
   league: { id: string; name: string };
@@ -148,6 +157,7 @@ export async function loadTeamDetail(
       `
       id,
       name,
+      location,
       captain_id,
       ${captainSelect},
       club:clubs(id, name, address, postal_code, location, competition_location),
@@ -288,11 +298,23 @@ export async function loadTeamDetail(
   );
   const roster = withMatchesPlayed(rosterPlayers, matchesPlayedByPlayer);
 
+  const locationOverride =
+    typeof teamRow.location === "string" && teamRow.location.trim()
+      ? teamRow.location.trim()
+      : null;
+  const hasCentralizedVenue = Boolean(
+    typeof division.centralized_location === "string" &&
+      division.centralized_location.trim(),
+  );
+
   return {
     team: {
       id: teamRow.id,
       name: teamRow.name,
-      location: resolveTeamMatchLocation(club, division),
+      location: resolveTeamMatchLocation(club, division, {
+        location: locationOverride,
+      }),
+      locationOverride,
       captain_id: teamRow.captain_id,
     },
     captain: captainRaw
@@ -310,7 +332,9 @@ export async function loadTeamDetail(
             : {}),
         }
       : null,
-    club,
+    club: { id: club.id, name: club.name },
+    clubLocation: resolveClubMatchLocation(club),
+    hasCentralizedVenue,
     group: { id: group.id, name: group.name },
     division: { id: division.id, name: division.name },
     league,

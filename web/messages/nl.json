@@ -296,6 +296,20 @@
     "captainMobilePhone": "Mobiel",
     "location": "Competitielocatie",
     "locationNotSet": "Niet ingesteld",
+    "locationEdit": {
+      "changeButton": "Locatie wijzigen",
+      "title": "Competitielocatie wijzigen",
+      "description": "Stel in waar dit team zijn thuiswedstrijden speelt als dat afwijkt van de club. Laat leeg of gebruik clublocatie om terug te zetten.",
+      "clubLocationLabel": "Clublocatie",
+      "clubLocationNotSet": "Niet ingesteld",
+      "customLocationLabel": "Teamlocatie",
+      "customLocationPlaceholder": "bijv. Gemeentezaal, Straat 1, Stad",
+      "useClubLocation": "Gebruik clublocatie",
+      "save": "Opslaan",
+      "saving": "Opslaan…",
+      "cancel": "Annuleren",
+      "saveFailed": "Locatie opslaan mislukt"
+    },
     "playersTitle": "Spelers",
     "noPlayers": "Nog geen spelers op de selectie.",
     "captainBadge": "Kapitein",
@@ -929,7 +943,9 @@
       "invalidRequestBody": "Ongeldig verzoek",
       "clubIdRequired": "club_id is verplicht",
       "captainIdInvalid": "captain_id moet een geldige speler-id zijn",
-      "competitionSetupLocked": "Competitie-opzet is vergrendeld"
+      "competitionSetupLocked": "Competitie-opzet is vergrendeld",
+      "locationFieldRequired": "location is verplicht (string of null)",
+      "locationCentralizedVenue": "Deze afdeling gebruikt een centrale locatie; de teamlocatie kan niet worden gewijzigd"
     },
     "auth": {
       "emailNotRegistered": "Dit e-mailadres staat niet in onze database. Als u bridgespeler bent, kan uw federatie (VBL of LBF) een ander e-mailadres hebben — probeer een ander adres of neem contact op met uw club.",

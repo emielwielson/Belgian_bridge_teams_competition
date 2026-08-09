@@ -71,6 +71,8 @@ export const ErrorCodes = {
     clubIdRequired: "api.clubIdRequired",
     captainIdInvalid: "api.captainIdInvalid",
     competitionSetupLocked: "api.competitionSetupLocked",
+    locationFieldRequired: "api.locationFieldRequired",
+    locationCentralizedVenue: "api.locationCentralizedVenue",
   },
   auth: {
     emailNotRegistered: "auth.emailNotRegistered",

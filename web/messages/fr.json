@@ -296,6 +296,20 @@
     "captainMobilePhone": "Mobile",
     "location": "Lieu de compétition",
     "locationNotSet": "Non défini",
+    "locationEdit": {
+      "changeButton": "Modifier le lieu",
+      "title": "Modifier le lieu de compétition",
+      "description": "Indiquez où cette équipe joue ses matchs à domicile lorsque cela diffère du lieu du club. Laissez vide ou utilisez le lieu du club pour revenir.",
+      "clubLocationLabel": "Lieu du club",
+      "clubLocationNotSet": "Non défini",
+      "customLocationLabel": "Lieu de l'équipe",
+      "customLocationPlaceholder": "ex. Salle communale, Rue 1, Ville",
+      "useClubLocation": "Utiliser le lieu du club",
+      "save": "Enregistrer",
+      "saving": "Enregistrement…",
+      "cancel": "Annuler",
+      "saveFailed": "Échec de l'enregistrement du lieu"
+    },
     "playersTitle": "Joueurs",
     "noPlayers": "Aucun joueur dans l'effectif pour l'instant.",
     "captainBadge": "Capitaine",
@@ -928,7 +942,9 @@
       "invalidRequestBody": "Corps de requête invalide",
       "clubIdRequired": "club_id est obligatoire",
       "captainIdInvalid": "captain_id doit être un identifiant de joueur valide",
-      "competitionSetupLocked": "La configuration de la compétition est verrouillée"
+      "competitionSetupLocked": "La configuration de la compétition est verrouillée",
+      "locationFieldRequired": "location est requis (chaîne ou null)",
+      "locationCentralizedVenue": "Cette division utilise un lieu centralisé ; le lieu de l'équipe ne peut pas être modifié"
     },
     "auth": {
       "emailNotRegistered": "Cette adresse e-mail n'est pas enregistrée dans notre base de données. Si vous êtes joueur de bridge, votre fédération (VBL ou LBF) peut avoir une autre adresse e-mail — essayez une autre adresse ou contactez votre club.",

@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { resolveTeamMatchLocation, teamLocationFromClub } from "./team-location";
+import {
+  resolveClubMatchLocation,
+  resolveTeamMatchLocation,
+  teamLocationFromClub,
+} from "./team-location";
 
 describe("resolveTeamMatchLocation", () => {
   const club = {
@@ -9,11 +13,21 @@ describe("resolveTeamMatchLocation", () => {
 
   it("uses division centralized location when set", () => {
     expect(
-      resolveTeamMatchLocation(club, { centralized_location: "  Central hall  " }),
+      resolveTeamMatchLocation(
+        club,
+        { centralized_location: "  Central hall  " },
+        { location: "Team venue" },
+      ),
     ).toBe("Central hall");
   });
 
-  it("uses club competition_location override when no centralized location", () => {
+  it("uses team location override when no centralized location", () => {
+    expect(
+      resolveTeamMatchLocation(club, null, { location: "  Team venue  " }),
+    ).toBe("Team venue");
+  });
+
+  it("uses club competition_location override when no team override", () => {
     expect(resolveTeamMatchLocation(club)).toBe("Override venue");
   });
 
@@ -31,6 +45,28 @@ describe("resolveTeamMatchLocation", () => {
   it("returns null when no location is available", () => {
     expect(resolveTeamMatchLocation(null)).toBeNull();
     expect(resolveTeamMatchLocation({ location: "   " })).toBeNull();
+  });
+});
+
+describe("resolveClubMatchLocation", () => {
+  it("uses club competition_location when set", () => {
+    expect(
+      resolveClubMatchLocation({
+        competition_location: " Club hall ",
+        address: "Street 1",
+        location: "City",
+      }),
+    ).toBe("Club hall");
+  });
+
+  it("falls back to membership address", () => {
+    expect(
+      resolveClubMatchLocation({
+        address: "Street 1",
+        postal_code: "1000",
+        location: "Brussels",
+      }),
+    ).toBe("Street 1 - 1000 - Brussels");
   });
 });
 

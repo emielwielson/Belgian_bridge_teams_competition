@@ -40,7 +40,7 @@ export async function GET(request: Request) {
     const { data: teams, error } = await supabase
       .from("teams")
       .select(
-        "id, name, club_id, captain_id, club:clubs(id, name, region_id, address, postal_code, location, competition_location), captain:players(id, name, member_number)",
+        "id, name, location, club_id, captain_id, club:clubs(id, name, region_id, address, postal_code, location, competition_location), captain:players(id, name, member_number)",
       )
       .eq("group_id", groupId)
       .order("name");
@@ -93,10 +93,13 @@ export async function GET(request: Request) {
               location?: string | null;
               competition_location?: string | null;
             } | null);
-        const { club: _club, captain: _captain, ...rest } = t;
+        const { club: _club, captain: _captain, location: teamLocation, ...rest } =
+          t;
         return {
           ...rest,
-          location: resolveTeamMatchLocation(club, division),
+          location: resolveTeamMatchLocation(club, division, {
+            location: teamLocation,
+          }),
           captain: unwrapCaptain(t.captain),
           club:
             club?.id && club?.name ? { id: club.id, name: club.name } : null,

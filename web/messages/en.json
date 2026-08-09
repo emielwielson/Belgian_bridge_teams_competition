@@ -296,6 +296,20 @@
     "captainMobilePhone": "Mobile",
     "location": "Competition location",
     "locationNotSet": "Not set",
+    "locationEdit": {
+      "changeButton": "Change location",
+      "title": "Change competition location",
+      "description": "Set where this team plays home matches when that differs from the club location. Leave empty or use club location to revert.",
+      "clubLocationLabel": "Club location",
+      "clubLocationNotSet": "Not set",
+      "customLocationLabel": "Team location",
+      "customLocationPlaceholder": "e.g. Community hall, Street 1, City",
+      "useClubLocation": "Use club location",
+      "save": "Save",
+      "saving": "Saving…",
+      "cancel": "Cancel",
+      "saveFailed": "Failed to save location"
+    },
     "playersTitle": "Players",
     "noPlayers": "No players on the roster yet.",
     "captainBadge": "Captain",
@@ -929,7 +943,9 @@
       "invalidRequestBody": "Invalid request body",
       "clubIdRequired": "club_id is required",
       "captainIdInvalid": "captain_id must be a valid player id",
-      "competitionSetupLocked": "Competition setup is locked"
+      "competitionSetupLocked": "Competition setup is locked",
+      "locationFieldRequired": "location is required (string or null)",
+      "locationCentralizedVenue": "This division uses a centralized venue; team location cannot be changed"
     },
     "auth": {
       "emailNotRegistered": "This email address is not registered in our database. If you are a bridge player, your federation (VBL or LBF) may have a different email address on file — try another address or contact your club.",

@@ -31,6 +31,7 @@ function createLoadTeamDetailSupabase(options: {
                     data: {
                       id: "team-1",
                       name: "Alpha",
+                      location: null,
                       captain_id: options.captain.id,
                       captain: options.captain,
                       club: {
@@ -146,6 +147,10 @@ describe("loadTeamDetail", () => {
     expect(detail?.captain).not.toHaveProperty("email");
     expect(detail?.captain).not.toHaveProperty("phone");
     expect(detail?.captain).not.toHaveProperty("mobile_phone");
+    expect(detail?.team.location).toBe("Brussels");
+    expect(detail?.team.locationOverride).toBeNull();
+    expect(detail?.clubLocation).toBe("Brussels");
+    expect(detail?.hasCentralizedVenue).toBe(false);
   });
 
   it("includes captain contact fields when includeCaptainContacts is true", async () => {

@@ -45,6 +45,17 @@ export async function canManageTeamRoster(
   return isCaptainOfTeam(supabase, teamId);
 }
 
+/** Same access as roster: competition managers and the team captain. */
+export async function canManageTeamLocation(
+  supabase: SupabaseClient,
+  userId: string,
+  roles: string[],
+  teamId: string,
+  clubId: string,
+): Promise<boolean> {
+  return canManageTeamRoster(supabase, userId, roles, teamId, clubId);
+}
+
 export async function assertCanManageTeamRoster(
   supabase: SupabaseClient,
   userId: string,
@@ -54,6 +65,18 @@ export async function assertCanManageTeamRoster(
 ): Promise<void> {
   if (!(await canManageTeamRoster(supabase, userId, roles, teamId, clubId))) {
     throw new AuthError("Forbidden: cannot manage roster for this team", 403);
+  }
+}
+
+export async function assertCanManageTeamLocation(
+  supabase: SupabaseClient,
+  userId: string,
+  roles: string[],
+  teamId: string,
+  clubId: string,
+): Promise<void> {
+  if (!(await canManageTeamLocation(supabase, userId, roles, teamId, clubId))) {
+    throw new AuthError("Forbidden: cannot manage location for this team", 403);
   }
 }
 
