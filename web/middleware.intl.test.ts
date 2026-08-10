@@ -1,6 +1,26 @@
 /** @vitest-environment node */
 import { NextRequest } from "next/server";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const getUser = vi.fn();
+const from = vi.fn();
+
+vi.mock("@supabase/ssr", () => ({
+  createServerClient: () => ({
+    auth: {
+      getUser: (...args: unknown[]) => getUser(...args),
+    },
+    from: (...args: unknown[]) => from(...args),
+  }),
+}));
+
+vi.mock("@/lib/supabase/env", () => ({
+  getSupabasePublicEnv: () => ({
+    url: "http://supabase.test",
+    publishableKey: "test-key",
+  }),
+}));
+
 import { middleware } from "./middleware";
 
 function requestFor(
@@ -11,6 +31,17 @@ function requestFor(
     headers,
   });
 }
+
+beforeEach(() => {
+  getUser.mockReset();
+  from.mockReset();
+  getUser.mockResolvedValue({ data: { user: null }, error: null });
+  from.mockReturnValue({
+    select: () => ({
+      eq: () => Promise.resolve({ data: [], error: null }),
+    }),
+  });
+});
 
 describe("middleware locale cookie", () => {
   it("sets NEXT_LOCALE from Accept-Language on public paths", async () => {
@@ -34,5 +65,25 @@ describe("middleware locale cookie", () => {
 
     expect(response.status).toBe(200);
     expect(response.cookies.get("NEXT_LOCALE")?.value).toBeUndefined();
+  });
+});
+
+describe("middleware session refresh", () => {
+  it("calls getUser on public paths and does not redirect anonymous users", async () => {
+    const response = await middleware(requestFor("/standings"));
+
+    expect(getUser).toHaveBeenCalledOnce();
+    expect(response.status).toBe(200);
+    expect(response.headers.get("location")).toBeNull();
+  });
+
+  it("redirects anonymous users from protected paths to login", async () => {
+    const response = await middleware(requestFor("/player"));
+
+    expect(getUser).toHaveBeenCalledOnce();
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      "http://localhost:3000/login?next=%2Fplayer",
+    );
   });
 });

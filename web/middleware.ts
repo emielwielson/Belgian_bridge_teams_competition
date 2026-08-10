@@ -1,4 +1,3 @@
-import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import {
   isAuthOnlyPath,
@@ -6,7 +5,10 @@ import {
   requiredRolesForPath,
 } from "@/lib/auth/middleware-routes";
 import { hasAnyRole } from "@/lib/auth/roles";
-import { getSupabasePublicEnv } from "@/lib/supabase/env";
+import {
+  copyCookies,
+  updateSession,
+} from "@/lib/supabase/middleware";
 import { defaultLocale, isLocale, type Locale } from "./i18n/config";
 import {
   LOCALE_COOKIE,
@@ -41,10 +43,11 @@ function applyLocaleCookie(request: NextRequest, response: NextResponse) {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const { supabase, response, user } = await updateSession(request);
+
+  applyLocaleCookie(request, response);
 
   if (isPublicPath(pathname)) {
-    const response = NextResponse.next();
-    applyLocaleCookie(request, response);
     return response;
   }
 
@@ -52,43 +55,20 @@ export async function middleware(request: NextRequest) {
   const authOnly = isAuthOnlyPath(pathname);
 
   if (!requiredRoles && !authOnly) {
-    const response = NextResponse.next();
-    applyLocaleCookie(request, response);
     return response;
   }
-
-  let response = NextResponse.next({ request });
-  const { url, publishableKey } = getSupabasePublicEnv();
-
-  const supabase = createServerClient(url, publishableKey, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
-      },
-      setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) => {
-          request.cookies.set(name, value);
-          response.cookies.set(name, value, options);
-        });
-      },
-    },
-  });
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
   if (!user) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     loginUrl.searchParams.set("next", pathname);
     const redirect = NextResponse.redirect(loginUrl);
+    copyCookies(response, redirect);
     applyLocaleCookie(request, redirect);
     return redirect;
   }
 
   if (authOnly && !requiredRoles) {
-    applyLocaleCookie(request, response);
     return response;
   }
 
@@ -100,12 +80,10 @@ export async function middleware(request: NextRequest) {
   const roles = roleRows?.map((row) => row.role) ?? [];
 
   if (pathname.startsWith("/player/matches/")) {
-    applyLocaleCookie(request, response);
     return response;
   }
 
   if (!requiredRoles) {
-    applyLocaleCookie(request, response);
     return response;
   }
 
@@ -114,11 +92,11 @@ export async function middleware(request: NextRequest) {
     home.pathname = "/";
     home.searchParams.set("error", "forbidden");
     const redirect = NextResponse.redirect(home);
+    copyCookies(response, redirect);
     applyLocaleCookie(request, redirect);
     return redirect;
   }
 
-  applyLocaleCookie(request, response);
   return response;
 }
 
