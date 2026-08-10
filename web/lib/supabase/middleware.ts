@@ -1,22 +1,15 @@
 import { createServerClient } from "@supabase/ssr";
-import type { User } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { getSupabasePublicEnv } from "./env";
-
-type UpdateSessionResult = {
-  supabase: ReturnType<typeof createServerClient>;
-  response: NextResponse;
-  user: User | null;
-};
 
 /**
  * Refresh the Supabase auth session cookies for this request.
  * Must run on (almost) every matched request so access tokens stay valid
  * even when the user only browses public pages.
+ *
+ * Return type is inferred so `.from(...).select(...)` stays typed for callers.
  */
-export async function updateSession(
-  request: NextRequest,
-): Promise<UpdateSessionResult> {
+export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
   const { url, publishableKey } = getSupabasePublicEnv();
 
