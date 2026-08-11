@@ -329,7 +329,7 @@
     "played": "Gespeeld",
     "scheduled": "Gepland",
     "homeVs": "Thuis tegen {opponent}",
-    "awayAt": "Uit bij {opponent}",
+    "awayVs": "Uit tegen {opponent}",
     "vpLine": "VP {teamVp} – {opponentVp}",
     "conventionCards": {
       "title": "Conventiekaarten",

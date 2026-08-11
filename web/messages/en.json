@@ -329,7 +329,7 @@
     "played": "Played",
     "scheduled": "Scheduled",
     "homeVs": "Home vs {opponent}",
-    "awayAt": "Away at {opponent}",
+    "awayVs": "Away vs {opponent}",
     "vpLine": "VP {teamVp} – {opponentVp}",
     "conventionCards": {
       "title": "Convention cards",

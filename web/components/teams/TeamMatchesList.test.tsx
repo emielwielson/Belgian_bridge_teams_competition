@@ -38,7 +38,7 @@ describe("TeamMatchesList", () => {
     expect(screen.getByText("Played")).toBeInTheDocument();
     expect(screen.getByText("Scheduled")).toBeInTheDocument();
     expect(screen.getByText(/Home vs Bravo/)).toBeInTheDocument();
-    expect(screen.getByText(/Away at Charlie/)).toBeInTheDocument();
+    expect(screen.getByText(/Away vs Charlie/)).toBeInTheDocument();
     expect(screen.getByText(/VP 14 – 10/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Round 1/ })).toHaveAttribute(
       "href",

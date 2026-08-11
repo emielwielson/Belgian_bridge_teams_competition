@@ -53,7 +53,7 @@ export function TeamMatchesList({ teamName, matches }: Props) {
               <p className="mt-1 text-zinc-900">
                 {match.isHome
                   ? t("homeVs", { opponent: match.opponent.name })
-                  : t("awayAt", { opponent: match.opponent.name })}
+                  : t("awayVs", { opponent: match.opponent.name })}
               </p>
               {match.status === "played" &&
               match.teamVp != null &&

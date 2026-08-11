@@ -328,7 +328,7 @@
     "played": "Jouée",
     "scheduled": "Programmée",
     "homeVs": "Domicile contre {opponent}",
-    "awayAt": "Extérieur chez {opponent}",
+    "awayVs": "Extérieur contre {opponent}",
     "vpLine": "VP {teamVp} – {opponentVp}",
     "conventionCards": {
       "title": "Cartes de conventions",
