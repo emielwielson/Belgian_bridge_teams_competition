@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import type { TeamRosterPlayer } from "@/lib/competition/team-queries";
 import type { RosterPlayer, TeamRosterState } from "@/lib/competition/team-roster";
 import { useTranslateApiError } from "@/lib/i18n/translate-api-error";
@@ -113,6 +114,29 @@ export function TeamRosterSection({
   const showEditor = canManageRoster;
   const rosterBusy = adding || savingPlayerId !== null;
 
+  const addPlayerOptions = useMemo(
+    () =>
+      availablePlayers.map((player) => {
+        const label = `${player.name}${
+          player.member_number ? ` (${player.member_number})` : ""
+        }`;
+        const searchText = [
+          player.last_name,
+          player.first_name,
+          player.name,
+          player.member_number,
+        ]
+          .filter(Boolean)
+          .join(" ");
+        return {
+          value: player.player_id,
+          label,
+          searchText,
+        };
+      }),
+    [availablePlayers],
+  );
+
   return (
     <section className="rounded-lg border border-zinc-200 bg-white p-4">
       <h2 className="text-sm font-semibold text-zinc-900">{t("playersTitle")}</h2>
@@ -186,21 +210,15 @@ export function TeamRosterSection({
           ) : availablePlayers.length > 0 ? (
             <div className="flex flex-wrap items-end gap-2">
               <label className="flex min-w-[12rem] flex-1 flex-col gap-1 text-sm">
-                <span className="sr-only">{tc("team")}</span>
-                <select
+                <span className="sr-only">{t("selectPlayer")}</span>
+                <SearchableSelect
+                  options={addPlayerOptions}
                   value={addPlayerId}
-                  onChange={(e) => setAddPlayerId(e.target.value)}
+                  onChange={setAddPlayerId}
+                  placeholder={t("searchPlayer")}
                   disabled={rosterBusy}
-                  className="rounded-lg border border-zinc-300 px-3 py-2 disabled:opacity-50"
-                >
-                  <option value="">{t("selectPlayer")}</option>
-                  {availablePlayers.map((player) => (
-                    <option key={player.player_id} value={player.player_id}>
-                      {player.name}
-                      {player.member_number ? ` (${player.member_number})` : ""}
-                    </option>
-                  ))}
-                </select>
+                  emptyMessage={t("noPlayerMatches")}
+                />
               </label>
               <button
                 type="button"

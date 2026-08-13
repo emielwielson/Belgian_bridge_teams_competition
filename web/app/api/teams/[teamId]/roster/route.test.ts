@@ -35,8 +35,24 @@ import {
 const season = { id: "season-1", name: "2025–26", status: "setup", is_active: true };
 
 const rosterState = {
-  roster: [{ player_id: "p1", name: "Alice", member_number: "001" }],
-  available_players: [{ player_id: "p2", name: "Bob", member_number: "002" }],
+  roster: [
+    {
+      player_id: "p1",
+      name: "Alice",
+      first_name: "Alice",
+      last_name: null,
+      member_number: "001",
+    },
+  ],
+  available_players: [
+    {
+      player_id: "p2",
+      name: "Bob",
+      first_name: "Bob",
+      last_name: null,
+      member_number: "002",
+    },
+  ],
 };
 
 function mockSupabase(team: { id: string; club_id: string } | null) {

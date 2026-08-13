@@ -1,5 +1,54 @@
 import { describe, expect, it, vi } from "vitest";
-import { ensureCaptainOnTeamRoster, removePlayerFromTeamRoster } from "./team-roster";
+import {
+  comparePlayersByLastName,
+  ensureCaptainOnTeamRoster,
+  removePlayerFromTeamRoster,
+} from "./team-roster";
+
+describe("comparePlayersByLastName", () => {
+  it("sorts by last_name then first_name then name", () => {
+    const players = [
+      {
+        name: "Alice Peeters",
+        first_name: "Alice",
+        last_name: "Peeters",
+      },
+      {
+        name: "Bob Janssens",
+        first_name: "Bob",
+        last_name: "Janssens",
+      },
+      {
+        name: "Carla Peeters",
+        first_name: "Carla",
+        last_name: "Peeters",
+      },
+    ];
+
+    const sorted = [...players].sort(comparePlayersByLastName);
+    expect(sorted.map((p) => p.name)).toEqual([
+      "Bob Janssens",
+      "Alice Peeters",
+      "Carla Peeters",
+    ]);
+  });
+
+  it("treats null name parts as empty", () => {
+    const players = [
+      { name: "Zed", first_name: null, last_name: null },
+      { name: "Ann Smith", first_name: "Ann", last_name: "Smith" },
+      { name: "Only", first_name: "Only", last_name: null },
+    ];
+
+    const sorted = [...players].sort(comparePlayersByLastName);
+    // Empty last_name first; among those, empty first_name before "Only"
+    expect(sorted.map((p) => p.name)).toEqual([
+      "Zed",
+      "Only",
+      "Ann Smith",
+    ]);
+  });
+});
 
 describe("ensureCaptainOnTeamRoster", () => {
   it("no-ops when captain is already on the team roster", async () => {

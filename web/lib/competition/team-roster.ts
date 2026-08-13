@@ -7,6 +7,8 @@ import { getActiveSeason, requireActiveSeason } from "@/lib/competition/season";
 export type RosterPlayer = {
   player_id: string;
   name: string;
+  first_name: string | null;
+  last_name: string | null;
   member_number: string | null;
   matches_played?: number;
 };
@@ -16,10 +18,47 @@ export type TeamRosterState = {
   available_players: RosterPlayer[];
 };
 
+type PlayerNameRow = {
+  id: string;
+  name: string;
+  first_name: string | null;
+  last_name: string | null;
+  member_number: string | null;
+};
+
+const PLAYER_SELECT =
+  "player:players(id, name, first_name, last_name, member_number)";
+
 function unwrapOne<T>(value: unknown): T | null {
   if (value == null) return null;
   if (Array.isArray(value)) return (value[0] ?? null) as T | null;
   return value as T;
+}
+
+function namePart(value: string | null | undefined): string {
+  return value?.trim() ?? "";
+}
+
+/** Sort by last_name, then first_name, then display name. */
+export function comparePlayersByLastName(
+  a: Pick<RosterPlayer, "name" | "first_name" | "last_name">,
+  b: Pick<RosterPlayer, "name" | "first_name" | "last_name">,
+): number {
+  return (
+    namePart(a.last_name).localeCompare(namePart(b.last_name)) ||
+    namePart(a.first_name).localeCompare(namePart(b.first_name)) ||
+    a.name.localeCompare(b.name)
+  );
+}
+
+function toRosterPlayer(p: PlayerNameRow): RosterPlayer {
+  return {
+    player_id: p.id,
+    name: p.name,
+    first_name: p.first_name,
+    last_name: p.last_name,
+    member_number: p.member_number,
+  };
 }
 
 export async function loadTeamRosterState(
@@ -34,7 +73,7 @@ export async function loadTeamRosterState(
   if (season) {
     const { data: rosterRows, error: rosterError } = await supabase
       .from("team_players")
-      .select("player_id, player:players(id, name, member_number)")
+      .select(`player_id, ${PLAYER_SELECT}`)
       .eq("team_id", teamId)
       .eq("season_id", season.id);
 
@@ -42,28 +81,16 @@ export async function loadTeamRosterState(
 
     roster = (rosterRows ?? [])
       .map((r) => {
-        const p = unwrapOne<{
-          id: string;
-          name: string;
-          member_number: string | null;
-        }>(r.player);
+        const p = unwrapOne<PlayerNameRow>(r.player);
         if (!p) return null;
-        return {
-          player_id: p.id,
-          name: p.name,
-          member_number: p.member_number,
-        };
+        return toRosterPlayer(p);
       })
       .filter((p): p is RosterPlayer => p != null)
       .sort((a, b) => a.name.localeCompare(b.name));
 
     const memberships = await loadActivePrimaryClubMembers<{
       player: unknown;
-    }>(
-      supabase,
-      clubId,
-      "player_id, player:players(id, name, member_number)",
-    );
+    }>(supabase, clubId, `player_id, ${PLAYER_SELECT}`);
 
     const { data: clubTeams, error: clubTeamsError } = await supabase
       .from("teams")
@@ -92,21 +119,13 @@ export async function loadTeamRosterState(
     const onRoster = new Set(roster.map((r) => r.player_id));
 
     for (const m of memberships) {
-      const p = unwrapOne<{
-        id: string;
-        name: string;
-        member_number: string | null;
-      }>(m.player);
+      const p = unwrapOne<PlayerNameRow>(m.player);
       if (!p || onRoster.has(p.id) || assignedPlayerIds.has(p.id)) continue;
 
-      available_players.push({
-        player_id: p.id,
-        name: p.name,
-        member_number: p.member_number,
-      });
+      available_players.push(toRosterPlayer(p));
     }
 
-    available_players.sort((a, b) => a.name.localeCompare(b.name));
+    available_players.sort(comparePlayersByLastName);
 
     const { data: playedMatches, error: playedError } = await supabase
       .from("matches")
