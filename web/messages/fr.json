@@ -79,7 +79,7 @@
       "noTeamsInGroup": "Aucune équipe dans ce groupe pour l'instant.",
       "roundColumnsPending": "Les colonnes de journée apparaissent après la génération du calendrier.",
       "viewMatchAria": "Voir la rencontre",
-      "homeAria": "Domicile"
+      "homeAria": "Home team"
     },
     "penalties": {
       "title": "Pénalités",
@@ -329,8 +329,8 @@
     "round": "Journée {round}",
     "played": "Jouée",
     "scheduled": "Programmée",
-    "homeVs": "Domicile contre {opponent}",
-    "awayVs": "Extérieur contre {opponent}",
+    "homeVs": "Home team contre {opponent}",
+    "awayVs": "Visiting team contre {opponent}",
     "vpLine": "VP {teamVp} – {opponentVp}",
     "conventionCards": {
       "title": "Cartes de conventions",
@@ -810,8 +810,8 @@
       "bodyIntro": "Un capitaine d'équipe a soumis une demande d'arbitre avec une pièce jointe.",
       "matchLine": "Journée {round} : {homeTeam} vs {awayTeam}",
       "matchFallback": "Rencontre {matchId}",
-      "homeFallback": "Domicile",
-      "awayFallback": "Extérieur",
+      "homeFallback": "Home team",
+      "awayFallback": "Visiting team",
       "arbiterInbox": "Boîte arbitre : {url}",
       "match": "Rencontre : {url}",
       "loginFirst": "Connexion d'abord : {url}",
@@ -1002,8 +1002,8 @@
     "noFileChosen": "Aucun fichier choisi",
     "played": "Jouée",
     "scheduled": "Programmée",
-    "home": "Domicile",
-    "away": "Extérieur",
+    "home": "Home team",
+    "away": "Visiting team",
     "vs": "vs",
     "round": "Journée {round}",
     "approve": "Approuver",
