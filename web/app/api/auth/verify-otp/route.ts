@@ -11,6 +11,7 @@ import {
 } from "@/lib/auth/login-email";
 import { jsonErrorCode } from "@/lib/http/api-response";
 import { ErrorCodes } from "@/lib/http/error-codes";
+import { copyCookies } from "@/lib/supabase/middleware";
 
 type VerifyOtpBody = {
   email?: string;
@@ -62,8 +63,6 @@ export async function POST(request: NextRequest) {
   const location = finished.headers.get("location") ?? `${origin}${next}`;
 
   const json = NextResponse.json({ ok: true, redirectTo: location });
-  finished.cookies.getAll().forEach((cookie) => {
-    json.cookies.set(cookie.name, cookie.value);
-  });
+  copyCookies(finished, json);
   return json;
 }

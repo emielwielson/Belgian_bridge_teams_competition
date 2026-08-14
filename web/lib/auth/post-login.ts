@@ -6,6 +6,7 @@ import {
 } from "@/lib/auth/active-player";
 import { LOCALE_COOKIE, localeCookieOptions } from "@/lib/i18n/locale-cookie";
 import { getUserPreferredLocale } from "@/lib/i18n/user-locale";
+import { copyCookies } from "@/lib/supabase/middleware";
 
 /**
  * After a session is established (verifyOtp / exchangeCodeForSession), set locale
@@ -46,9 +47,7 @@ export async function finishPostLoginRedirect(
 
   if (redirectPath !== next) {
     const redirectResponse = NextResponse.redirect(`${origin}${redirectPath}`);
-    response.cookies.getAll().forEach((cookie) => {
-      redirectResponse.cookies.set(cookie.name, cookie.value);
-    });
+    copyCookies(response, redirectResponse);
     return redirectResponse;
   }
 

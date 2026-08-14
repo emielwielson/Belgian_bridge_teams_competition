@@ -7,6 +7,7 @@ import {
 } from "@/lib/auth/complete-auth-session";
 import { jsonErrorCode } from "@/lib/http/api-response";
 import { ErrorCodes } from "@/lib/http/error-codes";
+import { copyCookies } from "@/lib/supabase/middleware";
 
 type ConfirmBody = {
   token_hash?: string;
@@ -54,8 +55,6 @@ export async function POST(request: NextRequest) {
   const location = finished.headers.get("location") ?? `${origin}${next}`;
 
   const json = NextResponse.json({ ok: true, redirectTo: location });
-  finished.cookies.getAll().forEach((cookie) => {
-    json.cookies.set(cookie.name, cookie.value);
-  });
+  copyCookies(finished, json);
   return json;
 }

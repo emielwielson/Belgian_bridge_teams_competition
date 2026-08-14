@@ -37,10 +37,27 @@ export async function updateSession(request: NextRequest) {
   return { supabase, response, user };
 }
 
-/** Copy Set-Cookie headers from a refreshed session response onto a redirect. */
+/** Match @supabase/ssr default cookie lifetime (~400 days). */
+export const AUTH_COOKIE_MAX_AGE_SECONDS = 400 * 24 * 60 * 60;
+
+/**
+ * Copy Set-Cookie headers onto another response.
+ * Next.js getAll() often omits maxAge; without it the browser treats the cookie
+ * as a session cookie and drops it when the browser closes.
+ */
 export function copyCookies(from: NextResponse, to: NextResponse): void {
   from.cookies.getAll().forEach((cookie) => {
-    const { name, value, ...options } = cookie;
-    to.cookies.set(name, value, options);
+    const { name, value, ...rest } = cookie;
+    to.cookies.set(name, value, {
+      ...rest,
+      path: rest.path ?? "/",
+      sameSite: rest.sameSite ?? "lax",
+      maxAge:
+        rest.maxAge !== undefined
+          ? rest.maxAge
+          : value === ""
+            ? 0
+            : AUTH_COOKIE_MAX_AGE_SECONDS,
+    });
   });
 }
