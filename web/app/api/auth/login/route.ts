@@ -20,6 +20,12 @@ type LoginBody = {
   next?: string;
 };
 
+function appBaseUrl(fallbackOrigin: string): string {
+  const configured = process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/$/, "");
+  if (!configured) return fallbackOrigin;
+  return configured.startsWith("http") ? configured : `https://${configured}`;
+}
+
 export async function POST(request: Request) {
   let body: LoginBody;
   try {
@@ -48,9 +54,11 @@ export async function POST(request: Request) {
     return jsonErrorCode(ErrorCodes.auth.emailNotRegistered, 404);
   }
 
-  const origin = new URL(request.url).origin;
+  // Emails must link to the configured domain regardless of which host the user
+  // started the login from, so link URLs stay aligned with the sending domain.
+  const baseUrl = appBaseUrl(new URL(request.url).origin);
   // Bare confirm URL — shared Magic Link template appends ?token_hash=…
-  const redirectTo = new URL("/auth/confirm", origin).toString();
+  const redirectTo = new URL("/auth/confirm", baseUrl).toString();
   const next = safeNextPath(body.next?.trim() || "/");
 
   try {

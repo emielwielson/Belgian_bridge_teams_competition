@@ -7,6 +7,8 @@ const ensureAuthUserForLogin = vi.fn();
 const createServiceClient = vi.fn();
 const signInWithOtp = vi.fn();
 
+const env = process.env;
+
 vi.mock("@/lib/auth/login-email", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/auth/login-email")>();
   return {
@@ -27,10 +29,40 @@ vi.mock("@/lib/supabase/server-client", () => ({
 describe("POST /api/auth/login", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    process.env = {
+      ...env,
+      NEXT_PUBLIC_APP_URL: "https://belgian-interclub.wielson.be",
+    };
     createServiceClient.mockReturnValue({
       auth: { signInWithOtp },
     });
     ensureAuthUserForLogin.mockResolvedValue(undefined);
+  });
+
+  it("falls back to request origin when NEXT_PUBLIC_APP_URL is unset", async () => {
+    delete process.env.NEXT_PUBLIC_APP_URL;
+
+    isEmailAllowedForLogin.mockResolvedValue(true);
+    signInWithOtp.mockResolvedValue({ error: null });
+
+    const res = await POST(
+      new Request("http://localhost/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify({
+          email: "player@example.com",
+          next: "/player",
+        }),
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(signInWithOtp).toHaveBeenCalledWith({
+      email: "player@example.com",
+      options: {
+        emailRedirectTo: "http://localhost/auth/confirm",
+        shouldCreateUser: false,
+      },
+    });
   });
 
   it("returns 400 for invalid email", async () => {
@@ -80,7 +112,7 @@ describe("POST /api/auth/login", () => {
     expect(signInWithOtp).toHaveBeenCalledWith({
       email: "player@example.com",
       options: {
-        emailRedirectTo: "http://localhost/auth/confirm",
+        emailRedirectTo: "https://belgian-interclub.wielson.be/auth/confirm",
         shouldCreateUser: false,
       },
     });
