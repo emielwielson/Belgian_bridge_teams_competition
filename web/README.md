@@ -20,7 +20,7 @@ Next.js frontend for the Belgian Bridge Competition Platform.
      ```html
      <a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email">Sign in</a>
      ```
-     Also include `{{ .Token }}` (8-digit OTP). See `supabase/templates/magic_link.html`. Hosted Auth → Email Templates must match.
+     Also include `{{ .Token }}` (8-digit OTP). See `supabase/templates/magic_link.html`. Hosted Auth → Email Templates must match. The template is trilingual (en/nl/fr) via `{{ .Data.locale }}`; locale comes from the login UI when the user requests a magic link.
 
 3. Install and run:
 

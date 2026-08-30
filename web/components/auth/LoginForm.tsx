@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { ErrorCodes } from "@/lib/http/error-codes";
 import { isEmailNotRegisteredError } from "@/lib/auth/login-email";
@@ -22,6 +22,7 @@ type VerifyOtpResponse = {
 };
 
 export function LoginForm({ nextPath }: Props) {
+  const locale = useLocale();
   const t = useTranslations("auth");
   const translateApiError = useTranslateApiError();
   const [email, setEmail] = useState("");
@@ -40,7 +41,11 @@ export function LoginForm({ nextPath }: Props) {
     const res = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: email.trim(), next: nextPath ?? "/" }),
+      body: JSON.stringify({
+        email: email.trim(),
+        next: nextPath ?? "/",
+        locale,
+      }),
     });
 
     const body = (await res.json()) as LoginResponse;

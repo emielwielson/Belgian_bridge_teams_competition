@@ -6,8 +6,13 @@ const isEmailAllowedForLogin = vi.fn();
 const ensureAuthUserForLogin = vi.fn();
 const createServiceClient = vi.fn();
 const signInWithOtp = vi.fn();
+const getLocale = vi.fn();
 
 const env = process.env;
+
+vi.mock("next-intl/server", () => ({
+  getLocale: () => getLocale(),
+}));
 
 vi.mock("@/lib/auth/login-email", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/auth/login-email")>();
@@ -29,6 +34,7 @@ vi.mock("@/lib/supabase/server-client", () => ({
 describe("POST /api/auth/login", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    getLocale.mockResolvedValue("en");
     process.env = {
       ...env,
       NEXT_PUBLIC_APP_URL: "https://belgian-interclub.wielson.be",
@@ -63,6 +69,11 @@ describe("POST /api/auth/login", () => {
         shouldCreateUser: false,
       },
     });
+    expect(ensureAuthUserForLogin).toHaveBeenCalledWith(
+      expect.anything(),
+      "player@example.com",
+      "en",
+    );
   });
 
   it("returns 400 for invalid email", async () => {
@@ -108,7 +119,11 @@ describe("POST /api/auth/login", () => {
     );
 
     expect(res.status).toBe(200);
-    expect(ensureAuthUserForLogin).toHaveBeenCalled();
+    expect(ensureAuthUserForLogin).toHaveBeenCalledWith(
+      expect.anything(),
+      "player@example.com",
+      "en",
+    );
     expect(signInWithOtp).toHaveBeenCalledWith({
       email: "player@example.com",
       options: {
@@ -118,6 +133,52 @@ describe("POST /api/auth/login", () => {
     });
     const setCookie = res.headers.get("set-cookie") ?? "";
     expect(setCookie).toMatch(/auth_next=%2Fplayer/);
+  });
+
+  it("uses body locale when valid", async () => {
+    isEmailAllowedForLogin.mockResolvedValue(true);
+    signInWithOtp.mockResolvedValue({ error: null });
+    getLocale.mockResolvedValue("en");
+
+    const res = await POST(
+      new Request("http://localhost/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify({
+          email: "player@example.com",
+          locale: "nl",
+        }),
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(ensureAuthUserForLogin).toHaveBeenCalledWith(
+      expect.anything(),
+      "player@example.com",
+      "nl",
+    );
+  });
+
+  it("falls back to getLocale when body locale is invalid", async () => {
+    isEmailAllowedForLogin.mockResolvedValue(true);
+    signInWithOtp.mockResolvedValue({ error: null });
+    getLocale.mockResolvedValue("fr");
+
+    const res = await POST(
+      new Request("http://localhost/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify({
+          email: "player@example.com",
+          locale: "de",
+        }),
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(ensureAuthUserForLogin).toHaveBeenCalledWith(
+      expect.anything(),
+      "player@example.com",
+      "fr",
+    );
   });
 
   it("maps Supabase signup disabled errors to emailNotRegistered", async () => {

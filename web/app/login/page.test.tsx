@@ -43,7 +43,11 @@ describe("LoginForm", () => {
       expect(fetchMock).toHaveBeenCalledWith("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: "test@example.com", next: "/" }),
+        body: JSON.stringify({
+          email: "test@example.com",
+          next: "/",
+          locale: "en",
+        }),
       });
     });
     expect(screen.getByRole("status")).toHaveTextContent(/check your email/i);

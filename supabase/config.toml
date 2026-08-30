@@ -246,7 +246,7 @@ otp_expiry = 3600
 # Magic link uses RedirectTo + token_hash (not ConfirmationURL) so Outlook Safe Links
 # prefetch does not consume the one-time token. Hosted Auth email template must match.
 [auth.email.template.magic_link]
-subject = "Your sign-in link"
+subject = "{{ if eq .Data.locale \"nl\" }}Uw aanmeldingslink{{ else if eq .Data.locale \"fr\" }}Votre lien de connexion{{ else }}Your sign-in link{{ end }}"
 content_path = "./supabase/templates/magic_link.html"
 
 # Uncomment to customize email template

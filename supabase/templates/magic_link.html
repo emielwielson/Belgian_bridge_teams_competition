@@ -1,6 +1,24 @@
+{{ if eq .Data.locale "nl" }}
+<h2>Uw aanmeldingslink</h2>
+<p>Volg onderstaande link om u aan te melden. De link opent een bevestigingspagina — klik daar op de knop om het aanmelden te voltooien.</p>
+<p><a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email">Aanmelden</a></p>
+<p>Of voer deze code in op de aanmeldpagina:</p>
+{{ else if eq .Data.locale "fr" }}
+<h2>Votre lien de connexion</h2>
+<p>Suivez le lien ci-dessous pour vous connecter. Le lien ouvre une page de confirmation — cliquez sur le bouton pour terminer la connexion.</p>
+<p><a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email">Se connecter</a></p>
+<p>Ou saisissez ce code sur la page de connexion :</p>
+{{ else }}
 <h2>Your sign-in link</h2>
 <p>Follow the link below to sign in. This link opens a confirmation page — click the button there to finish signing in.</p>
 <p><a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email">Sign in</a></p>
 <p>Or enter this code on the login page:</p>
+{{ end }}
 <p style="font-size: 24px; font-weight: bold; letter-spacing: 0.1em;">{{ .Token }}</p>
+{{ if eq .Data.locale "nl" }}
+<p>Als u deze e-mail niet hebt aangevraagd, kunt u deze negeren.</p>
+{{ else if eq .Data.locale "fr" }}
+<p>Si vous n'avez pas demandé cet e-mail, vous pouvez l'ignorer.</p>
+{{ else }}
 <p>If you did not request this email, you can ignore it.</p>
+{{ end }}

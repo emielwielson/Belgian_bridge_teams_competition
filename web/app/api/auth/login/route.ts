@@ -1,3 +1,4 @@
+import { getLocale } from "next-intl/server";
 import { NextResponse } from "next/server";
 import {
   AUTH_NEXT_COOKIE,
@@ -10,6 +11,7 @@ import {
   isSignupNotAllowedAuthError,
   isValidLoginEmailFormat,
   normalizeLoginEmail,
+  resolveLoginEmailLocale,
 } from "@/lib/auth/login-email";
 import { jsonErrorCode, jsonOk } from "@/lib/http/api-response";
 import { ErrorCodes } from "@/lib/http/error-codes";
@@ -18,6 +20,7 @@ import { createServiceClient } from "@/lib/supabase/server-client";
 type LoginBody = {
   email?: string;
   next?: string;
+  locale?: string;
 };
 
 function appBaseUrl(fallbackOrigin: string): string {
@@ -60,9 +63,10 @@ export async function POST(request: Request) {
   // Bare confirm URL — shared Magic Link template appends ?token_hash=…
   const redirectTo = new URL("/auth/confirm", baseUrl).toString();
   const next = safeNextPath(body.next?.trim() || "/");
+  const locale = resolveLoginEmailLocale(body.locale, await getLocale());
 
   try {
-    await ensureAuthUserForLogin(supabase, normalizedEmail);
+    await ensureAuthUserForLogin(supabase, normalizedEmail, locale);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });

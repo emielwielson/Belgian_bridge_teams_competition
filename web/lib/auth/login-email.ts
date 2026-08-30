@@ -1,4 +1,18 @@
 import type { AuthError, SupabaseClient } from "@supabase/supabase-js";
+import { defaultLocale, isLocale, type Locale } from "@/i18n/config";
+
+export function resolveLoginEmailLocale(
+  bodyLocale: string | undefined,
+  fallbackLocale: string,
+): Locale {
+  if (bodyLocale && isLocale(bodyLocale)) {
+    return bodyLocale;
+  }
+  if (isLocale(fallbackLocale)) {
+    return fallbackLocale;
+  }
+  return defaultLocale;
+}
 
 const EMAIL_FORMAT = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -118,19 +132,30 @@ export async function isEmailAllowedForLogin(
   return emailHasAssignedRole(supabase, normalizedEmail);
 }
 
-/** Create auth.users row for allowed first-time logins when sign-ups are disabled globally. */
+/**
+ * Create auth.users row for allowed first-time logins when sign-ups are disabled
+ * globally, and set user_metadata.locale for Magic Link email language.
+ */
 export async function ensureAuthUserForLogin(
   supabase: SupabaseClient,
   normalizedEmail: string,
+  locale: Locale,
 ): Promise<void> {
   const existingUser = await findAuthUserByEmail(supabase, normalizedEmail);
   if (existingUser) {
+    const { error } = await supabase.auth.admin.updateUserById(existingUser.id, {
+      user_metadata: { ...existingUser.user_metadata, locale },
+    });
+    if (error) {
+      throw error;
+    }
     return;
   }
 
   const { error } = await supabase.auth.admin.createUser({
     email: normalizedEmail,
     email_confirm: true,
+    user_metadata: { locale },
   });
 
   if (error) {
