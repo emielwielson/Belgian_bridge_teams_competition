@@ -36,3 +36,6 @@ coverage/
 .supabase/
 supabase/.temp/
 
+# Local DB dumps and source calendars (do not commit)
+backups/
+
