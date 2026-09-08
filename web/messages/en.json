@@ -135,7 +135,7 @@
       "proposeNewDate": "Propose new date",
       "sending": "Sending…",
       "chooseTeamAndDate": "Choose a team and new date/time",
-      "proposedSuccess": "Reschedule proposed. Both captains and competition managers were notified by email. The other captain or a competition manager can approve here on this match page.",
+      "proposedSuccess": "Reschedule proposed. Both captains were notified by email. The other captain or a competition manager can approve here on this match page.",
       "approved": "Match rescheduled.",
       "rejected": "Postponement request rejected.",
       "cancelled": "Postponement request cancelled.",
@@ -1088,7 +1088,7 @@
           },
           "pending-approval": {
             "title": "Submit the proposal",
-            "body": "Click Propose new date. Captains and competition managers receive an email. The official date stays unchanged until approved."
+            "body": "Click Propose new date. Captains receive an email. The official date stays unchanged until approved."
           },
           "approve-reject": {
             "title": "Approve or reject",

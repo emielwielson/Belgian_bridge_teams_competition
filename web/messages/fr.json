@@ -135,7 +135,7 @@
       "proposeNewDate": "Proposer une nouvelle date",
       "sending": "Envoi…",
       "chooseTeamAndDate": "Choisissez une équipe et une nouvelle date/heure",
-      "proposedSuccess": "Report proposé. Les deux capitaines et les gestionnaires de compétition ont été notifiés par e-mail. L'autre capitaine ou un gestionnaire de compétition peut approuver ici sur la page de la rencontre.",
+      "proposedSuccess": "Report proposé. Les deux capitaines ont été notifiés par e-mail. L'autre capitaine ou un gestionnaire de compétition peut approuver ici sur la page de la rencontre.",
       "approved": "Rencontre reportée.",
       "rejected": "Demande de report refusée.",
       "cancelled": "Demande de report annulée.",
@@ -1087,7 +1087,7 @@
           },
           "pending-approval": {
             "title": "Soumettre la proposition",
-            "body": "Cliquez sur Proposer une nouvelle date. Les capitaines et responsables reçoivent un e-mail. La date officielle reste inchangée jusqu'à approbation."
+            "body": "Cliquez sur Proposer une nouvelle date. Les capitaines reçoivent un e-mail. La date officielle reste inchangée jusqu'à approbation."
           },
           "approve-reject": {
             "title": "Approuver ou refuser",

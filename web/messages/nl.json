@@ -135,7 +135,7 @@
       "proposeNewDate": "Nieuwe datum voorstellen",
       "sending": "Verzenden…",
       "chooseTeamAndDate": "Kies een team en nieuwe datum/tijd",
-      "proposedSuccess": "Uitstel voorgesteld. Beide kapiteins en competitiebeheerders werden per e-mail verwittigd. De andere kapitein of een competitiebeheerder kan hier op de wedstrijdpagina goedkeuren.",
+      "proposedSuccess": "Uitstel voorgesteld. Beide kapiteins werden per e-mail verwittigd. De andere kapitein of een competitiebeheerder kan hier op de wedstrijdpagina goedkeuren.",
       "approved": "Wedstrijd verplaatst.",
       "rejected": "Uitstelaanvraag afgewezen.",
       "cancelled": "Uitstelaanvraag geannuleerd.",
@@ -1088,7 +1088,7 @@
           },
           "pending-approval": {
             "title": "Dien het voorstel in",
-            "body": "Klik op Nieuwe datum voorstellen. Kapiteins en wedstrijdleiders ontvangen een e-mail. De officiële datum blijft ongewijzigd tot goedkeuring."
+            "body": "Klik op Nieuwe datum voorstellen. Kapiteins ontvangen een e-mail. De officiële datum blijft ongewijzigd tot goedkeuring."
           },
           "approve-reject": {
             "title": "Goedkeuren of afwijzen",

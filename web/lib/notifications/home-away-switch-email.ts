@@ -1,4 +1,3 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   buildHomeAwaySwitchDecisionEmail,
   buildHomeAwaySwitchProposedEmail,
@@ -36,24 +35,6 @@ export type HomeAwaySwitchDecisionEmailContext = {
   action: HomeAwaySwitchDecision;
 };
 
-async function loadCompetitionManagerEmails(
-  supabase: SupabaseClient,
-): Promise<string[]> {
-  const { data: roleRows, error: roleError } = await supabase
-    .from("user_roles")
-    .select("user_id")
-    .in("role", ["competition_manager", "system_admin"]);
-  if (roleError) throw roleError;
-
-  const userIds = [...new Set((roleRows ?? []).map((r) => r.user_id))];
-  const emails: string[] = [];
-  for (const userId of userIds) {
-    const { data, error } = await supabase.auth.admin.getUserById(userId);
-    if (!error && data.user?.email) emails.push(data.user.email);
-  }
-  return emails;
-}
-
 function uniqueEmails(addresses: string[]): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
@@ -71,11 +52,11 @@ async function loadHomeAwaySwitchCc(
   awayTeamId: string,
 ): Promise<string[]> {
   const supabase = createServiceClient();
-  const [contacts, managerEmails] = await Promise.all([
-    loadCaptainContactsForTeams(supabase, [homeTeamId, awayTeamId]),
-    loadCompetitionManagerEmails(supabase),
+  const contacts = await loadCaptainContactsForTeams(supabase, [
+    homeTeamId,
+    awayTeamId,
   ]);
-  return uniqueEmails([...captainEmailsFromContacts(contacts), ...managerEmails]);
+  return uniqueEmails(captainEmailsFromContacts(contacts));
 }
 
 async function loadCaptainContactFields(

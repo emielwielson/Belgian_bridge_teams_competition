@@ -1,4 +1,3 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   buildPostponementDecisionEmail,
   buildPostponementProposedEmail,
@@ -59,28 +58,6 @@ export function loginThenMatchUrl(matchId: string): string {
   return `${getAppBaseUrl()}/login?next=${next}`;
 }
 
-async function loadCompetitionManagerEmails(
-  supabase: SupabaseClient,
-): Promise<string[]> {
-  const { data: roleRows, error: roleError } = await supabase
-    .from("user_roles")
-    .select("user_id")
-    .in("role", ["competition_manager", "system_admin"]);
-
-  if (roleError) throw roleError;
-
-  const userIds = [...new Set((roleRows ?? []).map((r) => r.user_id))];
-  const emails: string[] = [];
-
-  for (const userId of userIds) {
-    const { data, error } = await supabase.auth.admin.getUserById(userId);
-    if (!error && data.user?.email) {
-      emails.push(data.user.email);
-    }
-  }
-  return emails;
-}
-
 function uniqueEmails(addresses: string[]): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
@@ -98,11 +75,11 @@ async function loadWorkflowCc(
   awayTeamId: string,
 ): Promise<string[]> {
   const supabase = createServiceClient();
-  const [contacts, managerEmails] = await Promise.all([
-    loadCaptainContactsForTeams(supabase, [homeTeamId, awayTeamId]),
-    loadCompetitionManagerEmails(supabase),
+  const contacts = await loadCaptainContactsForTeams(supabase, [
+    homeTeamId,
+    awayTeamId,
   ]);
-  return uniqueEmails([...captainEmailsFromContacts(contacts), ...managerEmails]);
+  return uniqueEmails(captainEmailsFromContacts(contacts));
 }
 
 async function loadCaptainContactFields(
@@ -127,7 +104,7 @@ async function loadCaptainContactFields(
   };
 }
 
-/** Sends postponement-proposed email via Make.com (CC: both captains + competition managers). */
+/** Sends postponement-proposed email via Make.com (CC: both captains). */
 export async function sendPostponementProposedEmail(
   ctx: PostponementProposedEmailContext,
   homeTeamId: string,
@@ -171,7 +148,7 @@ export async function sendPostponementProposedEmail(
   );
 }
 
-/** Sends postponement decision email via Make.com (CC: both captains + competition managers). */
+/** Sends postponement decision email via Make.com (CC: both captains). */
 export async function sendPostponementDecisionEmail(
   ctx: PostponementDecisionEmailContext,
   homeTeamId: string,

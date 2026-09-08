@@ -55,26 +55,7 @@ function mockServiceClient() {
           }),
         };
       }
-      if (table === "user_roles") {
-        return {
-          select: () => ({
-            in: () =>
-              Promise.resolve({
-                data: [{ user_id: "mgr-1" }],
-                error: null,
-              }),
-          }),
-        };
-      }
       throw new Error(`unexpected table ${table}`);
-    },
-    auth: {
-      admin: {
-        getUserById: vi.fn().mockResolvedValue({
-          data: { user: { email: "manager@example.com" } },
-          error: null,
-        }),
-      },
     },
   };
   vi.mocked(createServiceClient).mockReturnValue(supabase as never);
@@ -112,7 +93,7 @@ describe("home-away-switch-email", () => {
         match_id: "m1",
         match_url: "https://app.example.com/matches/m1",
         login_url: "https://app.example.com/login?next=%2Fmatches%2Fm1",
-        cc: expect.arrayContaining(["captain-home@example.com", "manager@example.com"]),
+        cc: ["captain-home@example.com", "captain-away@example.com"],
         requesting_captain_name: "Home Captain",
         requesting_captain_email: "captain-home@example.com",
         receiving_captain_name: "Away Captain",
