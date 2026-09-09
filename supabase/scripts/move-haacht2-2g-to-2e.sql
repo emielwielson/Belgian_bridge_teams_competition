@@ -167,6 +167,18 @@ begin
     ruling_count int not null
   );
 
+  -- Keep backups out of PostgREST: RLS on, no policies, revoke API roles.
+  alter table public.ops_backup_haacht2_move_slots enable row level security;
+  alter table public.ops_backup_haacht2_move_matches enable row level security;
+  alter table public.ops_backup_haacht2_move_byes enable row level security;
+  alter table public.ops_backup_haacht2_move_rulings enable row level security;
+  alter table public.ops_backup_haacht2_move_meta enable row level security;
+  revoke all on table public.ops_backup_haacht2_move_slots from anon, authenticated;
+  revoke all on table public.ops_backup_haacht2_move_matches from anon, authenticated;
+  revoke all on table public.ops_backup_haacht2_move_byes from anon, authenticated;
+  revoke all on table public.ops_backup_haacht2_move_rulings from anon, authenticated;
+  revoke all on table public.ops_backup_haacht2_move_meta from anon, authenticated;
+
   insert into public.ops_backup_haacht2_move_meta (
     season_id,
     team_id,
