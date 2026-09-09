@@ -210,7 +210,9 @@
       "hint": "Kies een clublid dat niet op de teamselectie staat.",
       "loading": "Laden…",
       "noneAvailable": "Geen geschikte clubspelers beschikbaar.",
-      "loadFailed": "Clubspelers laden mislukt"
+      "loadFailed": "Clubspelers laden mislukt",
+      "searchPlayer": "Zoek speler…",
+      "noPlayerMatches": "Geen overeenkomende spelers"
     },
     "score": {
       "title": "Uitslag",
@@ -643,6 +645,8 @@
       "changeCaptain": "Kapitein wijzigen",
       "remove": "Verwijderen",
       "selectCaptain": "Selecteren…",
+      "searchCaptain": "Zoek kapitein…",
+      "noCaptainMatches": "Geen overeenkomende spelers",
       "save": "Opslaan",
       "cancel": "Annuleren",
       "assignSlotsWarning": "Wijs alle teams{byePart} toe aan plaatsen 1–8 vóór u het schema genereert.",

@@ -210,7 +210,9 @@
       "hint": "Choisissez un membre du club qui n'est pas sur l'effectif de l'équipe.",
       "loading": "Chargement…",
       "noneAvailable": "Aucun joueur du club éligible disponible.",
-      "loadFailed": "Échec du chargement des joueurs du club"
+      "loadFailed": "Échec du chargement des joueurs du club",
+      "searchPlayer": "Rechercher un joueur…",
+      "noPlayerMatches": "Aucun joueur correspondant"
     },
     "score": {
       "title": "Résultat",
@@ -642,6 +644,8 @@
       "changeCaptain": "Changer de capitaine",
       "remove": "Retirer",
       "selectCaptain": "Sélectionner…",
+      "searchCaptain": "Rechercher un capitaine…",
+      "noCaptainMatches": "Aucun joueur correspondant",
       "save": "Enregistrer",
       "cancel": "Annuler",
       "assignSlotsWarning": "Assignez toutes les équipes{byePart} aux places 1–8 avant de générer le calendrier.",

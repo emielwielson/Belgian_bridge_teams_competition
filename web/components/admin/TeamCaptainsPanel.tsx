@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
+import { SearchableSelect } from "@/components/ui/SearchableSelect";
 
 type Captain = { id: string; name: string; member_number: string | null };
 
@@ -35,6 +36,20 @@ export function TeamCaptainsPanel({ groupId }: Props) {
   const [editMembers, setEditMembers] = useState<ClubMember[]>([]);
   const [membersLoading, setMembersLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  const captainOptions = useMemo(
+    () =>
+      editMembers.map((player) => {
+        const label = `${player.name}${
+          player.member_number ? ` (${player.member_number})` : ""
+        }`;
+        const searchText = [player.name, player.member_number]
+          .filter(Boolean)
+          .join(" ");
+        return { value: player.id, label, searchText };
+      }),
+    [editMembers],
+  );
 
   const loadTeams = useCallback(async () => {
     if (!groupId) {
@@ -135,24 +150,18 @@ export function TeamCaptainsPanel({ groupId }: Props) {
             </div>
             {editingCaptainTeamId === team.id && (
               <div className="flex flex-wrap items-end gap-2 border-t border-zinc-100 pt-2">
-                <label className="flex flex-col gap-1">
+                <label className="flex min-w-[16rem] max-w-xs flex-1 flex-col gap-1">
                   <span className="text-xs text-zinc-600">{t("captain")}</span>
-                  <select
+                  <SearchableSelect
+                    options={captainOptions}
                     value={editCaptainId}
-                    onChange={(e) => setEditCaptainId(e.target.value)}
-                    className="input max-w-xs text-sm"
+                    onChange={setEditCaptainId}
+                    placeholder={
+                      membersLoading ? t("loadingMembers") : t("searchCaptain")
+                    }
+                    emptyMessage={t("noCaptainMatches")}
                     disabled={membersLoading}
-                  >
-                    <option value="">
-                      {membersLoading ? t("loadingMembers") : t("selectCaptain")}
-                    </option>
-                    {editMembers.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                        {p.member_number ? ` (${p.member_number})` : ""}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </label>
                 <button
                   type="button"

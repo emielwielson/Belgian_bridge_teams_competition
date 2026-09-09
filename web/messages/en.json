@@ -210,7 +210,9 @@
       "hint": "Choose a club member who is not on the team roster.",
       "loading": "Loading…",
       "noneAvailable": "No eligible club players available.",
-      "loadFailed": "Failed to load club players"
+      "loadFailed": "Failed to load club players",
+      "searchPlayer": "Search player…",
+      "noPlayerMatches": "No matching players"
     },
     "score": {
       "title": "Score",
@@ -643,6 +645,8 @@
       "changeCaptain": "Change captain",
       "remove": "Remove",
       "selectCaptain": "Select…",
+      "searchCaptain": "Search captain…",
+      "noCaptainMatches": "No matching players",
       "save": "Save",
       "cancel": "Cancel",
       "assignSlotsWarning": "Assign all teams{byePart} to spots 1–8 before generating the schedule.",

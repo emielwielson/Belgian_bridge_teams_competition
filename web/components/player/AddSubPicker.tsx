@@ -1,7 +1,8 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import type { ClubSubCandidate } from "@/lib/competition/player-matches";
 
 type Props = {
@@ -45,8 +46,35 @@ export function AddSubPicker({
     load();
   }, [load]);
 
-  const exclude = new Set(excludePlayerIds);
-  const available = candidates.filter((p) => !exclude.has(p.id));
+  const exclude = useMemo(
+    () => new Set(excludePlayerIds),
+    [excludePlayerIds],
+  );
+  const available = useMemo(
+    () => candidates.filter((p) => !exclude.has(p.id)),
+    [candidates, exclude],
+  );
+
+  const options = useMemo(
+    () =>
+      available.map((player) => {
+        const label = `${player.name}${
+          player.member_number ? ` (${player.member_number})` : ""
+        }`;
+        const searchText = [player.name, player.member_number]
+          .filter(Boolean)
+          .join(" ");
+        return { value: player.id, label, searchText };
+      }),
+    [available],
+  );
+
+  function handleSelect(playerId: string) {
+    const player = available.find((p) => p.id === playerId);
+    if (!player) return;
+    onSelect(player);
+    onClose();
+  }
 
   return (
     <div
@@ -55,7 +83,7 @@ export function AddSubPicker({
       onClick={onClose}
     >
       <div
-        className="max-h-[70vh] w-full max-w-md overflow-hidden rounded-lg bg-white shadow-lg"
+        className="w-full max-w-md rounded-lg bg-white shadow-lg"
         role="dialog"
         aria-labelledby="add-sub-title"
         onClick={(e) => e.stopPropagation()}
@@ -72,7 +100,7 @@ export function AddSubPicker({
             {t("cancel")}
           </button>
         </div>
-        <div className="max-h-[50vh] overflow-y-auto px-4 py-3">
+        <div className="px-4 py-3">
           <p className="text-xs text-zinc-500">{t("hint")}</p>
           {loading ? (
             <p className="mt-3 text-sm text-zinc-600">{t("loading")}</p>
@@ -84,27 +112,15 @@ export function AddSubPicker({
             <p className="mt-3 text-sm text-zinc-600">{t("noneAvailable")}</p>
           ) : null}
           {!loading && !error && available.length > 0 ? (
-            <ul className="mt-3 divide-y divide-zinc-100">
-              {available.map((p) => (
-                <li key={p.id}>
-                  <button
-                    type="button"
-                    className="w-full px-1 py-2.5 text-left text-sm hover:bg-zinc-50"
-                    onClick={() => {
-                      onSelect(p);
-                      onClose();
-                    }}
-                  >
-                    {p.name}
-                    {p.member_number ? (
-                      <span className="ml-1 text-zinc-400">
-                        ({p.member_number})
-                      </span>
-                    ) : null}
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <div className="mt-3">
+              <SearchableSelect
+                options={options}
+                value=""
+                onChange={handleSelect}
+                placeholder={t("searchPlayer")}
+                emptyMessage={t("noPlayerMatches")}
+              />
+            </div>
           ) : null}
         </div>
       </div>
