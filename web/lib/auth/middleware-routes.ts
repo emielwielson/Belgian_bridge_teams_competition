@@ -1,5 +1,4 @@
-import { ARBITER_ACCESS_ROLES, ROLES } from "./roles";
-import { COMPETITION_ADMIN_ROLES } from "./route-auth";
+import { ARBITER_ACCESS_ROLES, COMPETITION_ADMIN_ROLES, ROLES } from "./roles";
 
 const PUBLIC_EXACT = new Set([
   "/",

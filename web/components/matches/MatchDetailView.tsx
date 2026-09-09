@@ -10,7 +10,7 @@ import {
   canViewMatchOps,
   type MatchContext,
 } from "@/lib/auth/match-access";
-import { COMPETITION_ADMIN_ROLES } from "@/lib/auth/route-auth";
+import { COMPETITION_ADMIN_ROLES } from "@/lib/auth/roles";
 import { ARBITER_ACCESS_ROLES, FINISHED_SCORE_EDIT_ROLES, hasAnyRole } from "@/lib/auth/roles";
 import {
   canAccessPostponementWorkflow,

@@ -6,7 +6,7 @@ import {
   type RegionCode,
 } from "@/lib/competition/scopes";
 import type { CompetitionUnit } from "@/lib/competition/scope-setup";
-import { AuthError } from "./route-auth";
+import { AuthError } from "./auth-error";
 import { ROLES } from "./roles";
 
 export const COMPETITION_KIND_CODES = {

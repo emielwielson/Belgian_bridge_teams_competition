@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { loadTeamsForUser } from "@/lib/competition/team-queries";
+import { AuthError } from "./auth-error";
 import { ROLES } from "./roles";
-import { AuthError } from "./route-auth";
 
 export async function isCaptainOfTeam(
   supabase: SupabaseClient,

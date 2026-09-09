@@ -19,6 +19,12 @@ export const FINISHED_SCORE_EDIT_ROLES = [
   ROLES.SYSTEM_ADMIN,
 ] as const;
 
+/** Roles that may administer competition setup and ops. */
+export const COMPETITION_ADMIN_ROLES = [
+  ROLES.SYSTEM_ADMIN,
+  ROLES.COMPETITION_MANAGER,
+] as const;
+
 export function hasRole(userRoles: string[], role: string): boolean {
   if (userRoles.includes(ROLES.SYSTEM_ADMIN)) return true;
   return userRoles.includes(role);

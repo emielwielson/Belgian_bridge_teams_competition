@@ -1,16 +1,10 @@
 import { createSessionClient } from "@/lib/supabase/server-client";
+import { AuthError } from "./auth-error";
 import { hasAnyRole } from "./roles";
 import { getUserRoles } from "./session";
 
-export class AuthError extends Error {
-  constructor(
-    message: string,
-    readonly status: 401 | 403,
-  ) {
-    super(message);
-    this.name = "AuthError";
-  }
-}
+export { AuthError } from "./auth-error";
+export { COMPETITION_ADMIN_ROLES } from "./roles";
 
 export async function requireAuth() {
   const supabase = await createSessionClient();
@@ -26,11 +20,6 @@ export async function requireAuth() {
   const roles = await getUserRoles(supabase, user.id);
   return { user, roles, supabase };
 }
-
-export const COMPETITION_ADMIN_ROLES = [
-  "system_admin",
-  "competition_manager",
-] as const;
 
 export async function requireRoles(required: string[]) {
   const ctx = await requireAuth();

@@ -4,10 +4,8 @@ import {
 } from "@/lib/auth/competition-scope";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getActivePlayerId } from "@/lib/auth/active-player";
-import {
-  AuthError,
-  COMPETITION_ADMIN_ROLES,
-} from "./route-auth";
+import { AuthError } from "./auth-error";
+import { COMPETITION_ADMIN_ROLES } from "./roles";
 import { FINISHED_SCORE_EDIT_ROLES, hasAnyRole, ROLES } from "./roles";
 import { resolveUserTeamIds } from "@/lib/competition/player-matches";
 

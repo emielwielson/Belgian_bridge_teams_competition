@@ -5,7 +5,7 @@ import { TeamConventionCardsSection } from "@/components/teams/TeamConventionCar
 import { TeamInfoSection } from "@/components/teams/TeamInfoSection";
 import { TeamMatchesList } from "@/components/teams/TeamMatchesList";
 import { TeamRosterSection } from "@/components/teams/TeamRosterSection";
-import { COMPETITION_ADMIN_ROLES } from "@/lib/auth/route-auth";
+import { COMPETITION_ADMIN_ROLES } from "@/lib/auth/roles";
 import { hasAnyRole } from "@/lib/auth/roles";
 import { canManageTeamConventionCards, canManageTeamRoster } from "@/lib/auth/team-access";
 import { getUserRoles } from "@/lib/auth/session";
