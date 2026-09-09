@@ -1,3 +1,4 @@
+import { assertManagesGroup } from "@/lib/auth/competition-scope";
 import { COMPETITION_ADMIN_ROLES, requireRoles } from "@/lib/auth/route-auth";
 import { loadGroupScoringContext } from "@/lib/competition/match-scoring-context";
 import { revalidateStandingsForGroup } from "@/lib/competition/revalidate-standings";
@@ -12,6 +13,7 @@ export async function POST(_request: Request, { params }: Params) {
   try {
     const { groupId } = await params;
     const { supabase } = await requireRoles([...COMPETITION_ADMIN_ROLES]);
+    await assertManagesGroup(supabase, groupId);
     await requireGroupInSetup(supabase, groupId);
 
     const scoringContext = await loadGroupScoringContext(supabase, groupId);

@@ -1,3 +1,4 @@
+import { assertManagesScopeRegion } from "@/lib/auth/competition-scope";
 import { COMPETITION_ADMIN_ROLES, requireRoles } from "@/lib/auth/route-auth";
 import {
   applyMatchDatesDivisionFilter,
@@ -37,13 +38,22 @@ function parseNationalScheduleKey(
 
 export async function GET(request: Request) {
   try {
-    const { supabase } = await requireRoles([...COMPETITION_ADMIN_ROLES]);
+    const { user, roles, supabase } = await requireRoles([
+      ...COMPETITION_ADMIN_ROLES,
+    ]);
     const season = await requireActiveSeason(supabase);
     const { searchParams } = new URL(request.url);
     const scope = parseScopeParam(searchParams.get("scope") ?? "");
     if (!scope) return jsonErrorCode(ErrorCodes.api.invalidScope, 400);
 
     const regionCode = searchParams.get("region") ?? undefined;
+    await assertManagesScopeRegion(
+      supabase,
+      user.id,
+      roles,
+      scope,
+      regionCode,
+    );
     const regionId = await resolveRegionId(supabase, scope, regionCode ?? undefined);
 
     let datesQuery = supabase
@@ -101,7 +111,9 @@ export async function GET(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    const { supabase } = await requireRoles([...COMPETITION_ADMIN_ROLES]);
+    const { user, roles, supabase } = await requireRoles([
+      ...COMPETITION_ADMIN_ROLES,
+    ]);
     const season = await requireActiveSeason(supabase);
     const body = await request.json();
     const scope = parseScopeParam(body.scope ?? "");
@@ -111,6 +123,13 @@ export async function PUT(request: Request) {
     if (scope === SCOPES.REGIONAL && !regionCode) {
       return jsonErrorCode(ErrorCodes.api.invalidRegionCode, 400);
     }
+    await assertManagesScopeRegion(
+      supabase,
+      user.id,
+      roles,
+      scope,
+      regionCode,
+    );
     await requireUnitInSetup(
       supabase,
       season.id,

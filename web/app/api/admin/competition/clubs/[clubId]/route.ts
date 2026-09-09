@@ -1,3 +1,4 @@
+import { assertManagesClub } from "@/lib/auth/competition-scope";
 import { COMPETITION_ADMIN_ROLES, requireRoles } from "@/lib/auth/route-auth";
 import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
 import { ErrorCodes } from "@/lib/http/error-codes";
@@ -18,6 +19,7 @@ export async function PATCH(
     const { supabase } = await requireRoles([...COMPETITION_ADMIN_ROLES]);
     const { clubId } = await context.params;
     if (!clubId) return jsonErrorCode(ErrorCodes.api.idRequired, 400);
+    await assertManagesClub(supabase, clubId);
 
     const body = await request.json();
     if ("location" in body) {

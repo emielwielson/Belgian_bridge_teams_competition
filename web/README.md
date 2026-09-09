@@ -31,7 +31,7 @@ Next.js frontend for the Belgian Bridge Competition Platform.
 
 4. Open [http://localhost:3000](http://localhost:3000), [http://localhost:3000/login](http://localhost:3000/login), and [http://localhost:3000/api/health](http://localhost:3000/api/health).
 
-Apply migrations through `0008` before competition admin. See the [root README](../README.md).
+Apply migrations through `0008` before competition admin. See the [root README](../README.md). Competition managers can optionally be limited to kinds (`national` / `flanders` / `wallonia`) via `competition_manager_scopes` (migrations `0061`–`0062`).
 
 Deploy the `schedule-generate-rbbf` Edge Function from [`supabase/functions/schedule-generate-rbbf/`](../supabase/functions/schedule-generate-rbbf/) via the Supabase Dashboard (Edge Functions → deploy). Schedule generation requires it.
 

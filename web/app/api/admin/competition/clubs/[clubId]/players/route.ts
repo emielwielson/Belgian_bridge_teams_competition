@@ -1,3 +1,4 @@
+import { assertManagesClub } from "@/lib/auth/competition-scope";
 import { COMPETITION_ADMIN_ROLES, requireRoles } from "@/lib/auth/route-auth";
 import { loadActivePrimaryClubMembers } from "@/lib/competition/active-primary-membership";
 import { jsonFromError, jsonOk } from "@/lib/http/api-response";
@@ -8,6 +9,7 @@ export async function GET(_request: Request, { params }: Params) {
   try {
     const { clubId } = await params;
     const { supabase } = await requireRoles([...COMPETITION_ADMIN_ROLES]);
+    await assertManagesClub(supabase, clubId);
 
     const memberships = await loadActivePrimaryClubMembers<{
       player: unknown;

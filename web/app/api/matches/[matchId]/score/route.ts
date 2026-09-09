@@ -3,7 +3,7 @@ import {
   requireRoles,
 } from "@/lib/auth/route-auth";
 import {
-  assertCanEditFinishedScore,
+  assertCanEditFinishedScoreForMatch,
   assertCanSubmitScore,
   assertCanViewMatchOps,
   loadMatchContext,
@@ -100,9 +100,8 @@ export async function PATCH(request: Request, { params }: Params) {
     const { user, roles, supabase } = await requireRoles([
       ...FINISHED_SCORE_EDIT_ROLES,
     ]);
-    assertCanEditFinishedScore(roles);
-
     const match = await loadMatchContext(supabase, matchId);
+    await assertCanEditFinishedScoreForMatch(supabase, roles, match.id);
     if (!match.played_at) {
       return jsonErrorCode(ErrorCodes.api.noOfficialScoreUsePost, 400);
     }

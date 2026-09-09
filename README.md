@@ -60,11 +60,27 @@ insert into public.user_roles (user_id, role)
 values ('<your-auth-users-id>', 'system_admin');
 ```
 
+Competition managers are global by default. To limit a manager to one competition (e.g. Wallonia only), assign the role **and** scope rows (apply migrations `0061`–`0062` first):
+
+```sql
+insert into public.user_roles (user_id, role)
+values ('<auth-users-id>', 'competition_manager');
+
+insert into public.competition_manager_scopes (user_id, competition_kind_id)
+select '<auth-users-id>', id
+from public.competition_kinds
+where code = 'wallonia';
+```
+
+Kinds: `national`, `flanders`, `wallonia`. Leaving `competition_manager_scopes` empty keeps the manager global (all competitions). `system_admin` is always global.
+
 For each step, open **SQL Editor** → **New query**, paste the file contents, and run.
 
 Optional: use **Database** → **Migrations** in the Dashboard if you prefer its migration UI.
 
 **Task 5 (operational workflows):** apply through `0026_arbiter_requests.sql` (includes `0021`–`0025` for postponement, home/away switch, operational file storage, warnings/rulings audit, arbiter requests). Then run [`supabase/tests/task5_operational_smoke_test.sql`](supabase/tests/task5_operational_smoke_test.sql). Assign the `arbiter` role in `user_roles` for users who should use `/arbiter`. Storage bucket: `operational-files` (private; uploads via `/api/files/upload`).
+
+**Scoped competition managers:** apply `0061_competition_kinds_and_manager_scopes.sql` and `0062_scope_competition_manager_resources.sql`, then run [`supabase/tests/scoped_competition_manager_smoke_test.sql`](supabase/tests/scoped_competition_manager_smoke_test.sql).
 
 VP template rows in the seed use sample IMP bands — verify against your competition rules before production.
 

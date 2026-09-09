@@ -1,3 +1,4 @@
+import { assertManagesGroup, assertManagesTeam } from "@/lib/auth/competition-scope";
 import { COMPETITION_ADMIN_ROLES, requireRoles } from "@/lib/auth/route-auth";
 import { syncGroupRoundCount } from "@/lib/competition/group-match-rounds";
 import { assertNationalGroupCanAddTeam } from "@/lib/competition/national-teams";
@@ -25,6 +26,7 @@ export async function GET(request: Request) {
     const { supabase } = await requireRoles([...COMPETITION_ADMIN_ROLES]);
     const groupId = new URL(request.url).searchParams.get("groupId");
     if (!groupId) return jsonErrorCode(ErrorCodes.api.groupIdRequired, 400);
+    await assertManagesGroup(supabase, groupId);
 
     const { data: groupRow } = await supabase
       .from("groups")
@@ -119,6 +121,7 @@ export async function POST(request: Request) {
 
     if (body.action === "roster_add") {
       const season = await requireActiveSeason(supabase);
+      await assertManagesTeam(supabase, body.team_id);
       const { error } = await supabase.from("team_players").insert({
         team_id: body.team_id,
         player_id: body.player_id,
@@ -135,6 +138,7 @@ export async function POST(request: Request) {
       if (!teamId || !playerId) {
         return jsonErrorCode(ErrorCodes.api.playerIdRequired, 400);
       }
+      await assertManagesTeam(supabase, teamId);
       await removePlayerFromTeamRoster(supabase, {
         teamId,
         playerId,
@@ -145,6 +149,7 @@ export async function POST(request: Request) {
 
     const season = await requireActiveSeason(supabase);
     const createInput = validateTeamCreateBody(body);
+    await assertManagesGroup(supabase, createInput.group_id);
 
     try {
       await assertNationalGroupCanAddTeam(supabase, createInput.group_id);
@@ -199,6 +204,7 @@ export async function PATCH(request: Request) {
 
     if (teamError) return jsonError(teamError.message, 500);
     if (!team) return jsonErrorCode(ErrorCodes.api.teamNotFound, 404);
+    await assertManagesTeam(supabase, teamId);
 
     const patch: Record<string, unknown> = {};
     if (body.name !== undefined) {
@@ -256,6 +262,8 @@ export async function DELETE(request: Request) {
       .select("group_id")
       .eq("id", teamId)
       .maybeSingle();
+
+    await assertManagesTeam(supabase, teamId);
 
     const [{ count: homeCount }, { count: awayCount }] = await Promise.all([
       supabase

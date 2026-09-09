@@ -1,10 +1,16 @@
+import {
+  assertManagesMatch,
+  filterMatchIdsByManagedKinds,
+} from "@/lib/auth/competition-scope";
 import { COMPETITION_ADMIN_ROLES, requireRoles } from "@/lib/auth/route-auth";
 import { activeSeasonGroupIds } from "@/lib/competition/admin-season-scope";
 import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
 
 export async function GET(request: Request) {
   try {
-    const { supabase } = await requireRoles([...COMPETITION_ADMIN_ROLES]);
+    const { user, roles, supabase } = await requireRoles([
+      ...COMPETITION_ADMIN_ROLES,
+    ]);
     const url = new URL(request.url);
     const groupId = url.searchParams.get("groupId");
     const matchId = url.searchParams.get("matchId");
@@ -20,6 +26,7 @@ export async function GET(request: Request) {
     let matchIds: string[] | null = null;
 
     if (matchId) {
+      await assertManagesMatch(supabase, matchId);
       matchIds = [matchId];
     } else {
       const groupIds = groupId
@@ -32,7 +39,12 @@ export async function GET(request: Request) {
         .select("id")
         .in("group_id", groupIds);
       if (matchError) return jsonError(matchError.message, 500);
-      matchIds = matches?.map((m) => m.id) ?? [];
+      matchIds = await filterMatchIdsByManagedKinds(
+        supabase,
+        user.id,
+        roles,
+        matches?.map((m) => m.id) ?? [],
+      );
     }
 
     if (!matchIds || matchIds.length === 0) {

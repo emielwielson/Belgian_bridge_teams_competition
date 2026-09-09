@@ -69,18 +69,60 @@ async function loadCaptainEmailsForMatch(matchId: string): Promise<string[]> {
   });
 }
 
-async function loadCompetitionManagerEmails(): Promise<string[]> {
+async function loadCompetitionManagerEmails(matchId: string): Promise<string[]> {
   const supabase = createServiceClient();
+
+  const { data: matchRow, error: matchError } = await supabase
+    .from("matches")
+    .select(
+      "id, groups!inner(divisions!inner(leagues!inner(competition_kind_id)))",
+    )
+    .eq("id", matchId)
+    .maybeSingle();
+  if (matchError) throw matchError;
+
+  const groups = matchRow?.groups as
+    | { divisions: { leagues: { competition_kind_id: string } } }
+    | { divisions: { leagues: { competition_kind_id: string } } }[]
+    | null
+    | undefined;
+  const group = Array.isArray(groups) ? groups[0] : groups;
+  const kindId = group?.divisions?.leagues?.competition_kind_id;
+  if (!kindId) return [];
+
   const { data: roleRows, error: roleError } = await supabase
     .from("user_roles")
-    .select("user_id")
+    .select("user_id, role")
     .in("role", ["competition_manager", "system_admin"]);
-
   if (roleError) throw roleError;
 
-  const emails: string[] = [];
+  const { data: scopeRows, error: scopeError } = await supabase
+    .from("competition_manager_scopes")
+    .select("user_id, competition_kind_id");
+  if (scopeError) throw scopeError;
+
+  const scopesByUser = new Map<string, string[]>();
+  for (const row of scopeRows ?? []) {
+    const list = scopesByUser.get(row.user_id) ?? [];
+    list.push(row.competition_kind_id);
+    scopesByUser.set(row.user_id, list);
+  }
+
+  const recipientIds: string[] = [];
   for (const row of roleRows ?? []) {
-    const { data, error } = await supabase.auth.admin.getUserById(row.user_id);
+    if (row.role === "system_admin") {
+      recipientIds.push(row.user_id);
+      continue;
+    }
+    const scopes = scopesByUser.get(row.user_id);
+    if (!scopes || scopes.length === 0 || scopes.includes(kindId)) {
+      recipientIds.push(row.user_id);
+    }
+  }
+
+  const emails: string[] = [];
+  for (const userId of recipientIds) {
+    const { data, error } = await supabase.auth.admin.getUserById(userId);
     if (!error && data.user?.email) {
       emails.push(data.user.email);
     }
@@ -105,7 +147,7 @@ async function loadArbiterRequestCc(matchId: string): Promise<string[]> {
   const [arbiterEmails, captainEmails, managerEmails] = await Promise.all([
     loadArbiterEmails(),
     loadCaptainEmailsForMatch(matchId),
-    loadCompetitionManagerEmails(),
+    loadCompetitionManagerEmails(matchId),
   ]);
   return uniqueEmails([...arbiterEmails, ...captainEmails, ...managerEmails]);
 }

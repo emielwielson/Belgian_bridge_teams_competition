@@ -1,3 +1,11 @@
+import {
+  assertManagesCompetitionUnit,
+  assertManagesGroup,
+  assertManagesLeague,
+  filterLeagueRowsByManagedKinds,
+  kindCodeForUnit,
+  resolveCompetitionKindId,
+} from "@/lib/auth/competition-scope";
 import { COMPETITION_ADMIN_ROLES, requireRoles } from "@/lib/auth/route-auth";
 import { ensureNationalStructure } from "@/lib/competition/ensure-national-structure";
 import { ensureRegionalLeague } from "@/lib/competition/ensure-regional-league";
@@ -21,18 +29,27 @@ import { ErrorCodes } from "@/lib/http/error-codes";
 
 export async function GET() {
   try {
-    const { supabase } = await requireRoles([...COMPETITION_ADMIN_ROLES]);
+    const { user, roles, supabase } = await requireRoles([
+      ...COMPETITION_ADMIN_ROLES,
+    ]);
     const season = await requireActiveSeason(supabase);
 
     const { data: leagues, error: leaguesError } = await supabase
       .from("leagues")
-      .select("id, name, scope, region_id, season_id")
+      .select("id, name, scope, region_id, season_id, competition_kind_id")
       .eq("season_id", season.id)
       .order("name");
 
     if (leaguesError) return jsonError(leaguesError.message, 500);
 
-    const leagueIds = leagues?.map((l) => l.id) ?? [];
+    const visibleLeagues = await filterLeagueRowsByManagedKinds(
+      supabase,
+      user.id,
+      roles,
+      leagues ?? [],
+    );
+
+    const leagueIds = visibleLeagues.map((l) => l.id);
     const { data: divisionLevels } = await supabase
       .from("division_levels")
       .select("id, code, name, sort_order")
@@ -62,7 +79,7 @@ export async function GET() {
 
     if (groupsError) return jsonError(groupsError.message, 500);
 
-    const tree = (leagues ?? []).map((league) => ({
+    const tree = visibleLeagues.map((league) => ({
       ...league,
       divisions: (divisions ?? [])
         .filter((d) => d.league_id === league.id)
@@ -84,7 +101,9 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const { supabase } = await requireRoles([...COMPETITION_ADMIN_ROLES]);
+    const { user, roles, supabase } = await requireRoles([
+      ...COMPETITION_ADMIN_ROLES,
+    ]);
     const season = await requireActiveSeason(supabase);
     const body = await request.json();
 
@@ -103,6 +122,11 @@ export async function POST(request: Request) {
         regionCode = parseRegionParam(region?.code ?? "") ?? undefined;
         if (!regionCode) return jsonErrorCode(ErrorCodes.api.invalidRegion, 400);
       }
+      const unit =
+        scope === SCOPES.REGIONAL
+          ? ({ scope: SCOPES.REGIONAL, regionCode: regionCode! } as const)
+          : ({ scope: SCOPES.NATIONAL } as const);
+      await assertManagesCompetitionUnit(supabase, user.id, roles, unit);
       const expectedName = canonicalLeagueName(scope, regionCode);
       if (body.name !== expectedName) {
         return jsonErrorCode(ErrorCodes.api.leagueNameMustBe, 400, {
@@ -110,6 +134,10 @@ export async function POST(request: Request) {
         });
       }
 
+      const competitionKindId = await resolveCompetitionKindId(
+        supabase,
+        kindCodeForUnit(unit),
+      );
       const { data, error } = await supabase
         .from("leagues")
         .insert({
@@ -117,6 +145,7 @@ export async function POST(request: Request) {
           name: expectedName,
           scope,
           region_id: body.region_id ?? null,
+          competition_kind_id: competitionKindId,
         })
         .select()
         .single();
@@ -125,6 +154,7 @@ export async function POST(request: Request) {
     }
 
     if (body.type === "division") {
+      await assertManagesLeague(supabase, body.league_id);
       await requireLeagueIdInSetup(supabase, body.league_id);
       const { data, error } = await supabase
         .from("divisions")
@@ -140,6 +170,13 @@ export async function POST(request: Request) {
     }
 
     if (body.type === "group") {
+      const { data: division } = await supabase
+        .from("divisions")
+        .select("league_id")
+        .eq("id", body.division_id)
+        .maybeSingle();
+      if (!division) return jsonErrorCode(ErrorCodes.api.invalidType, 400);
+      await assertManagesLeague(supabase, division.league_id);
       await requireDivisionInSetup(supabase, body.division_id);
       const roundRobinCount =
         typeof body.round_robin_count === "number" ? body.round_robin_count : 2;
@@ -165,10 +202,15 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const { supabase } = await requireRoles([...COMPETITION_ADMIN_ROLES]);
+    const { user, roles, supabase } = await requireRoles([
+      ...COMPETITION_ADMIN_ROLES,
+    ]);
     const body = await request.json();
 
     if (body.action === "ensure_national_structure") {
+      await assertManagesCompetitionUnit(supabase, user.id, roles, {
+        scope: SCOPES.NATIONAL,
+      });
       const season = await requireActiveSeason(supabase);
       const result = await ensureNationalStructure(supabase, season.id);
       return jsonOk({ ensured: true, ...result });
@@ -178,6 +220,10 @@ export async function PATCH(request: Request) {
       const season = await requireActiveSeason(supabase);
       const regionCode = parseRegionParam(body.regionCode ?? "");
       if (!regionCode) return jsonErrorCode(ErrorCodes.api.invalidRegionCode, 400);
+      await assertManagesCompetitionUnit(supabase, user.id, roles, {
+        scope: SCOPES.REGIONAL,
+        regionCode,
+      });
       const result = await ensureRegionalLeague(
         supabase,
         season.id,
@@ -187,6 +233,9 @@ export async function PATCH(request: Request) {
     }
 
     if (body.action === "start_national_league") {
+      await assertManagesCompetitionUnit(supabase, user.id, roles, {
+        scope: SCOPES.NATIONAL,
+      });
       const season = await requireActiveSeason(supabase);
       const result = await startNationalLeague(supabase, season.id);
       return jsonOk(result);
@@ -198,6 +247,10 @@ export async function PATCH(request: Request) {
       if (!regionCode) {
         return jsonErrorCode(ErrorCodes.api.invalidRegionCode, 400);
       }
+      await assertManagesCompetitionUnit(supabase, user.id, roles, {
+        scope: SCOPES.REGIONAL,
+        regionCode,
+      });
       const result = await startRegionalLeague(
         supabase,
         season.id,
@@ -244,6 +297,7 @@ export async function PATCH(request: Request) {
     }
 
     if (body.type === "league" && body.id) {
+      await assertManagesLeague(supabase, body.id);
       const { error } = await supabase
         .from("leagues")
         .update({ name: body.name })
@@ -253,6 +307,13 @@ export async function PATCH(request: Request) {
     }
 
     if (body.type === "division" && body.id) {
+      const { data: division } = await supabase
+        .from("divisions")
+        .select("league_id")
+        .eq("id", body.id)
+        .maybeSingle();
+      if (!division) return jsonErrorCode(ErrorCodes.api.invalidPatch, 400);
+      await assertManagesLeague(supabase, division.league_id);
       await requireDivisionInSetup(supabase, body.id);
       const patch: Record<string, unknown> = {};
       if (body.name !== undefined) patch.name = body.name;
@@ -276,6 +337,7 @@ export async function PATCH(request: Request) {
     }
 
     if (body.type === "group" && body.id) {
+      await assertManagesGroup(supabase, body.id);
       await requireGroupInSetup(supabase, body.id);
       const patch: Record<string, unknown> = {};
       if (body.name !== undefined) patch.name = body.name;
@@ -312,6 +374,7 @@ export async function DELETE(request: Request) {
 
     if (body.type === "group" && body.id) {
       const groupId = body.id as string;
+      await assertManagesGroup(supabase, groupId);
       await requireGroupInSetup(supabase, groupId);
       const { count } = await supabase
         .from("matches")

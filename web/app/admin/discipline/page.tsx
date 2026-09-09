@@ -1,13 +1,11 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import {
-  adminDisciplinePath,
-  SCOPES,
-  REGION_CODES,
-} from "@/lib/competition/scopes";
+import { getManagedAdminHubLinks } from "@/lib/auth/admin-hub-access";
+import { adminDisciplinePath } from "@/lib/competition/scopes";
 
 export default async function DisciplineHubPage() {
   const t = await getTranslations("admin");
+  const links = await getManagedAdminHubLinks();
 
   return (
     <main className="page-container flex flex-col gap-6">
@@ -18,24 +16,15 @@ export default async function DisciplineHubPage() {
         {t("disciplineScopesTitle")}
       </h1>
       <nav className="flex flex-col gap-3">
-        <Link
-          href={adminDisciplinePath(SCOPES.NATIONAL)}
-          className="card font-medium hover:border-zinc-400"
-        >
-          {t("national")}
-        </Link>
-        <Link
-          href={adminDisciplinePath(SCOPES.REGIONAL, REGION_CODES.FLANDERS)}
-          className="card font-medium hover:border-zinc-400"
-        >
-          {t("flandersRegional")}
-        </Link>
-        <Link
-          href={adminDisciplinePath(SCOPES.REGIONAL, REGION_CODES.WALLONIA)}
-          className="card font-medium hover:border-zinc-400"
-        >
-          {t("walloniaRegional")}
-        </Link>
+        {links.map((link) => (
+          <Link
+            key={link.kind}
+            href={adminDisciplinePath(link.scope, link.regionCode)}
+            className="card font-medium hover:border-zinc-400"
+          >
+            {t(link.labelKey)}
+          </Link>
+        ))}
       </nav>
     </main>
   );

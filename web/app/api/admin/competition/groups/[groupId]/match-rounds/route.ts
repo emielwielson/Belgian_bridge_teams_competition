@@ -1,3 +1,4 @@
+import { assertManagesGroup } from "@/lib/auth/competition-scope";
 import { COMPETITION_ADMIN_ROLES, requireRoles } from "@/lib/auth/route-auth";
 import {
   loadGroupMatchRoundConfig,
@@ -13,6 +14,7 @@ export async function GET(_request: Request, { params }: Params) {
   try {
     const { groupId } = await params;
     const { supabase } = await requireRoles([...COMPETITION_ADMIN_ROLES]);
+    await assertManagesGroup(supabase, groupId);
 
     const config = await loadGroupMatchRoundConfig(supabase, groupId);
     return jsonOk(config);
@@ -25,6 +27,7 @@ export async function PUT(request: Request, { params }: Params) {
   try {
     const { groupId } = await params;
     const { supabase } = await requireRoles([...COMPETITION_ADMIN_ROLES]);
+    await assertManagesGroup(supabase, groupId);
     await requireGroupInSetup(supabase, groupId);
 
     const body = await request.json();

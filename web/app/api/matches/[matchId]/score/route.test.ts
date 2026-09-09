@@ -19,6 +19,7 @@ vi.mock("@/lib/auth/match-access", async (importOriginal) => {
     assertCanViewMatchOps: vi.fn(),
     assertCanAdminEditScore: vi.fn(),
     assertCanEditFinishedScore: vi.fn(),
+    assertCanEditFinishedScoreForMatch: vi.fn(),
   };
 });
 
@@ -41,6 +42,7 @@ import {
   assertCanViewMatchOps,
   assertCanAdminEditScore,
   assertCanEditFinishedScore,
+  assertCanEditFinishedScoreForMatch,
 } from "@/lib/auth/match-access";
 import { submitMatchScore } from "@/lib/scoring/match-operations";
 import { revalidateMatchDerivedViews } from "@/lib/competition/revalidate-standings";
@@ -220,7 +222,7 @@ describe("PATCH /api/matches/[matchId]/score", () => {
       { params: Promise.resolve({ matchId: "match-1" }) },
     );
     expect(res.status).toBe(200);
-    expect(assertCanEditFinishedScore).toHaveBeenCalled();
+    expect(assertCanEditFinishedScoreForMatch).toHaveBeenCalled();
     expect(submitMatchScore).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ played_at: "2025-01-02T12:00:00Z" }),

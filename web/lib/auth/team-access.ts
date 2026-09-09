@@ -35,11 +35,15 @@ export async function canManageTeamRoster(
   teamId: string,
   clubId: string,
 ): Promise<boolean> {
-  if (
-    roles.includes(ROLES.SYSTEM_ADMIN) ||
-    roles.includes(ROLES.COMPETITION_MANAGER)
-  ) {
+  if (roles.includes(ROLES.SYSTEM_ADMIN)) {
     return true;
+  }
+  if (roles.includes(ROLES.COMPETITION_MANAGER)) {
+    const { data, error } = await supabase.rpc("current_user_manages_team", {
+      p_team_id: teamId,
+    });
+    if (error) throw error;
+    return Boolean(data);
   }
 
   return isCaptainOfTeam(supabase, teamId);

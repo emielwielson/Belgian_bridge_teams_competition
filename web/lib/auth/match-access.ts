@@ -1,10 +1,14 @@
+import {
+  filterMatchIdsByManagedKinds,
+  userManagesMatch,
+} from "@/lib/auth/competition-scope";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getActivePlayerId } from "@/lib/auth/active-player";
 import {
   AuthError,
   COMPETITION_ADMIN_ROLES,
 } from "./route-auth";
-import { FINISHED_SCORE_EDIT_ROLES, hasAnyRole } from "./roles";
+import { FINISHED_SCORE_EDIT_ROLES, hasAnyRole, ROLES } from "./roles";
 import { resolveUserTeamIds } from "@/lib/competition/player-matches";
 
 export type MatchTeamPair = {
@@ -120,7 +124,14 @@ export async function matchIdsUserCanViewOps(
 ): Promise<Set<string>> {
   if (matches.length === 0) return new Set();
   if (hasAnyRole(roles, [...COMPETITION_ADMIN_ROLES])) {
-    return new Set(matches.map((m) => m.id));
+    const ids = matches.map((m) => m.id);
+    const allowed = await filterMatchIdsByManagedKinds(
+      supabase,
+      userId,
+      roles,
+      ids,
+    );
+    return new Set(allowed);
   }
 
   const userTeamIds = await resolveUserTeamIds(supabase, userId);
@@ -184,6 +195,23 @@ export function assertCanEditFinishedScore(roles: string[]): void {
   }
 }
 
+export async function assertCanEditFinishedScoreForMatch(
+  supabase: SupabaseClient,
+  roles: string[],
+  matchId: string,
+): Promise<void> {
+  assertCanEditFinishedScore(roles);
+  if (roles.includes(ROLES.ARBITER) && !hasAnyRole(roles, [...COMPETITION_ADMIN_ROLES])) {
+    return;
+  }
+  if (!(await userManagesMatch(supabase, matchId))) {
+    throw new AuthError(
+      "Forbidden: only arbiters or competition managers can edit official scores",
+      403,
+    );
+  }
+}
+
 export async function isUserOnTeam(
   supabase: SupabaseClient,
   userId: string,
@@ -222,7 +250,9 @@ export async function canEditLineupForTeam(
 ): Promise<boolean> {
   if (match.played_at) return false;
   if (!(await canEditLineup(supabase, match.id))) return false;
-  if (hasAnyRole(roles, [...COMPETITION_ADMIN_ROLES])) return true;
+  if (hasAnyRole(roles, [...COMPETITION_ADMIN_ROLES])) {
+    return userManagesMatch(supabase, match.id);
+  }
 
   if (
     teamId !== match.home_team_id &&

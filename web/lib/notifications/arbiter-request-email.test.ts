@@ -30,10 +30,21 @@ function mockServiceClient() {
                 : Promise.resolve({ data: [], error: null }),
             in: () =>
               Promise.resolve({
-                data: [{ user_id: "manager-1" }],
+                data: [
+                  { user_id: "manager-1", role: "competition_manager" },
+                ],
                 error: null,
               }),
           }),
+        };
+      }
+      if (table === "competition_manager_scopes") {
+        return {
+          select: () =>
+            Promise.resolve({
+              data: [],
+              error: null,
+            }),
         };
       }
       if (table === "arbiter_requests") {
@@ -58,16 +69,25 @@ function mockServiceClient() {
             eq: () => ({
               maybeSingle: () =>
                 Promise.resolve({
-                  data: cols.includes("home_team_id")
+                  data: cols.includes("competition_kind_id")
                     ? {
-                        home_team_id: "home-1",
-                        away_team_id: "away-1",
+                        id: "m1",
+                        groups: {
+                          divisions: {
+                            leagues: { competition_kind_id: "kind-wallonia" },
+                          },
+                        },
                       }
-                    : {
-                        round: 5,
-                        home_team: { name: "Home FC" },
-                        away_team: { name: "Away FC" },
-                      },
+                    : cols.includes("home_team_id")
+                      ? {
+                          home_team_id: "home-1",
+                          away_team_id: "away-1",
+                        }
+                      : {
+                          round: 5,
+                          home_team: { name: "Home FC" },
+                          away_team: { name: "Away FC" },
+                        },
                   error: null,
                 }),
             }),

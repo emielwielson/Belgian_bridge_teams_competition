@@ -26,6 +26,10 @@ vi.mock("@/lib/competition/queries", () => ({
   resolveRegionId: vi.fn().mockResolvedValue("region-wallonia"),
 }));
 
+vi.mock("@/lib/auth/competition-scope", () => ({
+  assertManagesScopeRegion: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock("@/lib/competition/match-dates-query", () => ({
   applyMatchDatesDivisionFilter: (q: unknown) => q,
   nationalMatchDatesDivisionId: vi.fn(),

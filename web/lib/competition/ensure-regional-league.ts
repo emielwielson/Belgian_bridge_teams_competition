@@ -1,6 +1,17 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  COMPETITION_KIND_CODES,
+  resolveCompetitionKindId,
+  type CompetitionKindCode,
+} from "@/lib/auth/competition-scope";
 import { canonicalLeagueName } from "./league-names";
-import { type RegionCode } from "./scopes";
+import { REGION_CODES, type RegionCode } from "./scopes";
+
+function kindCodeForRegion(regionCode: RegionCode): CompetitionKindCode {
+  return regionCode === REGION_CODES.WALLONIA
+    ? COMPETITION_KIND_CODES.WALLONIA
+    : COMPETITION_KIND_CODES.FLANDERS;
+}
 
 export async function ensureRegionalLeague(
   supabase: SupabaseClient,
@@ -17,6 +28,10 @@ export async function ensureRegionalLeague(
   }
 
   const name = canonicalLeagueName("regional", regionCode);
+  const competitionKindId = await resolveCompetitionKindId(
+    supabase,
+    kindCodeForRegion(regionCode),
+  );
 
   const { data: existing } = await supabase
     .from("leagues")
@@ -27,7 +42,10 @@ export async function ensureRegionalLeague(
     .maybeSingle();
 
   if (existing) {
-    await supabase.from("leagues").update({ name }).eq("id", existing.id);
+    await supabase
+      .from("leagues")
+      .update({ name, competition_kind_id: competitionKindId })
+      .eq("id", existing.id);
     return { leagueId: existing.id };
   }
 
@@ -38,6 +56,7 @@ export async function ensureRegionalLeague(
       scope: "regional",
       region_id: region.id,
       name,
+      competition_kind_id: competitionKindId,
     })
     .select("id")
     .single();

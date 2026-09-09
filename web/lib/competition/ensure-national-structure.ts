@@ -1,4 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  COMPETITION_KIND_CODES,
+  resolveCompetitionKindId,
+} from "@/lib/auth/competition-scope";
 import { NATIONAL_LEAGUE_NAME } from "./league-names";
 import {
   NATIONAL_DIVISIONS,
@@ -15,6 +19,10 @@ export async function ensureNationalStructure(
 
   if (levelsError) throw levelsError;
   const levelByCode = new Map(levels?.map((l) => [l.code, l.id]) ?? []);
+  const competitionKindId = await resolveCompetitionKindId(
+    supabase,
+    COMPETITION_KIND_CODES.NATIONAL,
+  );
 
   let { data: league } = await supabase
     .from("leagues")
@@ -36,7 +44,10 @@ export async function ensureNationalStructure(
     if (legacyNational) {
       const { error: renameError } = await supabase
         .from("leagues")
-        .update({ name: NATIONAL_LEAGUE_NAME })
+        .update({
+          name: NATIONAL_LEAGUE_NAME,
+          competition_kind_id: competitionKindId,
+        })
         .eq("id", legacyNational.id);
       if (renameError) throw renameError;
       league = legacyNational;
@@ -48,12 +59,20 @@ export async function ensureNationalStructure(
           scope: "national",
           region_id: null,
           name: NATIONAL_LEAGUE_NAME,
+          competition_kind_id: competitionKindId,
         })
         .select("id")
         .single();
       if (error) throw error;
       league = created;
     }
+  } else {
+    const { error: kindError } = await supabase
+      .from("leagues")
+      .update({ competition_kind_id: competitionKindId })
+      .eq("id", league.id)
+      .is("competition_kind_id", null);
+    if (kindError) throw kindError;
   }
 
   const divisionIds = new Map<string, string>();

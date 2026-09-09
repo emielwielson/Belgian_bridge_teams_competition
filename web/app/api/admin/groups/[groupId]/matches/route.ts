@@ -1,3 +1,4 @@
+import { assertManagesGroup } from "@/lib/auth/competition-scope";
 import { COMPETITION_ADMIN_ROLES, requireRoles } from "@/lib/auth/route-auth";
 import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
 
@@ -7,6 +8,7 @@ export async function GET(_request: Request, { params }: Params) {
   try {
     const { groupId } = await params;
     const { supabase } = await requireRoles([...COMPETITION_ADMIN_ROLES]);
+    await assertManagesGroup(supabase, groupId);
 
     const { data, error } = await supabase
       .from("matches")
