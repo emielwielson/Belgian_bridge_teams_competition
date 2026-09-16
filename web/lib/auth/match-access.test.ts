@@ -18,6 +18,8 @@ const baseMatch: MatchContext = {
   vp_home: null,
   vp_away: null,
   played_at: null,
+  home_lineup_locked_at: null,
+  away_lineup_locked_at: null,
   home_team: { id: "home-1", name: "Home", club_id: "club-1" },
   away_team: { id: "away-1", name: "Away", club_id: "club-2" },
 };

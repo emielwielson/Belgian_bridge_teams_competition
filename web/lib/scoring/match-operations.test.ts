@@ -5,6 +5,15 @@ import {
   validateLineupPayload,
 } from "./match-operations";
 
+vi.mock("@/lib/competition/match-scoring-context", () => ({
+  loadGroupScoringContext: vi.fn().mockResolvedValue({
+    groupId: "group-1",
+    divisionLevelId: "dl-1",
+    leagueScope: "regional",
+    divisionLevelCode: "second",
+  }),
+}));
+
 function mockSupabase(options: {
   rosterIds: string[];
   clubMemberIds: string[];
@@ -72,8 +81,11 @@ describe("isLineupComplete", () => {
     await expect(
       isLineupComplete(supabase, {
         id: "match-1",
+        group_id: "group-1",
         home_team_id: "home-1",
         away_team_id: "away-1",
+        home_lineup_locked_at: null,
+        away_lineup_locked_at: null,
       }),
     ).resolves.toBe(true);
   });

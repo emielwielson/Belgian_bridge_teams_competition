@@ -1,6 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { MatchContext } from "@/lib/auth/match-access";
 import { loadActivePrimaryPlayerIdsAtClub } from "@/lib/competition/active-primary-membership";
+import {
+  isAllowedHonorSeat,
+  isHonorSeatedLineupComplete,
+  type HonorDirection,
+  type HonorRoom,
+  type HonorSide,
+} from "@/lib/competition/honor-lineup";
 import { loadGroupScoringContext } from "@/lib/competition/match-scoring-context";
 import {
   allowsBoardChoice,
@@ -14,6 +21,8 @@ export { BoardCountValidationError };
 export type LineupPlayerInput = {
   player_id: string;
   is_substitute: boolean;
+  room?: HonorRoom | null;
+  direction?: HonorDirection | null;
 };
 
 export type MatchLineupEntry = {
@@ -21,6 +30,8 @@ export type MatchLineupEntry = {
   team_id: string;
   player_id: string;
   is_substitute: boolean;
+  room: HonorRoom | null;
+  direction: HonorDirection | null;
   player: { id: string; name: string; member_number: string | null };
 };
 
@@ -39,8 +50,10 @@ export async function validateLineupPayload(
   clubId: string,
   seasonId: string,
   players: LineupPlayerInput[],
+  options?: { allowPartial?: boolean },
 ): Promise<void> {
-  if (players.length < MIN_PLAYERS_PER_TEAM) {
+  const allowPartial = options?.allowPartial ?? false;
+  if (!allowPartial && players.length < MIN_PLAYERS_PER_TEAM) {
     throw new LineupValidationError(
       `At least ${MIN_PLAYERS_PER_TEAM} players are required`,
     );
@@ -95,6 +108,33 @@ export async function validateLineupPayload(
   }
 }
 
+export function validateHonorSeatingPayload(
+  side: HonorSide,
+  players: LineupPlayerInput[],
+): void {
+  const seatKeys = new Set<string>();
+  for (const entry of players) {
+    const room = entry.room ?? null;
+    const direction = entry.direction ?? null;
+    if ((room == null) !== (direction == null)) {
+      throw new LineupValidationError(
+        "Room and direction must both be set or both omitted",
+      );
+    }
+    if (room == null || direction == null) continue;
+    if (!isAllowedHonorSeat(side, room, direction)) {
+      throw new LineupValidationError(
+        `Invalid ${side} seat ${room} ${direction}`,
+      );
+    }
+    const key = `${room}:${direction}`;
+    if (seatKeys.has(key)) {
+      throw new LineupValidationError(`Duplicate seat ${room} ${direction}`);
+    }
+    seatKeys.add(key);
+  }
+}
+
 export async function getMatchLineup(
   supabase: SupabaseClient,
   matchId: string,
@@ -102,12 +142,19 @@ export async function getMatchLineup(
   const { data, error } = await supabase
     .from("match_players")
     .select(
-      "id, team_id, player_id, is_substitute, player:players(id, name, member_number)",
+      "id, team_id, player_id, is_substitute, room, direction, player:players(id, name, member_number)",
     )
     .eq("match_id", matchId);
 
   if (error) throw error;
-  return (data ?? []) as unknown as MatchLineupEntry[];
+  return (data ?? []).map((row) => {
+    const r = row as unknown as MatchLineupEntry;
+    return {
+      ...r,
+      room: r.room ?? null,
+      direction: r.direction ?? null,
+    };
+  });
 }
 
 export async function countLineupByTeam(
@@ -122,14 +169,45 @@ export async function countLineupByTeam(
   return counts;
 }
 
+export async function isHonorMatch(
+  supabase: SupabaseClient,
+  groupId: string,
+): Promise<boolean> {
+  const ctx = await loadGroupScoringContext(supabase, groupId);
+  return ctx.divisionLevelCode === "honor";
+}
+
 export async function isLineupComplete(
   supabase: SupabaseClient,
-  match: Pick<MatchContext, "id" | "home_team_id" | "away_team_id">,
+  match: Pick<
+    MatchContext,
+    | "id"
+    | "group_id"
+    | "home_team_id"
+    | "away_team_id"
+    | "home_lineup_locked_at"
+    | "away_lineup_locked_at"
+  >,
 ): Promise<boolean> {
-  const counts = await countLineupByTeam(supabase, match.id);
+  const honor = await isHonorMatch(supabase, match.group_id);
+  if (!honor) {
+    const counts = await countLineupByTeam(supabase, match.id);
+    return (
+      (counts.get(match.home_team_id) ?? 0) >= MIN_PLAYERS_PER_TEAM &&
+      (counts.get(match.away_team_id) ?? 0) >= MIN_PLAYERS_PER_TEAM
+    );
+  }
+
+  if (!match.home_lineup_locked_at || !match.away_lineup_locked_at) {
+    return false;
+  }
+
+  const lineup = await getMatchLineup(supabase, match.id);
+  const homeRows = lineup.filter((r) => r.team_id === match.home_team_id);
+  const awayRows = lineup.filter((r) => r.team_id === match.away_team_id);
   return (
-    (counts.get(match.home_team_id) ?? 0) >= MIN_PLAYERS_PER_TEAM &&
-    (counts.get(match.away_team_id) ?? 0) >= MIN_PLAYERS_PER_TEAM
+    isHonorSeatedLineupComplete(homeRows, "home") &&
+    isHonorSeatedLineupComplete(awayRows, "away")
   );
 }
 
@@ -137,6 +215,15 @@ export async function assertLineupComplete(
   supabase: SupabaseClient,
   match: MatchContext,
 ): Promise<void> {
+  if (await isHonorMatch(supabase, match.group_id)) {
+    if (!(await isLineupComplete(supabase, match))) {
+      throw new Error(
+        "Both Honor lineups must be submitted with all four seats filled",
+      );
+    }
+    return;
+  }
+
   const counts = await countLineupByTeam(supabase, match.id);
   for (const teamId of [match.home_team_id, match.away_team_id]) {
     const count = counts.get(teamId) ?? 0;
@@ -176,11 +263,28 @@ export async function replaceMatchLineup(
       team_id: teamId,
       player_id: p.player_id,
       is_substitute: p.is_substitute,
+      room: p.room ?? null,
+      direction: p.direction ?? null,
     })),
   );
 
   if (insertError) throw insertError;
   return getMatchLineup(supabase, matchId);
+}
+
+export async function setMatchLineupLockedAt(
+  supabase: SupabaseClient,
+  matchId: string,
+  side: HonorSide,
+  lockedAt: string | null,
+): Promise<void> {
+  const column =
+    side === "home" ? "home_lineup_locked_at" : "away_lineup_locked_at";
+  const { error } = await supabase
+    .from("matches")
+    .update({ [column]: lockedAt })
+    .eq("id", matchId);
+  if (error) throw error;
 }
 
 export type ScorePayload = {

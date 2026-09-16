@@ -29,6 +29,8 @@ describe("GET /api/matches/scorable", () => {
         round: 1,
         datetime: "2025-01-01T12:00:00Z",
         played_at: null,
+  home_lineup_locked_at: null,
+  away_lineup_locked_at: null,
         home_team: { id: "h1", name: "Home" },
         away_team: { id: "a1", name: "Away" },
         group_name: "Group A",

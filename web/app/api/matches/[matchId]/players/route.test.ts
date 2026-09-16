@@ -26,11 +26,19 @@ vi.mock("@/lib/scoring/match-operations", async (importOriginal) => {
     getMatchLineup: vi.fn(),
     replaceMatchLineup: vi.fn(),
     validateLineupPayload: vi.fn(),
+    validateHonorSeatingPayload: vi.fn(),
   };
 });
 
 vi.mock("@/lib/competition/revalidate-standings", () => ({
   revalidatePlayersForMatch: vi.fn(),
+}));
+
+vi.mock("@/lib/competition/honor-lineup-access", () => ({
+  loadHonorMatchLineupContext: vi.fn(),
+  resolveHonorViewerSide: vi.fn(),
+  honorPermissionsForViewer: vi.fn(),
+  canViewerSeeTeamLineup: vi.fn().mockReturnValue(true),
 }));
 
 import { requireAuth } from "@/lib/auth/route-auth";
@@ -46,6 +54,7 @@ import {
   validateLineupPayload,
   LineupValidationError,
 } from "@/lib/scoring/match-operations";
+import { loadHonorMatchLineupContext } from "@/lib/competition/honor-lineup-access";
 
 const baseMatch = {
   id: "match-1",
@@ -63,6 +72,8 @@ const baseMatch = {
   vp_home: null,
   vp_away: null,
   played_at: null,
+  home_lineup_locked_at: null,
+  away_lineup_locked_at: null,
   home_team: { id: "home-1", name: "Home", club_id: "club-1" },
   away_team: { id: "away-1", name: "Away", club_id: "club-2" },
 };
@@ -72,6 +83,8 @@ const lineupRow = {
   team_id: "home-1",
   player_id: "p-1",
   is_substitute: false,
+  room: null,
+  direction: null,
   player: { id: "p-1", name: "Alice", member_number: null },
 };
 
@@ -93,6 +106,15 @@ describe("PUT /api/matches/[matchId]/players", () => {
       is_active: true,
     });
     vi.mocked(validateLineupPayload).mockResolvedValue(undefined);
+    vi.mocked(loadHonorMatchLineupContext).mockResolvedValue({
+      isHonor: false,
+      phase: "sequential",
+      roundsPerRr: 7,
+      roundCount: 14,
+      homeLocked: false,
+      awayLocked: false,
+      venueTables: null,
+    });
   });
 
   it("replaces team lineup", async () => {
@@ -111,7 +133,7 @@ describe("PUT /api/matches/[matchId]/players", () => {
       expect.anything(),
       "match-1",
       "home-1",
-      [{ player_id: "p-1", is_substitute: false }],
+      [{ player_id: "p-1", is_substitute: false, room: null, direction: null }],
     );
   });
 

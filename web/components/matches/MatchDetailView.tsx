@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { MatchPenaltyForm } from "@/components/matches/MatchPenaltyForm";
 import { MatchSecondaryWorkflows } from "@/components/matches/MatchSecondaryWorkflows";
+import { HonorMatchLineupEditor } from "@/components/player/HonorMatchLineupEditor";
 import { MatchLineupEditor } from "@/components/player/MatchLineupEditor";
 import { MatchScoreForm } from "@/components/player/MatchScoreForm";
 import {
@@ -24,6 +25,11 @@ import {
   canAccessHomeAwaySwitchWorkflow,
   getMatchHomeAwaySwitchState,
 } from "@/lib/competition/home-away-switch";
+import {
+  honorPermissionsForViewer,
+  loadHonorMatchLineupContext,
+  resolveHonorViewerSide,
+} from "@/lib/competition/honor-lineup-access";
 import type { MatchPageBackLink } from "@/lib/competition/match-page-context";
 import { loadGroupScoringContext } from "@/lib/competition/match-scoring-context";
 import { loadTeamRoster } from "@/lib/competition/player-matches";
@@ -120,6 +126,24 @@ export async function MatchDetailView({
         ])
       : [false, false];
 
+  const honorCtx = await loadHonorMatchLineupContext(supabase, match);
+  let honorPerms = null;
+  if (honorCtx.isHonor && userId && canOps) {
+    const viewerSide = await resolveHonorViewerSide(
+      supabase,
+      userId,
+      roles,
+      match,
+    );
+    honorPerms = honorPermissionsForViewer({
+      viewerSide,
+      phase: honorCtx.phase,
+      homeLocked: honorCtx.homeLocked,
+      awayLocked: honorCtx.awayLocked,
+      played: match.played_at != null,
+    });
+  }
+
   const lineupsComplete = await isLineupComplete(supabase, match);
   const scoringContext = await loadGroupScoringContext(supabase, match.group_id);
   const showBoardChoice = allowsBoardChoice(scoringContext);
@@ -167,6 +191,8 @@ export async function MatchDetailView({
     .map((e) => ({
       player_id: e.player_id,
       is_substitute: e.is_substitute,
+      room: e.room,
+      direction: e.direction,
       player: e.player,
     }));
   const awayLineup = lineup
@@ -174,8 +200,19 @@ export async function MatchDetailView({
     .map((e) => ({
       player_id: e.player_id,
       is_substitute: e.is_substitute,
+      room: e.room,
+      direction: e.direction,
       player: e.player,
     }));
+
+  const visibleHomeLineup =
+    !honorCtx.isHonor || !honorPerms || honorPerms.canViewHome
+      ? homeLineup
+      : [];
+  const visibleAwayLineup =
+    !honorCtx.isHonor || !honorPerms || honorPerms.canViewAway
+      ? awayLineup
+      : [];
 
   const opsBackLink =
     userId && canOps && isAdmin
@@ -271,22 +308,61 @@ export async function MatchDetailView({
       ) : null}
 
       <div className="grid gap-4 md:grid-cols-2">
-        <MatchLineupEditor
-          matchId={matchId}
-          teamId={match.home_team_id}
-          teamName={match.home_team.name}
-          roster={homeRoster}
-          initialLineup={homeLineup}
-          canEdit={canEditHome}
-        />
-        <MatchLineupEditor
-          matchId={matchId}
-          teamId={match.away_team_id}
-          teamName={match.away_team.name}
-          roster={awayRoster}
-          initialLineup={awayLineup}
-          canEdit={canEditAway}
-        />
+        {honorCtx.isHonor && honorPerms ? (
+          <>
+            <HonorMatchLineupEditor
+              matchId={matchId}
+              side="home"
+              teamId={match.home_team_id}
+              teamName={match.home_team.name}
+              roster={homeRoster}
+              initialLineup={visibleHomeLineup}
+              canEdit={canEditHome && honorPerms.canEditHome}
+              canLock={honorPerms.canLockHome}
+              canUnlock={isAdmin}
+              canViewSeats={honorPerms.canViewHome}
+              locked={honorCtx.homeLocked}
+              opponentLocked={honorCtx.awayLocked}
+              phase={honorCtx.phase}
+              venueTables={honorCtx.venueTables}
+            />
+            <HonorMatchLineupEditor
+              matchId={matchId}
+              side="away"
+              teamId={match.away_team_id}
+              teamName={match.away_team.name}
+              roster={awayRoster}
+              initialLineup={visibleAwayLineup}
+              canEdit={canEditAway && honorPerms.canEditAway}
+              canLock={honorPerms.canLockAway}
+              canUnlock={isAdmin}
+              canViewSeats={honorPerms.canViewAway}
+              locked={honorCtx.awayLocked}
+              opponentLocked={honorCtx.homeLocked}
+              phase={honorCtx.phase}
+              venueTables={honorCtx.venueTables}
+            />
+          </>
+        ) : (
+          <>
+            <MatchLineupEditor
+              matchId={matchId}
+              teamId={match.home_team_id}
+              teamName={match.home_team.name}
+              roster={homeRoster}
+              initialLineup={homeLineup}
+              canEdit={canEditHome}
+            />
+            <MatchLineupEditor
+              matchId={matchId}
+              teamId={match.away_team_id}
+              teamName={match.away_team.name}
+              roster={awayRoster}
+              initialLineup={awayLineup}
+              canEdit={canEditAway}
+            />
+          </>
+        )}
       </div>
 
       <MatchScoreForm

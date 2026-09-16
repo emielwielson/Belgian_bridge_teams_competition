@@ -31,6 +31,8 @@ export type MatchContext = {
   vp_home: number | null;
   vp_away: number | null;
   played_at: string | null;
+  home_lineup_locked_at: string | null;
+  away_lineup_locked_at: string | null;
   home_team: { id: string; name: string; club_id: string };
   away_team: { id: string; name: string; club_id: string };
 };
@@ -42,7 +44,7 @@ export async function loadMatchContext(
   const { data: match, error } = await supabase
     .from("matches")
     .select(
-      "id, group_id, round, datetime, home_team_id, away_team_id, board_count, vp_board_count, mis_seating, selected_board_count, imps_home, imps_away, vp_home, vp_away, played_at",
+      "id, group_id, round, datetime, home_team_id, away_team_id, board_count, vp_board_count, mis_seating, selected_board_count, imps_home, imps_away, vp_home, vp_away, played_at, home_lineup_locked_at, away_lineup_locked_at",
     )
     .eq("id", matchId)
     .maybeSingle();
@@ -77,6 +79,8 @@ export async function loadMatchContext(
     vp_home: match.vp_home,
     vp_away: match.vp_away,
     played_at: match.played_at,
+    home_lineup_locked_at: match.home_lineup_locked_at ?? null,
+    away_lineup_locked_at: match.away_lineup_locked_at ?? null,
     home_team: home,
     away_team: away,
   };
