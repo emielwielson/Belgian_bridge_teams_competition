@@ -400,7 +400,9 @@ export function HonorMatchLineupEditor({
               <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
                 {t("substitutesHeading")}
               </p>
-              <p className="mt-1 text-xs text-zinc-500">{t("substitutesHint")}</p>
+              {t("substitutesHint") ? (
+                <p className="mt-1 text-xs text-zinc-500">{t("substitutesHint")}</p>
+              ) : null}
               {extraPlayers.length > 0 ? (
                 <ul className="mt-2 space-y-2">
                   {extraPlayers.map((player) => (
