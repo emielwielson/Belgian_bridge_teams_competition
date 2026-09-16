@@ -88,8 +88,7 @@ export function canEditHonorSide(options: {
     options.side === "home" ? options.homeLocked : options.awayLocked;
   if (sideLocked) return false;
 
-  if (options.isManager) return true;
-
+  // Sequential rounds: away must lock before home can enter — including managers.
   if (options.phase === "sequential") {
     if (options.side === "home" && !options.awayLocked) return false;
   }
@@ -134,8 +133,7 @@ export function canLockHonorSide(options: {
     options.side === "home" ? options.homeLocked : options.awayLocked;
   if (sideLocked) return false;
 
-  if (options.isManager) return true;
-
+  // Sequential rounds: away must lock before home — including managers.
   if (options.phase === "sequential" && options.side === "home") {
     return options.awayLocked;
   }

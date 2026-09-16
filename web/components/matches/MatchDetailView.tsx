@@ -307,6 +307,41 @@ export async function MatchDetailView({
         />
       ) : null}
 
+      {honorCtx.isHonor && honorPerms ? (
+        <div
+          className={`mb-4 rounded-lg border px-4 py-3 text-sm ${
+            honorCtx.homeLocked && honorCtx.awayLocked
+              ? "border-emerald-200 bg-emerald-50 text-emerald-950"
+              : honorCtx.phase === "sequential"
+                ? "border-sky-200 bg-sky-50 text-sky-950"
+                : "border-zinc-300 bg-zinc-50 text-zinc-900"
+          }`}
+          role="status"
+        >
+          <p className="font-semibold">
+            {honorCtx.homeLocked && honorCtx.awayLocked
+              ? t("honorLineup.phaseBothLockedTitle")
+              : honorCtx.phase === "sequential"
+                ? t("honorLineup.phaseSequentialTitle")
+                : t("honorLineup.phaseBlindTitle")}
+          </p>
+          <p className="mt-1">
+            {honorCtx.homeLocked && honorCtx.awayLocked
+              ? t("honorLineup.phaseBothLockedBody")
+              : honorCtx.phase === "sequential"
+                ? honorCtx.awayLocked
+                  ? t("honorLineup.phaseSequentialHomeTurn", {
+                      awayTeam: match.away_team.name,
+                      homeTeam: match.home_team.name,
+                    })
+                  : t("honorLineup.phaseSequentialAwayTurn", {
+                      awayTeam: match.away_team.name,
+                    })
+                : t("honorLineup.phaseBlindBody")}
+          </p>
+        </div>
+      ) : null}
+
       <div className="grid gap-4 md:grid-cols-2">
         {honorCtx.isHonor && honorPerms ? (
           <>
@@ -315,6 +350,7 @@ export async function MatchDetailView({
               side="home"
               teamId={match.home_team_id}
               teamName={match.home_team.name}
+              opponentTeamName={match.away_team.name}
               roster={homeRoster}
               initialLineup={visibleHomeLineup}
               canEdit={canEditHome && honorPerms.canEditHome}
@@ -331,6 +367,7 @@ export async function MatchDetailView({
               side="away"
               teamId={match.away_team_id}
               teamName={match.away_team.name}
+              opponentTeamName={match.home_team.name}
               roster={awayRoster}
               initialLineup={visibleAwayLineup}
               canEdit={canEditAway && honorPerms.canEditAway}

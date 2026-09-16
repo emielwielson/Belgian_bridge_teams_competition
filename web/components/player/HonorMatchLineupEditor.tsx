@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { AddSubPicker } from "@/components/player/AddSubPicker";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import type { ClubSubCandidate } from "@/lib/competition/player-matches";
@@ -38,6 +39,7 @@ type Props = {
   side: HonorSide;
   teamId: string;
   teamName: string;
+  opponentTeamName: string;
   roster: RosterPlayer[];
   initialLineup: LineupEntry[];
   canEdit: boolean;
@@ -88,11 +90,23 @@ function slotLabel(
   return t("seat", { room: roomLabel, direction: compass });
 }
 
+function playerLabel(
+  player: RosterPlayer,
+  isSubstitute: boolean,
+  t: ReturnType<typeof useTranslations>,
+): string {
+  const base = player.member_number
+    ? `${player.name} (${player.member_number})`
+    : player.name;
+  return isSubstitute ? t("playerWithSubBadge", { name: base }) : base;
+}
+
 export function HonorMatchLineupEditor({
   matchId,
   side,
   teamId,
   teamName,
+  opponentTeamName,
   roster,
   initialLineup,
   canEdit,
@@ -120,7 +134,7 @@ export function HonorMatchLineupEditor({
       })),
   );
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [confirmLockOpen, setConfirmLockOpen] = useState(false);
   const [locking, setLocking] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -128,6 +142,13 @@ export function HonorMatchLineupEditor({
   const slots = honorSeatSlots(side);
   const filledCount = slots.filter((s) => seats[seatKey(s)]).length;
   const seatsComplete = filledCount === slots.length;
+  const rosterIds = useMemo(
+    () => new Set(roster.map((p) => p.id)),
+    [roster],
+  );
+  const waitingForAwayFirst =
+    phase === "sequential" && side === "home" && !opponentLocked && !locked;
+  const yourTurnToEnter = !locked && canEdit;
 
   const playerOptions = useMemo(() => {
     const byId = new Map<string, RosterPlayer>();
@@ -135,9 +156,9 @@ export function HonorMatchLineupEditor({
     for (const p of extraPlayers) byId.set(p.id, p);
     return [...byId.values()].map((p) => ({
       value: p.id,
-      label: p.member_number ? `${p.name} (${p.member_number})` : p.name,
+      label: playerLabel(p, !rosterIds.has(p.id), t),
     }));
-  }, [roster, extraPlayers]);
+  }, [roster, extraPlayers, rosterIds, t]);
 
   function setSeat(slot: HonorSeatSlot, playerId: string | null) {
     if (!canEdit) return;
@@ -166,10 +187,22 @@ export function HonorMatchLineupEditor({
         },
       ];
     });
+    setMessage(t("subAdded", { name: player.name }));
+  }
+
+  function removeSub(playerId: string) {
+    if (!canEdit) return;
+    setExtraPlayers((prev) => prev.filter((p) => p.id !== playerId));
+    setSeats((prev) => {
+      const next = { ...prev };
+      for (const key of Object.keys(next)) {
+        if (next[key] === playerId) next[key] = null;
+      }
+      return next;
+    });
   }
 
   function buildPlayersPayload() {
-    const rosterIds = new Set(roster.map((p) => p.id));
     const players: {
       player_id: string;
       is_substitute: boolean;
@@ -187,28 +220,6 @@ export function HonorMatchLineupEditor({
       });
     }
     return players;
-  }
-
-  async function saveDraft() {
-    setSaving(true);
-    setError(null);
-    setMessage(null);
-    try {
-      const players = buildPlayersPayload();
-      const res = await fetch(`/api/matches/${matchId}/players`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ team_id: teamId, players }),
-      });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error ?? tLineup("saveFailed"));
-      setMessage(t("draftSaved", { teamName, count: players.length }));
-      router.refresh();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : tLineup("saveFailedGeneric"));
-    } finally {
-      setSaving(false);
-    }
   }
 
   async function submitLock() {
@@ -236,10 +247,12 @@ export function HonorMatchLineupEditor({
       if (!lockRes.ok) {
         throw new Error(lockBody.error ?? t("lockFailed"));
       }
+      setConfirmLockOpen(false);
       setMessage(t("locked", { teamName }));
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : t("lockFailed"));
+      setConfirmLockOpen(false);
     } finally {
       setLocking(false);
     }
@@ -266,13 +279,36 @@ export function HonorMatchLineupEditor({
     }
   }
 
+  const statusTone = locked
+    ? "bg-emerald-100 text-emerald-900 ring-1 ring-emerald-200"
+    : waitingForAwayFirst
+      ? "bg-amber-100 text-amber-950 ring-1 ring-amber-200"
+      : yourTurnToEnter
+        ? "bg-sky-100 text-sky-950 ring-1 ring-sky-200"
+        : "bg-zinc-100 text-zinc-700 ring-1 ring-zinc-200";
+
   const statusLabel = locked
     ? t("statusLocked")
-    : phase === "sequential" && side === "home" && !opponentLocked
+    : waitingForAwayFirst
       ? t("statusWaitingAway")
-      : phase === "blind" && !canViewSeats && side !== "home" && side !== "away"
-        ? t("statusBlind")
-        : t("statusDraft");
+      : yourTurnToEnter
+        ? t("statusYourTurn")
+        : t("statusIdle");
+
+  const guidance = locked
+    ? canUnlock
+      ? t("lockedDirectorCanUnlock")
+      : t("lockedAskDirector")
+    : waitingForAwayFirst
+      ? t("waitingForAwayBody", { team: opponentTeamName })
+      : yourTurnToEnter && phase === "sequential" && side === "away"
+        ? t("awayGoesFirstHint")
+        : yourTurnToEnter &&
+            phase === "sequential" &&
+            side === "home" &&
+            opponentLocked
+          ? t("homeMayEnterHint")
+          : null;
 
   const excludeSubIds = [
     ...roster.map((p) => p.id),
@@ -280,7 +316,17 @@ export function HonorMatchLineupEditor({
   ];
 
   return (
-    <section className="rounded-lg border border-zinc-200 bg-white p-4">
+    <section
+      className={`rounded-lg border bg-white p-4 ${
+        locked
+          ? "border-emerald-300"
+          : yourTurnToEnter
+            ? "border-sky-300"
+            : waitingForAwayFirst
+              ? "border-amber-300"
+              : "border-zinc-200"
+      }`}
+    >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h3 className="text-sm font-semibold text-zinc-900">{teamName}</h3>
@@ -288,10 +334,27 @@ export function HonorMatchLineupEditor({
             {side === "home" ? t("homeTeam") : t("awayTeam")}
           </p>
         </div>
-        <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-700">
+        <span
+          className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${statusTone}`}
+        >
           {statusLabel}
         </span>
       </div>
+
+      {guidance ? (
+        <p
+          className={`mt-3 rounded-md px-3 py-2 text-sm ${
+            locked
+              ? "bg-emerald-50 text-emerald-950"
+              : waitingForAwayFirst
+                ? "bg-amber-50 text-amber-950"
+                : "bg-sky-50 text-sky-950"
+          }`}
+          role="status"
+        >
+          {guidance}
+        </p>
+      ) : null}
 
       {!canViewSeats ? (
         <p className="mt-4 text-sm text-zinc-600">{t("hiddenUntilReveal")}</p>
@@ -332,15 +395,48 @@ export function HonorMatchLineupEditor({
             })}
           </ul>
 
-          {canEdit ? (
-            <div className="mt-3">
-              <button
-                type="button"
-                onClick={() => setPickerOpen(true)}
-                className="text-sm font-medium text-emerald-800 hover:underline"
-              >
-                {t("addClubPlayer")}
-              </button>
+          {canEdit || extraPlayers.length > 0 ? (
+            <div className="mt-4 border-t border-zinc-100 pt-3">
+              <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                {t("substitutesHeading")}
+              </p>
+              <p className="mt-1 text-xs text-zinc-500">{t("substitutesHint")}</p>
+              {extraPlayers.length > 0 ? (
+                <ul className="mt-2 space-y-2">
+                  {extraPlayers.map((player) => (
+                    <li
+                      key={player.id}
+                      className="flex items-center justify-between gap-2 rounded-md border border-emerald-100 bg-emerald-50/60 px-3 py-2 text-sm text-zinc-900"
+                    >
+                      <span>
+                        {playerLabel(player, true, t)}
+                      </span>
+                      {canEdit ? (
+                        <button
+                          type="button"
+                          onClick={() => removeSub(player.id)}
+                          className="text-xs font-medium text-red-700 underline"
+                        >
+                          {tLineup("remove")}
+                        </button>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              ) : canEdit ? (
+                <p className="mt-2 text-xs text-zinc-500">
+                  {t("noSubstitutes")}
+                </p>
+              ) : null}
+              {canEdit ? (
+                <button
+                  type="button"
+                  onClick={() => setPickerOpen(true)}
+                  className="mt-2 text-sm font-medium text-emerald-800 hover:underline"
+                >
+                  {t("addSubstitute")}
+                </button>
+              ) : null}
             </div>
           ) : null}
         </>
@@ -358,21 +454,11 @@ export function HonorMatchLineupEditor({
       ) : null}
 
       <div className="mt-4 flex flex-wrap gap-2">
-        {canEdit ? (
-          <button
-            type="button"
-            disabled={saving || locking}
-            onClick={() => void saveDraft()}
-            className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-800 hover:bg-zinc-50 disabled:opacity-50"
-          >
-            {saving ? tLineup("saving") : t("saveDraft")}
-          </button>
-        ) : null}
         {canEdit && canLock ? (
           <button
             type="button"
-            disabled={saving || locking || !seatsComplete}
-            onClick={() => void submitLock()}
+            disabled={locking || !seatsComplete}
+            onClick={() => setConfirmLockOpen(true)}
             className="rounded-md bg-emerald-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-900 disabled:opacity-50"
           >
             {locking ? t("submitting") : t("submitLineup")}
@@ -394,6 +480,20 @@ export function HonorMatchLineupEditor({
         <p className="mt-2 text-xs text-zinc-500">
           {t("needAllSeats", { filled: filledCount, total: slots.length })}
         </p>
+      ) : null}
+
+      {confirmLockOpen ? (
+        <ConfirmDialog
+          title={t("lockConfirmTitle")}
+          message={t("lockConfirmMessage")}
+          confirmLabel={t("lockConfirmAction")}
+          cancelLabel={t("cancel")}
+          confirming={locking}
+          onConfirm={() => void submitLock()}
+          onCancel={() => {
+            if (!locking) setConfirmLockOpen(false);
+          }}
+        />
       ) : null}
 
       {pickerOpen ? (

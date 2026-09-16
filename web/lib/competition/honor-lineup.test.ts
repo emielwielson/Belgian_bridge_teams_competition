@@ -135,7 +135,7 @@ describe("canEditHonorSide / canViewOpponentLineup / canLockHonorSide", () => {
     ).toBe(false);
   });
 
-  it("managers bypass sequencing for edit when unlocked", () => {
+  it("sequential: managers also wait for away before editing home", () => {
     expect(
       canEditHonorSide({
         side: "home",
@@ -145,7 +145,18 @@ describe("canEditHonorSide / canViewOpponentLineup / canLockHonorSide", () => {
         isManager: true,
         played: false,
       }),
-    ).toBe(true);
+    ).toBe(false);
+    expect(
+      canLockHonorSide({
+        side: "home",
+        phase: "sequential",
+        homeLocked: false,
+        awayLocked: false,
+        isManager: true,
+        played: false,
+        seatsComplete: true,
+      }),
+    ).toBe(false);
   });
 
   it("managers cannot edit a locked side without unlocking", () => {
@@ -159,6 +170,19 @@ describe("canEditHonorSide / canViewOpponentLineup / canLockHonorSide", () => {
         played: false,
       }),
     ).toBe(false);
+  });
+
+  it("sequential: after away locks, managers can edit home", () => {
+    expect(
+      canEditHonorSide({
+        side: "home",
+        phase: "sequential",
+        homeLocked: false,
+        awayLocked: true,
+        isManager: true,
+        played: false,
+      }),
+    ).toBe(true);
   });
 });
 
