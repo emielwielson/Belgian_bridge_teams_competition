@@ -44,34 +44,39 @@ export async function ButlerPairResultsView({
 
   const { data: results } = await query;
 
-  const rows = (results ?? []).map((r) => {
-    const isNs = r.ns_combination_id === combinationId;
-    const board = r.honor_boards as
-      | { board_number: number }
-      | { board_number: number }[]
-      | null;
-    const boardNumber = Array.isArray(board)
-      ? board[0]?.board_number
-      : board?.board_number;
-    return {
-      id: r.id,
-      round: r.tournament_round as number,
-      boardId: r.board_id as string,
-      boardNumber: boardNumber ?? 0,
-      direction: isNs ? "NS" : "EW",
-      imps: Number(isNs ? r.ns_butler_imps : r.ew_butler_imps),
-      contract: formatContract({
-        contractLevel: r.contract_level as number | null,
-        contractDenomination: r.contract_denomination as string | null,
-        doubling: (r.doubling as string) ?? "NONE",
-        declarer: r.declarer as string | null,
-        tricksResult: r.tricks_result as string | null,
-      }),
-      opponentId: (isNs ? r.ew_combination_id : r.ns_combination_id) as
-        | string
-        | null,
-    };
-  });
+  const rows = (results ?? [])
+    .map((r) => {
+      const isNs = r.ns_combination_id === combinationId;
+      const board = r.honor_boards as
+        | { board_number: number }
+        | { board_number: number }[]
+        | null;
+      const boardNumber = Array.isArray(board)
+        ? board[0]?.board_number
+        : board?.board_number;
+      return {
+        id: r.id,
+        round: r.tournament_round as number,
+        boardId: r.board_id as string,
+        boardNumber: boardNumber ?? 0,
+        direction: isNs ? "NS" : "EW",
+        imps: Number(isNs ? r.ns_butler_imps : r.ew_butler_imps),
+        contract: formatContract({
+          contractLevel: r.contract_level as number | null,
+          contractDenomination: r.contract_denomination as string | null,
+          doubling: (r.doubling as string) ?? "NONE",
+          declarer: r.declarer as string | null,
+          tricksResult: r.tricks_result as string | null,
+        }),
+        opponentId: (isNs ? r.ew_combination_id : r.ns_combination_id) as
+          | string
+          | null,
+      };
+    })
+    .sort((a, b) => {
+      if (a.round !== b.round) return a.round - b.round;
+      return a.boardNumber - b.boardNumber;
+    });
 
   const oppIds = [
     ...new Set(rows.map((r) => r.opponentId).filter(Boolean)),
