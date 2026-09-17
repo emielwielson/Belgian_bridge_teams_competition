@@ -58,12 +58,12 @@ export default async function ButlerRoundHandsPage({
             (b.vulnerability as Vulnerability | null) ?? "NONE";
           return (
             <div key={b.id}>
-              <Link
-                href={`/butler/boards/${b.id}`}
-                className="mb-2 inline-block text-sm font-medium hover:underline"
-              >
-                {t("dealTitle", { board: b.board_number })}
-              </Link>
+            <Link
+              href={`/butler/boards/${b.id}`}
+              className="link-inline mb-2 inline-block text-sm"
+            >
+              {t("dealTitle", { board: b.board_number })}
+            </Link>
               {b.hands ? (
                 <HandDiagram
                   boardNumber={b.board_number}

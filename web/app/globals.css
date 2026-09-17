@@ -81,6 +81,11 @@
     @apply text-sm font-medium text-zinc-600 hover:text-zinc-900;
   }
 
+  /* In-table / content links that must look obviously clickable. */
+  .link-inline {
+    @apply font-medium text-zinc-900 underline decoration-zinc-400 underline-offset-2 hover:decoration-zinc-900;
+  }
+
   .input {
     @apply w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-900 placeholder:text-zinc-400;
   }

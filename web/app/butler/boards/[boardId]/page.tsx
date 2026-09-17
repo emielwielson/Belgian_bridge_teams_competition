@@ -237,14 +237,28 @@ export default async function ButlerBoardPage({
                         )}
                       </td>
                       <td className="px-3 py-2">
-                        {r.ns_combination_id
-                          ? comboNames.get(r.ns_combination_id) ?? "—"
-                          : "—"}
+                        {r.ns_combination_id ? (
+                          <Link
+                            href={`/butler/rounds/${board.tournament_round}/pairs/${r.ns_combination_id}`}
+                            className="link-inline"
+                          >
+                            {comboNames.get(r.ns_combination_id) ?? "—"}
+                          </Link>
+                        ) : (
+                          "—"
+                        )}
                       </td>
                       <td className="px-3 py-2">
-                        {r.ew_combination_id
-                          ? comboNames.get(r.ew_combination_id) ?? "—"
-                          : "—"}
+                        {r.ew_combination_id ? (
+                          <Link
+                            href={`/butler/rounds/${board.tournament_round}/pairs/${r.ew_combination_id}`}
+                            className="link-inline"
+                          >
+                            {comboNames.get(r.ew_combination_id) ?? "—"}
+                          </Link>
+                        ) : (
+                          "—"
+                        )}
                       </td>
                     </tr>
                   ))}

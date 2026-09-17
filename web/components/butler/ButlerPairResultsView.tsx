@@ -138,7 +138,7 @@ export async function ButlerPairResultsView({
                     <td className="px-3 py-2">
                       <Link
                         href={`/butler/boards/${r.boardId}`}
-                        className="hover:underline"
+                        className="link-inline"
                       >
                         {r.boardNumber}
                       </Link>
@@ -149,9 +149,20 @@ export async function ButlerPairResultsView({
                       {formatImps(r.imps)}
                     </td>
                     <td className="px-3 py-2">
-                      {r.opponentId
-                        ? (oppNames.get(r.opponentId) ?? "—")
-                        : "—"}
+                      {r.opponentId ? (
+                        <Link
+                          href={
+                            tournamentRound != null
+                              ? `/butler/rounds/${tournamentRound}/pairs/${r.opponentId}`
+                              : `/butler/pairs/${r.opponentId}`
+                          }
+                          className="link-inline"
+                        >
+                          {oppNames.get(r.opponentId) ?? "—"}
+                        </Link>
+                      ) : (
+                        "—"
+                      )}
                     </td>
                   </tr>
                 ))}

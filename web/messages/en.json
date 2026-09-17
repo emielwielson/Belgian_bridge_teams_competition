@@ -564,6 +564,8 @@
     "roundStandings": "Butler this round",
     "allHands": "All hands",
     "boardsHeading": "Boards",
+    "handDiagrams": "Hand diagrams",
+    "frequencySheets": "Frequency sheets",
     "backOverview": "Back to standings",
     "backRound": "Back to round",
     "dealTitle": "Board {board}",

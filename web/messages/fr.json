@@ -563,6 +563,8 @@
     "roundStandings": "Butler cette manche",
     "allHands": "Toutes les donnes",
     "boardsHeading": "Donnes",
+    "handDiagrams": "Diagrammes de donnes",
+    "frequencySheets": "Feuilles de fréquences",
     "backOverview": "Retour au classement",
     "backRound": "Retour à la manche",
     "dealTitle": "Donne {board}",

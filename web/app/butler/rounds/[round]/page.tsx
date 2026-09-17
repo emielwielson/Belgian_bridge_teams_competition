@@ -35,7 +35,10 @@ export default async function ButlerRoundPage({
     .eq("group_id", group.id)
     .eq("tournament_round", round)
     .eq("publication_status", "published")
-    .order("board_number");
+    .order("board_number")
+    .limit(1);
+
+  const firstBoard = boards?.[0] ?? null;
 
   return (
     <main className="page-container max-w-5xl">
@@ -47,6 +50,24 @@ export default async function ButlerRoundPage({
       <h1 className="mt-2 text-2xl font-semibold text-zinc-900">
         {t("roundTitle", { round })}
       </h1>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Link href={`/butler/rounds/${round}/hands`} className="btn-secondary">
+          {t("handDiagrams")}
+        </Link>
+        {firstBoard ? (
+          <Link
+            href={`/butler/boards/${firstBoard.id}`}
+            className="btn-secondary"
+          >
+            {t("frequencySheets")}
+          </Link>
+        ) : (
+          <span className="btn-secondary pointer-events-none opacity-50">
+            {t("frequencySheets")}
+          </span>
+        )}
+      </div>
 
       <section className="mt-8">
         <h2 className="mb-3 text-lg font-semibold">{t("roundStandings")}</h2>
@@ -72,7 +93,7 @@ export default async function ButlerRoundPage({
                     <td className="px-3 py-2">
                       <Link
                         href={`/butler/rounds/${round}/pairs/${row.combinationId}`}
-                        className="font-medium hover:underline"
+                        className="link-inline"
                       >
                         {row.displayName}
                       </Link>
@@ -86,35 +107,6 @@ export default async function ButlerRoundPage({
               </tbody>
             </table>
           </div>
-        )}
-      </section>
-
-      <section className="mt-10">
-        <div className="mb-3 flex items-baseline justify-between gap-2">
-          <h2 className="text-lg font-semibold">{t("boardsHeading")}</h2>
-          <Link
-            href={`/butler/rounds/${round}/hands`}
-            className="text-sm text-zinc-600 hover:underline"
-          >
-            {t("allHands")}
-          </Link>
-        </div>
-        {(boards ?? []).length === 0 ? (
-          <p className="text-sm text-zinc-600">{t("noBoards")}</p>
-        ) : (
-          <ul className="divide-y divide-zinc-100 rounded-lg border border-zinc-200">
-            {(boards ?? []).map((b) => (
-              <li key={b.id}>
-                <Link
-                  href={`/butler/boards/${b.id}`}
-                  className="flex justify-between px-4 py-3 text-sm hover:bg-zinc-50"
-                >
-                  <span>{t("dealTitle", { board: b.board_number })}</span>
-                  <span className="text-zinc-500">→</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
         )}
       </section>
     </main>

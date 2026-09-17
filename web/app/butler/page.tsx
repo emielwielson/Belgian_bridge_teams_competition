@@ -58,7 +58,7 @@ export default async function ButlerOverviewPage() {
                       <td className="px-3 py-2">
                         <Link
                           href={`/butler/pairs/${row.combinationId}`}
-                          className="font-medium text-zinc-900 hover:underline"
+                          className="link-inline"
                         >
                           {row.displayName}
                         </Link>
@@ -98,7 +98,7 @@ export default async function ButlerOverviewPage() {
                       >
                         <Link
                           href={`/butler/rounds/${r.tournamentRound}`}
-                          className="hover:underline"
+                          className="link-inline"
                         >
                           R{r.tournamentRound}
                         </Link>
@@ -112,8 +112,13 @@ export default async function ButlerOverviewPage() {
                 <tbody className="divide-y divide-zinc-100">
                   {standings.combinations.map((row) => (
                     <tr key={row.combinationId}>
-                      <td className="sticky left-0 z-10 bg-white px-3 py-2 font-medium whitespace-nowrap">
-                        {row.displayName}
+                      <td className="sticky left-0 z-10 bg-white px-3 py-2 whitespace-nowrap">
+                        <Link
+                          href={`/butler/pairs/${row.combinationId}`}
+                          className="link-inline"
+                        >
+                          {row.displayName}
+                        </Link>
                       </td>
                       {standings.rounds.map((r) => {
                         const cell =
