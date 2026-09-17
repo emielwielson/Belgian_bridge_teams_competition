@@ -7,8 +7,11 @@ import {
 import { parseBwsBuffer } from "@/lib/bridgemate/parse-bws";
 import { parseReceivedDataJson } from "@/lib/bridgemate/parse-received";
 import type { HonorRoundMatchSeating } from "@/lib/competition/honor-seating-overview";
+import { assessHonorRoundCompleteness } from "@/lib/butler/completeness";
 import { recalculateHonorButler } from "@/lib/butler/recalculate";
 import { ingestHonorBoardResults } from "@/lib/results/ingest";
+import { applyHonorRoundMatchScores } from "@/lib/scoring/honor-match-imps";
+import type { HonorPublishedMatchScore } from "@/lib/scoring/honor-match-imps";
 
 export type ImportBwsResult =
   | {
@@ -20,6 +23,7 @@ export type ImportBwsResult =
       failedIngest: number;
       mappingErrors: string[];
       butlerUpdated: number;
+      matchScores: HonorPublishedMatchScore[] | null;
     }
   | { ok: false; error: string; mappingErrors?: string[] };
 
@@ -166,6 +170,46 @@ export async function importHonorBwsForRound(params: {
     return { ok: false, error: butler.error, mappingErrors };
   }
 
+  let matchScores: HonorPublishedMatchScore[] | null = null;
+  const { data: publication } = await params.service
+    .from("honor_round_publication")
+    .select("status")
+    .eq("group_id", params.groupId)
+    .eq("tournament_round", params.tournamentRound)
+    .maybeSingle();
+
+  if (publication?.status === "published") {
+    const completeness = await assessHonorRoundCompleteness(params.service, {
+      groupId: params.groupId,
+      tournamentRound: params.tournamentRound,
+      matches: params.matches,
+    });
+    if (completeness.readyToPublish) {
+      const scored = await applyHonorRoundMatchScores(params.service, {
+        groupId: params.groupId,
+        tournamentRound: params.tournamentRound,
+        matches: params.matches,
+        userId: params.uploadedBy ?? null,
+      });
+      if (!scored.ok) {
+        return { ok: false, error: scored.error, mappingErrors };
+      }
+      matchScores = scored.scores;
+
+      const now = new Date().toISOString();
+      await params.service
+        .from("honor_board_results")
+        .update({ processing_status: "published", updated_at: now })
+        .eq("group_id", params.groupId)
+        .eq("tournament_round", params.tournamentRound);
+      await params.service
+        .from("honor_boards")
+        .update({ publication_status: "published", updated_at: now })
+        .eq("group_id", params.groupId)
+        .eq("tournament_round", params.tournamentRound);
+    }
+  }
+
   return {
     ok: true,
     rawImportId: rawImport.id,
@@ -175,5 +219,6 @@ export async function importHonorBwsForRound(params: {
     failedIngest: ingest.failed,
     mappingErrors,
     butlerUpdated: butler.updatedCount,
+    matchScores,
   };
 }

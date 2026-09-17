@@ -119,6 +119,7 @@ export function HonorButlerImportPanel({
         error?: string;
         created?: number;
         butlerUpdated?: number;
+        matchScores?: { matchId: string }[] | null;
         mappingErrors?: string[];
       } | null;
       if (!res.ok) {
@@ -137,11 +138,18 @@ export function HonorButlerImportPanel({
             }),
         );
       }
+      const matchScoreCount = body?.matchScores?.length ?? 0;
       setMessage(
-        t("bwsSuccess", {
-          created: body?.created ?? 0,
-          butler: body?.butlerUpdated ?? 0,
-        }),
+        matchScoreCount > 0
+          ? t("bwsSuccessWithMatchScores", {
+              created: body?.created ?? 0,
+              butler: body?.butlerUpdated ?? 0,
+              matches: matchScoreCount,
+            })
+          : t("bwsSuccess", {
+              created: body?.created ?? 0,
+              butler: body?.butlerUpdated ?? 0,
+            }),
       );
       await load();
     } catch (err) {
@@ -184,7 +192,7 @@ export function HonorButlerImportPanel({
         error?: string;
       } | null;
       if (!res.ok) throw new Error(body?.error ?? t("publishFailed"));
-      setMessage(t("publishSuccess"));
+      setMessage(published ? t("republishSuccess") : t("publishSuccess"));
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("publishFailed"));
@@ -319,11 +327,15 @@ export function HonorButlerImportPanel({
         </button>
         <button
           type="button"
-          disabled={busy != null || !c?.readyToPublish || published}
+          disabled={busy != null || !c?.readyToPublish}
           onClick={() => void publish()}
           className="rounded border border-zinc-900 bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:border-zinc-300 disabled:bg-zinc-300"
         >
-          {busy === "publish" ? t("working") : t("publish")}
+          {busy === "publish"
+            ? t("working")
+            : published
+              ? t("republish")
+              : t("publish")}
         </button>
       </div>
 

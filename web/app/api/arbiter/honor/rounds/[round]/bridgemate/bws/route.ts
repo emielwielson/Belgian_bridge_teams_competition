@@ -9,6 +9,7 @@ import {
   resolveActiveHonorGroup,
 } from "@/lib/competition/honor-seating-overview";
 import { createServiceClient } from "@/lib/supabase/server-client";
+import { revalidateStandingsForGroup } from "@/lib/competition/revalidate-standings";
 import { jsonError, jsonFromError } from "@/lib/http/api-response";
 
 export async function POST(
@@ -75,6 +76,10 @@ export async function POST(
       );
     }
 
+    if (result.matchScores && result.matchScores.length > 0) {
+      await revalidateStandingsForGroup(service, group.id);
+    }
+
     return NextResponse.json({
       round,
       rawImportId: result.rawImportId,
@@ -84,6 +89,7 @@ export async function POST(
       failedIngest: result.failedIngest,
       mappingErrors: result.mappingErrors,
       butlerUpdated: result.butlerUpdated,
+      matchScores: result.matchScores,
       ok: true,
     });
   } catch (err) {
