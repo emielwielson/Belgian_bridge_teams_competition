@@ -25,6 +25,8 @@ describe("isPublicPath", () => {
     expect(isPublicPath("/api/standings/abc")).toBe(true);
     expect(isPublicPath("/standings")).toBe(true);
     expect(isPublicPath("/standings/group-1")).toBe(true);
+    expect(isPublicPath("/butler")).toBe(true);
+    expect(isPublicPath("/butler/rounds/1")).toBe(true);
     expect(isPublicPath("/teams/team-1")).toBe(true);
     expect(isPublicPath("/api/teams/team-1/convention-cards")).toBe(true);
     expect(

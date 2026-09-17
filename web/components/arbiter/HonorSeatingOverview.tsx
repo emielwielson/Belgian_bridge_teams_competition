@@ -11,6 +11,7 @@ import type {
 import type { Locale } from "@/i18n/config";
 import { toIntlLocale } from "@/i18n/intl-locale";
 import { formatBrussels } from "@/lib/time/brussels";
+import { HonorButlerImportPanel } from "@/components/arbiter/HonorButlerImportPanel";
 
 type RoundOption = {
   round: number;
@@ -280,6 +281,8 @@ export function HonorSeatingOverview() {
           </button>
         </div>
       </div>
+
+      <HonorButlerImportPanel round={round} enabled={!loading && !!payload} />
 
       {error ? (
         <p className="text-sm text-red-700" role="alert">

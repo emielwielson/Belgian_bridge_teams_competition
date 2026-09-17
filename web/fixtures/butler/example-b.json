@@ -1,0 +1,15 @@
+{
+  "name": "example-b",
+  "description": "Game swing, 6 tables (PRD §4.8.4)",
+  "nsScores": [650, 620, 200, 170, 170, -100],
+  "expectedNsDatum": 290,
+  "expectedEwDatum": -290,
+  "results": [
+    { "id": "b1", "nsScore": 650, "nsImps": 8 },
+    { "id": "b2", "nsScore": 620, "nsImps": 8 },
+    { "id": "b3", "nsScore": 200, "nsImps": -3 },
+    { "id": "b4", "nsScore": 170, "nsImps": -3 },
+    { "id": "b5", "nsScore": 170, "nsImps": -3 },
+    { "id": "b6", "nsScore": -100, "nsImps": -9 }
+  ]
+}

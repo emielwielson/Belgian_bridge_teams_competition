@@ -65,6 +65,12 @@ export function SiteHeader() {
       >
         {t("standings")}
       </Link>
+      <Link
+        href="/butler"
+        className={navLinkClass(pathname.startsWith("/butler"))}
+      >
+        {t("butler")}
+      </Link>
       {me?.teams?.length === 1 ? (
         <Link
           href={`/teams/${me.teams[0].id}`}
@@ -134,6 +140,12 @@ export function SiteHeader() {
             )}
           >
             {t("standings")}
+          </Link>
+          <Link
+            href="/butler"
+            className={mobileLinkClass(pathname.startsWith("/butler"))}
+          >
+            {t("butler")}
           </Link>
           {me?.teams?.length === 1 ? (
             <Link

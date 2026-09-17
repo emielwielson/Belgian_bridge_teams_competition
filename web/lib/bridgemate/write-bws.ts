@@ -20,11 +20,38 @@ export function loadBwsTemplate(): Buffer {
   }
 }
 
-/** Write Session/Section/Tables/RoundData into a copy of the official template. */
+export type BwsReceivedDataInsert = {
+  ID: number;
+  Section: number;
+  Table: number;
+  Round: number;
+  Board: number;
+  PairNS: number;
+  PairEW: number;
+  Declarer: number | null;
+  "NS/EW"?: string | null;
+  Contract: string | null;
+  Result: string | null;
+  LeadCard?: string | null;
+  Remarks?: string | null;
+  DateLog?: Date;
+  TimeLog?: Date;
+  Processed?: boolean;
+  ExternalUpdate?: boolean;
+  Processed1?: boolean;
+  Processed2?: boolean;
+  Processed3?: boolean;
+  Processed4?: boolean;
+  Erased?: boolean;
+  SuspiciousContract?: number | null;
+};
+
+/** Write Session/Section/Tables/RoundData (and optional ReceivedData) into a template copy. */
 export function writeBwsFromPlan(
   plan: BwsSessionPlan,
   template: Buffer = loadBwsTemplate(),
   now: Date = new Date(),
+  receivedData: BwsReceivedDataInsert[] = [],
 ): Buffer {
   let buffer: Buffer = Buffer.from(template);
 
@@ -103,6 +130,10 @@ export function writeBwsFromPlan(
       now,
     ),
   );
+
+  if (receivedData.length) {
+    buffer = Buffer.from(insertRows(buffer, "ReceivedData", receivedData, now));
+  }
 
   return buffer;
 }

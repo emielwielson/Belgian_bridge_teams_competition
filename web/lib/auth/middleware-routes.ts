@@ -15,7 +15,7 @@ const PUBLIC_EXACT = new Set([
   "/api/cron/award-bye-scores",
 ]);
 
-const PUBLIC_PREFIXES = ["/api/public/", "/standings", "/teams", "/matches"];
+const PUBLIC_PREFIXES = ["/api/public/", "/standings", "/teams", "/matches", "/butler"];
 
 const AUTH_ONLY_PREFIXES = ["/manuals"];
 

@@ -123,6 +123,7 @@ const TEMPLATE_TDEF_PAGES: Record<string, number> = {
   Section: 82,
   Tables: 97,
   RoundData: 80,
+  ReceivedData: 75,
 };
 
 export function tableMetaFromPage(

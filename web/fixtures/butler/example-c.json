@@ -1,0 +1,15 @@
+{
+  "name": "example-c",
+  "description": "Slam / penalty swing, 6 tables (PRD §4.8.4)",
+  "nsScores": [1400, 980, 480, 430, -50, -300],
+  "expectedNsDatum": 460,
+  "expectedEwDatum": -460,
+  "results": [
+    { "id": "c1", "nsScore": 1400, "nsImps": 14 },
+    { "id": "c2", "nsScore": 980, "nsImps": 11 },
+    { "id": "c3", "nsScore": 480, "nsImps": 1 },
+    { "id": "c4", "nsScore": 430, "nsImps": -1 },
+    { "id": "c5", "nsScore": -50, "nsImps": -11 },
+    { "id": "c6", "nsScore": -300, "nsImps": -13 }
+  ]
+}

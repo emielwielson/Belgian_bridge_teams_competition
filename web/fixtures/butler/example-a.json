@@ -1,0 +1,17 @@
+{
+  "name": "example-a",
+  "description": "Part-scores, 8 tables, discard high+low, mean 45 → datum 50 (PRD §4.8.4)",
+  "nsScores": [110, 80, -90, -100, 110, 0, 90, 80],
+  "expectedNsDatum": 50,
+  "expectedEwDatum": -50,
+  "results": [
+    { "id": "a1", "nsScore": 110, "nsImps": 2 },
+    { "id": "a2", "nsScore": 80, "nsImps": 1 },
+    { "id": "a3", "nsScore": -90, "nsImps": -4 },
+    { "id": "a4", "nsScore": -100, "nsImps": -4 },
+    { "id": "a5", "nsScore": 110, "nsImps": 2 },
+    { "id": "a6", "nsScore": 0, "nsImps": -2 },
+    { "id": "a7", "nsScore": 90, "nsImps": 1 },
+    { "id": "a8", "nsScore": 80, "nsImps": 1 }
+  ]
+}
