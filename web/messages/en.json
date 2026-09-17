@@ -582,7 +582,27 @@
     "direction": "Direction",
     "opponent": "Opponent",
     "noBoards": "No boards.",
-    "noResults": "No results."
+    "noResults": "No results.",
+    "room": "Room",
+    "dealPlateAria": "Dealer {dealer}, {vulnerability}",
+    "seatFull": {
+      "N": "North",
+      "E": "East",
+      "S": "South",
+      "W": "West"
+    },
+    "seatLetter": {
+      "N": "N",
+      "E": "E",
+      "S": "S",
+      "W": "W"
+    },
+    "vulnerability": {
+      "NONE": "nobody vulnerable",
+      "NS": "NS vulnerable",
+      "EW": "EW vulnerable",
+      "BOTH": "both vulnerable"
+    }
   },
   "admin": {
     "title": "Admin",

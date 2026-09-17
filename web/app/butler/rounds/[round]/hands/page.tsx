@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { HandDiagram } from "@/components/boards/HandDiagram";
-import type { BoardHands } from "@/lib/boards/types";
+import type { BoardHands, Dealer, Vulnerability } from "@/lib/boards/types";
+import { handDiagramLabelsFromButler } from "@/lib/boards/hand-diagram-labels";
 import { createPublicClient } from "@/lib/supabase/server-client";
 import { resolvePublicHonorGroup } from "@/lib/butler/honor-group";
 
@@ -51,28 +52,37 @@ export default async function ButlerRoundHandsPage({
       </h1>
 
       <div className="mt-8 grid gap-8 sm:grid-cols-2">
-        {(boards ?? []).map((b) => (
-          <div key={b.id}>
-            <Link
-              href={`/butler/boards/${b.id}`}
-              className="mb-2 inline-block text-sm font-medium hover:underline"
-            >
-              {t("dealTitle", { board: b.board_number })}
-            </Link>
-            {b.hands ? (
-              <HandDiagram
-                boardNumber={b.board_number}
-                dealer={(b.dealer as "N" | "E" | "S" | "W") ?? "N"}
-                vulnerability={
-                  (b.vulnerability as "NONE" | "NS" | "EW" | "BOTH") ?? "NONE"
-                }
-                hands={b.hands as BoardHands}
-              />
-            ) : (
-              <p className="text-sm text-zinc-500">{t("noBoards")}</p>
-            )}
-          </div>
-        ))}
+        {(boards ?? []).map((b) => {
+          const dealer = (b.dealer as Dealer | null) ?? "N";
+          const vulnerability =
+            (b.vulnerability as Vulnerability | null) ?? "NONE";
+          return (
+            <div key={b.id}>
+              <Link
+                href={`/butler/boards/${b.id}`}
+                className="mb-2 inline-block text-sm font-medium hover:underline"
+              >
+                {t("dealTitle", { board: b.board_number })}
+              </Link>
+              {b.hands ? (
+                <HandDiagram
+                  boardNumber={b.board_number}
+                  dealer={dealer}
+                  vulnerability={vulnerability}
+                  hands={b.hands as BoardHands}
+                  labels={handDiagramLabelsFromButler(t, {
+                    dealer,
+                    vulnerability,
+                    boardNumber: b.board_number,
+                  })}
+                  showBoardNumber={false}
+                />
+              ) : (
+                <p className="text-sm text-zinc-500">{t("noBoards")}</p>
+              )}
+            </div>
+          );
+        })}
       </div>
     </main>
   );

@@ -582,7 +582,27 @@
     "direction": "Richting",
     "opponent": "Tegenstander",
     "noBoards": "Geen borden.",
-    "noResults": "Geen resultaten."
+    "noResults": "Geen resultaten.",
+    "room": "Kamer",
+    "dealPlateAria": "Dealer {dealer}, {vulnerability}",
+    "seatFull": {
+      "N": "Noord",
+      "E": "Oost",
+      "S": "Zuid",
+      "W": "West"
+    },
+    "seatLetter": {
+      "N": "N",
+      "E": "O",
+      "S": "Z",
+      "W": "W"
+    },
+    "vulnerability": {
+      "NONE": "niemand kwetsbaar",
+      "NS": "NZ kwetsbaar",
+      "EW": "OW kwetsbaar",
+      "BOTH": "allen kwetsbaar"
+    }
   },
   "admin": {
     "title": "Beheer",

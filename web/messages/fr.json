@@ -581,7 +581,27 @@
     "direction": "Ligne",
     "opponent": "Adversaire",
     "noBoards": "Aucune donne.",
-    "noResults": "Aucun résultat."
+    "noResults": "Aucun résultat.",
+    "room": "Salle",
+    "dealPlateAria": "Donneur {dealer}, {vulnerability}",
+    "seatFull": {
+      "N": "Nord",
+      "E": "Est",
+      "S": "Sud",
+      "W": "Ouest"
+    },
+    "seatLetter": {
+      "N": "N",
+      "E": "E",
+      "S": "S",
+      "W": "O"
+    },
+    "vulnerability": {
+      "NONE": "personne vulnérable",
+      "NS": "NS vulnérable",
+      "EW": "EO vulnérable",
+      "BOTH": "tous vulnérables"
+    }
   },
   "admin": {
     "title": "Administration",
