@@ -521,6 +521,8 @@
       "description": "Upload PBN-handrecords en het Bridgemate .bws-resultaatbestand. Butler-IMPs worden automatisch herberekend.",
       "uploadPbn": "PBN uploaden",
       "uploadBws": ".bws uploaden",
+      "pbnHint": "Handrecords (.pbn)",
+      "bwsHint": "Bridgemate-resultaten (.bws)",
       "pbnSuccess": "{count} borden geïmporteerd.",
       "pbnFailed": "PBN-import mislukt",
       "bwsSuccess": "{created} resultaten geïmporteerd, {butler} Butler-scores bijgewerkt.",

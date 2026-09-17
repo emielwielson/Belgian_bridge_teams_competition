@@ -521,6 +521,8 @@
       "description": "Upload PBN hand records and the Bridgemate .bws results file. Butler IMPs recalculate automatically.",
       "uploadPbn": "Upload PBN",
       "uploadBws": "Upload .bws",
+      "pbnHint": "Hand records (.pbn)",
+      "bwsHint": "Bridgemate results (.bws)",
       "pbnSuccess": "{count} boards imported.",
       "pbnFailed": "PBN import failed",
       "bwsSuccess": "{created} results imported, {butler} Butler scores updated.",

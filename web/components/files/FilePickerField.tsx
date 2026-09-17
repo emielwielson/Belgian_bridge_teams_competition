@@ -12,6 +12,8 @@ type Props = {
   onFileChange: (file: File | null) => void;
   hint: string;
   disabled?: boolean;
+  /** Defaults to PDF/image accept used for arbiter attachments. */
+  accept?: string;
 };
 
 export function FilePickerField({
@@ -20,6 +22,7 @@ export function FilePickerField({
   onFileChange,
   hint,
   disabled = false,
+  accept = FILE_PICKER_ACCEPT,
 }: Props) {
   const t = useTranslations("common");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -39,7 +42,7 @@ export function FilePickerField({
           ref={inputRef}
           id={id}
           type="file"
-          accept={FILE_PICKER_ACCEPT}
+          accept={accept}
           disabled={disabled}
           onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
           className="sr-only"
@@ -53,7 +56,13 @@ export function FilePickerField({
         >
           {t("chooseFile")}
         </label>
-        <span className="text-zinc-600">
+        <span
+          className={[
+            "min-w-0 truncate",
+            file ? "font-medium text-zinc-900" : "text-zinc-600",
+          ].join(" ")}
+          title={file?.name}
+        >
           {file ? file.name : t("noFileChosen")}
         </span>
         {file && !disabled ? (

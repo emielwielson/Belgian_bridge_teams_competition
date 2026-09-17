@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { FilePickerField } from "@/components/files/FilePickerField";
 
 type Completeness = {
   expected: number;
@@ -34,6 +35,8 @@ export function HonorButlerImportPanel({
   const [status, setStatus] = useState<StatusPayload | null>(null);
   const [busy, setBusy] = useState<BusyKind | null>(null);
   const [busyFile, setBusyFile] = useState<string | null>(null);
+  const [pbnFile, setPbnFile] = useState<File | null>(null);
+  const [bwsFile, setBwsFile] = useState<File | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,6 +61,13 @@ export function HonorButlerImportPanel({
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    setPbnFile(null);
+    setBwsFile(null);
+    setMessage(null);
+    setError(null);
+  }, [round]);
 
   function startBusy(kind: BusyKind, filename?: string) {
     setBusy(kind);
@@ -207,34 +217,38 @@ export function HonorButlerImportPanel({
       <p className="mt-1 text-sm text-zinc-600">{t("description")}</p>
 
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-zinc-800">{t("uploadPbn")}</span>
-          <input
-            type="file"
-            accept=".pbn,text/plain"
-            disabled={busy != null}
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) void uploadPbn(f);
-              e.target.value = "";
-            }}
-            className="text-sm disabled:cursor-not-allowed disabled:opacity-50"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-zinc-800">{t("uploadBws")}</span>
-          <input
-            type="file"
-            accept=".bws,application/octet-stream"
-            disabled={busy != null}
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) void uploadBws(f);
-              e.target.value = "";
-            }}
-            className="text-sm disabled:cursor-not-allowed disabled:opacity-50"
-          />
-        </label>
+        <div className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-3">
+          <p className="text-sm font-medium text-zinc-900">{t("uploadPbn")}</p>
+          <div className="mt-2">
+            <FilePickerField
+              id={`honor-butler-pbn-${round}`}
+              file={pbnFile}
+              hint={t("pbnHint")}
+              accept=".pbn,text/plain"
+              disabled={busy != null}
+              onFileChange={(file) => {
+                setPbnFile(file);
+                if (file) void uploadPbn(file);
+              }}
+            />
+          </div>
+        </div>
+        <div className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-3">
+          <p className="text-sm font-medium text-zinc-900">{t("uploadBws")}</p>
+          <div className="mt-2">
+            <FilePickerField
+              id={`honor-butler-bws-${round}`}
+              file={bwsFile}
+              hint={t("bwsHint")}
+              accept=".bws,application/octet-stream"
+              disabled={busy != null}
+              onFileChange={(file) => {
+                setBwsFile(file);
+                if (file) void uploadBws(file);
+              }}
+            />
+          </div>
+        </div>
       </div>
 
       {processingLabel ? (

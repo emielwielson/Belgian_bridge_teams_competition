@@ -520,6 +520,8 @@
       "description": "Importez les donnes PBN et le fichier .bws Bridgemate. Les IMPs Butler sont recalculés automatiquement.",
       "uploadPbn": "Importer PBN",
       "uploadBws": "Importer .bws",
+      "pbnHint": "Donnes (.pbn)",
+      "bwsHint": "Résultats Bridgemate (.bws)",
       "pbnSuccess": "{count} donnes importées.",
       "pbnFailed": "Échec de l'import PBN",
       "bwsSuccess": "{created} résultats importés, {butler} scores Butler mis à jour.",
