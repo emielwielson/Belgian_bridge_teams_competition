@@ -41,9 +41,12 @@ export type HonorRoundMatchSeating = {
   match_id: string;
   round: number;
   datetime: string;
+  board_count: number;
   phase: HonorLineupPhase;
   home_team: { id: string; name: string };
   away_team: { id: string; name: string };
+  home_slot: number | null;
+  away_slot: number | null;
   home_lineup_locked_at: string | null;
   away_lineup_locked_at: string | null;
   lock_status: HonorLockStatus;
@@ -293,6 +296,7 @@ type MatchRow = {
   id: string;
   round: number;
   datetime: string;
+  board_count: number;
   home_team_id: string;
   away_team_id: string;
   home_lineup_locked_at: string | null;
@@ -343,6 +347,7 @@ export async function loadHonorRoundSeating(
       id,
       round,
       datetime,
+      board_count,
       home_team_id,
       away_team_id,
       home_lineup_locked_at,
@@ -429,9 +434,12 @@ export async function loadHonorRoundSeating(
       match_id: match.id,
       round: match.round,
       datetime: match.datetime,
+      board_count: match.board_count,
       phase,
       home_team: home,
       away_team: away,
+      home_slot: homeSlot,
+      away_slot: awaySlot,
       home_lineup_locked_at: match.home_lineup_locked_at,
       away_lineup_locked_at: match.away_lineup_locked_at,
       lock_status: honorLockStatus(

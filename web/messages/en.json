@@ -507,7 +507,12 @@
       "colTeams": "Teams",
       "roomOpen": "Open",
       "roomClosed": "Closed",
-      "draftMark": "draft"
+      "draftMark": "draft",
+      "downloadBws": "Download .bws for BCS",
+      "downloadBwsHint": "Open this file in BCS (File → Open), add tables to the server, then play.",
+      "downloadBwsNotReady": "All line-ups must be locked with complete seats before export.",
+      "downloadBwsFailed": "Bridgemate export failed",
+      "downloadingBws": "Downloading…"
     }
   },
   "admin": {

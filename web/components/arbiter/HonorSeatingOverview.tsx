@@ -53,6 +53,7 @@ export function HonorSeatingOverview() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [unlocking, setUnlocking] = useState<string | null>(null);
+  const [downloadingBws, setDownloadingBws] = useState(false);
 
   const load = useCallback(async (roundArg?: number | null) => {
     setLoading(true);
@@ -142,6 +143,47 @@ export function HonorSeatingOverview() {
     }
   }
 
+  const bwsReady =
+    (payload?.matches.length ?? 0) > 0 &&
+    (payload?.matches.every(
+      (m) =>
+        m.lock_status === "both" &&
+        m.home_seats_complete &&
+        m.away_seats_complete &&
+        m.venue_tables != null,
+    ) ??
+      false);
+
+  async function downloadBws() {
+    const r = round ?? payload?.round;
+    if (r == null || !bwsReady) return;
+    setDownloadingBws(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/arbiter/honor/bridgemate/bws?round=${r}`);
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        throw new Error(body?.error ?? t("downloadBwsFailed"));
+      }
+      const blob = await res.blob();
+      const disposition = res.headers.get("Content-Disposition") ?? "";
+      const match = /filename="([^"]+)"/.exec(disposition);
+      const filename = match?.[1] ?? `honneur-ronde-${r}.bws`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("downloadBwsFailed"));
+    } finally {
+      setDownloadingBws(false);
+    }
+  }
+
   if (loading && !payload) {
     return <p className="text-sm text-zinc-600">{t("loading")}</p>;
   }
@@ -218,6 +260,25 @@ export function HonorSeatingOverview() {
             ))}
           </select>
         </label>
+      </div>
+
+      <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-medium text-zinc-900">{t("downloadBws")}</p>
+            <p className="mt-0.5 text-xs text-zinc-600">
+              {bwsReady ? t("downloadBwsHint") : t("downloadBwsNotReady")}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void downloadBws()}
+            disabled={!bwsReady || downloadingBws || loading}
+            className="shrink-0 rounded border border-zinc-900 bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:border-zinc-300 disabled:bg-zinc-300"
+          >
+            {downloadingBws ? t("downloadingBws") : t("downloadBws")}
+          </button>
+        </div>
       </div>
 
       {error ? (

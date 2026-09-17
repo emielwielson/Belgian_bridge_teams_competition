@@ -507,7 +507,12 @@
       "colTeams": "Teams",
       "roomOpen": "Open",
       "roomClosed": "Gesloten",
-      "draftMark": "concept"
+      "draftMark": "concept",
+      "downloadBws": "Download .bws voor BCS",
+      "downloadBwsHint": "Open dit bestand in BCS (File → Open), voeg tafels toe aan de server en speel.",
+      "downloadBwsNotReady": "Alle line-ups moeten vastliggen met volledige zitplaatsen vóór export.",
+      "downloadBwsFailed": "Bridgemate-export mislukt",
+      "downloadingBws": "Bezig met downloaden…"
     }
   },
   "admin": {

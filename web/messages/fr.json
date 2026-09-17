@@ -506,7 +506,12 @@
       "colTeams": "Équipes",
       "roomOpen": "Ouverte",
       "roomClosed": "Fermée",
-      "draftMark": "brouillon"
+      "draftMark": "brouillon",
+      "downloadBws": "Télécharger .bws pour BCS",
+      "downloadBwsHint": "Ouvrez ce fichier dans BCS (File → Open), ajoutez les tables au serveur, puis jouez.",
+      "downloadBwsNotReady": "Tous les line-ups doivent être verrouillés avec places complètes avant l'export.",
+      "downloadBwsFailed": "Échec de l'export Bridgemate",
+      "downloadingBws": "Téléchargement…"
     }
   },
   "admin": {
