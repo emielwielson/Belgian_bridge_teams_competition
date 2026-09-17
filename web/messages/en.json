@@ -272,6 +272,7 @@
       "officialTitle": "Official score",
       "editTitle": "Official score edit",
       "notPlayedYet": "This match has not been played yet.",
+      "honorAwaitingPublish": "Honor Division scores are calculated automatically when the round is published from Bridgemate results.",
       "lineupsFirst": "Save both team lineups above first (at least 4 players per team). For Honor, both teams must submit seated lineups.",
       "boardsVpFromTable": "{boardCount} boards · VP from table",
       "scheduledBoards": "Scheduled: {boardCount} boards",

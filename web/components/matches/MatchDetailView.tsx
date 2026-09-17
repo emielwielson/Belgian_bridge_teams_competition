@@ -418,7 +418,8 @@ export async function MatchDetailView({
         isAdmin={isAdmin}
         canEditFinishedScore={canEditFinishedScore}
         lineupsComplete={lineupsComplete}
-        allowSubmit={canSubmitScoreForMatch}
+        allowSubmit={canSubmitScoreForMatch && !honorCtx.isHonor}
+        isHonor={honorCtx.isHonor}
       />
 
       {canAddPenalty ? (

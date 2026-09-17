@@ -11,6 +11,7 @@ import {
   loadHonorRoundSeating,
   resolveActiveHonorGroup,
 } from "@/lib/competition/honor-seating-overview";
+import { revalidateStandingsForGroup } from "@/lib/competition/revalidate-standings";
 import { createServiceClient } from "@/lib/supabase/server-client";
 import { jsonError, jsonFromError } from "@/lib/http/api-response";
 
@@ -101,13 +102,19 @@ export async function POST(
       return NextResponse.json(
         {
           error: result.error,
-          completeness: result.completeness,
+          completeness: "completeness" in result ? result.completeness : undefined,
         },
         { status: 400 },
       );
     }
 
-    return NextResponse.json({ ok: true, round });
+    await revalidateStandingsForGroup(service, group.id);
+
+    return NextResponse.json({
+      ok: true,
+      round,
+      scores: result.scores,
+    });
   } catch (err) {
     return jsonFromError(err);
   }

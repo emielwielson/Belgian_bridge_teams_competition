@@ -29,6 +29,8 @@ type Props = {
   lineupsComplete: boolean;
   /** When false, show read-only score info (no submit form). */
   allowSubmit?: boolean;
+  /** Honor Division: scores come from Bridgemate publish, not captain entry. */
+  isHonor?: boolean;
 };
 
 export function MatchScoreForm({
@@ -47,6 +49,7 @@ export function MatchScoreForm({
   canEditFinishedScore = isAdmin,
   lineupsComplete,
   allowSubmit = true,
+  isHonor = false,
 }: Props) {
   const t = useTranslations("match.score");
   const router = useRouter();
@@ -93,7 +96,9 @@ export function MatchScoreForm({
     return (
       <section className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
         <h3 className="text-sm font-semibold text-zinc-900">{t("title")}</h3>
-        <p className="mt-2 text-sm text-zinc-600">{t("notPlayedYet")}</p>
+        <p className="mt-2 text-sm text-zinc-600">
+          {t(isHonor ? "honorAwaitingPublish" : "notPlayedYet")}
+        </p>
       </section>
     );
   }

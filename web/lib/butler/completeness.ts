@@ -1,5 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { HonorRoundMatchSeating } from "@/lib/competition/honor-seating-overview";
+import {
+  applyHonorRoundMatchScores,
+  type HonorPublishedMatchScore,
+} from "@/lib/scoring/honor-match-imps";
 
 export type CompletenessIssue = {
   code: string;
@@ -109,7 +113,14 @@ export async function publishHonorRound(
     matches: HonorRoundMatchSeating[];
     publishedBy?: string | null;
   },
-): Promise<{ ok: true } | { ok: false; error: string; completeness: CompletenessReport }> {
+): Promise<
+  | { ok: true; scores: HonorPublishedMatchScore[] }
+  | {
+      ok: false;
+      error: string;
+      completeness?: CompletenessReport;
+    }
+> {
   const completeness = await assessHonorRoundCompleteness(service, params);
   if (!completeness.readyToPublish) {
     return {
@@ -117,6 +128,16 @@ export async function publishHonorRound(
       error: "Ronde is niet compleet — publiceren geblokkeerd.",
       completeness,
     };
+  }
+
+  const scored = await applyHonorRoundMatchScores(service, {
+    groupId: params.groupId,
+    tournamentRound: params.tournamentRound,
+    matches: params.matches,
+    userId: params.publishedBy ?? null,
+  });
+  if (!scored.ok) {
+    return { ok: false, error: scored.error };
   }
 
   const now = new Date().toISOString();
@@ -160,5 +181,5 @@ export async function publishHonorRound(
     });
   }
 
-  return { ok: true };
+  return { ok: true, scores: scored.scores };
 }

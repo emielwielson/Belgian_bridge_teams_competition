@@ -7,6 +7,7 @@ import { getActivePlayerId } from "@/lib/auth/active-player";
 import { AuthError } from "./auth-error";
 import { COMPETITION_ADMIN_ROLES } from "./roles";
 import { FINISHED_SCORE_EDIT_ROLES, hasAnyRole, ROLES } from "./roles";
+import { loadGroupScoringContext } from "@/lib/competition/match-scoring-context";
 import { resolveUserTeamIds } from "@/lib/competition/player-matches";
 
 export type MatchTeamPair = {
@@ -176,6 +177,13 @@ export async function assertCanSubmitScore(
   supabase: SupabaseClient,
   match: MatchContext,
 ): Promise<void> {
+  const scoring = await loadGroupScoringContext(supabase, match.group_id);
+  if (scoring.divisionLevelCode === "honor") {
+    throw new AuthError(
+      "Honor Division scores are set from Bridgemate on round publish",
+      403,
+    );
+  }
   if (match.played_at) {
     throw new AuthError("Match already scored; use admin edit", 403);
   }

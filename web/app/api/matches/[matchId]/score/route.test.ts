@@ -183,6 +183,25 @@ describe("POST /api/matches/[matchId]/score", () => {
       { isAdminEdit: false },
     );
   });
+
+  it("rejects when assertCanSubmitScore forbids Honor captain entry", async () => {
+    const { AuthError } = await import("@/lib/auth/auth-error");
+    vi.mocked(assertCanSubmitScore).mockRejectedValue(
+      new AuthError(
+        "Honor Division scores are set from Bridgemate on round publish",
+        403,
+      ),
+    );
+    const res = await POST(
+      new Request("http://x", {
+        method: "POST",
+        body: JSON.stringify({ imps_home: 10, imps_away: 5 }),
+      }),
+      { params: Promise.resolve({ matchId: "match-1" }) },
+    );
+    expect(res.status).toBe(403);
+    expect(submitMatchScore).not.toHaveBeenCalled();
+  });
 });
 
 describe("PATCH /api/matches/[matchId]/score", () => {
