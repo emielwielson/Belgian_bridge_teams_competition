@@ -111,6 +111,7 @@ export async function GET(_request: Request, { params }: Params) {
       homeLocked: honorCtx.homeLocked,
       awayLocked: honorCtx.awayLocked,
       played: match.played_at != null,
+      roles,
     });
 
     const visible = filterLineupVisibility(
@@ -138,7 +139,7 @@ export async function GET(_request: Request, { params }: Params) {
         can_view_away: perms.canViewAway,
         can_lock_home: perms.canLockHome,
         can_lock_away: perms.canLockAway,
-        can_unlock: viewerSide === "manager",
+        can_unlock: perms.canUnlock,
       },
       lineup: groupLineupByTeam(
         visible,

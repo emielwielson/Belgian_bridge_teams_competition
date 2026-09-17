@@ -141,6 +141,7 @@ export async function MatchDetailView({
       homeLocked: honorCtx.homeLocked,
       awayLocked: honorCtx.awayLocked,
       played: match.played_at != null,
+      roles,
     });
   }
 
@@ -355,7 +356,7 @@ export async function MatchDetailView({
               initialLineup={visibleHomeLineup}
               canEdit={canEditHome && honorPerms.canEditHome}
               canLock={honorPerms.canLockHome}
-              canUnlock={isAdmin}
+              canUnlock={honorPerms.canUnlock}
               canViewSeats={honorPerms.canViewHome}
               locked={honorCtx.homeLocked}
               opponentLocked={honorCtx.awayLocked}
@@ -372,7 +373,7 @@ export async function MatchDetailView({
               initialLineup={visibleAwayLineup}
               canEdit={canEditAway && honorPerms.canEditAway}
               canLock={honorPerms.canLockAway}
-              canUnlock={isAdmin}
+              canUnlock={honorPerms.canUnlock}
               canViewSeats={honorPerms.canViewAway}
               locked={honorCtx.awayLocked}
               opponentLocked={honorCtx.homeLocked}

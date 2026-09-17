@@ -1,11 +1,9 @@
 import { AuthError } from "@/lib/auth/auth-error";
 import { requireAuth } from "@/lib/auth/route-auth";
-import {
-  assertCanEditLineup,
-  loadMatchContext,
-} from "@/lib/auth/match-access";
+import { loadMatchContext } from "@/lib/auth/match-access";
 import type { HonorSide } from "@/lib/competition/honor-lineup";
 import {
+  canUnlockHonorLineup,
   loadHonorMatchLineupContext,
   resolveHonorViewerSide,
 } from "@/lib/competition/honor-lineup-access";
@@ -13,6 +11,7 @@ import { revalidatePlayersForMatch } from "@/lib/competition/revalidate-standing
 import { setMatchLineupLockedAt } from "@/lib/scoring/match-operations";
 import { jsonErrorCode, jsonFromError, jsonOk } from "@/lib/http/api-response";
 import { ErrorCodes } from "@/lib/http/error-codes";
+import { createServiceClient } from "@/lib/supabase/server-client";
 
 type Params = { params: Promise<{ matchId: string }> };
 
@@ -30,7 +29,10 @@ export async function POST(request: Request, { params }: Params) {
     const { matchId } = await params;
     const { supabase, user, roles } = await requireAuth();
     const match = await loadMatchContext(supabase, matchId);
-    await assertCanEditLineup(supabase, match);
+
+    if (match.played_at) {
+      throw new AuthError("Cannot unlock lineup after match is played", 403);
+    }
 
     const body = await request.json();
     const teamId = body.team_id as string | undefined;
@@ -54,11 +56,13 @@ export async function POST(request: Request, { params }: Params) {
       roles,
       match,
     );
-    if (viewerSide !== "manager") {
-      throw new AuthError("Forbidden: cannot edit lineup for this match", 403);
+    if (!canUnlockHonorLineup({ roles, viewerSide })) {
+      throw new AuthError("Forbidden: cannot unlock lineup for this match", 403);
     }
 
-    await setMatchLineupLockedAt(supabase, matchId, side, null);
+    // Arbiter role has no matches write RLS; service client after auth check.
+    const writer = createServiceClient();
+    await setMatchLineupLockedAt(writer, matchId, side, null);
     await revalidatePlayersForMatch(supabase, matchId);
 
     const updated = await loadMatchContext(supabase, matchId);

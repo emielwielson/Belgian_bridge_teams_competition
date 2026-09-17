@@ -2,7 +2,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { MatchContext } from "@/lib/auth/match-access";
 import { userManagesMatch } from "@/lib/auth/competition-scope";
 import { isUserOnTeam } from "@/lib/auth/match-access";
-import { COMPETITION_ADMIN_ROLES, hasAnyRole } from "@/lib/auth/roles";
+import {
+  ARBITER_ACCESS_ROLES,
+  COMPETITION_ADMIN_ROLES,
+  hasAnyRole,
+} from "@/lib/auth/roles";
 import {
   canEditHonorSide,
   canLockHonorSide,
@@ -111,14 +115,28 @@ export function canViewerSeeTeamLineup(options: {
   });
 }
 
+/** Floor directors (arbiter access) and scoped competition managers may unlock. */
+export function canUnlockHonorLineup(options: {
+  roles: string[];
+  viewerSide: HonorSide | "manager" | "other";
+}): boolean {
+  if (hasAnyRole(options.roles, [...ARBITER_ACCESS_ROLES])) return true;
+  return options.viewerSide === "manager";
+}
+
 export function honorPermissionsForViewer(options: {
   viewerSide: HonorSide | "manager" | "other";
   phase: HonorLineupPhase;
   homeLocked: boolean;
   awayLocked: boolean;
   played: boolean;
+  roles?: string[];
 }) {
   const isManager = options.viewerSide === "manager";
+  const canUnlock = canUnlockHonorLineup({
+    roles: options.roles ?? [],
+    viewerSide: options.viewerSide,
+  });
   return {
     canEditHome: canEditHonorSide({
       side: "home",
@@ -168,5 +186,6 @@ export function honorPermissionsForViewer(options: {
       played: options.played,
       seatsComplete: true,
     }),
+    canUnlock,
   };
 }
