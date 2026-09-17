@@ -602,7 +602,10 @@
       "NS": "NS vulnerable",
       "EW": "EW vulnerable",
       "BOTH": "both vulnerable"
-    }
+    },
+    "prevBoard": "Previous board",
+    "nextBoard": "Next board",
+    "boardNav": "Boards in this round"
   },
   "admin": {
     "title": "Admin",

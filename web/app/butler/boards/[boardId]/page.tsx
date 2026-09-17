@@ -26,13 +26,30 @@ export default async function ButlerBoardPage({
 
   if (!board || board.publication_status !== "published") notFound();
 
-  const { data: results } = await client
-    .from("honor_board_results")
-    .select(
-      "id, room, ns_score, score_diff, ns_butler_imps, ew_butler_imps, contract_level, contract_denomination, doubling, declarer, tricks_result, ns_combination_id, ew_combination_id, match_id",
-    )
-    .eq("board_id", boardId)
-    .eq("processing_status", "published");
+  const [{ data: results }, { data: roundBoards }] = await Promise.all([
+    client
+      .from("honor_board_results")
+      .select(
+        "id, room, ns_score, score_diff, ns_butler_imps, ew_butler_imps, contract_level, contract_denomination, doubling, declarer, tricks_result, ns_combination_id, ew_combination_id, match_id",
+      )
+      .eq("board_id", boardId)
+      .eq("processing_status", "published"),
+    client
+      .from("honor_boards")
+      .select("id, board_number")
+      .eq("group_id", board.group_id)
+      .eq("tournament_round", board.tournament_round)
+      .eq("publication_status", "published")
+      .order("board_number"),
+  ]);
+
+  const siblings = roundBoards ?? [];
+  const currentIndex = siblings.findIndex((b) => b.id === boardId);
+  const prevBoard = currentIndex > 0 ? siblings[currentIndex - 1] : null;
+  const nextBoard =
+    currentIndex >= 0 && currentIndex < siblings.length - 1
+      ? siblings[currentIndex + 1]
+      : null;
 
   const comboIds = [
     ...new Set(
@@ -60,6 +77,11 @@ export default async function ButlerBoardPage({
     boardNumber: board.board_number,
   });
 
+  const navLinkClass =
+    "rounded-md border border-zinc-200 px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50";
+  const navDisabledClass =
+    "rounded-md border border-transparent px-3 py-1.5 text-sm text-zinc-300";
+
   return (
     <main className="page-container max-w-7xl">
       <p className="text-sm">
@@ -70,9 +92,59 @@ export default async function ButlerBoardPage({
           {t("backRound")}
         </Link>
       </p>
-      <h1 className="mt-2 text-2xl font-semibold">
-        {t("dealTitle", { board: board.board_number })}
-      </h1>
+
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold">
+          {t("dealTitle", { board: board.board_number })}
+        </h1>
+        <nav className="flex items-center gap-2" aria-label={t("boardNav")}>
+          {prevBoard ? (
+            <Link
+              href={`/butler/boards/${prevBoard.id}`}
+              className={navLinkClass}
+            >
+              ← {t("dealTitle", { board: prevBoard.board_number })}
+            </Link>
+          ) : (
+            <span className={navDisabledClass}>← {t("prevBoard")}</span>
+          )}
+          {nextBoard ? (
+            <Link
+              href={`/butler/boards/${nextBoard.id}`}
+              className={navLinkClass}
+            >
+              {t("dealTitle", { board: nextBoard.board_number })} →
+            </Link>
+          ) : (
+            <span className={navDisabledClass}>{t("nextBoard")} →</span>
+          )}
+        </nav>
+      </div>
+
+      {siblings.length > 1 ? (
+        <nav
+          className="mt-3 flex flex-wrap gap-1.5"
+          aria-label={t("boardNav")}
+        >
+          {siblings.map((b) => {
+            const active = b.id === boardId;
+            return (
+              <Link
+                key={b.id}
+                href={`/butler/boards/${b.id}`}
+                aria-current={active ? "page" : undefined}
+                className={
+                  active
+                    ? "inline-flex h-8 min-w-8 items-center justify-center rounded-md bg-zinc-900 px-2 text-sm font-medium text-white"
+                    : "inline-flex h-8 min-w-8 items-center justify-center rounded-md border border-zinc-200 px-2 text-sm text-zinc-700 hover:bg-zinc-50"
+                }
+              >
+                {b.board_number}
+              </Link>
+            );
+          })}
+        </nav>
+      ) : null}
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(18rem,22rem)_minmax(0,1fr)] lg:items-start">
         <aside className="space-y-4">

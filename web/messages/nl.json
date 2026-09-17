@@ -602,7 +602,10 @@
       "NS": "NZ kwetsbaar",
       "EW": "OW kwetsbaar",
       "BOTH": "allen kwetsbaar"
-    }
+    },
+    "prevBoard": "Vorig bord",
+    "nextBoard": "Volgend bord",
+    "boardNav": "Borden in deze ronde"
   },
   "admin": {
     "title": "Beheer",

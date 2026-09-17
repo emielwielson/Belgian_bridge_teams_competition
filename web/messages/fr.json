@@ -601,7 +601,10 @@
       "NS": "NS vulnérable",
       "EW": "EO vulnérable",
       "BOTH": "tous vulnérables"
-    }
+    },
+    "prevBoard": "Donne précédente",
+    "nextBoard": "Donne suivante",
+    "boardNav": "Donnes de cette manche"
   },
   "admin": {
     "title": "Administration",
