@@ -43,16 +43,33 @@ export async function GET(
       ]),
     );
     const tableByMatchRoom = new Map<string, number>();
+    const playersByMatchRoom = new Map<
+      string,
+      { direction: string; name: string }[]
+    >();
+    const directionOrder = ["N", "E", "S", "W"] as const;
     for (const m of seating.matches) {
-      if (!m.venue_tables) continue;
-      tableByMatchRoom.set(
-        `${m.match_id}:open`,
-        m.venue_tables.openTable,
-      );
-      tableByMatchRoom.set(
-        `${m.match_id}:closed`,
-        m.venue_tables.closedTable,
-      );
+      if (m.venue_tables) {
+        tableByMatchRoom.set(
+          `${m.match_id}:open`,
+          m.venue_tables.openTable,
+        );
+        tableByMatchRoom.set(
+          `${m.match_id}:closed`,
+          m.venue_tables.closedTable,
+        );
+      }
+      for (const room of ["open", "closed"] as const) {
+        const seats = m.seats
+          .filter((s) => s.room === room)
+          .map((s) => ({ direction: s.direction, name: s.name }))
+          .sort(
+            (a, b) =>
+              directionOrder.indexOf(a.direction as (typeof directionOrder)[number]) -
+              directionOrder.indexOf(b.direction as (typeof directionOrder)[number]),
+          );
+        playersByMatchRoom.set(`${m.match_id}:${room}`, seats);
+      }
     }
 
     let query = service
@@ -121,6 +138,8 @@ export async function GET(
         room: row.room,
         table_number:
           tableByMatchRoom.get(`${row.match_id}:${row.room}`) ?? null,
+        players:
+          playersByMatchRoom.get(`${row.match_id}:${row.room}`) ?? [],
         board_id: row.board_id,
         board_number: boardNumber,
         tournament_round: row.tournament_round,

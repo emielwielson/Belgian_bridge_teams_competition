@@ -11,6 +11,7 @@ export type HonorResultRow = {
   match_label: string;
   room: string;
   table_number: number | null;
+  players: { direction: string; name: string }[];
   board_id: string;
   board_number: number | null;
   contract_level: number | null;
@@ -294,6 +295,24 @@ export function HonorBoardResultsEditor({
       tricksResult: selected.tricks_result,
     });
   }, [selected]);
+
+  const selectedPlayersLabel = useMemo(() => {
+    if (!selected) return null;
+    const byDir = new Map(
+      (selected.players ?? []).map((p) => [p.direction, p.name]),
+    );
+    const n = byDir.get("N");
+    const e = byDir.get("E");
+    const s = byDir.get("S");
+    const w = byDir.get("W");
+    if (!n && !e && !s && !w) return null;
+    return t("selectedPlayers", {
+      n: n ?? "—",
+      e: e ?? "—",
+      s: s ?? "—",
+      w: w ?? "—",
+    });
+  }, [selected, t]);
 
   const tricksResultOptions = useMemo(() => {
     if (contractDenom === "PASS") return ["PASS"];
@@ -590,8 +609,6 @@ export function HonorBoardResultsEditor({
               ? t("selectedMeta", {
                   table: selected.table_number,
                   contract: selectedContractLabel,
-                  status: selected.validation_status,
-                  kind: selected.special_result_kind,
                   score:
                     selected.admin_adjusted_ns_score ??
                     selected.ns_score ??
@@ -599,13 +616,14 @@ export function HonorBoardResultsEditor({
                 })
               : t("selectedMetaNoTable", {
                   contract: selectedContractLabel,
-                  status: selected.validation_status,
-                  kind: selected.special_result_kind,
                   score:
                     selected.admin_adjusted_ns_score ??
                     selected.ns_score ??
                     "—",
                 })}
+          </p>
+          <p className="mt-1 text-xs text-zinc-700">
+            {selectedPlayersLabel ?? t("selectedPlayersMissing")}
           </p>
 
           <label className="mt-3 flex flex-col gap-1 text-sm">
