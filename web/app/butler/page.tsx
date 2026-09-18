@@ -63,34 +63,48 @@ export default async function ButlerOverviewPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100">
-                  {standings.combinations.map((row) => (
-                    <tr
-                      key={row.combinationId}
-                      className="odd:bg-zinc-50 hover:bg-zinc-100/80"
-                    >
-                      <td className="px-3 py-2 tabular-nums text-zinc-500">
-                        {row.rank}
-                      </td>
-                      <td className="px-3 py-2">
-                        <Link
-                          href={`/butler/pairs/${row.combinationId}`}
-                          className="link-inline"
+                  {standings.combinations.map((row, index) => {
+                    const stripe =
+                      index % 2 === 1 ? "bg-zinc-50" : "bg-white";
+                    return (
+                      <tr
+                        key={row.combinationId}
+                        className="hover:[&>td]:bg-zinc-100/80"
+                      >
+                        <td
+                          className={`px-3 py-2 tabular-nums text-zinc-500 ${stripe}`}
                         >
-                          {formatPairDisplayName(row.displayName)}
-                        </Link>
-                      </td>
-                      <td className="px-3 py-2 text-zinc-600">{row.teamName}</td>
-                      <td className="px-3 py-2 text-right font-mono tabular-nums">
-                        {formatImps(row.totalImps)}
-                      </td>
-                      <td className="hidden px-3 py-2 text-right tabular-nums text-zinc-500 sm:table-cell">
-                        {row.boardsPlayed}
-                      </td>
-                      <td className="hidden px-3 py-2 text-right font-mono tabular-nums text-zinc-500 md:table-cell">
-                        {formatImps(row.averageImps)}
-                      </td>
-                    </tr>
-                  ))}
+                          {row.rank}
+                        </td>
+                        <td className={`px-3 py-2 ${stripe}`}>
+                          <Link
+                            href={`/butler/pairs/${row.combinationId}`}
+                            className="link-inline"
+                          >
+                            {formatPairDisplayName(row.displayName)}
+                          </Link>
+                        </td>
+                        <td className={`px-3 py-2 text-zinc-600 ${stripe}`}>
+                          {row.teamName}
+                        </td>
+                        <td
+                          className={`px-3 py-2 text-right font-mono tabular-nums ${stripe}`}
+                        >
+                          {formatImps(row.totalImps)}
+                        </td>
+                        <td
+                          className={`hidden px-3 py-2 text-right tabular-nums text-zinc-500 sm:table-cell ${stripe}`}
+                        >
+                          {row.boardsPlayed}
+                        </td>
+                        <td
+                          className={`hidden px-3 py-2 text-right font-mono tabular-nums text-zinc-500 md:table-cell ${stripe}`}
+                        >
+                          {formatImps(row.averageImps)}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -122,35 +136,43 @@ export default async function ButlerOverviewPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100">
-                  {standings.combinations.map((row) => (
-                    <tr key={row.combinationId} className="odd:bg-zinc-50">
-                      <td className="sticky left-0 z-10 bg-white px-3 py-2 whitespace-nowrap">
-                        <Link
-                          href={`/butler/pairs/${row.combinationId}`}
-                          className="link-inline"
+                  {standings.combinations.map((row, index) => {
+                    const stripe =
+                      index % 2 === 1 ? "bg-zinc-50" : "bg-white";
+                    return (
+                      <tr key={row.combinationId}>
+                        <td
+                          className={`sticky left-0 z-10 px-3 py-2 whitespace-nowrap ${stripe}`}
                         >
-                          {formatPairDisplayName(row.displayName)}
-                        </Link>
-                      </td>
-                      {standings.rounds.map((r) => {
-                        const cell =
-                          standings.matrix[row.combinationId]?.[
-                            r.tournamentRound
-                          ];
-                        return (
-                          <td
-                            key={r.tournamentRound}
-                            className="px-3 py-2 text-right font-mono tabular-nums"
+                          <Link
+                            href={`/butler/pairs/${row.combinationId}`}
+                            className="link-inline"
                           >
-                            {cell ? formatImps(cell.imps) : "—"}
-                          </td>
-                        );
-                      })}
-                      <td className="px-3 py-2 text-right font-mono tabular-nums">
-                        {formatImps(row.totalImps)}
-                      </td>
-                    </tr>
-                  ))}
+                            {formatPairDisplayName(row.displayName)}
+                          </Link>
+                        </td>
+                        {standings.rounds.map((r) => {
+                          const cell =
+                            standings.matrix[row.combinationId]?.[
+                              r.tournamentRound
+                            ];
+                          return (
+                            <td
+                              key={r.tournamentRound}
+                              className={`px-3 py-2 text-right font-mono tabular-nums ${stripe}`}
+                            >
+                              {cell ? formatImps(cell.imps) : "—"}
+                            </td>
+                          );
+                        })}
+                        <td
+                          className={`px-3 py-2 text-right font-mono tabular-nums ${stripe}`}
+                        >
+                          {formatImps(row.totalImps)}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

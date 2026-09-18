@@ -86,25 +86,35 @@ export default async function ButlerRoundPage({
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
-                {standings.map((row) => (
-                  <tr key={row.combinationId} className="odd:bg-zinc-50">
-                    <td className="px-3 py-2 tabular-nums text-zinc-500">
-                      {row.rank}
-                    </td>
-                    <td className="px-3 py-2">
-                      <Link
-                        href={`/butler/rounds/${round}/pairs/${row.combinationId}`}
-                        className="link-inline"
+                {standings.map((row, index) => {
+                  const stripe =
+                    index % 2 === 1 ? "bg-zinc-50" : "bg-white";
+                  return (
+                    <tr key={row.combinationId}>
+                      <td
+                        className={`px-3 py-2 tabular-nums text-zinc-500 ${stripe}`}
                       >
-                        {formatPairDisplayName(row.displayName)}
-                      </Link>
-                    </td>
-                    <td className="px-3 py-2 text-zinc-600">{row.teamName}</td>
-                    <td className="px-3 py-2 text-right font-mono tabular-nums">
-                      {formatImps(row.totalImps)}
-                    </td>
-                  </tr>
-                ))}
+                        {row.rank}
+                      </td>
+                      <td className={`px-3 py-2 ${stripe}`}>
+                        <Link
+                          href={`/butler/rounds/${round}/pairs/${row.combinationId}`}
+                          className="link-inline"
+                        >
+                          {formatPairDisplayName(row.displayName)}
+                        </Link>
+                      </td>
+                      <td className={`px-3 py-2 text-zinc-600 ${stripe}`}>
+                        {row.teamName}
+                      </td>
+                      <td
+                        className={`px-3 py-2 text-right font-mono tabular-nums ${stripe}`}
+                      >
+                        {formatImps(row.totalImps)}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
