@@ -55,6 +55,22 @@ describe("assertCanSubmitScore Honor gate", () => {
     });
   });
 
+  it("allows captain score entry for regional groups even if level code is honor", async () => {
+    vi.mocked(loadGroupScoringContext).mockResolvedValue({
+      groupId: "group-1",
+      divisionLevelId: "dl-1",
+      leagueScope: "regional",
+      divisionLevelCode: "honor",
+    });
+    const supabase = {
+      rpc: vi.fn().mockResolvedValue({ data: true, error: null }),
+    };
+
+    await expect(
+      assertCanSubmitScore(supabase as never, baseMatch),
+    ).resolves.toBeUndefined();
+  });
+
   it("allows non-Honor when RPC permits and match unscored", async () => {
     vi.mocked(loadGroupScoringContext).mockResolvedValue({
       groupId: "group-1",

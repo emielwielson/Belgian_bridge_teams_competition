@@ -7,6 +7,11 @@ export type ScoringContext = {
   divisionLevelCode: DivisionLevelCode;
 };
 
+/** Honor Division only: national league at the honor level (not regional Liga). */
+export function isHonorDivision(ctx: ScoringContext): boolean {
+  return ctx.leagueScope === "national" && ctx.divisionLevelCode === "honor";
+}
+
 export const BOARD_CHOICE_OPTIONS = [28, 32] as const;
 export type BoardChoice = (typeof BOARD_CHOICE_OPTIONS)[number];
 

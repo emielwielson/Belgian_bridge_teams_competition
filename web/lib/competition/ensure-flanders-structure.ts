@@ -51,6 +51,12 @@ export async function ensureFlandersStructure(
         .single();
       if (error) throw error;
       divisionId = created.id;
+    } else {
+      const { error: updateError } = await supabase
+        .from("divisions")
+        .update({ division_level_id: levelId })
+        .eq("id", divisionId);
+      if (updateError) throw updateError;
     }
     divisionIds.set(spec.name, divisionId);
   }

@@ -12,6 +12,7 @@ import { loadGroupScoringContext } from "@/lib/competition/match-scoring-context
 import {
   allowsBoardChoice,
   BoardCountValidationError,
+  isHonorDivision,
   validateScoreBoardOptions,
 } from "./board-count-rules";
 import { lookupVp } from "./vp-lookup";
@@ -174,7 +175,7 @@ export async function isHonorMatch(
   groupId: string,
 ): Promise<boolean> {
   const ctx = await loadGroupScoringContext(supabase, groupId);
-  return ctx.divisionLevelCode === "honor";
+  return isHonorDivision(ctx);
 }
 
 export async function isLineupComplete(

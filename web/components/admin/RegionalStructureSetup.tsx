@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { regionalDivisionLevelCode } from "@/lib/competition/regional-division-level";
 import { sortDivisionsByCanonicalName } from "@/lib/competition/sort-divisions";
 import { translateLeagueName } from "@/lib/i18n/labels";
 
@@ -53,7 +54,11 @@ export function RegionalStructureSetup({
 
   async function createDivision() {
     if (!league || !newDivisionName.trim()) return;
-    const levelId = divisionLevels[0]?.id;
+    const name = newDivisionName.trim();
+    const levelCode = regionalDivisionLevelCode(name);
+    const levelId =
+      divisionLevels.find((l) => l.code === levelCode)?.id ??
+      divisionLevels.find((l) => l.code === "first")?.id;
     if (!levelId) return;
     setMessage(null);
     const res = await fetch("/api/admin/competition", {
@@ -63,7 +68,7 @@ export function RegionalStructureSetup({
         type: "division",
         league_id: league.id,
         division_level_id: levelId,
-        name: newDivisionName.trim(),
+        name,
       }),
     });
     if (!res.ok) {

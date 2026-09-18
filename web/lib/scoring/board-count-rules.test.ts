@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   allowsBoardChoice,
+  isHonorDivision,
   nominalBoardCount,
   scheduledBoardCount,
   validateScoreBoardOptions,
@@ -8,6 +9,26 @@ import {
   vpBoardCountsForGroup,
   BoardCountValidationError,
 } from "./board-count-rules";
+
+describe("isHonorDivision", () => {
+  it("is true only for national honor", () => {
+    expect(
+      isHonorDivision({ leagueScope: "national", divisionLevelCode: "honor" }),
+    ).toBe(true);
+  });
+
+  it("is false for regional honor-tagged divisions", () => {
+    expect(
+      isHonorDivision({ leagueScope: "regional", divisionLevelCode: "honor" }),
+    ).toBe(false);
+  });
+
+  it("is false for other national levels", () => {
+    expect(
+      isHonorDivision({ leagueScope: "national", divisionLevelCode: "first" }),
+    ).toBe(false);
+  });
+});
 
 describe("nominalBoardCount", () => {
   it("national honor → 16", () => {

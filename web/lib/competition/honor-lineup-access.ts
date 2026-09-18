@@ -19,6 +19,7 @@ import {
   type HonorVenueTables,
 } from "@/lib/competition/honor-lineup";
 import { loadGroupScoringContext } from "@/lib/competition/match-scoring-context";
+import { isHonorDivision } from "@/lib/scoring/board-count-rules";
 
 export type HonorMatchLineupContext = {
   isHonor: boolean;
@@ -35,7 +36,7 @@ export async function loadHonorMatchLineupContext(
   match: MatchContext,
 ): Promise<HonorMatchLineupContext> {
   const scoring = await loadGroupScoringContext(supabase, match.group_id);
-  const isHonor = scoring.divisionLevelCode === "honor";
+  const isHonor = isHonorDivision(scoring);
 
   const { data: group, error } = await supabase
     .from("groups")
