@@ -159,8 +159,17 @@ export async function MatchDetailView({
   let postponementState = null;
   let homeAwaySwitchState = null;
   let arbiterRequestsState = null;
+  // Honor: dates/venues are fixed and an arbiter is on site — no reschedule or remote arbiter request.
   if (userId) {
-    postponementState = await getMatchPostponementState(supabase, matchId);
+    if (!honorCtx.isHonor) {
+      postponementState = await getMatchPostponementState(supabase, matchId);
+      try {
+        const loaded = await loadMatchArbiterRequestsForUser(supabase, matchId);
+        arbiterRequestsState = loaded.state;
+      } catch {
+        // Migration 0026 not applied yet.
+      }
+    }
     try {
       homeAwaySwitchState = await getMatchHomeAwaySwitchState(
         supabase,
@@ -169,15 +178,10 @@ export async function MatchDetailView({
     } catch {
       // Migration 0022 not applied yet.
     }
-    try {
-      const loaded = await loadMatchArbiterRequestsForUser(supabase, matchId);
-      arbiterRequestsState = loaded.state;
-    } catch {
-      // Migration 0026 not applied yet.
-    }
   }
 
   const showPostpone =
+    !honorCtx.isHonor &&
     canOps &&
     postponementState != null &&
     canAccessPostponementWorkflow(postponementState);
@@ -186,12 +190,13 @@ export async function MatchDetailView({
     homeAwaySwitchState != null &&
     canAccessHomeAwaySwitchWorkflow(homeAwaySwitchState);
   const showArbiterRequests =
-    canSubmitScoreForMatch ||
-    (arbiterRequestsState != null &&
-      canAccessArbiterRequestWorkflow(
-        arbiterRequestsState,
-        canSubmitScoreForMatch,
-      ));
+    !honorCtx.isHonor &&
+    (canSubmitScoreForMatch ||
+      (arbiterRequestsState != null &&
+        canAccessArbiterRequestWorkflow(
+          arbiterRequestsState,
+          canSubmitScoreForMatch,
+        )));
 
   const homeLineup = lineup
     .filter((e) => e.team_id === match.home_team_id)
