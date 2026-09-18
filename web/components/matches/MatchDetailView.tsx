@@ -129,14 +129,15 @@ export async function MatchDetailView({
 
   const honorCtx = await loadHonorMatchLineupContext(supabase, match);
   let honorPerms = null;
-  if (honorCtx.isHonor && userId && canOps) {
-    const viewerSide = await resolveHonorViewerSide(
-      supabase,
-      userId,
-      roles,
-      match,
-    );
-    const arbiterAccess = await getArbiterAccess(supabase, userId, roles);
+  if (honorCtx.isHonor) {
+    const viewerSide =
+      userId != null
+        ? await resolveHonorViewerSide(supabase, userId, roles, match)
+        : "other";
+    const arbiterAccess =
+      userId != null
+        ? await getArbiterAccess(supabase, userId, roles)
+        : null;
     honorPerms = honorPermissionsForViewer({
       viewerSide,
       phase: honorCtx.phase,
@@ -144,7 +145,9 @@ export async function MatchDetailView({
       awayLocked: honorCtx.awayLocked,
       played: match.played_at != null,
       roles,
-      hasHonorAccess: hasArbiterHonorAccess(arbiterAccess),
+      hasHonorAccess: arbiterAccess
+        ? hasArbiterHonorAccess(arbiterAccess)
+        : false,
     });
   }
 

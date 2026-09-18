@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { formatContract } from "@/lib/butler/format";
 import { roundWeightedNsScore } from "@/lib/results/adjustment-helpers";
@@ -90,6 +90,7 @@ export function HonorBoardResultsEditor({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const loadGeneration = useRef(0);
 
   // Shared form fields
   const [reason, setReason] = useState("");
@@ -191,7 +192,9 @@ export function HonorBoardResultsEditor({
 
   const load = useCallback(async () => {
     if (round == null || !enabled) return;
+    const generation = ++loadGeneration.current;
     setLoading(true);
+    setRows([]);
     setError(null);
     try {
       const res = await fetch(
@@ -202,12 +205,16 @@ export function HonorBoardResultsEditor({
         results?: HonorResultRow[];
       } | null;
       if (!res.ok) throw new Error(body?.error ?? t("loadFailed"));
+      if (generation !== loadGeneration.current) return;
       setRows(body?.results ?? []);
     } catch (err) {
+      if (generation !== loadGeneration.current) return;
       setError(err instanceof Error ? err.message : t("loadFailed"));
       setRows([]);
     } finally {
-      setLoading(false);
+      if (generation === loadGeneration.current) {
+        setLoading(false);
+      }
     }
   }, [round, enabled, t]);
 
@@ -216,10 +223,14 @@ export function HonorBoardResultsEditor({
   }, [load, refreshKey]);
 
   useEffect(() => {
+    setRows([]);
+    setLoading(true);
     setMatchId("");
     setRoom("");
     setTableNumber("");
     setBoardNumber("");
+    setMessage(null);
+    setError(null);
   }, [round]);
 
   function selectResult(row: HonorResultRow) {

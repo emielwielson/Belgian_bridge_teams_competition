@@ -104,6 +104,12 @@ export async function ensureNationalStructure(
         .single();
       if (divError) throw divError;
       divisionId = createdDivision.id;
+    } else {
+      const { error: levelError } = await supabase
+        .from("divisions")
+        .update({ division_level_id: levelId })
+        .eq("id", divisionId);
+      if (levelError) throw levelError;
     }
 
     divisionIds.set(spec.name, divisionId);

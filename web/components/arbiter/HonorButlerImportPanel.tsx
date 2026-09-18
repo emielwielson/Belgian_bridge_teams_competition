@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { FilePickerField } from "@/components/files/FilePickerField";
 
@@ -33,15 +33,20 @@ export function HonorButlerImportPanel({
 }) {
   const t = useTranslations("arbiter.honorButler");
   const [status, setStatus] = useState<StatusPayload | null>(null);
+  const [statusLoading, setStatusLoading] = useState(false);
   const [busy, setBusy] = useState<BusyKind | null>(null);
   const [busyFile, setBusyFile] = useState<string | null>(null);
   const [pbnFile, setPbnFile] = useState<File | null>(null);
   const [bwsFile, setBwsFile] = useState<File | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const loadGeneration = useRef(0);
 
   const load = useCallback(async () => {
     if (round == null || !enabled) return;
+    const generation = ++loadGeneration.current;
+    setStatusLoading(true);
+    setStatus(null);
     setError(null);
     try {
       const res = await fetch(`/api/arbiter/honor/rounds/${round}/publish`);
@@ -51,10 +56,17 @@ export function HonorButlerImportPanel({
         } | null;
         throw new Error(body?.error ?? t("loadFailed"));
       }
-      setStatus((await res.json()) as StatusPayload);
+      const data = (await res.json()) as StatusPayload;
+      if (generation !== loadGeneration.current) return;
+      setStatus(data);
     } catch (err) {
+      if (generation !== loadGeneration.current) return;
       setError(err instanceof Error ? err.message : t("loadFailed"));
       setStatus(null);
+    } finally {
+      if (generation === loadGeneration.current) {
+        setStatusLoading(false);
+      }
     }
   }, [round, enabled, t]);
 
@@ -63,6 +75,8 @@ export function HonorButlerImportPanel({
   }, [load]);
 
   useEffect(() => {
+    setStatus(null);
+    setStatusLoading(true);
     setPbnFile(null);
     setBwsFile(null);
     setMessage(null);
@@ -278,6 +292,10 @@ export function HonorButlerImportPanel({
             ) : null}
           </div>
         </div>
+      ) : null}
+
+      {statusLoading && !status ? (
+        <p className="mt-4 text-sm text-zinc-600">{t("working")}</p>
       ) : null}
 
       {status ? (

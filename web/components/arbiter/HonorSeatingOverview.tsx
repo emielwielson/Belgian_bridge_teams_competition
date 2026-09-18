@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   HonorLockStatus,
   HonorRoundMatchSeating,
@@ -66,8 +66,10 @@ export function HonorSeatingOverview() {
   const [unlocking, setUnlocking] = useState<string | null>(null);
   const [downloadingBws, setDownloadingBws] = useState(false);
   const [lineupsOpen, setLineupsOpen] = useState(true);
+  const loadGeneration = useRef(0);
 
   const load = useCallback(async (roundArg?: number | null) => {
+    const generation = ++loadGeneration.current;
     setLoading(true);
     setError(null);
     try {
@@ -81,14 +83,18 @@ export function HonorSeatingOverview() {
         throw new Error(body?.error ?? t("loadFailed"));
       }
       const data = (await res.json()) as OverviewPayload;
+      if (generation !== loadGeneration.current) return;
       setPayload(data);
       setRound(data.round);
       setMatchDayFilter((prev) => prev ?? data.match_day);
     } catch (err) {
+      if (generation !== loadGeneration.current) return;
       setError(err instanceof Error ? err.message : t("loadFailed"));
       setPayload(null);
     } finally {
-      setLoading(false);
+      if (generation === loadGeneration.current) {
+        setLoading(false);
+      }
     }
   }, [t]);
 
@@ -122,11 +128,28 @@ export function HonorSeatingOverview() {
 
   useEffect(() => {
     if (round == null) return;
+    // Keep section open while the new round's seating is still loading.
+    if (loading && payload?.matches.length === 0) {
+      setLineupsOpen(true);
+      return;
+    }
     setLineupsOpen(!bwsReady);
-  }, [round, bwsReady]);
+  }, [round, bwsReady, loading, payload?.matches.length]);
 
   async function onRoundChange(next: number) {
     setRound(next);
+    // Drop previous-round seating immediately so filters stay usable without
+    // showing the wrong matches/tables while the new round loads.
+    setPayload((prev) =>
+      prev
+        ? {
+            ...prev,
+            round: next,
+            matches: [],
+            tables: [],
+          }
+        : null,
+    );
     await load(next);
   }
 
@@ -326,7 +349,11 @@ export function HonorSeatingOverview() {
                 {t("matchesHeading")}
               </h3>
               <div className="mt-3 grid gap-3 md:grid-cols-2">
-                {payload.matches.map((match) => {
+                {loading && payload.matches.length === 0 ? (
+                  <p className="text-sm text-zinc-600">{t("loading")}</p>
+                ) : (
+                  <>
+                    {payload.matches.map((match) => {
                   const homeUnlockKey = `${match.match_id}:home`;
                   const awayUnlockKey = `${match.match_id}:away`;
                   const inOrder = match.lock_status === "both";
@@ -421,9 +448,11 @@ export function HonorSeatingOverview() {
                     </article>
                   );
                 })}
-                {payload.matches.length === 0 ? (
-                  <p className="text-sm text-zinc-600">{t("noMatches")}</p>
-                ) : null}
+                    {payload.matches.length === 0 ? (
+                      <p className="text-sm text-zinc-600">{t("noMatches")}</p>
+                    ) : null}
+                  </>
+                )}
               </div>
             </div>
 
@@ -432,6 +461,9 @@ export function HonorSeatingOverview() {
                 {t("tablesHeading")}
               </h3>
               <p className="mt-1 text-sm text-zinc-600">{t("tablesHint")}</p>
+              {loading && payload.tables.length === 0 ? (
+                <p className="mt-3 text-sm text-zinc-600">{t("loading")}</p>
+              ) : (
               <div className="mt-3 overflow-x-auto">
                 <table className="min-w-full border-collapse text-sm">
                   <thead>
@@ -492,6 +524,7 @@ export function HonorSeatingOverview() {
                   </tbody>
                 </table>
               </div>
+              )}
             </div>
           </div>
         ) : null}
@@ -516,11 +549,14 @@ export function HonorSeatingOverview() {
         </div>
       </div>
 
-      <HonorButlerImportPanel round={round} enabled={!loading && !!payload} />
+      <HonorButlerImportPanel
+        round={round}
+        enabled={round != null && !!payload}
+      />
 
       <HonorBoardResultsEditor
         round={round}
-        enabled={!loading && !!payload}
+        enabled={round != null && !!payload}
       />
     </div>
   );
