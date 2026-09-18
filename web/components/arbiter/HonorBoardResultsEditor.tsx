@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
+import { formatContract } from "@/lib/butler/format";
 import { roundWeightedNsScore } from "@/lib/results/adjustment-helpers";
 
 export type HonorResultRow = {
@@ -38,6 +39,16 @@ type Mode = "cancelled" | "artificial" | "split" | "weighted" | "correct";
 type Filter = "needs_attention" | "all" | "special" | "invalid";
 type PickBy = "match" | "table";
 
+/** Bridgemate-style relative results valid for contract level 1–7. */
+function tricksResultOptionsForLevel(level: number): string[] {
+  if (!Number.isInteger(level) || level < 1 || level > 7) return ["="];
+  const maxOver = 7 - level;
+  const maxDown = 6 + level;
+  const options = ["="];
+  for (let i = 1; i <= maxOver; i++) options.push(`+${i}`);
+  for (let i = 1; i <= maxDown; i++) options.push(`-${i}`);
+  return options;
+}
 export function HonorBoardResultsEditor({
   round,
   enabled,
@@ -272,6 +283,33 @@ export function HonorBoardResultsEditor({
       return null;
     }
   }, [scoreA, weightA, scoreB, weightB]);
+
+  const selectedContractLabel = useMemo(() => {
+    if (!selected) return "—";
+    return formatContract({
+      contractLevel: selected.contract_level,
+      contractDenomination: selected.contract_denomination,
+      doubling: selected.doubling ?? "NONE",
+      declarer: selected.declarer,
+      tricksResult: selected.tricks_result,
+    });
+  }, [selected]);
+
+  const tricksResultOptions = useMemo(() => {
+    if (contractDenom === "PASS") return ["PASS"];
+    const level = Number(contractLevel);
+    return tricksResultOptionsForLevel(level);
+  }, [contractDenom, contractLevel]);
+
+  useEffect(() => {
+    if (contractDenom === "PASS") {
+      if (tricksResult !== "PASS") setTricksResult("PASS");
+      return;
+    }
+    if (!tricksResultOptions.includes(tricksResult)) {
+      setTricksResult(tricksResultOptions[0] ?? "=");
+    }
+  }, [contractDenom, tricksResult, tricksResultOptions]);
 
   async function save() {
     if (!selected) return;
@@ -551,6 +589,7 @@ export function HonorBoardResultsEditor({
             {selected.table_number != null
               ? t("selectedMeta", {
                   table: selected.table_number,
+                  contract: selectedContractLabel,
                   status: selected.validation_status,
                   kind: selected.special_result_kind,
                   score:
@@ -559,6 +598,7 @@ export function HonorBoardResultsEditor({
                     "—",
                 })
               : t("selectedMetaNoTable", {
+                  contract: selectedContractLabel,
                   status: selected.validation_status,
                   kind: selected.special_result_kind,
                   score:
@@ -695,21 +735,34 @@ export function HonorBoardResultsEditor({
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <label className="flex flex-col gap-1 text-sm">
                 <span className="text-zinc-600">{t("contractLevel")}</span>
-                <input
-                  type="number"
-                  min={0}
-                  max={7}
+                <select
                   value={contractLevel}
                   onChange={(e) => setContractLevel(e.target.value)}
                   className="rounded border border-zinc-300 bg-white px-2 py-1.5"
-                  disabled={busy}
-                />
+                  disabled={busy || contractDenom === "PASS"}
+                >
+                  <option value="">{t("selectPlaceholder")}</option>
+                  {[1, 2, 3, 4, 5, 6, 7].map((level) => (
+                    <option key={level} value={String(level)}>
+                      {level}
+                    </option>
+                  ))}
+                </select>
               </label>
               <label className="flex flex-col gap-1 text-sm">
                 <span className="text-zinc-600">{t("denomination")}</span>
                 <select
                   value={contractDenom}
-                  onChange={(e) => setContractDenom(e.target.value)}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    setContractDenom(next);
+                    if (next === "PASS") {
+                      setContractLevel("");
+                      setTricksResult("PASS");
+                    } else if (contractLevel === "") {
+                      setContractLevel("1");
+                    }
+                  }}
                   className="rounded border border-zinc-300 bg-white px-2 py-1.5"
                   disabled={busy}
                 >
@@ -727,7 +780,7 @@ export function HonorBoardResultsEditor({
                   value={doubling}
                   onChange={(e) => setDoubling(e.target.value)}
                   className="rounded border border-zinc-300 bg-white px-2 py-1.5"
-                  disabled={busy}
+                  disabled={busy || contractDenom === "PASS"}
                 >
                   <option value="NONE">—</option>
                   <option value="DOUBLED">X</option>
@@ -740,7 +793,7 @@ export function HonorBoardResultsEditor({
                   value={declarer}
                   onChange={(e) => setDeclarer(e.target.value)}
                   className="rounded border border-zinc-300 bg-white px-2 py-1.5"
-                  disabled={busy}
+                  disabled={busy || contractDenom === "PASS"}
                 >
                   <option value="N">N</option>
                   <option value="E">O</option>
@@ -750,13 +803,18 @@ export function HonorBoardResultsEditor({
               </label>
               <label className="flex flex-col gap-1 text-sm">
                 <span className="text-zinc-600">{t("tricksResult")}</span>
-                <input
+                <select
                   value={tricksResult}
                   onChange={(e) => setTricksResult(e.target.value)}
                   className="rounded border border-zinc-300 bg-white px-2 py-1.5"
-                  disabled={busy}
-                  placeholder="= / +1 / -2"
-                />
+                  disabled={busy || (contractDenom !== "PASS" && contractLevel === "")}
+                >
+                  {tricksResultOptions.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
               </label>
               <label className="flex flex-col gap-1 text-sm">
                 <span className="text-zinc-600">{t("nsScoreOverride")}</span>
