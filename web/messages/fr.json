@@ -419,7 +419,10 @@
   "arbiter": {
     "nav": {
       "label": "Sections arbitre",
-      "inbox": "Boîte",
+      "inbox": "National",
+      "national": "National",
+      "flanders": "Flandre",
+      "wallonia": "Wallonie",
       "honor": "Division d'Honneur"
     },
     "pageTitle": "Boîte arbitre",

@@ -27,6 +27,7 @@ import {
 } from "@/components/discipline/DisciplineWarningFields";
 import { FilePickerField, FILE_PICKER_ACCEPT } from "@/components/files/FilePickerField";
 import type { InboxMatchContext } from "@/lib/competition/arbiter-request";
+import type { CompetitionKindCode } from "@/lib/auth/competition-scope";
 import type { Locale } from "@/i18n/config";
 import { toIntlLocale } from "@/i18n/intl-locale";
 import { formatBrussels } from "@/lib/time/brussels";
@@ -88,7 +89,7 @@ function teamOptions(match: InboxMatchContext): {
   };
 }
 
-export function ArbiterInbox() {
+export function ArbiterInbox({ kind }: { kind: CompetitionKindCode }) {
   const t = useTranslations("arbiter");
   const locale = useLocale() as Locale;
   const intlLocale = toIntlLocale(locale);
@@ -104,7 +105,9 @@ export function ArbiterInbox() {
   const load = useCallback(async () => {
     setLoading(true);
     setMessage(null);
-    const res = await fetch("/api/arbiter/requests?status=open");
+    const res = await fetch(
+      `/api/arbiter/requests?status=open&kind=${encodeURIComponent(kind)}`,
+    );
     const body = await res.json();
     if (!res.ok) {
       setMessage(body.error ?? t("loadFailed"));
@@ -113,7 +116,7 @@ export function ArbiterInbox() {
     }
     setRequests(body.requests ?? []);
     setLoading(false);
-  }, [t]);
+  }, [kind, t]);
 
   useEffect(() => {
     void load();

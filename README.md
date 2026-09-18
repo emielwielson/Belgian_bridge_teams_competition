@@ -76,10 +76,10 @@ Kinds: `national`, `flanders`, `wallonia`. Leaving `competition_manager_scopes` 
 
 **Arbiters (preferred):** use **Admin → Arbiters** (`/admin/arbiters`) after applying `0067_arbiter_scopes.sql`. Competition managers can create/remove arbiter accounts by email and assign only competitions they manage. Scopes:
 
-- `arbiter_competition_scopes` → inbox for that competition kind (National / Flanders / Wallonia)
+- `arbiter_competition_scopes` → inbox tabs for that competition kind (`/arbiter/national`, `/arbiter/flanders`, `/arbiter/wallonia`)
 - `arbiter_honor_access` → Honor Division tab (`/arbiter/honor`); grantable only by managers who manage National
 
-Honor-only arbiters see the honor tab but not the inbox. Empty competition scopes mean no inbox (unlike managers). Existing arbiters are backfilled to all kinds + honor when `0067` runs. Manual SQL (fallback):
+Honor-only arbiters see the honor tab but not league inboxes. Empty competition scopes mean no inbox (unlike managers). Existing arbiters are backfilled to all kinds + honor when `0067` runs. Manual SQL (fallback):
 
 ```sql
 insert into public.user_roles (user_id, role)

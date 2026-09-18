@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   arbiterCanAccessMatchKind,
+  arbiterKindHref,
   hasArbiterHonorAccess,
   hasArbiterInboxAccess,
+  isCompetitionKindCode,
+  orderArbiterInboxKinds,
   resolveArbiterNavAccess,
   type ArbiterAccess,
 } from "./arbiter-scope";
@@ -35,16 +38,45 @@ describe("arbiter access helpers", () => {
     expect(arbiterCanAccessMatchKind(a, "flanders")).toBe(false);
     expect(arbiterCanAccessMatchKind(a, null)).toBe(false);
   });
+
+  it("orders inbox kinds National → Flanders → Wallonia", () => {
+    expect(orderArbiterInboxKinds(["wallonia", "national", "flanders"])).toEqual(
+      ["national", "flanders", "wallonia"],
+    );
+  });
+
+  it("validates kind codes", () => {
+    expect(isCompetitionKindCode("national")).toBe(true);
+    expect(isCompetitionKindCode("honor")).toBe(false);
+  });
 });
 
 describe("resolveArbiterNavAccess", () => {
-  it("gives managers both surfaces", () => {
+  it("gives admins all kind tabs and honor", () => {
+    expect(
+      resolveArbiterNavAccess({
+        roles: [ROLES.SYSTEM_ADMIN],
+        arbiterAccess: null,
+      }),
+    ).toEqual({
+      kinds: ["national", "flanders", "wallonia"],
+      showHonor: true,
+      href: "/arbiter/national",
+    });
+  });
+
+  it("limits managers to managed kinds", () => {
     expect(
       resolveArbiterNavAccess({
         roles: [ROLES.COMPETITION_MANAGER],
         arbiterAccess: null,
+        managedKinds: ["flanders", "wallonia"],
       }),
-    ).toEqual({ showInbox: true, showHonor: true, href: "/arbiter" });
+    ).toEqual({
+      kinds: ["flanders", "wallonia"],
+      showHonor: true,
+      href: "/arbiter/flanders",
+    });
   });
 
   it("routes honor-only arbiters to honor", () => {
@@ -54,19 +86,39 @@ describe("resolveArbiterNavAccess", () => {
         arbiterAccess: access({ kinds: [], honor: true, inbox: false }),
       }),
     ).toEqual({
-      showInbox: false,
+      kinds: [],
       showHonor: true,
       href: "/arbiter/honor",
     });
   });
 
-  it("routes inbox-only arbiters to inbox", () => {
+  it("routes multi-scope arbiters to first kind tab", () => {
+    expect(
+      resolveArbiterNavAccess({
+        roles: [ROLES.ARBITER],
+        arbiterAccess: access({
+          kinds: ["wallonia", "flanders"],
+          honor: true,
+        }),
+      }),
+    ).toEqual({
+      kinds: ["flanders", "wallonia"],
+      showHonor: true,
+      href: "/arbiter/flanders",
+    });
+  });
+
+  it("routes inbox-only arbiters to their kind", () => {
     expect(
       resolveArbiterNavAccess({
         roles: [ROLES.ARBITER],
         arbiterAccess: access({ kinds: ["flanders"], honor: false }),
       }),
-    ).toEqual({ showInbox: true, showHonor: false, href: "/arbiter" });
+    ).toEqual({
+      kinds: ["flanders"],
+      showHonor: false,
+      href: arbiterKindHref("flanders"),
+    });
   });
 
   it("hides nav when arbiter has no scopes", () => {
@@ -75,6 +127,6 @@ describe("resolveArbiterNavAccess", () => {
         roles: [ROLES.ARBITER],
         arbiterAccess: access({ kinds: [], honor: false, inbox: false }),
       }),
-    ).toEqual({ showInbox: false, showHonor: false, href: null });
+    ).toEqual({ kinds: [], showHonor: false, href: null });
   });
 });

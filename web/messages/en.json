@@ -420,7 +420,10 @@
   "arbiter": {
     "nav": {
       "label": "Arbiter sections",
-      "inbox": "Inbox",
+      "inbox": "National",
+      "national": "National",
+      "flanders": "Flanders",
+      "wallonia": "Wallonia",
       "honor": "Honor"
     },
     "pageTitle": "Arbiter inbox",

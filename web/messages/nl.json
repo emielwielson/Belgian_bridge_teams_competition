@@ -420,7 +420,10 @@
   "arbiter": {
     "nav": {
       "label": "Scheidsrechter-onderdelen",
-      "inbox": "Inbox",
+      "inbox": "Nationaal",
+      "national": "Nationaal",
+      "flanders": "Vlaanderen",
+      "wallonia": "Wallonië",
       "honor": "Eredivisie"
     },
     "pageTitle": "Scheidsrechter",

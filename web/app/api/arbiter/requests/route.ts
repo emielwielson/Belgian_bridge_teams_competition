@@ -1,5 +1,10 @@
 import { ARBITER_ACCESS_ROLES } from "@/lib/auth/roles";
-import { assertArbiterInboxApiAccess } from "@/lib/auth/arbiter-scope";
+import {
+  assertArbiterInboxApiAccess,
+  assertArbiterKindAccess,
+  groupIdsForCompetitionKind,
+  isCompetitionKindCode,
+} from "@/lib/auth/arbiter-scope";
 import { requireRoles } from "@/lib/auth/route-auth";
 import type { InboxMatchContext } from "@/lib/competition/arbiter-request";
 import { loadGroupScoringContext } from "@/lib/competition/match-scoring-context";
@@ -67,7 +72,21 @@ export async function GET(request: Request) {
       ...ARBITER_ACCESS_ROLES,
     ]);
     await assertArbiterInboxApiAccess(supabase, user.id, roles);
-    const status = new URL(request.url).searchParams.get("status") ?? "open";
+
+    const url = new URL(request.url);
+    const status = url.searchParams.get("status") ?? "open";
+    const kindParam = url.searchParams.get("kind");
+    if (!kindParam || !isCompetitionKindCode(kindParam)) {
+      return jsonError("kind must be national, flanders, or wallonia", 400);
+    }
+    await assertArbiterKindAccess(supabase, user.id, roles, kindParam);
+
+    const groupIds = new Set(
+      await groupIdsForCompetitionKind(supabase, kindParam),
+    );
+    if (groupIds.size === 0) {
+      return jsonOk({ requests: [] });
+    }
 
     let query = supabase
       .from("arbiter_requests")
@@ -110,8 +129,13 @@ export async function GET(request: Request) {
 
     const service = createServiceClient();
 
+    const scopedRows = (data ?? []).filter((row) => {
+      const match = first(row.match as MatchRow | MatchRow[] | null);
+      return match != null && groupIds.has(match.group_id);
+    });
+
     const requests = await Promise.all(
-      (data ?? []).map(async (row) => {
+      scopedRows.map(async (row) => {
         let imageSignedUrl: string | null = null;
         if (row.image_path) {
           try {

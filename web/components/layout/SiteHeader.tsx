@@ -19,6 +19,7 @@ type MeResponse = {
     honor: boolean;
     inbox: boolean;
   };
+  managedKinds?: string[];
 };
 
 function navLinkClass(active: boolean): string {
@@ -71,8 +72,13 @@ export function SiteHeader() {
               inbox: me.arbiterAccess.inbox,
             }
           : null,
+        managedKinds: (me.managedKinds ?? []) as (
+          | "national"
+          | "flanders"
+          | "wallonia"
+        )[],
       })
-    : { showInbox: false, showHonor: false, href: null };
+    : { kinds: [], showHonor: false, href: null };
   const showArbiterLink = arbiterNav.href != null;
   const arbiterHref = arbiterNav.href ?? "/arbiter";
 
