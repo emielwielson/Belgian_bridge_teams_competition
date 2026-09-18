@@ -273,7 +273,7 @@
       "editTitle": "Modifier le résultat officiel",
       "notPlayedYet": "Cette rencontre n'a pas encore été jouée.",
       "honorAwaitingPublish": "Les scores de la Division d'Honneur sont calculés automatiquement lors de la publication de la ronde à partir des résultats Bridgemate.",
-      "lineupsFirst": "Enregistrez d'abord les deux compositions ci-dessus (au moins 4 joueurs par équipe). Pour l'Honneur, les deux équipes doivent soumettre une composition assise.",
+      "lineupsFirst": "Enregistrez d'abord les deux compositions ci-dessus (au moins 4 joueurs par équipe).",
       "boardsVpFromTable": "{boardCount} donnes · VP selon le tableau",
       "scheduledBoards": "Prévu : {boardCount} donnes",
       "boardCountChoice": "Donnes jouées",

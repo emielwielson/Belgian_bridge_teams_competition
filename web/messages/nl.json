@@ -273,7 +273,7 @@
       "editTitle": "Officiële score bewerken",
       "notPlayedYet": "Deze wedstrijd is nog niet gespeeld.",
       "honorAwaitingPublish": "Eredivisie-scores worden automatisch berekend wanneer de ronde wordt gepubliceerd op basis van de Bridgemate-resultaten.",
-      "lineupsFirst": "Sla eerst beide teamopstellingen hierboven op (minstens 4 spelers per team). Voor de Eredivisie moeten beide teams een gezeten opstelling indienen.",
+      "lineupsFirst": "Sla eerst beide teamopstellingen hierboven op (minstens 4 spelers per team).",
       "boardsVpFromTable": "{boardCount} borden · VP uit tabel",
       "scheduledBoards": "Gepland: {boardCount} borden",
       "boardCountChoice": "Gespeelde borden",
