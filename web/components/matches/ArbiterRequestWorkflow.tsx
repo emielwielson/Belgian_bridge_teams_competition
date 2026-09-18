@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useId, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { FilePickerField } from "@/components/files/FilePickerField";
+import { FilePickerField, FILE_PICKER_ACCEPT } from "@/components/files/FilePickerField";
 import type { MatchArbiterRequestsState } from "@/lib/competition/arbiter-request";
 import { toIntlLocale } from "@/i18n/intl-locale";
 import type { Locale } from "@/i18n/config";
@@ -159,6 +159,7 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
             file={file}
             onFileChange={handleFileChange}
             hint={t("attachmentHint")}
+            accept={FILE_PICKER_ACCEPT}
             disabled={uploading || busy}
           />
           {uploading ? (

@@ -232,7 +232,7 @@ export function HonorButlerImportPanel({
               id={`honor-butler-pbn-${round}`}
               file={pbnFile}
               hint={t("pbnHint")}
-              accept=".pbn,text/plain"
+              accept=".pbn"
               disabled={busy != null}
               onFileChange={(file) => {
                 setPbnFile(file);
@@ -248,7 +248,7 @@ export function HonorButlerImportPanel({
               id={`honor-butler-bws-${round}`}
               file={bwsFile}
               hint={t("bwsHint")}
-              accept=".bws,application/octet-stream"
+              accept=".bws"
               disabled={busy != null}
               onFileChange={(file) => {
                 setBwsFile(file);

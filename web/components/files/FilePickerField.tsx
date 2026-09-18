@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { useTranslations } from "next-intl";
 
+/** Default accept for arbiter attachment uploads (PDF / images). */
 export const FILE_PICKER_ACCEPT =
   "application/pdf,image/jpeg,image/png,image/webp";
 
@@ -11,9 +12,9 @@ type Props = {
   file: File | null;
   onFileChange: (file: File | null) => void;
   hint: string;
+  /** File filter for the native picker (e.g. ".pbn" or FILE_PICKER_ACCEPT). */
+  accept: string;
   disabled?: boolean;
-  /** Defaults to PDF/image accept used for arbiter attachments. */
-  accept?: string;
 };
 
 export function FilePickerField({
@@ -21,8 +22,8 @@ export function FilePickerField({
   file,
   onFileChange,
   hint,
+  accept,
   disabled = false,
-  accept = FILE_PICKER_ACCEPT,
 }: Props) {
   const t = useTranslations("common");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -32,6 +33,11 @@ export function FilePickerField({
     if (inputRef.current) {
       inputRef.current.value = "";
     }
+  }
+
+  function openPicker() {
+    if (disabled) return;
+    inputRef.current?.click();
   }
 
   return (
@@ -46,16 +52,16 @@ export function FilePickerField({
           disabled={disabled}
           onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
           className="sr-only"
+          tabIndex={-1}
         />
-        <label
-          htmlFor={id}
-          className={[
-            "btn-secondary cursor-pointer px-3 py-1.5",
-            disabled ? "pointer-events-none opacity-50" : "",
-          ].join(" ")}
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={openPicker}
+          className="btn-secondary px-3 py-1.5 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {t("chooseFile")}
-        </label>
+        </button>
         <span
           className={[
             "min-w-0 truncate",

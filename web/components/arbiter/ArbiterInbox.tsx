@@ -25,7 +25,7 @@ import {
   warningFieldsToPayload,
   type WarningFieldsValue,
 } from "@/components/discipline/DisciplineWarningFields";
-import { FilePickerField } from "@/components/files/FilePickerField";
+import { FilePickerField, FILE_PICKER_ACCEPT } from "@/components/files/FilePickerField";
 import type { InboxMatchContext } from "@/lib/competition/arbiter-request";
 import type { Locale } from "@/i18n/config";
 import { toIntlLocale } from "@/i18n/intl-locale";
@@ -349,6 +349,7 @@ export function ArbiterInbox() {
                           void handleRulingFileChange(r, next)
                         }
                         hint={t("rulingFileHint")}
+                        accept={FILE_PICKER_ACCEPT}
                         disabled={busyId === r.id || draft.uploading}
                       />
                       {draft.uploading ? (
