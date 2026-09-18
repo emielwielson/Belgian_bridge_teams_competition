@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { ButlerModeRoundNav } from "@/components/butler/ButlerModeRoundNav";
 import { ButlerOverallModeTabs } from "@/components/butler/ButlerOverallModeTabs";
 import {
   ButlerOverallPlayerStandings,
@@ -29,10 +30,46 @@ export default async function ButlerOverviewPage() {
     );
   }
 
-  const [standings, playerStandings] = await Promise.all([
-    getPublishedCombinationStandings(client, group.id),
-    getPublishedPlayerStandings(client, group.id),
-  ]);
+  const [standings, playerStandings, pubsResult, boardsResult] =
+    await Promise.all([
+      getPublishedCombinationStandings(client, group.id),
+      getPublishedPlayerStandings(client, group.id),
+      client
+        .from("honor_round_publication")
+        .select("tournament_round")
+        .eq("group_id", group.id)
+        .eq("status", "published")
+        .order("tournament_round"),
+      client
+        .from("honor_boards")
+        .select("id, tournament_round, board_number")
+        .eq("group_id", group.id)
+        .eq("publication_status", "published")
+        .order("tournament_round")
+        .order("board_number"),
+    ]);
+
+  const publishedRounds = new Set(
+    (pubsResult.data ?? []).map((p) => p.tournament_round as number),
+  );
+  for (const r of standings.rounds) {
+    publishedRounds.add(r.tournamentRound);
+  }
+
+  const firstBoardByRound = new Map<number, string>();
+  for (const board of boardsResult.data ?? []) {
+    const round = board.tournament_round as number;
+    if (!firstBoardByRound.has(round)) {
+      firstBoardByRound.set(round, board.id as string);
+    }
+  }
+
+  const modeRounds = [...publishedRounds]
+    .sort((a, b) => a - b)
+    .map((tournamentRound) => ({
+      tournamentRound,
+      firstBoardId: firstBoardByRound.get(tournamentRound) ?? null,
+    }));
 
   return (
     <main className="page-container max-w-5xl">
@@ -40,6 +77,15 @@ export default async function ButlerOverviewPage() {
         {t("title")}
       </h1>
       <p className="mt-1 text-sm text-zinc-600">{t("subtitle")}</p>
+
+      <ButlerModeRoundNav
+        rounds={modeRounds}
+        handsLabel={t("handDiagrams")}
+        frequencyLabel={t("frequencySheets")}
+        selectRoundLabel={t("selectRound")}
+        modeAriaLabel={t("modeNavAria")}
+        roundAriaLabel={t("roundNavAria")}
+      />
 
       {standings.combinations.length === 0 ? (
         <p className="mt-8 text-sm text-zinc-600">{t("empty")}</p>
