@@ -37,8 +37,26 @@ export type HonorResultRow = {
 };
 
 type Mode = "cancelled" | "artificial" | "split" | "weighted" | "correct";
-type Filter = "needs_attention" | "all" | "special" | "invalid";
 type PickBy = "match" | "table";
+
+function isAdjustedResult(row: HonorResultRow): boolean {
+  return (
+    row.correction_status === "corrected" ||
+    (row.adjustment_mode != null && row.adjustment_mode !== "")
+  );
+}
+
+function pairNames(
+  players: { direction: string; name: string }[],
+  a: string,
+  b: string,
+): string | null {
+  const byDir = new Map(players.map((p) => [p.direction, p.name]));
+  const left = byDir.get(a);
+  const right = byDir.get(b);
+  if (!left && !right) return null;
+  return `${left ?? "—"} – ${right ?? "—"}`;
+}
 
 /** Bridgemate-style relative results valid for contract level 1–7. */
 function tricksResultOptionsForLevel(level: number): string[] {
@@ -61,7 +79,6 @@ export function HonorBoardResultsEditor({
   refreshKey?: number;
 }) {
   const t = useTranslations("arbiter.honorResults");
-  const [filter, setFilter] = useState<Filter>("needs_attention");
   const [rows, setRows] = useState<HonorResultRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [pickBy, setPickBy] = useState<PickBy>("match");
@@ -160,13 +177,15 @@ export function HonorBoardResultsEditor({
     return [...nums].sort((a, b) => a - b);
   }, [rows, pickBy, matchId, room, tableNumber]);
 
-  const attentionCount = useMemo(
+  const adjustedRows = useMemo(
     () =>
-      rows.filter(
-        (r) =>
-          r.validation_status === "special" ||
-          r.validation_status === "invalid",
-      ).length,
+      rows
+        .filter(isAdjustedResult)
+        .sort((a, b) => {
+          const tn = (a.table_number ?? 99) - (b.table_number ?? 99);
+          if (tn !== 0) return tn;
+          return (a.board_number ?? 0) - (b.board_number ?? 0);
+        }),
     [rows],
   );
 
@@ -176,7 +195,7 @@ export function HonorBoardResultsEditor({
     setError(null);
     try {
       const res = await fetch(
-        `/api/arbiter/honor/rounds/${round}/results?filter=${filter}`,
+        `/api/arbiter/honor/rounds/${round}/results?filter=all`,
       );
       const body = (await res.json().catch(() => null)) as {
         error?: string;
@@ -190,7 +209,7 @@ export function HonorBoardResultsEditor({
     } finally {
       setLoading(false);
     }
-  }, [round, enabled, filter, t]);
+  }, [round, enabled, t]);
 
   useEffect(() => {
     void load();
@@ -201,26 +220,38 @@ export function HonorBoardResultsEditor({
     setRoom("");
     setTableNumber("");
     setBoardNumber("");
-  }, [filter, round]);
+  }, [round]);
 
-  useEffect(() => {
-    if (pickBy === "match") {
-      setTableNumber("");
-    } else {
-      setMatchId("");
-      setRoom("");
+  function selectResult(row: HonorResultRow) {
+    setPickBy("match");
+    setMatchId(row.match_id);
+    setRoom(row.room === "closed" ? "closed" : "open");
+    setTableNumber(
+      row.table_number != null ? String(row.table_number) : "",
+    );
+    setBoardNumber(
+      row.board_number != null ? String(row.board_number) : "",
+    );
+    setMessage(null);
+    setError(null);
+  }
+
+  function adjustmentModeLabel(row: HonorResultRow): string {
+    switch (row.adjustment_mode) {
+      case "cancelled":
+        return t("modeCancelled");
+      case "artificial":
+        return t("modeArtificial");
+      case "split":
+        return t("modeSplit");
+      case "weighted":
+        return t("modeWeighted");
+      case "correction":
+        return t("modeCorrect");
+      default:
+        return t("adjustedGeneric");
     }
-    setBoardNumber("");
-  }, [pickBy]);
-
-  useEffect(() => {
-    setRoom("");
-    setBoardNumber("");
-  }, [matchId]);
-
-  useEffect(() => {
-    setBoardNumber("");
-  }, [room, tableNumber]);
+  }
 
   useEffect(() => {
     if (!selected) return;
@@ -298,19 +329,12 @@ export function HonorBoardResultsEditor({
 
   const selectedPlayersLabel = useMemo(() => {
     if (!selected) return null;
-    const byDir = new Map(
-      (selected.players ?? []).map((p) => [p.direction, p.name]),
-    );
-    const n = byDir.get("N");
-    const e = byDir.get("E");
-    const s = byDir.get("S");
-    const w = byDir.get("W");
-    if (!n && !e && !s && !w) return null;
+    const ns = pairNames(selected.players ?? [], "N", "S");
+    const ew = pairNames(selected.players ?? [], "E", "W");
+    if (!ns && !ew) return null;
     return t("selectedPlayers", {
-      n: n ?? "—",
-      e: e ?? "—",
-      s: s ?? "—",
-      w: w ?? "—",
+      ns: ns ?? "—",
+      ew: ew ?? "—",
     });
   }, [selected, t]);
 
@@ -422,24 +446,9 @@ export function HonorBoardResultsEditor({
 
   return (
     <section className="rounded-lg border border-zinc-200 bg-white px-4 py-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold text-zinc-900">{t("title")}</h2>
-          <p className="mt-1 text-sm text-zinc-600">{t("description")}</p>
-        </div>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-zinc-600">{t("filter")}</span>
-          <select
-            value={filter}
-            onChange={(e) => setFilter(e.target.value as Filter)}
-            className="rounded border border-zinc-300 bg-white px-2 py-1.5"
-          >
-            <option value="needs_attention">{t("filterNeedsAttention")}</option>
-            <option value="special">{t("filterSpecial")}</option>
-            <option value="invalid">{t("filterInvalid")}</option>
-            <option value="all">{t("filterAll")}</option>
-          </select>
-        </label>
+      <div>
+        <h2 className="text-lg font-semibold text-zinc-900">{t("title")}</h2>
+        <p className="mt-1 text-sm text-zinc-600">{t("description")}</p>
       </div>
 
       {loading ? (
@@ -448,16 +457,14 @@ export function HonorBoardResultsEditor({
         <p className="mt-3 text-sm text-zinc-600">{t("empty")}</p>
       ) : (
         <div className="mt-4 space-y-3">
-          {attentionCount > 0 && filter === "all" ? (
-            <p className="text-sm text-amber-800">
-              {t("attentionHint", { count: attentionCount })}
-            </p>
-          ) : null}
-
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => setPickBy("match")}
+              onClick={() => {
+                setPickBy("match");
+                setTableNumber("");
+                setBoardNumber("");
+              }}
               className={
                 pickBy === "match"
                   ? "rounded border border-zinc-900 bg-zinc-900 px-3 py-1.5 text-sm text-white"
@@ -468,7 +475,12 @@ export function HonorBoardResultsEditor({
             </button>
             <button
               type="button"
-              onClick={() => setPickBy("table")}
+              onClick={() => {
+                setPickBy("table");
+                setMatchId("");
+                setRoom("");
+                setBoardNumber("");
+              }}
               className={
                 pickBy === "table"
                   ? "rounded border border-zinc-900 bg-zinc-900 px-3 py-1.5 text-sm text-white"
@@ -486,7 +498,11 @@ export function HonorBoardResultsEditor({
                   <span className="text-zinc-600">{t("selectMatch")}</span>
                   <select
                     value={matchId}
-                    onChange={(e) => setMatchId(e.target.value)}
+                    onChange={(e) => {
+                      setMatchId(e.target.value);
+                      setRoom("");
+                      setBoardNumber("");
+                    }}
                     className="rounded border border-zinc-300 bg-white px-2 py-1.5"
                   >
                     <option value="">{t("selectPlaceholder")}</option>
@@ -501,9 +517,10 @@ export function HonorBoardResultsEditor({
                   <span className="text-zinc-600">{t("selectRoom")}</span>
                   <select
                     value={room}
-                    onChange={(e) =>
-                      setRoom(e.target.value as "open" | "closed" | "")
-                    }
+                    onChange={(e) => {
+                      setRoom(e.target.value as "open" | "closed" | "");
+                      setBoardNumber("");
+                    }}
                     disabled={!matchId}
                     className="rounded border border-zinc-300 bg-white px-2 py-1.5 disabled:opacity-50"
                   >
@@ -530,7 +547,10 @@ export function HonorBoardResultsEditor({
                 <span className="text-zinc-600">{t("selectTable")}</span>
                 <select
                   value={tableNumber}
-                  onChange={(e) => setTableNumber(e.target.value)}
+                  onChange={(e) => {
+                    setTableNumber(e.target.value);
+                    setBoardNumber("");
+                  }}
                   className="rounded border border-zinc-300 bg-white px-2 py-1.5"
                 >
                   <option value="">{t("selectPlaceholder")}</option>
@@ -576,22 +596,46 @@ export function HonorBoardResultsEditor({
                             r.table_number === Number(tableNumber) &&
                             r.board_number === bn,
                         );
-                  const mark =
-                    row &&
-                    (row.validation_status === "special" ||
-                      row.validation_status === "invalid")
-                      ? " !"
-                      : "";
+                  const adjusted = row ? isAdjustedResult(row) : false;
                   return (
                     <option key={bn} value={String(bn)}>
-                      {t("boardOption", { board: bn })}
-                      {mark}
+                      {adjusted
+                        ? t("boardOptionAdjusted", { board: bn })
+                        : t("boardOption", { board: bn })}
                     </option>
                   );
                 })}
               </select>
             </label>
           </div>
+
+          {adjustedRows.length > 0 ? (
+            <div className="rounded-md border border-amber-200 bg-amber-50/60 px-3 py-2">
+              <p className="text-sm font-medium text-amber-950">
+                {t("adjustedHeading", { count: adjustedRows.length })}
+              </p>
+              <ul className="mt-2 space-y-1">
+                {adjustedRows.map((row) => (
+                  <li key={row.id}>
+                    <button
+                      type="button"
+                      onClick={() => selectResult(row)}
+                      className="text-left text-sm text-amber-950 underline-offset-2 hover:underline"
+                    >
+                      {t("adjustedItem", {
+                        table: row.table_number ?? "—",
+                        board: row.board_number ?? "—",
+                        match: row.match_label,
+                        room:
+                          row.room === "open" ? t("roomOpen") : t("roomClosed"),
+                        mode: adjustmentModeLabel(row),
+                      })}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </div>
       )}
 
