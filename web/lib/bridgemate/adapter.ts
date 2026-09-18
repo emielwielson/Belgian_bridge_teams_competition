@@ -38,6 +38,14 @@ function sourceId(row: ReceivedDataRow, index: number): string {
   return `bm:${String(section)}-${String(table)}-r${String(round)}-b${String(board)}#${index}`;
 }
 
+/** Normalize Bridgemate LeadCard to a trimmed string, or null if absent. */
+export function extractLeadCard(row: ReceivedDataRow): string | null {
+  const raw = row.LeadCard ?? row.leadCard;
+  if (raw == null) return null;
+  const s = String(raw).trim();
+  return s === "" ? null : s;
+}
+
 /**
  * Adapt Bridgemate ReceivedData rows to NormalizedBoardResultInput.
  * Isolated from Butler — only maps/normalizes.
@@ -76,6 +84,7 @@ export function adaptReceivedDataToNormalized(
       declarer: decoded.declarer,
       tricksResult: decoded.tricksResult,
       tricksTaken: decoded.tricksTaken,
+      leadCard: extractLeadCard(raw),
       bridgemateScore: decoded.bridgemateScore,
       specialResultKind: decoded.specialResultKind,
       remarks: decoded.remarks,

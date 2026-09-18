@@ -656,6 +656,7 @@
     "datumMissing": "Datum could not be computed.",
     "fieldComparison": "Field comparison",
     "contract": "Contract",
+    "lead": "Lead",
     "scoreNs": "NS score",
     "nsImps": "NS IMP",
     "ewImps": "EW IMP",

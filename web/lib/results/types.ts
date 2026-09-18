@@ -20,6 +20,8 @@ export type NormalizedBoardResultInput = {
   declarer?: Declarer | null;
   tricksResult?: string | null;
   tricksTaken?: number | null;
+  /** Opening lead card from Bridgemate (e.g. SA, HK) */
+  leadCard?: string | null;
   /** Score from Bridgemate (NS perspective), when supplied */
   bridgemateScore?: number | null;
   specialResultKind?: SpecialResultKind;

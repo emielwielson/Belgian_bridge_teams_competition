@@ -35,7 +35,7 @@ export async function ButlerPairResultsView({
   let query = client
     .from("honor_board_results")
     .select(
-      "id, tournament_round, room, board_id, ns_combination_id, ew_combination_id, ns_butler_imps, ew_butler_imps, ns_score, contract_level, contract_denomination, doubling, declarer, tricks_result, honor_boards(board_number)",
+      "id, tournament_round, room, board_id, ns_combination_id, ew_combination_id, ns_butler_imps, ew_butler_imps, ns_score, contract_level, contract_denomination, doubling, declarer, tricks_result, lead_card, honor_boards(board_number)",
     )
     .eq("processing_status", "published")
     .or(
@@ -72,6 +72,7 @@ export async function ButlerPairResultsView({
         doubling: (r.doubling as string) ?? "NONE",
         declarer: r.declarer as string | null,
         tricksResult: r.tricks_result as string | null,
+        leadCard: (r.lead_card as string | null) ?? null,
         opponentId: (isNs ? r.ew_combination_id : r.ns_combination_id) as
           | string
           | null,

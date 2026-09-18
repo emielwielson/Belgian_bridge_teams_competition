@@ -215,6 +215,7 @@ export async function ingestHonorBoardResults(params: {
         declarer: row.declarer ?? null,
         tricks_result: row.tricksResult ?? null,
         tricks_taken: row.tricksTaken ?? null,
+        lead_card: row.leadCard ?? null,
         bridgemate_score: row.bridgemateScore ?? null,
         computed_score: validated.computedScore,
         ns_score: validated.nsScore,

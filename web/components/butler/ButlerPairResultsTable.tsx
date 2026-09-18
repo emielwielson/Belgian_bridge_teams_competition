@@ -5,6 +5,7 @@ import { Fragment, useState } from "react";
 import { useTranslations } from "next-intl";
 import { HandDiagram } from "@/components/boards/HandDiagram";
 import { ContractLabel } from "@/components/butler/ContractLabel";
+import { LeadLabel } from "@/components/butler/LeadLabel";
 import type { BoardHands, Dealer, Vulnerability } from "@/lib/boards/types";
 import { handDiagramLabelsFromButler } from "@/lib/boards/hand-diagram-labels";
 import { formatImps } from "@/lib/butler/format";
@@ -21,6 +22,7 @@ export type PairResultRow = {
   doubling: string;
   declarer: string | null;
   tricksResult: string | null;
+  leadCard: string | null;
   opponentId: string | null;
   opponentName: string | null;
 };
@@ -44,7 +46,7 @@ export function ButlerPairResultsTable({
   const t = useTranslations("butler");
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
 
-  const colCount = tournamentRound == null ? 6 : 5;
+  const colCount = tournamentRound == null ? 7 : 6;
 
   function toggleExpand(rowId: string) {
     setExpandedRowId((current) => (current === rowId ? null : rowId));
@@ -66,6 +68,9 @@ export function ButlerPairResultsTable({
             </th>
             <th className="whitespace-nowrap px-3 py-2 font-medium">
               {t("contract")}
+            </th>
+            <th className="whitespace-nowrap px-3 py-2 font-medium">
+              {t("lead")}
             </th>
             <th className="whitespace-nowrap px-3 py-2 text-right font-medium">
               {t("imps")}
@@ -105,6 +110,9 @@ export function ButlerPairResultsTable({
                       declarer={r.declarer}
                       tricksResult={r.tricksResult}
                     />
+                  </td>
+                  <td className="px-3 py-2">
+                    <LeadLabel leadCard={r.leadCard} />
                   </td>
                   <td className="px-3 py-2 text-right font-mono tabular-nums">
                     {formatImps(r.imps)}

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { HandDiagram } from "@/components/boards/HandDiagram";
 import { ContractLabel } from "@/components/butler/ContractLabel";
+import { LeadLabel } from "@/components/butler/LeadLabel";
 import type { BoardHands, Dealer, Vulnerability } from "@/lib/boards/types";
 import { handDiagramLabelsFromButler } from "@/lib/boards/hand-diagram-labels";
 import { formatImps } from "@/lib/butler/format";
@@ -32,7 +33,7 @@ export default async function ButlerBoardPage({
     client
       .from("honor_board_results")
       .select(
-        "id, room, ns_score, score_diff, ns_butler_imps, ew_butler_imps, contract_level, contract_denomination, doubling, declarer, tricks_result, ns_combination_id, ew_combination_id, match_id",
+        "id, room, ns_score, score_diff, ns_butler_imps, ew_butler_imps, contract_level, contract_denomination, doubling, declarer, tricks_result, lead_card, ns_combination_id, ew_combination_id, match_id",
       )
       .eq("board_id", boardId)
       .eq("processing_status", "published"),
@@ -202,6 +203,9 @@ export default async function ButlerBoardPage({
                     <th className="whitespace-nowrap px-3 py-2 font-medium">
                       {t("contract")}
                     </th>
+                    <th className="whitespace-nowrap px-3 py-2 font-medium">
+                      {t("lead")}
+                    </th>
                     <th className="whitespace-nowrap px-3 py-2 text-right font-medium">
                       {t("scoreNs")}
                     </th>
@@ -237,6 +241,9 @@ export default async function ButlerBoardPage({
                           declarer={r.declarer}
                           tricksResult={r.tricks_result}
                         />
+                      </td>
+                      <td className="px-3 py-2">
+                        <LeadLabel leadCard={r.lead_card as string | null} />
                       </td>
                       <td className="px-3 py-2 text-right font-mono tabular-nums">
                         {r.ns_score ?? "—"}
