@@ -122,6 +122,11 @@ export function HonorSeatingOverview() {
     [payload?.matches],
   );
 
+  const pendingMatches = useMemo(
+    () => payload?.matches.filter((m) => !isMatchLineupReady(m)) ?? [],
+    [payload?.matches],
+  );
+
   const bwsReady =
     (payload?.matches.length ?? 0) > 0 &&
     readyMatchCount === (payload?.matches.length ?? 0);
@@ -235,12 +240,29 @@ export function HonorSeatingOverview() {
   }
 
   const matchCount = payload.matches.length;
+  const phaseLabel = t("phaseLabel", {
+    phase:
+      payload.phase === "blind" ? t("phaseBlind") : t("phaseSequential"),
+  });
+  const pendingNames = pendingMatches
+    .slice(0, 3)
+    .map((m) => `${m.home_team.name}–${m.away_team.name}`);
+  const pendingExtra = pendingMatches.length - pendingNames.length;
   const lineupsSummary = bwsReady
     ? t("lineupsCollapsedComplete", { count: matchCount })
     : t("lineupsCollapsedIncomplete", {
         ready: readyMatchCount,
         count: matchCount,
       });
+  const lineupsPendingDetail =
+    !bwsReady && pendingNames.length > 0
+      ? t("lineupsCollapsedPending", {
+          matches:
+            pendingExtra > 0
+              ? `${pendingNames.join(", ")} (+${pendingExtra})`
+              : pendingNames.join(", "),
+        })
+      : null;
 
   return (
     <div className="space-y-6">
@@ -321,21 +343,41 @@ export function HonorSeatingOverview() {
           onClick={() => setLineupsOpen((open) => !open)}
           className="flex w-full items-start justify-between gap-3 px-4 py-3 text-left hover:bg-zinc-50"
         >
-          <div className="min-w-0">
-            <h2 className="text-lg font-semibold text-zinc-900">
-              {t("lineupsStepTitle")}
-            </h2>
-            <p className="mt-0.5 text-sm text-zinc-600">{lineupsSummary}</p>
-            {!lineupsOpen ? null : (
-              <p className="mt-1 text-sm text-zinc-600">
-                {t("phaseLabel", {
-                  phase:
-                    payload.phase === "blind"
-                      ? t("phaseBlind")
-                      : t("phaseSequential"),
-                })}
-              </p>
-            )}
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-lg font-semibold text-zinc-900">
+                {t("lineupsStepTitle")}
+              </h2>
+              <span
+                className={`rounded border px-2 py-0.5 text-xs font-medium ${
+                  bwsReady
+                    ? "border-emerald-300 bg-emerald-50 text-emerald-900"
+                    : "border-amber-300 bg-amber-50 text-amber-950"
+                }`}
+              >
+                {bwsReady
+                  ? t("lineupsStatusReady")
+                  : t("lineupsStatusWaiting", {
+                      ready: readyMatchCount,
+                      count: matchCount,
+                    })}
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-zinc-600">{phaseLabel}</p>
+            {!lineupsOpen ? (
+              <div className="mt-1 space-y-0.5">
+                <p
+                  className={`text-sm font-medium ${
+                    bwsReady ? "text-emerald-800" : "text-amber-900"
+                  }`}
+                >
+                  {lineupsSummary}
+                </p>
+                {lineupsPendingDetail ? (
+                  <p className="text-sm text-zinc-600">{lineupsPendingDetail}</p>
+                ) : null}
+              </div>
+            ) : null}
           </div>
           <span className="shrink-0 rounded border border-zinc-300 bg-white px-2.5 py-1 text-sm text-zinc-800">
             {lineupsOpen ? t("lineupsCollapse") : t("lineupsExpand")}

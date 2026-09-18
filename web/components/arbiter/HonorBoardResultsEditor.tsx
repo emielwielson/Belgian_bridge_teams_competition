@@ -40,6 +40,17 @@ export type HonorResultRow = {
 type Mode = "cancelled" | "split" | "weighted" | "correct";
 type PickBy = "match" | "table";
 
+const MODES: readonly Mode[] = [
+  "cancelled",
+  "split",
+  "weighted",
+  "correct",
+];
+
+function isMode(value: string): value is Mode {
+  return (MODES as readonly string[]).includes(value);
+}
+
 type WeightedLegForm = {
   score: string;
   weightNs: string;
@@ -316,7 +327,12 @@ export function HonorBoardResultsEditor({
       selected.special_result_kind === "erased"
     ) {
       setMode("cancelled");
-    } else if (selected.validation_status === "special") {
+    } else if (
+      selected.validation_status === "special" ||
+      selected.adjustment_mode === "artificial"
+    ) {
+      setMode("weighted");
+    } else {
       setMode("weighted");
     }
   }, [selected]);
@@ -689,8 +705,11 @@ export function HonorBoardResultsEditor({
           <label className="mt-3 flex flex-col gap-1 text-sm">
             <span className="text-zinc-600">{t("mode")}</span>
             <select
-              value={mode}
-              onChange={(e) => setMode(e.target.value as Mode)}
+              value={isMode(mode) ? mode : "weighted"}
+              onChange={(e) => {
+                const next = e.target.value;
+                setMode(isMode(next) ? next : "weighted");
+              }}
               className="rounded border border-zinc-300 bg-white px-2 py-1.5"
               disabled={busy}
             >
@@ -701,7 +720,9 @@ export function HonorBoardResultsEditor({
             </select>
           </label>
 
-          <p className="mt-2 text-xs text-zinc-600">{t(`modeHelp_${mode}`)}</p>
+          <p className="mt-2 text-xs text-zinc-600">
+            {t(`modeHelp_${isMode(mode) ? mode : "weighted"}`)}
+          </p>
 
           {mode === "split" ? (
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
