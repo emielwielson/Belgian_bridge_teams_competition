@@ -248,12 +248,12 @@ export function HonorSeatingOverview() {
     .slice(0, 3)
     .map((m) => `${m.home_team.name}–${m.away_team.name}`);
   const pendingExtra = pendingMatches.length - pendingNames.length;
-  const lineupsSummary = bwsReady
-    ? t("lineupsCollapsedComplete", { count: matchCount })
-    : t("lineupsCollapsedIncomplete", {
+  const lineupsSummary = !bwsReady
+    ? t("lineupsCollapsedIncomplete", {
         ready: readyMatchCount,
         count: matchCount,
-      });
+      })
+    : null;
   const lineupsPendingDetail =
     !bwsReady && pendingNames.length > 0
       ? t("lineupsCollapsedPending", {
@@ -364,15 +364,13 @@ export function HonorSeatingOverview() {
               </span>
             </div>
             <p className="mt-1 text-sm text-zinc-600">{phaseLabel}</p>
-            {!lineupsOpen ? (
+            {!lineupsOpen && (lineupsSummary || lineupsPendingDetail) ? (
               <div className="mt-1 space-y-0.5">
-                <p
-                  className={`text-sm font-medium ${
-                    bwsReady ? "text-emerald-800" : "text-amber-900"
-                  }`}
-                >
-                  {lineupsSummary}
-                </p>
+                {lineupsSummary ? (
+                  <p className="text-sm font-medium text-amber-900">
+                    {lineupsSummary}
+                  </p>
+                ) : null}
                 {lineupsPendingDetail ? (
                   <p className="text-sm text-zinc-600">{lineupsPendingDetail}</p>
                 ) : null}

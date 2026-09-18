@@ -516,7 +516,6 @@
       "lineupsStepTitle": "1. Line-ups",
       "lineupsStatusReady": "Compleet",
       "lineupsStatusWaiting": "{ready}/{count} klaar",
-      "lineupsCollapsedComplete": "Alle line-ups vastgelegd · {count} wedstrijden",
       "lineupsCollapsedIncomplete": "{ready} van {count} wedstrijden klaar",
       "lineupsCollapsedPending": "Nog open: {matches}",
       "lineupsExpand": "Line-ups tonen",

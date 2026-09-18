@@ -515,7 +515,6 @@
       "lineupsStepTitle": "1. Line-ups",
       "lineupsStatusReady": "Complet",
       "lineupsStatusWaiting": "{ready}/{count} prêts",
-      "lineupsCollapsedComplete": "Tous les line-ups verrouillés · {count} rencontres",
       "lineupsCollapsedIncomplete": "{ready} sur {count} rencontres prêtes",
       "lineupsCollapsedPending": "Encore ouverts : {matches}",
       "lineupsExpand": "Afficher les line-ups",
