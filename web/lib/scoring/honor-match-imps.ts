@@ -51,7 +51,15 @@ type ResultRow = {
   ns_score: number | null;
   computed_score: number | null;
   admin_adjusted_ns_score: number | null;
+  included_in_match_score: boolean | null;
 };
+
+export function groupHonorMatchBoardPairs(
+  rows: ResultRow[],
+  matchId: string,
+): HonorBoardNsPair[] | { error: string } {
+  return groupBoardPairs(rows, matchId);
+}
 
 function groupBoardPairs(
   rows: ResultRow[],
@@ -59,12 +67,41 @@ function groupBoardPairs(
 ): HonorBoardNsPair[] | { error: string } {
   const byBoard = new Map<
     string,
-    { openNs: number | null; closedNs: number | null }
+    {
+      openNs: number | null;
+      closedNs: number | null;
+      openIncluded: boolean;
+      closedIncluded: boolean;
+      seenOpen: boolean;
+      seenClosed: boolean;
+    }
   >();
 
   for (const row of rows) {
     if (row.match_id !== matchId) continue;
     if (row.room !== "open" && row.room !== "closed") continue;
+
+    const included = row.included_in_match_score !== false;
+    const entry = byBoard.get(row.board_id) ?? {
+      openNs: null,
+      closedNs: null,
+      openIncluded: true,
+      closedIncluded: true,
+      seenOpen: false,
+      seenClosed: false,
+    };
+
+    if (!included) {
+      if (row.room === "open") {
+        entry.openIncluded = false;
+        entry.seenOpen = true;
+      } else {
+        entry.closedIncluded = false;
+        entry.seenClosed = true;
+      }
+      byBoard.set(row.board_id, entry);
+      continue;
+    }
 
     const ns = effectiveNsScoreForDatum({
       adminAdjustedNsScore: row.admin_adjusted_ns_score,
@@ -77,14 +114,22 @@ function groupBoardPairs(
       };
     }
 
-    const entry = byBoard.get(row.board_id) ?? { openNs: null, closedNs: null };
-    if (row.room === "open") entry.openNs = ns;
-    else entry.closedNs = ns;
+    if (row.room === "open") {
+      entry.openNs = ns;
+      entry.seenOpen = true;
+    } else {
+      entry.closedNs = ns;
+      entry.seenClosed = true;
+    }
     byBoard.set(row.board_id, entry);
   }
 
   const pairs: HonorBoardNsPair[] = [];
   for (const [boardId, entry] of byBoard) {
+    if (!entry.openIncluded || !entry.closedIncluded) {
+      // Cancelled in either room → skip board for match IMPs
+      continue;
+    }
     if (entry.openNs == null || entry.closedNs == null) {
       return {
         error: `Match ${matchId}: incomplete open/closed pair for board ${boardId}`,
@@ -94,7 +139,9 @@ function groupBoardPairs(
   }
 
   if (pairs.length === 0) {
-    return { error: `Match ${matchId}: no board results to score` };
+    return {
+      error: `Match ${matchId}: geen borden inbegrepen in de wedstrijdscore`,
+    };
   }
 
   return pairs;
@@ -141,7 +188,7 @@ export async function applyHonorRoundMatchScores(
   const { data: results, error: resultsErr } = await service
     .from("honor_board_results")
     .select(
-      "match_id, room, board_id, ns_score, computed_score, admin_adjusted_ns_score",
+      "match_id, room, board_id, ns_score, computed_score, admin_adjusted_ns_score, included_in_match_score",
     )
     .eq("group_id", params.groupId)
     .eq("tournament_round", params.tournamentRound)

@@ -28,6 +28,7 @@ type ResultRow = {
   computed_score: number | null;
   admin_adjusted_ns_score: number | null;
   admin_ns_butler_imps: number | null;
+  admin_ew_butler_imps: number | null;
 };
 
 function toInput(r: ResultRow): ButlerResultInput {
@@ -43,6 +44,7 @@ function toInput(r: ResultRow): ButlerResultInput {
       computedScore: r.computed_score,
     }),
     adminNsButlerImps: r.admin_ns_butler_imps,
+    adminEwButlerImps: r.admin_ew_butler_imps,
   };
 }
 
@@ -57,7 +59,7 @@ export async function recalculateHonorButler(
   let query = service
     .from("honor_board_results")
     .select(
-      "id, board_id, ns_combination_id, ew_combination_id, included_in_datum, ns_score, computed_score, admin_adjusted_ns_score, admin_ns_butler_imps",
+      "id, board_id, ns_combination_id, ew_combination_id, included_in_datum, ns_score, computed_score, admin_adjusted_ns_score, admin_ns_butler_imps, admin_ew_butler_imps",
     )
     .eq("group_id", params.groupId);
 
@@ -80,7 +82,7 @@ export async function recalculateHonorButler(
       const { data: allForBoards, error: e2 } = await service
         .from("honor_board_results")
         .select(
-          "id, board_id, ns_combination_id, ew_combination_id, included_in_datum, ns_score, computed_score, admin_adjusted_ns_score, admin_ns_butler_imps",
+          "id, board_id, ns_combination_id, ew_combination_id, included_in_datum, ns_score, computed_score, admin_adjusted_ns_score, admin_ns_butler_imps, admin_ew_butler_imps",
         )
         .in("board_id", boardIds);
       if (e2) return { ok: false, error: e2.message };

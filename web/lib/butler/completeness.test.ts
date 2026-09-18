@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { publishHonorRound } from "./completeness";
+import {
+  assessHonorRoundCompleteness,
+  publishHonorRound,
+} from "./completeness";
 import type { HonorRoundMatchSeating } from "@/lib/competition/honor-seating-overview";
 
 vi.mock("@/lib/scoring/honor-match-imps", () => ({
@@ -78,6 +81,7 @@ describe("publishHonorRound", () => {
                         board_id: "b1",
                         validation_status: "valid",
                         special_result_kind: "none",
+                        correction_status: "original",
                       },
                       {
                         id: "r2",
@@ -86,6 +90,7 @@ describe("publishHonorRound", () => {
                         board_id: "b1",
                         validation_status: "valid",
                         special_result_kind: "none",
+                        correction_status: "original",
                       },
                     ],
                     error: null,
@@ -193,6 +198,7 @@ describe("publishHonorRound", () => {
                         board_id: "b1",
                         validation_status: "valid",
                         special_result_kind: "none",
+                        correction_status: "original",
                       },
                       {
                         id: "r2",
@@ -201,6 +207,7 @@ describe("publishHonorRound", () => {
                         board_id: "b1",
                         validation_status: "valid",
                         special_result_kind: "none",
+                        correction_status: "original",
                       },
                     ],
                     error: null,
@@ -227,5 +234,133 @@ describe("publishHonorRound", () => {
 
     expect(result.ok).toBe(false);
     expect(boardUpdates).toHaveLength(0);
+  });
+});
+
+describe("assessHonorRoundCompleteness", () => {
+  it("does not block corrected specials", async () => {
+    const service = {
+      from: (table: string) => {
+        if (table === "honor_boards") {
+          return {
+            select: () => ({
+              eq: () => ({
+                eq: () => ({
+                  order: () =>
+                    Promise.resolve({
+                      data: [{ id: "b1", board_number: 1 }],
+                      error: null,
+                    }),
+                }),
+              }),
+            }),
+          };
+        }
+        if (table === "honor_board_results") {
+          return {
+            select: () => ({
+              eq: () => ({
+                eq: () =>
+                  Promise.resolve({
+                    data: [
+                      {
+                        id: "r1",
+                        match_id: "m1",
+                        room: "open",
+                        board_id: "b1",
+                        validation_status: "special",
+                        special_result_kind: "adjusted",
+                        correction_status: "corrected",
+                      },
+                      {
+                        id: "r2",
+                        match_id: "m1",
+                        room: "closed",
+                        board_id: "b1",
+                        validation_status: "valid",
+                        special_result_kind: "none",
+                        correction_status: "original",
+                      },
+                    ],
+                    error: null,
+                  }),
+              }),
+            }),
+          };
+        }
+        throw new Error(`unexpected ${table}`);
+      },
+    };
+
+    const report = await assessHonorRoundCompleteness(service as never, {
+      groupId: "g1",
+      tournamentRound: 1,
+      matches: [seating("m1")],
+    });
+    expect(report.readyToPublish).toBe(true);
+    expect(report.blocking).toHaveLength(0);
+  });
+
+  it("blocks uncorrected specials", async () => {
+    const service = {
+      from: (table: string) => {
+        if (table === "honor_boards") {
+          return {
+            select: () => ({
+              eq: () => ({
+                eq: () => ({
+                  order: () =>
+                    Promise.resolve({
+                      data: [{ id: "b1", board_number: 1 }],
+                      error: null,
+                    }),
+                }),
+              }),
+            }),
+          };
+        }
+        if (table === "honor_board_results") {
+          return {
+            select: () => ({
+              eq: () => ({
+                eq: () =>
+                  Promise.resolve({
+                    data: [
+                      {
+                        id: "r1",
+                        match_id: "m1",
+                        room: "open",
+                        board_id: "b1",
+                        validation_status: "special",
+                        special_result_kind: "arbitral",
+                        correction_status: "original",
+                      },
+                      {
+                        id: "r2",
+                        match_id: "m1",
+                        room: "closed",
+                        board_id: "b1",
+                        validation_status: "valid",
+                        special_result_kind: "none",
+                        correction_status: "original",
+                      },
+                    ],
+                    error: null,
+                  }),
+              }),
+            }),
+          };
+        }
+        throw new Error(`unexpected ${table}`);
+      },
+    };
+
+    const report = await assessHonorRoundCompleteness(service as never, {
+      groupId: "g1",
+      tournamentRound: 1,
+      matches: [seating("m1")],
+    });
+    expect(report.readyToPublish).toBe(false);
+    expect(report.blocking.some((b) => b.code === "SPECIAL")).toBe(true);
   });
 });

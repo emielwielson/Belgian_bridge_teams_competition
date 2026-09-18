@@ -46,11 +46,29 @@ export type CorrectionInput = {
   reason?: string | null;
 };
 
+export type AdjustmentMode =
+  | "cancelled"
+  | "artificial"
+  | "split"
+  | "weighted"
+  | "correction";
+
 export type ResolveSpecialInput = {
   specialResultKind: SpecialResultKind;
   adminAdjustedNsScore?: number | null;
   adminNsButlerImps?: number | null;
+  adminEwButlerImps?: number | null;
   /** When true, adjusted raw score may enter the datum set */
   datumEligible?: boolean | null;
+  includedInMatchScore?: boolean | null;
+  adjustmentMode?: AdjustmentMode | null;
+  adjustmentMeta?: Record<string, unknown> | null;
   reason?: string | null;
+};
+
+export type WeightedScoreInput = {
+  scoreA: number;
+  weightA: number;
+  scoreB: number;
+  weightB: number;
 };

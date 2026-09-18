@@ -47,7 +47,9 @@ export async function assessHonorRoundCompleteness(
   const boardList = boards ?? [];
   const { data: results } = await service
     .from("honor_board_results")
-    .select("id, match_id, room, board_id, validation_status, special_result_kind")
+    .select(
+      "id, match_id, room, board_id, validation_status, special_result_kind, correction_status",
+    )
     .eq("group_id", params.groupId)
     .eq("tournament_round", params.tournamentRound);
 
@@ -83,10 +85,22 @@ export async function assessHonorRoundCompleteness(
 
   const blocking: CompletenessIssue[] = [...missing];
   for (const r of resultList) {
-    if (r.validation_status === "invalid" || r.validation_status === "special") {
+    if (r.validation_status === "invalid") {
       blocking.push({
-        code: r.validation_status.toUpperCase(),
-        message: `Resultaat ${r.id} status ${r.validation_status}`,
+        code: "INVALID",
+        message: `Resultaat ${r.id} status invalid`,
+        matchId: r.match_id,
+        room: r.room,
+      });
+      continue;
+    }
+    if (
+      r.validation_status === "special" &&
+      r.correction_status !== "corrected"
+    ) {
+      blocking.push({
+        code: "SPECIAL",
+        message: `Resultaat ${r.id} status special (niet opgelost)`,
         matchId: r.match_id,
         room: r.room,
       });

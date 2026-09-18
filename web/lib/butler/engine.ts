@@ -13,6 +13,8 @@ export type ButlerResultInput = {
   /** Effective NS score for datum / diff (admin adjusted or ns/computed). */
   nsScoreForDatum: number | null;
   adminNsButlerImps: number | null;
+  /** When set with admin NS IMPs, used as independent EW award (split). */
+  adminEwButlerImps?: number | null;
 };
 
 export type ButlerBoardResult = {
@@ -90,7 +92,10 @@ export function scoreBoard(
       return {
         id: r.id,
         nsButlerImps: r.adminNsButlerImps,
-        ewButlerImps: -r.adminNsButlerImps,
+        ewButlerImps:
+          r.adminEwButlerImps != null
+            ? r.adminEwButlerImps
+            : -r.adminNsButlerImps,
         scoreDiff: null,
         usedAdminImps: true,
       };

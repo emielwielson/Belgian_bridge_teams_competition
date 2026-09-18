@@ -102,7 +102,7 @@ export function resolveSpecialResultFlags(input: {
   return {
     specialResultKind: "ADJUSTED",
     includedInDatum,
-    validationStatus: "SPECIAL",
+    validationStatus: input.adminResolved ? "VALID" : "SPECIAL",
     requiresAdminResolution: false,
     errors,
   };
