@@ -1,33 +1,26 @@
 import { describe, expect, it } from "vitest";
 import {
-  buildArtificialAdjustment,
   buildCancelledAdjustment,
   buildSplitAdjustment,
   buildWeightedAdjustment,
-  computeWeightedNsScore,
-  roundWeightedNsScore,
+  computeWeightedScores,
 } from "./adjustment-helpers";
 import { computeHonorMatchImps, groupHonorMatchBoardPairs } from "@/lib/scoring/honor-match-imps";
 import { scoreBoard, type ButlerResultInput } from "@/lib/butler/engine";
+import { pointsToImps } from "@/lib/scoring/wbf-imp-table";
 
 describe("adjustment-helpers", () => {
-  it("computes weighted NS score", () => {
-    expect(
-      computeWeightedNsScore({
-        scoreA: 100,
-        weightA: 1,
-        scoreB: 200,
-        weightB: 1,
-      }),
-    ).toBe(150);
-    expect(
-      roundWeightedNsScore({
-        scoreA: 420,
-        weightA: 2,
-        scoreB: 50,
-        weightB: 1,
-      }),
-    ).toBe(297);
+  it("computes multi-leg weighted NS and EW scores with different weights", () => {
+    const scores = computeWeightedScores({
+      legs: [
+        { score: 100, weightNs: 1, weightEw: 2 },
+        { score: 200, weightNs: 1, weightEw: 1 },
+        { score: 0, weightNs: 2, weightEw: 1 },
+      ],
+    });
+    // NS: (100+200+0)/4 = 75
+    // EW: (200+200+0)/4 = 100
+    expect(scores).toEqual({ computedNs: 75, computedEw: 100 });
   });
 
   it("builds cancelled adjustment excluding datum and match", () => {
@@ -38,39 +31,129 @@ describe("adjustment-helpers", () => {
     expect(a.adjustmentMode).toBe("cancelled");
   });
 
-  it("builds artificial with score", () => {
-    const a = buildArtificialAdjustment({
-      adminAdjustedNsScore: 100,
-      datumEligible: true,
-    });
-    expect(a.includedInDatum).toBe(true);
-    expect(a.includedInMatchScore).toBe(true);
-  });
-
-  it("builds split with independent IMPs", () => {
+  it("builds split with independent datum scores", () => {
     const a = buildSplitAdjustment({
-      adminNsButlerImps: 3,
-      adminEwButlerImps: 1,
+      adminAdjustedNsScore: 100,
+      adminAdjustedEwScore: 50,
     });
-    expect(a.adminNsButlerImps).toBe(3);
-    expect(a.adminEwButlerImps).toBe(1);
-    expect(a.includedInMatchScore).toBe(false);
+    expect(a.adminAdjustedNsScore).toBe(100);
+    expect(a.adminAdjustedEwScore).toBe(50);
+    expect(a.adminNsButlerImps).toBeNull();
+    expect(a.adminEwButlerImps).toBeNull();
+    expect(a.includedInMatchScore).toBe(true);
+    expect(a.includedInDatum).toBe(true);
   });
 
-  it("builds weighted and stores meta", () => {
+  it("builds weighted and stores meta for N legs", () => {
     const a = buildWeightedAdjustment({
-      scoreA: 100,
-      weightA: 1,
-      scoreB: 0,
-      weightB: 1,
+      legs: [
+        { score: 100, weightNs: 1, weightEw: 1 },
+        { score: 0, weightNs: 1, weightEw: 3 },
+      ],
     });
     expect(a.adminAdjustedNsScore).toBe(50);
+    expect(a.adminAdjustedEwScore).toBe(25);
     expect(a.adjustmentMeta?.computedNsScore).toBe(50);
+    expect(a.adjustmentMeta?.computedEwScore).toBe(25);
   });
 });
 
-describe("Butler split IMPs", () => {
-  it("uses independent EW admin IMPs when provided", () => {
+describe("Butler split datum scores", () => {
+  it("uses independent EW datum scores when explicit", () => {
+    const results: ButlerResultInput[] = [
+      {
+        id: "1",
+        nsPairId: "a",
+        ewPairId: "b",
+        includedInDatum: true,
+        nsScoreForDatum: 200,
+        ewScoreForDatum: 100,
+        adminNsButlerImps: null,
+      },
+      {
+        id: "2",
+        nsPairId: "c",
+        ewPairId: "d",
+        includedInDatum: true,
+        nsScoreForDatum: 100,
+        adminNsButlerImps: null,
+      },
+      {
+        id: "3",
+        nsPairId: "e",
+        ewPairId: "f",
+        includedInDatum: true,
+        nsScoreForDatum: 110,
+        adminNsButlerImps: null,
+      },
+      {
+        id: "4",
+        nsPairId: "g",
+        ewPairId: "h",
+        includedInDatum: true,
+        nsScoreForDatum: 90,
+        adminNsButlerImps: null,
+      },
+    ];
+    const out = scoreBoard(results);
+    expect(out.datumOk).toBe(true);
+    expect(out.nsDatum).not.toBeNull();
+    expect(out.ewDatum).not.toBeNull();
+    // Explicit EW on id1 means independent EW path; EW IMPs need not equal −NS
+    const split = out.results.find((r) => r.id === "1");
+    expect(split?.nsButlerImps).toBe(
+      pointsToImps(200 - (out.nsDatum as number)),
+    );
+    expect(split?.ewButlerImps).toBe(
+      pointsToImps(100 - (out.ewDatum as number)),
+    );
+    expect(split?.usedAdminImps).toBe(false);
+  });
+
+  it("keeps zero-sum EW IMPs when no explicit EW score", () => {
+    const results: ButlerResultInput[] = [
+      {
+        id: "1",
+        nsPairId: "a",
+        ewPairId: "b",
+        includedInDatum: true,
+        nsScoreForDatum: 110,
+        adminNsButlerImps: null,
+      },
+      {
+        id: "2",
+        nsPairId: "c",
+        ewPairId: "d",
+        includedInDatum: true,
+        nsScoreForDatum: 100,
+        adminNsButlerImps: null,
+      },
+      {
+        id: "3",
+        nsPairId: "e",
+        ewPairId: "f",
+        includedInDatum: true,
+        nsScoreForDatum: 90,
+        adminNsButlerImps: null,
+      },
+      {
+        id: "4",
+        nsPairId: "g",
+        ewPairId: "h",
+        includedInDatum: true,
+        nsScoreForDatum: 100,
+        adminNsButlerImps: null,
+      },
+    ];
+    const out = scoreBoard(results);
+    expect(out.datumOk).toBe(true);
+    expect(out.ewDatum).toBe(-(out.nsDatum as number));
+    for (const row of out.results) {
+      expect(row.ewButlerImps).toBe(-(row.nsButlerImps as number));
+    }
+  });
+
+  it("still supports legacy admin IMP override", () => {
     const results: ButlerResultInput[] = [
       {
         id: "1",
@@ -111,46 +194,6 @@ describe("Butler split IMPs", () => {
     expect(split?.nsButlerImps).toBe(4);
     expect(split?.ewButlerImps).toBe(1);
     expect(split?.usedAdminImps).toBe(true);
-  });
-
-  it("defaults EW to -NS when only NS admin IMP set", () => {
-    const results: ButlerResultInput[] = [
-      {
-        id: "1",
-        nsPairId: "a",
-        ewPairId: "b",
-        includedInDatum: false,
-        nsScoreForDatum: null,
-        adminNsButlerImps: 2,
-      },
-      {
-        id: "2",
-        nsPairId: "c",
-        ewPairId: "d",
-        includedInDatum: true,
-        nsScoreForDatum: 100,
-        adminNsButlerImps: null,
-      },
-      {
-        id: "3",
-        nsPairId: "e",
-        ewPairId: "f",
-        includedInDatum: true,
-        nsScoreForDatum: 110,
-        adminNsButlerImps: null,
-      },
-      {
-        id: "4",
-        nsPairId: "g",
-        ewPairId: "h",
-        includedInDatum: true,
-        nsScoreForDatum: 90,
-        adminNsButlerImps: null,
-      },
-    ];
-    const out = scoreBoard(results);
-    const row = out.results.find((r) => r.id === "1");
-    expect(row?.ewButlerImps).toBe(-2);
   });
 });
 

@@ -45,7 +45,7 @@ export async function resolveHonorSpecialResult(params: {
   const { data: existing, error: loadErr } = await params.service
     .from("honor_board_results")
     .select(
-      "id, group_id, match_id, board_id, tournament_round, room, special_result_kind, ns_score, admin_adjusted_ns_score, admin_ns_butler_imps, admin_ew_butler_imps, datum_eligible, included_in_datum, included_in_match_score",
+      "id, group_id, match_id, board_id, tournament_round, room, special_result_kind, ns_score, admin_adjusted_ns_score, admin_adjusted_ew_score, admin_ns_butler_imps, admin_ew_butler_imps, datum_eligible, included_in_datum, included_in_match_score",
     )
     .eq("id", params.resultId)
     .maybeSingle();
@@ -53,11 +53,23 @@ export async function resolveHonorSpecialResult(params: {
   if (loadErr) return { ok: false, error: loadErr.message };
   if (!existing) return { ok: false, error: "Resultaat niet gevonden." };
 
+  if (params.input.adjustmentMode === "artificial") {
+    return {
+      ok: false,
+      error:
+        "Arbitrale score is niet meer beschikbaar. Gebruik split-score, gewogen score of correctie.",
+    };
+  }
+
   const kind = params.input.specialResultKind;
   const adminAdjustedNsScore =
     params.input.adminAdjustedNsScore !== undefined
       ? params.input.adminAdjustedNsScore
       : existing.admin_adjusted_ns_score;
+  const adminAdjustedEwScore =
+    params.input.adminAdjustedEwScore !== undefined
+      ? params.input.adminAdjustedEwScore
+      : existing.admin_adjusted_ew_score;
   const adminNsButlerImps =
     params.input.adminNsButlerImps !== undefined
       ? params.input.adminNsButlerImps
@@ -80,11 +92,11 @@ export async function resolveHonorSpecialResult(params: {
 
   if (
     params.input.adjustmentMode === "split" &&
-    (adminNsButlerImps == null || adminEwButlerImps == null)
+    (adminAdjustedNsScore == null || adminAdjustedEwScore == null)
   ) {
     return {
       ok: false,
-      error: "Split-scores vereisen NS- en EW-Butler-IMP’s.",
+      error: "Split-scores vereisen NS- en OW-datumscores.",
     };
   }
 
@@ -116,6 +128,7 @@ export async function resolveHonorSpecialResult(params: {
     .update({
       special_result_kind: kindToDb(kind),
       admin_adjusted_ns_score: adminAdjustedNsScore,
+      admin_adjusted_ew_score: adminAdjustedEwScore,
       admin_ns_butler_imps: adminNsButlerImps,
       admin_ew_butler_imps: adminEwButlerImps,
       datum_eligible: params.input.datumEligible ?? null,
@@ -133,6 +146,7 @@ export async function resolveHonorSpecialResult(params: {
         previous: {
           special_result_kind: existing.special_result_kind,
           admin_adjusted_ns_score: existing.admin_adjusted_ns_score,
+          admin_adjusted_ew_score: existing.admin_adjusted_ew_score,
           admin_ns_butler_imps: existing.admin_ns_butler_imps,
           admin_ew_butler_imps: existing.admin_ew_butler_imps,
           datum_eligible: existing.datum_eligible,

@@ -12,8 +12,13 @@ export type ButlerResultInput = {
   includedInDatum: boolean;
   /** Effective NS score for datum / diff (admin adjusted or ns/computed). */
   nsScoreForDatum: number | null;
+  /**
+   * EW-favorable score for datum (positive = good for EW).
+   * When null, defaults to -nsScoreForDatum.
+   */
+  ewScoreForDatum?: number | null;
   adminNsButlerImps: number | null;
-  /** When set with admin NS IMPs, used as independent EW award (split). */
+  /** When set with admin NS IMPs, used as independent EW award (legacy split IMPs). */
   adminEwButlerImps?: number | null;
 };
 
@@ -72,20 +77,47 @@ export type AggregateConfig = {
   sharedRanksOnTies?: boolean;
 };
 
+function effectiveEwScoreForDatum(r: ButlerResultInput): number | null {
+  if (r.ewScoreForDatum != null) return r.ewScoreForDatum;
+  if (r.nsScoreForDatum != null) return -r.nsScoreForDatum;
+  return null;
+}
+
 /**
  * Score one board's table results vs trimmed-mean datum (§4.8.1–4.8.2, §4.8.5).
+ * When any result supplies an explicit EW score, NS and EW datums are independent;
+ * otherwise EW datum = −NS datum (preserves asymmetric datum rounding).
  */
 export function scoreBoard(
   results: readonly ButlerResultInput[],
   datumConfig: DatumConfig = {},
 ): ButlerBoardOutput {
-  const datumScores = results
+  const nsDatumScores = results
     .filter((r) => r.includedInDatum && r.nsScoreForDatum != null)
     .map((r) => r.nsScoreForDatum as number);
 
-  const datum = computeNsDatum(datumScores, datumConfig);
-  const nsDatum = datum.ok ? datum.nsDatum : null;
-  const ewDatum = datum.ok ? datum.ewDatum : null;
+  const hasExplicitEw = results.some(
+    (r) => r.includedInDatum && r.ewScoreForDatum != null,
+  );
+
+  const nsDatumResult = computeNsDatum(nsDatumScores, datumConfig);
+  const nsDatum = nsDatumResult.ok ? nsDatumResult.nsDatum : null;
+
+  let ewDatum: number | null;
+  let datumOk: boolean;
+
+  if (hasExplicitEw) {
+    const ewDatumScores = results
+      .filter((r) => r.includedInDatum)
+      .map((r) => effectiveEwScoreForDatum(r))
+      .filter((s): s is number => s != null);
+    const ewDatumResult = computeNsDatum(ewDatumScores, datumConfig);
+    ewDatum = ewDatumResult.ok ? ewDatumResult.nsDatum : null;
+    datumOk = nsDatumResult.ok && ewDatumResult.ok;
+  } else {
+    ewDatum = nsDatumResult.ok ? nsDatumResult.ewDatum : null;
+    datumOk = nsDatumResult.ok;
+  }
 
   const scored: ButlerBoardResult[] = results.map((r) => {
     if (r.adminNsButlerImps != null) {
@@ -101,14 +133,25 @@ export function scoreBoard(
       };
     }
 
-    // Automatic IMPs only for datum-included results (§4.8.5: specials get no auto IMPs until resolved)
-    if (r.includedInDatum && nsDatum != null && r.nsScoreForDatum != null) {
+    const ewScore = effectiveEwScoreForDatum(r);
+
+    // Automatic IMPs only for datum-included results (§4.8.5)
+    if (
+      r.includedInDatum &&
+      nsDatum != null &&
+      ewDatum != null &&
+      r.nsScoreForDatum != null &&
+      ewScore != null
+    ) {
       const scoreDiff = r.nsScoreForDatum - nsDatum;
       const nsButlerImps = pointsToImps(scoreDiff);
+      const ewButlerImps = hasExplicitEw
+        ? pointsToImps(ewScore - ewDatum)
+        : -nsButlerImps;
       return {
         id: r.id,
         nsButlerImps,
-        ewButlerImps: -nsButlerImps,
+        ewButlerImps,
         scoreDiff,
         usedAdminImps: false,
       };
@@ -126,7 +169,7 @@ export function scoreBoard(
   return {
     nsDatum,
     ewDatum,
-    datumOk: datum.ok,
+    datumOk,
     results: scored,
   };
 }

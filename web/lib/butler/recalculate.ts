@@ -3,7 +3,10 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { effectiveNsScoreForDatum } from "@/lib/butler/special-results";
+import {
+  effectiveEwScoreForDatum,
+  effectiveNsScoreForDatum,
+} from "@/lib/butler/special-results";
 import {
   scoreBoard,
   type ButlerResultInput,
@@ -27,9 +30,13 @@ type ResultRow = {
   ns_score: number | null;
   computed_score: number | null;
   admin_adjusted_ns_score: number | null;
+  admin_adjusted_ew_score: number | null;
   admin_ns_butler_imps: number | null;
   admin_ew_butler_imps: number | null;
 };
+
+const RESULT_SELECT =
+  "id, board_id, ns_combination_id, ew_combination_id, included_in_datum, ns_score, computed_score, admin_adjusted_ns_score, admin_adjusted_ew_score, admin_ns_butler_imps, admin_ew_butler_imps";
 
 function toInput(r: ResultRow): ButlerResultInput {
   return {
@@ -42,6 +49,9 @@ function toInput(r: ResultRow): ButlerResultInput {
       adminAdjustedNsScore: r.admin_adjusted_ns_score,
       nsScore: r.ns_score,
       computedScore: r.computed_score,
+    }),
+    ewScoreForDatum: effectiveEwScoreForDatum({
+      adminAdjustedEwScore: r.admin_adjusted_ew_score,
     }),
     adminNsButlerImps: r.admin_ns_butler_imps,
     adminEwButlerImps: r.admin_ew_butler_imps,
@@ -58,9 +68,7 @@ export async function recalculateHonorButler(
 ): Promise<RecalculateOk | RecalculateErr> {
   let query = service
     .from("honor_board_results")
-    .select(
-      "id, board_id, ns_combination_id, ew_combination_id, included_in_datum, ns_score, computed_score, admin_adjusted_ns_score, admin_ns_butler_imps, admin_ew_butler_imps",
-    )
+    .select(RESULT_SELECT)
     .eq("group_id", params.groupId);
 
   if (params.boardId) {
@@ -81,9 +89,7 @@ export async function recalculateHonorButler(
     if (boardIds.length > 0) {
       const { data: allForBoards, error: e2 } = await service
         .from("honor_board_results")
-        .select(
-          "id, board_id, ns_combination_id, ew_combination_id, included_in_datum, ns_score, computed_score, admin_adjusted_ns_score, admin_ns_butler_imps, admin_ew_butler_imps",
-        )
+        .select(RESULT_SELECT)
         .in("board_id", boardIds);
       if (e2) return { ok: false, error: e2.message };
       workRows = (allForBoards ?? []) as ResultRow[];

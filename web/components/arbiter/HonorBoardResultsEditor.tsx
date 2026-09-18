@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { formatContract } from "@/lib/butler/format";
-import { roundWeightedNsScore } from "@/lib/results/adjustment-helpers";
+import { computeWeightedScores } from "@/lib/results/adjustment-helpers";
 
 export type HonorResultRow = {
   id: string;
@@ -31,13 +31,24 @@ export type HonorResultRow = {
   included_in_match_score: boolean;
   datum_eligible: boolean | null;
   admin_adjusted_ns_score: number | null;
+  admin_adjusted_ew_score: number | null;
   admin_ns_butler_imps: number | null;
   admin_ew_butler_imps: number | null;
   adjustment_mode: string | null;
 };
 
-type Mode = "cancelled" | "artificial" | "split" | "weighted" | "correct";
+type Mode = "cancelled" | "split" | "weighted" | "correct";
 type PickBy = "match" | "table";
+
+type WeightedLegForm = {
+  score: string;
+  weightNs: string;
+  weightEw: string;
+};
+
+function emptyLeg(): WeightedLegForm {
+  return { score: "", weightNs: "1", weightEw: "1" };
+}
 
 function isAdjustedResult(row: HonorResultRow): boolean {
   return (
@@ -86,7 +97,7 @@ export function HonorBoardResultsEditor({
   const [room, setRoom] = useState<"open" | "closed" | "">("");
   const [tableNumber, setTableNumber] = useState("");
   const [boardNumber, setBoardNumber] = useState("");
-  const [mode, setMode] = useState<Mode>("artificial");
+  const [mode, setMode] = useState<Mode>("weighted");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -95,13 +106,12 @@ export function HonorBoardResultsEditor({
   // Shared form fields
   const [reason, setReason] = useState("");
   const [adminNsScore, setAdminNsScore] = useState("");
-  const [adminNsImps, setAdminNsImps] = useState("");
-  const [adminEwImps, setAdminEwImps] = useState("");
-  const [datumEligible, setDatumEligible] = useState(false);
-  const [scoreA, setScoreA] = useState("");
-  const [weightA, setWeightA] = useState("1");
-  const [scoreB, setScoreB] = useState("");
-  const [weightB, setWeightB] = useState("1");
+  const [adminEwScore, setAdminEwScore] = useState("");
+  const [datumEligible, setDatumEligible] = useState(true);
+  const [weightedLegs, setWeightedLegs] = useState<WeightedLegForm[]>([
+    emptyLeg(),
+    emptyLeg(),
+  ]);
   const [contractLevel, setContractLevel] = useState("");
   const [contractDenom, setContractDenom] = useState("NT");
   const [doubling, setDoubling] = useState("NONE");
@@ -252,7 +262,7 @@ export function HonorBoardResultsEditor({
       case "cancelled":
         return t("modeCancelled");
       case "artificial":
-        return t("modeArtificial");
+        return t("modeArtificialLegacy");
       case "split":
         return t("modeSplit");
       case "weighted":
@@ -273,17 +283,17 @@ export function HonorBoardResultsEditor({
           ? String(selected.ns_score)
           : "",
     );
-    setAdminNsImps(
-      selected.admin_ns_butler_imps != null
-        ? String(selected.admin_ns_butler_imps)
-        : "",
+    setAdminEwScore(
+      selected.admin_adjusted_ew_score != null
+        ? String(selected.admin_adjusted_ew_score)
+        : selected.admin_adjusted_ns_score != null
+          ? String(-selected.admin_adjusted_ns_score)
+          : selected.ns_score != null
+            ? String(-selected.ns_score)
+            : "",
     );
-    setAdminEwImps(
-      selected.admin_ew_butler_imps != null
-        ? String(selected.admin_ew_butler_imps)
-        : "",
-    );
-    setDatumEligible(selected.datum_eligible === true);
+    setDatumEligible(selected.datum_eligible !== false);
+    setWeightedLegs([emptyLeg(), emptyLeg()]);
     setContractLevel(
       selected.contract_level != null ? String(selected.contract_level) : "",
     );
@@ -293,39 +303,47 @@ export function HonorBoardResultsEditor({
     setTricksResult(selected.tricks_result ?? "=");
     setNsScoreOverride("");
     setReason("");
-    if (
-      selected.validation_status === "special" ||
+    if (selected.adjustment_mode === "cancelled") {
+      setMode("cancelled");
+    } else if (selected.adjustment_mode === "split") {
+      setMode("split");
+    } else if (selected.adjustment_mode === "weighted") {
+      setMode("weighted");
+    } else if (selected.adjustment_mode === "correction") {
+      setMode("correct");
+    } else if (
       selected.special_result_kind === "not_played" ||
       selected.special_result_kind === "erased"
     ) {
-      setMode(
-        selected.special_result_kind === "not_played" ||
-          selected.special_result_kind === "erased"
-          ? "cancelled"
-          : "artificial",
-      );
+      setMode("cancelled");
+    } else if (selected.validation_status === "special") {
+      setMode("weighted");
     }
   }, [selected]);
 
   const weightedPreview = useMemo(() => {
-    const a = Number(scoreA);
-    const wa = Number(weightA);
-    const b = Number(scoreB);
-    const wb = Number(weightB);
-    if (![a, wa, b, wb].every((n) => Number.isFinite(n)) || wa <= 0 || wb <= 0) {
+    const legs = weightedLegs.map((leg) => ({
+      score: Number(leg.score),
+      weightNs: Number(leg.weightNs),
+      weightEw: Number(leg.weightEw),
+    }));
+    if (
+      legs.length < 2 ||
+      !legs.every(
+        (leg) =>
+          Number.isFinite(leg.score) &&
+          leg.weightNs > 0 &&
+          leg.weightEw > 0,
+      )
+    ) {
       return null;
     }
     try {
-      return roundWeightedNsScore({
-        scoreA: a,
-        weightA: wa,
-        scoreB: b,
-        weightB: wb,
-      });
+      return computeWeightedScores({ legs });
     } catch {
       return null;
     }
-  }, [scoreA, weightA, scoreB, weightB]);
+  }, [weightedLegs]);
 
   const selectedContractLabel = useMemo(() => {
     if (!selected) return "—";
@@ -400,30 +418,17 @@ export function HonorBoardResultsEditor({
           mode,
           reason: reason || null,
         };
-        if (mode === "artificial") {
-          payload.adminAdjustedNsScore =
-            adminNsScore === "" ? null : Number(adminNsScore);
-          payload.adminNsButlerImps =
-            adminNsImps === "" ? null : Number(adminNsImps);
-          payload.adminEwButlerImps =
-            adminEwImps === "" ? null : Number(adminEwImps);
-          payload.datumEligible = datumEligible;
-        } else if (mode === "split") {
-          payload.adminNsButlerImps = Number(adminNsImps);
-          payload.adminEwButlerImps = Number(adminEwImps);
-          payload.adminAdjustedNsScore =
-            adminNsScore === "" ? null : Number(adminNsScore);
+        if (mode === "split") {
+          payload.adminAdjustedNsScore = Number(adminNsScore);
+          payload.adminAdjustedEwScore = Number(adminEwScore);
           payload.datumEligible = datumEligible;
         } else if (mode === "weighted") {
-          payload.scoreA = Number(scoreA);
-          payload.weightA = Number(weightA);
-          payload.scoreB = Number(scoreB);
-          payload.weightB = Number(weightB);
+          payload.legs = weightedLegs.map((leg) => ({
+            score: Number(leg.score),
+            weightNs: Number(leg.weightNs),
+            weightEw: Number(leg.weightEw),
+          }));
           payload.datumEligible = datumEligible;
-          payload.adminNsButlerImps =
-            adminNsImps === "" ? null : Number(adminNsImps);
-          payload.adminEwButlerImps =
-            adminEwImps === "" ? null : Number(adminEwImps);
         }
 
         const res = await fetch(
@@ -690,7 +695,6 @@ export function HonorBoardResultsEditor({
               disabled={busy}
             >
               <option value="cancelled">{t("modeCancelled")}</option>
-              <option value="artificial">{t("modeArtificial")}</option>
               <option value="split">{t("modeSplit")}</option>
               <option value="weighted">{t("modeWeighted")}</option>
               <option value="correct">{t("modeCorrect")}</option>
@@ -699,41 +703,24 @@ export function HonorBoardResultsEditor({
 
           <p className="mt-2 text-xs text-zinc-600">{t(`modeHelp_${mode}`)}</p>
 
-          {mode === "artificial" || mode === "split" || mode === "weighted" ? (
+          {mode === "split" ? (
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <label className="flex flex-col gap-1 text-sm">
                 <span className="text-zinc-600">{t("adminNsScore")}</span>
                 <input
                   type="number"
-                  value={
-                    mode === "weighted" && weightedPreview != null
-                      ? String(weightedPreview)
-                      : adminNsScore
-                  }
+                  value={adminNsScore}
                   onChange={(e) => setAdminNsScore(e.target.value)}
-                  className="rounded border border-zinc-300 bg-white px-2 py-1.5"
-                  disabled={busy || mode === "weighted"}
-                  placeholder={mode === "weighted" ? t("fromWeights") : undefined}
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="text-zinc-600">{t("adminNsImps")}</span>
-                <input
-                  type="number"
-                  step="0.5"
-                  value={adminNsImps}
-                  onChange={(e) => setAdminNsImps(e.target.value)}
                   className="rounded border border-zinc-300 bg-white px-2 py-1.5"
                   disabled={busy}
                 />
               </label>
               <label className="flex flex-col gap-1 text-sm">
-                <span className="text-zinc-600">{t("adminEwImps")}</span>
+                <span className="text-zinc-600">{t("adminEwScore")}</span>
                 <input
                   type="number"
-                  step="0.5"
-                  value={adminEwImps}
-                  onChange={(e) => setAdminEwImps(e.target.value)}
+                  value={adminEwScore}
+                  onChange={(e) => setAdminEwScore(e.target.value)}
                   className="rounded border border-zinc-300 bg-white px-2 py-1.5"
                   disabled={busy}
                 />
@@ -751,56 +738,101 @@ export function HonorBoardResultsEditor({
           ) : null}
 
           {mode === "weighted" ? (
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="text-zinc-600">{t("scoreA")}</span>
-                <input
-                  type="number"
-                  value={scoreA}
-                  onChange={(e) => setScoreA(e.target.value)}
-                  className="rounded border border-zinc-300 bg-white px-2 py-1.5"
-                  disabled={busy}
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="text-zinc-600">{t("weightA")}</span>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  value={weightA}
-                  onChange={(e) => setWeightA(e.target.value)}
-                  className="rounded border border-zinc-300 bg-white px-2 py-1.5"
-                  disabled={busy}
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="text-zinc-600">{t("scoreB")}</span>
-                <input
-                  type="number"
-                  value={scoreB}
-                  onChange={(e) => setScoreB(e.target.value)}
-                  className="rounded border border-zinc-300 bg-white px-2 py-1.5"
-                  disabled={busy}
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="text-zinc-600">{t("weightB")}</span>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  value={weightB}
-                  onChange={(e) => setWeightB(e.target.value)}
-                  className="rounded border border-zinc-300 bg-white px-2 py-1.5"
-                  disabled={busy}
-                />
-              </label>
-              <p className="text-sm text-zinc-700 sm:col-span-2">
+            <div className="mt-3 space-y-3">
+              {weightedLegs.map((leg, index) => (
+                <div
+                  key={index}
+                  className="grid gap-3 rounded border border-zinc-200 bg-white px-3 py-3 sm:grid-cols-4"
+                >
+                  <label className="flex flex-col gap-1 text-sm">
+                    <span className="text-zinc-600">
+                      {t("legScore", { n: index + 1 })}
+                    </span>
+                    <input
+                      type="number"
+                      value={leg.score}
+                      onChange={(e) => {
+                        const next = [...weightedLegs];
+                        next[index] = { ...leg, score: e.target.value };
+                        setWeightedLegs(next);
+                      }}
+                      className="rounded border border-zinc-300 bg-white px-2 py-1.5"
+                      disabled={busy}
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1 text-sm">
+                    <span className="text-zinc-600">{t("legWeightNs")}</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      value={leg.weightNs}
+                      onChange={(e) => {
+                        const next = [...weightedLegs];
+                        next[index] = { ...leg, weightNs: e.target.value };
+                        setWeightedLegs(next);
+                      }}
+                      className="rounded border border-zinc-300 bg-white px-2 py-1.5"
+                      disabled={busy}
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1 text-sm">
+                    <span className="text-zinc-600">{t("legWeightEw")}</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      value={leg.weightEw}
+                      onChange={(e) => {
+                        const next = [...weightedLegs];
+                        next[index] = { ...leg, weightEw: e.target.value };
+                        setWeightedLegs(next);
+                      }}
+                      className="rounded border border-zinc-300 bg-white px-2 py-1.5"
+                      disabled={busy}
+                    />
+                  </label>
+                  <div className="flex items-end">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setWeightedLegs((prev) =>
+                          prev.length <= 2
+                            ? prev
+                            : prev.filter((_, i) => i !== index),
+                        )
+                      }
+                      disabled={busy || weightedLegs.length <= 2}
+                      className="rounded border border-zinc-300 px-2 py-1.5 text-sm text-zinc-700 disabled:opacity-40"
+                    >
+                      {t("removeLeg")}
+                    </button>
+                  </div>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => setWeightedLegs((prev) => [...prev, emptyLeg()])}
+                disabled={busy}
+                className="rounded border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-800"
+              >
+                {t("addLeg")}
+              </button>
+              <p className="text-sm text-zinc-700">
                 {t("weightedPreview", {
-                  score: weightedPreview ?? "—",
+                  ns: weightedPreview?.computedNs ?? "—",
+                  ew: weightedPreview?.computedEw ?? "—",
                 })}
               </p>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={datumEligible}
+                  onChange={(e) => setDatumEligible(e.target.checked)}
+                  disabled={busy}
+                />
+                {t("datumEligible")}
+              </label>
             </div>
           ) : null}
 

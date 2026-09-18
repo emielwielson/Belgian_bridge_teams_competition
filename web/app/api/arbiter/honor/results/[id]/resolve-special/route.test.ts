@@ -9,6 +9,10 @@ vi.mock("@/lib/auth/route-auth", async (importOriginal) => {
   };
 });
 
+vi.mock("@/lib/auth/arbiter-scope", () => ({
+  assertArbiterHonorApiAccess: vi.fn(),
+}));
+
 vi.mock("@/lib/supabase/server-client", () => ({
   createServiceClient: vi.fn(() => ({})),
 }));
@@ -68,7 +72,23 @@ describe("POST /api/arbiter/honor/results/[id]/resolve-special", () => {
     expect(revalidateStandingsForGroup).not.toHaveBeenCalled();
   });
 
-  it("revalidates when match scores refreshed", async () => {
+  it("rejects artificial mode", async () => {
+    const res = await POST(
+      new Request("http://x", {
+        method: "POST",
+        body: JSON.stringify({
+          mode: "artificial",
+          adminAdjustedNsScore: 100,
+          datumEligible: true,
+        }),
+      }),
+      { params: Promise.resolve({ id: "r1" }) },
+    );
+    expect(res.status).toBe(400);
+    expect(resolveHonorSpecialResult).not.toHaveBeenCalled();
+  });
+
+  it("resolves multi-leg weighted mode and revalidates when match scores refresh", async () => {
     vi.mocked(resolveHonorSpecialResult).mockResolvedValue({
       ok: true,
       resultId: "r1",
@@ -93,17 +113,65 @@ describe("POST /api/arbiter/honor/results/[id]/resolve-special", () => {
       new Request("http://x", {
         method: "POST",
         body: JSON.stringify({
-          mode: "artificial",
-          adminAdjustedNsScore: 100,
+          mode: "weighted",
+          legs: [
+            { score: 420, weightNs: 2, weightEw: 1 },
+            { score: 50, weightNs: 1, weightEw: 1 },
+            { score: 0, weightNs: 1, weightEw: 2 },
+          ],
           datumEligible: true,
         }),
       }),
       { params: Promise.resolve({ id: "r1" }) },
     );
     expect(res.status).toBe(200);
+    expect(resolveHonorSpecialResult).toHaveBeenCalledWith(
+      expect.objectContaining({
+        input: expect.objectContaining({
+          adjustmentMode: "weighted",
+          adminAdjustedNsScore: 223,
+          adminAdjustedEwScore: 118,
+        }),
+      }),
+    );
     expect(revalidateStandingsForGroup).toHaveBeenCalledWith(
       expect.anything(),
       "g1",
+    );
+  });
+
+  it("resolves split datum scores", async () => {
+    vi.mocked(resolveHonorSpecialResult).mockResolvedValue({
+      ok: true,
+      resultId: "r1",
+      boardId: "b1",
+      groupId: "g1",
+      tournamentRound: 1,
+      matchScores: { refreshed: false, reason: "round_not_published" },
+    });
+
+    const res = await POST(
+      new Request("http://x", {
+        method: "POST",
+        body: JSON.stringify({
+          mode: "split",
+          adminAdjustedNsScore: 100,
+          adminAdjustedEwScore: 40,
+        }),
+      }),
+      { params: Promise.resolve({ id: "r1" }) },
+    );
+    expect(res.status).toBe(200);
+    expect(resolveHonorSpecialResult).toHaveBeenCalledWith(
+      expect.objectContaining({
+        input: expect.objectContaining({
+          adjustmentMode: "split",
+          adminAdjustedNsScore: 100,
+          adminAdjustedEwScore: 40,
+          adminNsButlerImps: null,
+          adminEwButlerImps: null,
+        }),
+      }),
     );
   });
 });

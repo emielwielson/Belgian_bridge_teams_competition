@@ -2,26 +2,57 @@
  * Pure helpers for arbiter board-result adjustments.
  */
 
-import type { AdjustmentMode, WeightedScoreInput } from "@/lib/results/types";
+import type {
+  AdjustmentMode,
+  WeightedScoreLeg,
+  WeightedScoresInput,
+} from "@/lib/results/types";
 import type { SpecialResultKind } from "@/lib/boards/types";
 
-export function computeWeightedNsScore(input: WeightedScoreInput): number {
-  const { scoreA, weightA, scoreB, weightB } = input;
-  if (!(weightA > 0) || !(weightB > 0)) {
-    throw new Error("Gewichten moeten groter dan 0 zijn.");
+export function computeWeightedSideScore(
+  legs: readonly WeightedScoreLeg[],
+  side: "ns" | "ew",
+): number {
+  if (legs.length < 2) {
+    throw new Error("Gewogen score vereist minstens twee scores.");
   }
-  const total = weightA + weightB;
-  return (weightA * scoreA + weightB * scoreB) / total;
+  let weightedSum = 0;
+  let weightSum = 0;
+  for (const leg of legs) {
+    const w = side === "ns" ? leg.weightNs : leg.weightEw;
+    if (!(w > 0)) {
+      throw new Error("Gewichten moeten groter dan 0 zijn.");
+    }
+    if (!Number.isFinite(leg.score)) {
+      throw new Error("Ongeldige score in gewogen resultaat.");
+    }
+    weightedSum += leg.score * w;
+    weightSum += w;
+  }
+  return weightedSum / weightSum;
 }
 
-/** Round to nearest integer (bridge scores are whole points). */
-export function roundWeightedNsScore(input: WeightedScoreInput): number {
-  return Math.round(computeWeightedNsScore(input));
+export function roundWeightedSideScore(
+  legs: readonly WeightedScoreLeg[],
+  side: "ns" | "ew",
+): number {
+  return Math.round(computeWeightedSideScore(legs, side));
+}
+
+export function computeWeightedScores(input: WeightedScoresInput): {
+  computedNs: number;
+  computedEw: number;
+} {
+  return {
+    computedNs: roundWeightedSideScore(input.legs, "ns"),
+    computedEw: roundWeightedSideScore(input.legs, "ew"),
+  };
 }
 
 export type BuiltAdjustment = {
   specialResultKind: SpecialResultKind;
   adminAdjustedNsScore: number | null;
+  adminAdjustedEwScore: number | null;
   adminNsButlerImps: number | null;
   adminEwButlerImps: number | null;
   datumEligible: boolean | null;
@@ -37,6 +68,7 @@ export function buildCancelledAdjustment(meta?: {
   return {
     specialResultKind: "NOT_PLAYED",
     adminAdjustedNsScore: null,
+    adminAdjustedEwScore: null,
     adminNsButlerImps: null,
     adminEwButlerImps: null,
     datumEligible: false,
@@ -47,106 +79,60 @@ export function buildCancelledAdjustment(meta?: {
   };
 }
 
-export function buildArtificialAdjustment(input: {
-  adminAdjustedNsScore?: number | null;
-  adminNsButlerImps?: number | null;
-  adminEwButlerImps?: number | null;
-  datumEligible?: boolean | null;
-  reason?: string | null;
-}): BuiltAdjustment {
-  const hasScore = input.adminAdjustedNsScore != null;
-  const hasImps =
-    input.adminNsButlerImps != null || input.adminEwButlerImps != null;
-  if (!hasScore && !hasImps) {
-    throw new Error(
-      "Voer een aangepaste NS-score en/of Butler-IMP(s) in voor een arbitrale score.",
-    );
-  }
-  if (input.datumEligible === true && !hasScore) {
-    throw new Error(
-      "Voor datum-geschiktheid is een aangepaste NS-score verplicht.",
-    );
-  }
-  return {
-    specialResultKind: "ADJUSTED",
-    adminAdjustedNsScore: input.adminAdjustedNsScore ?? null,
-    adminNsButlerImps: input.adminNsButlerImps ?? null,
-    adminEwButlerImps: input.adminEwButlerImps ?? null,
-    datumEligible: input.datumEligible ?? false,
-    includedInDatum:
-      input.datumEligible === true && input.adminAdjustedNsScore != null,
-    includedInMatchScore: hasScore,
-    adjustmentMode: "artificial",
-    adjustmentMeta: {
-      reason: input.reason ?? null,
-      adminAdjustedNsScore: input.adminAdjustedNsScore ?? null,
-      adminNsButlerImps: input.adminNsButlerImps ?? null,
-      adminEwButlerImps: input.adminEwButlerImps ?? null,
-    },
-  };
-}
-
 export function buildSplitAdjustment(input: {
-  adminNsButlerImps: number;
-  adminEwButlerImps: number;
-  adminAdjustedNsScore?: number | null;
+  adminAdjustedNsScore: number;
+  adminAdjustedEwScore: number;
   datumEligible?: boolean | null;
   reason?: string | null;
 }): BuiltAdjustment {
   if (
-    !Number.isFinite(input.adminNsButlerImps) ||
-    !Number.isFinite(input.adminEwButlerImps)
+    !Number.isFinite(input.adminAdjustedNsScore) ||
+    !Number.isFinite(input.adminAdjustedEwScore)
   ) {
-    throw new Error("Split-scores vereisen NS- en EW-Butler-IMP’s.");
+    throw new Error("Split-scores vereisen NS- en OW-datumscores.");
   }
-  if (input.datumEligible === true && input.adminAdjustedNsScore == null) {
-    throw new Error(
-      "Voor datum-geschiktheid is een aangepaste NS-score verplicht.",
-    );
-  }
-  const hasScore = input.adminAdjustedNsScore != null;
+  const datumEligible = input.datumEligible ?? true;
   return {
     specialResultKind: "ADJUSTED",
-    adminAdjustedNsScore: input.adminAdjustedNsScore ?? null,
-    adminNsButlerImps: input.adminNsButlerImps,
-    adminEwButlerImps: input.adminEwButlerImps,
-    datumEligible: input.datumEligible ?? false,
-    includedInDatum:
-      input.datumEligible === true && input.adminAdjustedNsScore != null,
-    includedInMatchScore: hasScore,
+    adminAdjustedNsScore: input.adminAdjustedNsScore,
+    adminAdjustedEwScore: input.adminAdjustedEwScore,
+    adminNsButlerImps: null,
+    adminEwButlerImps: null,
+    datumEligible,
+    includedInDatum: datumEligible,
+    includedInMatchScore: true,
     adjustmentMode: "split",
     adjustmentMeta: {
       reason: input.reason ?? null,
-      adminNsButlerImps: input.adminNsButlerImps,
-      adminEwButlerImps: input.adminEwButlerImps,
-      adminAdjustedNsScore: input.adminAdjustedNsScore ?? null,
+      adminAdjustedNsScore: input.adminAdjustedNsScore,
+      adminAdjustedEwScore: input.adminAdjustedEwScore,
     },
   };
 }
 
-export function buildWeightedAdjustment(input: WeightedScoreInput & {
-  datumEligible?: boolean | null;
-  adminNsButlerImps?: number | null;
-  adminEwButlerImps?: number | null;
-  reason?: string | null;
-}): BuiltAdjustment {
-  const score = roundWeightedNsScore(input);
+export function buildWeightedAdjustment(
+  input: WeightedScoresInput & {
+    datumEligible?: boolean | null;
+    reason?: string | null;
+  },
+): BuiltAdjustment {
+  const { computedNs, computedEw } = computeWeightedScores(input);
+  const datumEligible = input.datumEligible ?? true;
   return {
     specialResultKind: "ADJUSTED",
-    adminAdjustedNsScore: score,
-    adminNsButlerImps: input.adminNsButlerImps ?? null,
-    adminEwButlerImps: input.adminEwButlerImps ?? null,
-    datumEligible: input.datumEligible ?? true,
-    includedInDatum: (input.datumEligible ?? true) === true,
+    adminAdjustedNsScore: computedNs,
+    adminAdjustedEwScore: computedEw,
+    adminNsButlerImps: null,
+    adminEwButlerImps: null,
+    datumEligible,
+    includedInDatum: datumEligible,
     includedInMatchScore: true,
     adjustmentMode: "weighted",
     adjustmentMeta: {
       reason: input.reason ?? null,
-      scoreA: input.scoreA,
-      weightA: input.weightA,
-      scoreB: input.scoreB,
-      weightB: input.weightB,
-      computedNsScore: score,
+      legs: input.legs,
+      computedNsScore: computedNs,
+      computedEwScore: computedEw,
     },
   };
 }

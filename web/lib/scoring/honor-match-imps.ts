@@ -167,23 +167,14 @@ export async function applyHonorRoundMatchScores(
 
   const { data: matchRows, error: matchErr } = await service
     .from("matches")
-    .select("id, board_count, vp_board_count")
+    .select("id")
     .in("id", matchIds);
 
   if (matchErr) {
     return { ok: false, error: matchErr.message };
   }
 
-  const matchMeta = new Map(
-    (matchRows ?? []).map((m) => [
-      m.id as string,
-      {
-        boardCount: Number(m.board_count),
-        vpBoardCount:
-          m.vp_board_count != null ? Number(m.vp_board_count) : null,
-      },
-    ]),
-  );
+  const matchIdsFound = new Set((matchRows ?? []).map((m) => m.id as string));
 
   const { data: results, error: resultsErr } = await service
     .from("honor_board_results")
@@ -202,8 +193,7 @@ export async function applyHonorRoundMatchScores(
   const scores: HonorPublishedMatchScore[] = [];
 
   for (const seating of params.matches) {
-    const meta = matchMeta.get(seating.match_id);
-    if (!meta) {
+    if (!matchIdsFound.has(seating.match_id)) {
       return { ok: false, error: `Wedstrijd ${seating.match_id} niet gevonden.` };
     }
 
@@ -213,7 +203,8 @@ export async function applyHonorRoundMatchScores(
     }
 
     const { impsHome, impsAway } = computeHonorMatchImps(pairsOrErr);
-    const boardCountForVp = meta.vpBoardCount ?? meta.boardCount;
+    // NG / cancelled boards are already excluded from pairs → VP scale = boards played
+    const boardCountForVp = pairsOrErr.length;
 
     let vpHome: number;
     let vpAway: number;
@@ -223,6 +214,7 @@ export async function applyHonorRoundMatchScores(
         boardCount: boardCountForVp,
         impsHome,
         impsAway,
+        allowWbfFallback: true,
       });
       vpHome = vp.vpHome;
       vpAway = vp.vpAway;

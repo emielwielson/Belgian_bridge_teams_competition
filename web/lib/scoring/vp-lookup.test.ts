@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { findVpBand } from "./vp-lookup";
+import { findVpBand, lookupVp } from "./vp-lookup";
 import { STANDARD_24_BOARD_VP_BANDS } from "./standard-vp-bands";
+import { getWbfVpBands } from "./wbf-vp-generator";
 
 const bands = STANDARD_24_BOARD_VP_BANDS;
 
@@ -47,5 +48,60 @@ describe("findVpBand (WBF 24-board scale)", () => {
 
   it("throws when no band matches", () => {
     expect(() => findVpBand([], 10, 5)).toThrow(/No VP band/);
+  });
+});
+
+describe("lookupVp WBF fallback", () => {
+  it("falls back to generated WBF bands when DB table is missing", async () => {
+    const supabase = {
+      from: (table: string) => {
+        if (table === "vp_tables") {
+          return {
+            select: () => ({
+              eq: () => ({
+                eq: () => ({
+                  maybeSingle: () =>
+                    Promise.resolve({ data: null, error: null }),
+                }),
+              }),
+            }),
+          };
+        }
+        throw new Error(`unexpected ${table}`);
+      },
+    };
+
+    const result = await lookupVp(supabase as never, {
+      groupId: "g1",
+      boardCount: 14,
+      impsHome: 10,
+      impsAway: 10,
+    });
+
+    expect(result).toEqual(findVpBand(getWbfVpBands(14), 10, 10));
+  });
+
+  it("throws when fallback disabled and table missing", async () => {
+    const supabase = {
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            eq: () => ({
+              maybeSingle: () => Promise.resolve({ data: null, error: null }),
+            }),
+          }),
+        }),
+      }),
+    };
+
+    await expect(
+      lookupVp(supabase as never, {
+        groupId: "g1",
+        boardCount: 14,
+        impsHome: 0,
+        impsAway: 0,
+        allowWbfFallback: false,
+      }),
+    ).rejects.toThrow(/No VP table/);
   });
 });

@@ -56,6 +56,8 @@ export type AdjustmentMode =
 export type ResolveSpecialInput = {
   specialResultKind: SpecialResultKind;
   adminAdjustedNsScore?: number | null;
+  /** EW-favorable table points for Butler datum (positive = good for EW). */
+  adminAdjustedEwScore?: number | null;
   adminNsButlerImps?: number | null;
   adminEwButlerImps?: number | null;
   /** When true, adjusted raw score may enter the datum set */
@@ -66,6 +68,18 @@ export type ResolveSpecialInput = {
   reason?: string | null;
 };
 
+/** One possible contract/score with separate NS and EW weights. */
+export type WeightedScoreLeg = {
+  score: number;
+  weightNs: number;
+  weightEw: number;
+};
+
+export type WeightedScoresInput = {
+  legs: WeightedScoreLeg[];
+};
+
+/** @deprecated Use WeightedScoresInput / WeightedScoreLeg. */
 export type WeightedScoreInput = {
   scoreA: number;
   weightA: number;

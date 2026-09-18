@@ -164,19 +164,114 @@ describe("applyHonorRoundMatchScores", () => {
         imps_away: 0,
         vp_home: 12,
         vp_away: 8,
-        vp_board_count: 16,
+        vp_board_count: 1,
       },
     ]);
     expect(lookupVp).toHaveBeenCalledWith(
       service,
       expect.objectContaining({
         groupId: "g1",
-        boardCount: 16,
+        boardCount: 1,
         impsHome: 1,
         impsAway: 0,
       }),
     );
     expect(logs).toHaveLength(1);
+  });
+
+  it("uses boards played for VP scale when some boards are NG", async () => {
+    const updates: unknown[] = [];
+
+    const service = {
+      from: (table: string) => {
+        if (table === "matches") {
+          return {
+            select: () => ({
+              in: () =>
+                Promise.resolve({
+                  data: [{ id: "m1", board_count: 16, vp_board_count: 16 }],
+                  error: null,
+                }),
+            }),
+            update: (payload: unknown) => ({
+              eq: () => {
+                updates.push(payload);
+                return Promise.resolve({ error: null });
+              },
+            }),
+          };
+        }
+        if (table === "honor_board_results") {
+          return {
+            select: () => ({
+              eq: () => ({
+                eq: () => ({
+                  in: () =>
+                    Promise.resolve({
+                      data: [
+                        {
+                          match_id: "m1",
+                          room: "open",
+                          board_id: "b1",
+                          ns_score: 100,
+                          computed_score: 100,
+                          admin_adjusted_ns_score: null,
+                          included_in_match_score: false,
+                        },
+                        {
+                          match_id: "m1",
+                          room: "closed",
+                          board_id: "b1",
+                          ns_score: 50,
+                          computed_score: 50,
+                          admin_adjusted_ns_score: null,
+                          included_in_match_score: false,
+                        },
+                        {
+                          match_id: "m1",
+                          room: "open",
+                          board_id: "b2",
+                          ns_score: 420,
+                          computed_score: 420,
+                          admin_adjusted_ns_score: null,
+                          included_in_match_score: true,
+                        },
+                        {
+                          match_id: "m1",
+                          room: "closed",
+                          board_id: "b2",
+                          ns_score: 400,
+                          computed_score: 400,
+                          admin_adjusted_ns_score: null,
+                          included_in_match_score: true,
+                        },
+                      ],
+                      error: null,
+                    }),
+                }),
+              }),
+            }),
+          };
+        }
+        throw new Error(`unexpected table ${table}`);
+      },
+    };
+
+    const result = await applyHonorRoundMatchScores(service as never, {
+      groupId: "g1",
+      tournamentRound: 1,
+      matches: [seating("m1")],
+      userId: null,
+    });
+
+    expect(result.ok).toBe(true);
+    expect(lookupVp).toHaveBeenCalledWith(
+      service,
+      expect.objectContaining({ boardCount: 1, allowWbfFallback: true }),
+    );
+    expect(updates[0]).toEqual(
+      expect.objectContaining({ vp_board_count: 1 }),
+    );
   });
 
   it("fails when a room score is missing", async () => {

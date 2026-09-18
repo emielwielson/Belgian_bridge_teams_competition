@@ -109,6 +109,7 @@ export async function applyHonorBoardCorrection(params: {
       included_in_datum: true,
       included_in_match_score: true,
       admin_adjusted_ns_score: null,
+      admin_adjusted_ew_score: null,
       admin_ns_butler_imps: null,
       admin_ew_butler_imps: null,
       datum_eligible: null,

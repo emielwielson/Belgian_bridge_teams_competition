@@ -4,7 +4,6 @@ import { ARBITER_ACCESS_ROLES } from "@/lib/auth/roles";
 import { requireRoles } from "@/lib/auth/route-auth";
 import { revalidateStandingsForGroup } from "@/lib/competition/revalidate-standings";
 import {
-  buildArtificialAdjustment,
   buildCancelledAdjustment,
   buildSplitAdjustment,
   buildWeightedAdjustment,
@@ -13,6 +12,7 @@ import { resolveHonorSpecialResult } from "@/lib/results/special-resolve";
 import type {
   AdjustmentMode,
   ResolveSpecialInput,
+  WeightedScoreLeg,
 } from "@/lib/results/types";
 import { createServiceClient } from "@/lib/supabase/server-client";
 import { jsonError, jsonFromError } from "@/lib/http/api-response";
@@ -42,6 +42,37 @@ function numOrNull(raw: unknown): number | null | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
+function parseWeightedLegs(body: Record<string, unknown>): WeightedScoreLeg[] | null {
+  if (Array.isArray(body.legs)) {
+    const legs: WeightedScoreLeg[] = [];
+    for (const raw of body.legs) {
+      if (!raw || typeof raw !== "object") return null;
+      const leg = raw as Record<string, unknown>;
+      const score = Number(leg.score);
+      const weightNs = Number(leg.weightNs ?? leg.weight_ns);
+      const weightEw = Number(leg.weightEw ?? leg.weight_ew);
+      if (![score, weightNs, weightEw].every((n) => Number.isFinite(n))) {
+        return null;
+      }
+      legs.push({ score, weightNs, weightEw });
+    }
+    return legs.length >= 2 ? legs : null;
+  }
+
+  // Legacy two-leg payload (same weight for NS and EW)
+  const scoreA = Number(body.scoreA);
+  const weightA = Number(body.weightA);
+  const scoreB = Number(body.scoreB);
+  const weightB = Number(body.weightB);
+  if (![scoreA, weightA, scoreB, weightB].every((n) => Number.isFinite(n))) {
+    return null;
+  }
+  return [
+    { score: scoreA, weightNs: weightA, weightEw: weightA },
+    { score: scoreB, weightNs: weightB, weightEw: weightB },
+  ];
+}
+
 export async function POST(request: Request, { params }: Params) {
   try {
     const { user, roles, supabase } = await requireRoles([...ARBITER_ACCESS_ROLES]);
@@ -56,6 +87,13 @@ export async function POST(request: Request, { params }: Params) {
     const reason =
       typeof body.reason === "string" ? body.reason : null;
 
+    if (mode === "artificial") {
+      return jsonError(
+        "Arbitrale score is niet meer beschikbaar. Gebruik split-score, gewogen score of correctie.",
+        400,
+      );
+    }
+
     let input: ResolveSpecialInput;
 
     if (mode === "cancelled") {
@@ -63,6 +101,7 @@ export async function POST(request: Request, { params }: Params) {
       input = {
         specialResultKind: built.specialResultKind,
         adminAdjustedNsScore: built.adminAdjustedNsScore,
+        adminAdjustedEwScore: built.adminAdjustedEwScore,
         adminNsButlerImps: built.adminNsButlerImps,
         adminEwButlerImps: built.adminEwButlerImps,
         datumEligible: built.datumEligible,
@@ -71,49 +110,24 @@ export async function POST(request: Request, { params }: Params) {
         adjustmentMeta: built.adjustmentMeta,
         reason,
       };
-    } else if (mode === "artificial") {
-      try {
-        const built = buildArtificialAdjustment({
-          adminAdjustedNsScore: numOrNull(body.adminAdjustedNsScore),
-          adminNsButlerImps: numOrNull(body.adminNsButlerImps),
-          adminEwButlerImps: numOrNull(body.adminEwButlerImps),
-          datumEligible: Boolean(body.datumEligible),
-          reason,
-        });
-        input = {
-          specialResultKind: built.specialResultKind,
-          adminAdjustedNsScore: built.adminAdjustedNsScore,
-          adminNsButlerImps: built.adminNsButlerImps,
-          adminEwButlerImps: built.adminEwButlerImps,
-          datumEligible: built.datumEligible,
-          includedInMatchScore: built.includedInMatchScore,
-          adjustmentMode: built.adjustmentMode,
-          adjustmentMeta: built.adjustmentMeta,
-          reason,
-        };
-      } catch (e) {
-        return jsonError(
-          e instanceof Error ? e.message : "Ongeldige arbitrale score",
-          400,
-        );
-      }
     } else if (mode === "split") {
-      const ns = numOrNull(body.adminNsButlerImps);
-      const ew = numOrNull(body.adminEwButlerImps);
+      const ns = numOrNull(body.adminAdjustedNsScore);
+      const ew = numOrNull(body.adminAdjustedEwScore);
       if (ns == null || ew == null) {
-        return jsonError("Split-scores vereisen NS- en EW-Butler-IMP’s.", 400);
+        return jsonError("Split-scores vereisen NS- en OW-datumscores.", 400);
       }
       try {
         const built = buildSplitAdjustment({
-          adminNsButlerImps: ns,
-          adminEwButlerImps: ew,
-          adminAdjustedNsScore: numOrNull(body.adminAdjustedNsScore),
-          datumEligible: Boolean(body.datumEligible),
+          adminAdjustedNsScore: ns,
+          adminAdjustedEwScore: ew,
+          datumEligible:
+            body.datumEligible === undefined ? true : Boolean(body.datumEligible),
           reason,
         });
         input = {
           specialResultKind: built.specialResultKind,
           adminAdjustedNsScore: built.adminAdjustedNsScore,
+          adminAdjustedEwScore: built.adminAdjustedEwScore,
           adminNsButlerImps: built.adminNsButlerImps,
           adminEwButlerImps: built.adminEwButlerImps,
           datumEligible: built.datumEligible,
@@ -129,30 +143,24 @@ export async function POST(request: Request, { params }: Params) {
         );
       }
     } else if (mode === "weighted") {
-      const scoreA = Number(body.scoreA);
-      const weightA = Number(body.weightA);
-      const scoreB = Number(body.scoreB);
-      const weightB = Number(body.weightB);
-      if (
-        ![scoreA, weightA, scoreB, weightB].every((n) => Number.isFinite(n))
-      ) {
-        return jsonError("Gewogen score vereist twee scores en gewichten.", 400);
+      const legs = parseWeightedLegs(body);
+      if (!legs) {
+        return jsonError(
+          "Gewogen score vereist minstens twee scores met NS- en OW-gewichten.",
+          400,
+        );
       }
       try {
         const built = buildWeightedAdjustment({
-          scoreA,
-          weightA,
-          scoreB,
-          weightB,
+          legs,
           datumEligible:
             body.datumEligible === undefined ? true : Boolean(body.datumEligible),
-          adminNsButlerImps: numOrNull(body.adminNsButlerImps),
-          adminEwButlerImps: numOrNull(body.adminEwButlerImps),
           reason,
         });
         input = {
           specialResultKind: built.specialResultKind,
           adminAdjustedNsScore: built.adminAdjustedNsScore,
+          adminAdjustedEwScore: built.adminAdjustedEwScore,
           adminNsButlerImps: built.adminNsButlerImps,
           adminEwButlerImps: built.adminEwButlerImps,
           datumEligible: built.datumEligible,
@@ -175,6 +183,7 @@ export async function POST(request: Request, { params }: Params) {
       input = {
         specialResultKind: kind,
         adminAdjustedNsScore: numOrNull(body.adminAdjustedNsScore),
+        adminAdjustedEwScore: numOrNull(body.adminAdjustedEwScore),
         adminNsButlerImps: numOrNull(body.adminNsButlerImps),
         adminEwButlerImps: numOrNull(body.adminEwButlerImps),
         datumEligible:

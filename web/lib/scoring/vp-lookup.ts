@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getWbfVpBands } from "@/lib/scoring/wbf-vp-generator";
 
 export class VpLookupError extends Error {
   constructor(message: string) {
@@ -17,6 +18,8 @@ export type LookupVpParams = {
   boardCount: number;
   impsHome: number;
   impsAway: number;
+  /** When true (default), use WBF continuous scale if no DB table exists. */
+  allowWbfFallback?: boolean;
 };
 
 export type VpTableRow = {
@@ -42,11 +45,22 @@ export function findVpBand(
   return { vpHome: Number(row.vp_home), vpAway: Number(row.vp_away) };
 }
 
+/** Look up VPs from DB; optionally fall back to generated WBF bands. */
 export async function lookupVp(
   supabase: SupabaseClient,
   params: LookupVpParams,
 ): Promise<VpResult> {
-  const { groupId, boardCount, impsHome, impsAway } = params;
+  const {
+    groupId,
+    boardCount,
+    impsHome,
+    impsAway,
+    allowWbfFallback = true,
+  } = params;
+
+  if (!(boardCount > 0) || !Number.isFinite(boardCount)) {
+    throw new VpLookupError(`Invalid board count for VP lookup: ${boardCount}`);
+  }
 
   const { data: table, error: tableError } = await supabase
     .from("vp_tables")
@@ -56,23 +70,28 @@ export async function lookupVp(
     .maybeSingle();
 
   if (tableError) throw tableError;
-  if (!table) {
+
+  if (table) {
+    const { data: rows, error: rowsError } = await supabase
+      .from("vp_table_rows")
+      .select("imp_min, imp_max, vp_home, vp_away")
+      .eq("vp_table_id", table.id);
+
+    if (rowsError) throw rowsError;
+    if (!rows?.length) {
+      throw new VpLookupError(`VP table ${table.id} has no rows`);
+    }
+
+    return findVpBand(rows as VpTableRow[], impsHome, impsAway);
+  }
+
+  if (!allowWbfFallback) {
     throw new VpLookupError(
       `No VP table for group ${groupId} with ${boardCount} boards`,
     );
   }
 
-  const { data: rows, error: rowsError } = await supabase
-    .from("vp_table_rows")
-    .select("imp_min, imp_max, vp_home, vp_away")
-    .eq("vp_table_id", table.id);
-
-  if (rowsError) throw rowsError;
-  if (!rows?.length) {
-    throw new VpLookupError(`VP table ${table.id} has no rows`);
-  }
-
-  return findVpBand(rows as VpTableRow[], impsHome, impsAway);
+  return findVpBand(getWbfVpBands(boardCount), impsHome, impsAway);
 }
 
 export async function lookupVpForMatch(

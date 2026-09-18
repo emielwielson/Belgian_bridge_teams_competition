@@ -119,3 +119,14 @@ export function effectiveNsScoreForDatum(result: {
   if (result.computedScore != null) return result.computedScore;
   return null;
 }
+
+/**
+ * Effective EW-favorable score for datum.
+ * Returns explicit admin EW score when set; otherwise null (caller defaults to −NS).
+ */
+export function effectiveEwScoreForDatum(result: {
+  adminAdjustedEwScore?: number | null;
+}): number | null {
+  if (result.adminAdjustedEwScore != null) return result.adminAdjustedEwScore;
+  return null;
+}
