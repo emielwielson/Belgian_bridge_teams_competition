@@ -645,6 +645,7 @@
     "backOverview": "Retour au classement",
     "backRound": "Retour à la manche {round}",
     "dealTitle": "Donne {board}",
+    "openBoard": "Ouvrir la donne {board}",
     "datum": "Datum (NS)",
     "datumNs": "Datum NS",
     "datumEw": "Datum EO",

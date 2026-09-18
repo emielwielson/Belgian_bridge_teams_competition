@@ -647,6 +647,7 @@
     "backOverview": "Back to standings",
     "backRound": "Back to round {round}",
     "dealTitle": "Board {board}",
+    "openBoard": "Open board {board}",
     "datum": "Datum (NS)",
     "datumNs": "NS datum",
     "datumEw": "EW datum",

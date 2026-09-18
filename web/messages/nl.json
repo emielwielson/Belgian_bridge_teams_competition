@@ -647,6 +647,7 @@
     "backOverview": "Terug naar klassement",
     "backRound": "Terug naar ronde {round}",
     "dealTitle": "Gift {board}",
+    "openBoard": "Open gift {board}",
     "datum": "Datum (NZ)",
     "datumNs": "NZ-datum",
     "datumEw": "OW-datum",

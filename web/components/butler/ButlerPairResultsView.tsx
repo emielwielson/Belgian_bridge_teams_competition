@@ -1,8 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { ContractLabel } from "@/components/butler/ContractLabel";
-import { formatImps } from "@/lib/butler/format";
+import {
+  ButlerPairResultsTable,
+  type PairBoardHands,
+  type PairResultRow,
+} from "@/components/butler/ButlerPairResultsTable";
+import type { BoardHands, Dealer, Vulnerability } from "@/lib/boards/types";
 import { formatPairDisplayName } from "@/lib/butler/person-name";
 import { createPublicClient } from "@/lib/supabase/server-client";
 
@@ -46,7 +50,7 @@ export async function ButlerPairResultsView({
 
   const { data: results } = await query;
 
-  const rows = (results ?? [])
+  const rawRows = (results ?? [])
     .map((r) => {
       const isNs = r.ns_combination_id === combinationId;
       const board = r.honor_boards as
@@ -79,20 +83,56 @@ export async function ButlerPairResultsView({
     });
 
   const oppIds = [
-    ...new Set(rows.map((r) => r.opponentId).filter(Boolean)),
+    ...new Set(rawRows.map((r) => r.opponentId).filter(Boolean)),
   ] as string[];
-  const { data: opps } = oppIds.length
-    ? await client
-        .from("honor_player_combinations")
-        .select("id, display_name")
-        .in("id", oppIds)
-    : { data: [] };
+  const boardIds = [...new Set(rawRows.map((r) => r.boardId))];
+
+  const [{ data: opps }, { data: boards }] = await Promise.all([
+    oppIds.length
+      ? client
+          .from("honor_player_combinations")
+          .select("id, display_name")
+          .in("id", oppIds)
+      : Promise.resolve({ data: [] as { id: string; display_name: string }[] }),
+    boardIds.length
+      ? client
+          .from("honor_boards")
+          .select("id, board_number, dealer, vulnerability, hands")
+          .in("id", boardIds)
+      : Promise.resolve({
+          data: [] as {
+            id: string;
+            board_number: number;
+            dealer: string | null;
+            vulnerability: string | null;
+            hands: BoardHands | null;
+          }[],
+        }),
+  ]);
+
   const oppNames = new Map(
     (opps ?? []).map((o) => [
       o.id as string,
       formatPairDisplayName(o.display_name as string),
     ]),
   );
+
+  const boardsById: Record<string, PairBoardHands> = {};
+  for (const b of boards ?? []) {
+    boardsById[b.id as string] = {
+      boardNumber: b.board_number as number,
+      dealer: (b.dealer as Dealer | null) ?? null,
+      vulnerability: (b.vulnerability as Vulnerability | null) ?? null,
+      hands: (b.hands as BoardHands | null) ?? null,
+    };
+  }
+
+  const rows: PairResultRow[] = rawRows.map((r) => ({
+    ...r,
+    opponentName: r.opponentId
+      ? (oppNames.get(r.opponentId) ?? null)
+      : null,
+  }));
 
   return (
     <main className="page-container max-w-5xl">
@@ -120,80 +160,11 @@ export async function ButlerPairResultsView({
         {rows.length === 0 ? (
           <p className="text-sm text-zinc-600">{t("noResults")}</p>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-zinc-200">
-            <table className="min-w-full text-left text-sm">
-              <thead className="bg-zinc-50 text-zinc-500">
-                <tr>
-                  {tournamentRound == null ? (
-                    <th className="whitespace-nowrap px-3 py-2 font-medium">
-                      R
-                    </th>
-                  ) : null}
-                  <th className="whitespace-nowrap px-3 py-2 font-medium">
-                    {t("boards")}
-                  </th>
-                  <th className="whitespace-nowrap px-3 py-2 font-medium">
-                    {t("direction")}
-                  </th>
-                  <th className="whitespace-nowrap px-3 py-2 font-medium">
-                    {t("contract")}
-                  </th>
-                  <th className="whitespace-nowrap px-3 py-2 text-right font-medium">
-                    {t("imps")}
-                  </th>
-                  <th className="whitespace-nowrap px-3 py-2 font-medium">
-                    {t("opponent")}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-100">
-                {rows.map((r) => (
-                  <tr key={r.id}>
-                    {tournamentRound == null ? (
-                      <td className="px-3 py-2 tabular-nums">{r.round}</td>
-                    ) : null}
-                    <td className="px-3 py-2">
-                      <Link
-                        href={`/butler/boards/${r.boardId}`}
-                        className="link-inline"
-                      >
-                        {r.boardNumber}
-                      </Link>
-                    </td>
-                    <td className="px-3 py-2">{r.direction}</td>
-                    <td className="px-3 py-2">
-                      <ContractLabel
-                        contractLevel={r.contractLevel}
-                        contractDenomination={r.contractDenomination}
-                        doubling={r.doubling}
-                        declarer={r.declarer}
-                        tricksResult={r.tricksResult}
-                      />
-                    </td>
-                    <td className="px-3 py-2 text-right font-mono tabular-nums">
-                      {formatImps(r.imps)}
-                    </td>
-                    <td className="px-3 py-2">
-                      {r.opponentId ? (
-                        <Link
-                          href={
-                            tournamentRound != null
-                              ? `/butler/rounds/${tournamentRound}/pairs/${r.opponentId}`
-                              : `/butler/pairs/${r.opponentId}`
-                          }
-                          className="link-inline"
-                        >
-                          {oppNames.get(r.opponentId) ?? "—"}
-                        </Link>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ButlerPairResultsTable
+            rows={rows}
+            boardsById={boardsById}
+            tournamentRound={tournamentRound}
+          />
         )}
       </section>
     </main>
