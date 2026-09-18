@@ -44,6 +44,15 @@ function lockBadgeClass(status: HonorLockStatus): string {
   }
 }
 
+function isMatchLineupReady(m: HonorRoundMatchSeating): boolean {
+  return (
+    m.lock_status === "both" &&
+    m.home_seats_complete &&
+    m.away_seats_complete &&
+    m.venue_tables != null
+  );
+}
+
 export function HonorSeatingOverview() {
   const t = useTranslations("arbiter.honorSeating");
   const locale = useLocale() as Locale;
@@ -56,6 +65,7 @@ export function HonorSeatingOverview() {
   const [error, setError] = useState<string | null>(null);
   const [unlocking, setUnlocking] = useState<string | null>(null);
   const [downloadingBws, setDownloadingBws] = useState(false);
+  const [lineupsOpen, setLineupsOpen] = useState(true);
 
   const load = useCallback(async (roundArg?: number | null) => {
     setLoading(true);
@@ -101,6 +111,20 @@ export function HonorSeatingOverview() {
     return [...days].sort((a, b) => a - b);
   }, [payload?.round_options]);
 
+  const readyMatchCount = useMemo(
+    () => payload?.matches.filter(isMatchLineupReady).length ?? 0,
+    [payload?.matches],
+  );
+
+  const bwsReady =
+    (payload?.matches.length ?? 0) > 0 &&
+    readyMatchCount === (payload?.matches.length ?? 0);
+
+  useEffect(() => {
+    if (round == null) return;
+    setLineupsOpen(!bwsReady);
+  }, [round, bwsReady]);
+
   async function onRoundChange(next: number) {
     setRound(next);
     await load(next);
@@ -145,17 +169,6 @@ export function HonorSeatingOverview() {
     }
   }
 
-  const bwsReady =
-    (payload?.matches.length ?? 0) > 0 &&
-    (payload?.matches.every(
-      (m) =>
-        m.lock_status === "both" &&
-        m.home_seats_complete &&
-        m.away_seats_complete &&
-        m.venue_tables != null,
-    ) ??
-      false);
-
   async function downloadBws() {
     const r = round ?? payload?.round;
     if (r == null || !bwsReady) return;
@@ -197,6 +210,14 @@ export function HonorSeatingOverview() {
   if (!payload) {
     return <p className="text-sm text-zinc-600">{t("none")}</p>;
   }
+
+  const matchCount = payload.matches.length;
+  const lineupsSummary = bwsReady
+    ? t("lineupsCollapsedComplete", { count: matchCount })
+    : t("lineupsCollapsedIncomplete", {
+        ready: readyMatchCount,
+        count: matchCount,
+      });
 
   return (
     <div className="space-y-6">
@@ -264,10 +285,222 @@ export function HonorSeatingOverview() {
         </label>
       </div>
 
+      {error ? (
+        <p className="text-sm text-red-700" role="alert">
+          {error}
+        </p>
+      ) : null}
+
+      <section className="rounded-lg border border-zinc-200 bg-white">
+        <button
+          type="button"
+          aria-expanded={lineupsOpen}
+          onClick={() => setLineupsOpen((open) => !open)}
+          className="flex w-full items-start justify-between gap-3 px-4 py-3 text-left hover:bg-zinc-50"
+        >
+          <div className="min-w-0">
+            <h2 className="text-lg font-semibold text-zinc-900">
+              {t("lineupsStepTitle")}
+            </h2>
+            <p className="mt-0.5 text-sm text-zinc-600">{lineupsSummary}</p>
+            {!lineupsOpen ? null : (
+              <p className="mt-1 text-sm text-zinc-600">
+                {t("phaseLabel", {
+                  phase:
+                    payload.phase === "blind"
+                      ? t("phaseBlind")
+                      : t("phaseSequential"),
+                })}
+              </p>
+            )}
+          </div>
+          <span className="shrink-0 rounded border border-zinc-300 bg-white px-2.5 py-1 text-sm text-zinc-800">
+            {lineupsOpen ? t("lineupsCollapse") : t("lineupsExpand")}
+          </span>
+        </button>
+
+        {lineupsOpen ? (
+          <div className="space-y-6 border-t border-zinc-200 px-4 py-4">
+            <div>
+              <h3 className="text-base font-semibold text-zinc-900">
+                {t("matchesHeading")}
+              </h3>
+              <div className="mt-3 grid gap-3 md:grid-cols-2">
+                {payload.matches.map((match) => {
+                  const homeUnlockKey = `${match.match_id}:home`;
+                  const awayUnlockKey = `${match.match_id}:away`;
+                  const inOrder = match.lock_status === "both";
+                  return (
+                    <article
+                      key={match.match_id}
+                      className={`rounded-lg border p-4 ${
+                        inOrder
+                          ? "border-emerald-300 bg-emerald-50"
+                          : "border-zinc-200 bg-white"
+                      }`}
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                          <p className="font-medium text-zinc-900">
+                            {match.home_team.name} vs {match.away_team.name}
+                          </p>
+                          <p className="mt-0.5 text-xs text-zinc-600">
+                            {formatBrussels(match.datetime, intlLocale)}
+                            {match.venue_tables
+                              ? ` · ${t("tablesLabel", {
+                                  open: match.venue_tables.openTable,
+                                  closed: match.venue_tables.closedTable,
+                                })}`
+                              : null}
+                          </p>
+                        </div>
+                        <span
+                          className={`rounded border px-2 py-0.5 text-xs font-medium ${lockBadgeClass(
+                            match.lock_status,
+                          )}`}
+                        >
+                          {lockLabel(match.lock_status)}
+                        </span>
+                      </div>
+
+                      <ul className="mt-3 space-y-1 text-sm text-zinc-700">
+                        <li>
+                          {t("sideStatus", {
+                            side: t("home"),
+                            status: match.home_lineup_locked_at
+                              ? t("locked")
+                              : match.home_seats_complete
+                                ? t("draftComplete")
+                                : t("notReady"),
+                          })}
+                        </li>
+                        <li>
+                          {t("sideStatus", {
+                            side: t("away"),
+                            status: match.away_lineup_locked_at
+                              ? t("locked")
+                              : match.away_seats_complete
+                                ? t("draftComplete")
+                                : t("notReady"),
+                          })}
+                        </li>
+                      </ul>
+
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Link
+                          href={`/matches/${match.match_id}`}
+                          className="rounded border border-zinc-300 bg-white px-2.5 py-1 text-sm text-zinc-800 hover:border-zinc-500"
+                        >
+                          {t("openMatch")}
+                        </Link>
+                        {payload.can_unlock && match.home_lineup_locked_at ? (
+                          <button
+                            type="button"
+                            disabled={unlocking === homeUnlockKey}
+                            onClick={() => void unlockSide(match, "home")}
+                            className="rounded border border-zinc-300 bg-white px-2.5 py-1 text-sm text-zinc-800 hover:border-zinc-500 disabled:opacity-50"
+                          >
+                            {unlocking === homeUnlockKey
+                              ? t("unlocking")
+                              : t("unlockHome")}
+                          </button>
+                        ) : null}
+                        {payload.can_unlock && match.away_lineup_locked_at ? (
+                          <button
+                            type="button"
+                            disabled={unlocking === awayUnlockKey}
+                            onClick={() => void unlockSide(match, "away")}
+                            className="rounded border border-zinc-300 bg-white px-2.5 py-1 text-sm text-zinc-800 hover:border-zinc-500 disabled:opacity-50"
+                          >
+                            {unlocking === awayUnlockKey
+                              ? t("unlocking")
+                              : t("unlockAway")}
+                          </button>
+                        ) : null}
+                      </div>
+                    </article>
+                  );
+                })}
+                {payload.matches.length === 0 ? (
+                  <p className="text-sm text-zinc-600">{t("noMatches")}</p>
+                ) : null}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-base font-semibold text-zinc-900">
+                {t("tablesHeading")}
+              </h3>
+              <p className="mt-1 text-sm text-zinc-600">{t("tablesHint")}</p>
+              <div className="mt-3 overflow-x-auto">
+                <table className="min-w-full border-collapse text-sm">
+                  <thead>
+                    <tr className="border-b border-zinc-200 text-left text-xs uppercase tracking-wide text-zinc-500">
+                      <th className="px-2 py-2 font-medium">{t("colTable")}</th>
+                      <th className="px-2 py-2 font-medium">{t("colRoom")}</th>
+                      <th className="px-2 py-2 font-medium">{t("colTeams")}</th>
+                      <th className="px-2 py-2 font-medium">N</th>
+                      <th className="px-2 py-2 font-medium">S</th>
+                      <th className="px-2 py-2 font-medium">E</th>
+                      <th className="px-2 py-2 font-medium">W</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {payload.tables.map((row) => (
+                      <tr
+                        key={row.table}
+                        className="border-b border-zinc-100 align-top"
+                      >
+                        <td className="px-2 py-2 font-medium text-zinc-900">
+                          {row.table}
+                        </td>
+                        <td className="px-2 py-2 text-zinc-700">
+                          {row.room === "open" ? t("roomOpen") : t("roomClosed")}
+                        </td>
+                        <td className="px-2 py-2 text-zinc-700">
+                          {row.home_team_name && row.away_team_name
+                            ? `${row.home_team_name} / ${row.away_team_name}`
+                            : "—"}
+                        </td>
+                        {(["N", "S", "E", "W"] as const).map((dir) => {
+                          const seat = row.seats.find((s) => s.direction === dir);
+                          const muted = seat?.player_id && !seat.side_locked;
+                          return (
+                            <td
+                              key={dir}
+                              className={`px-2 py-2 ${
+                                muted ? "text-zinc-400" : "text-zinc-900"
+                              }`}
+                            >
+                              {seat?.name ? (
+                                <span>
+                                  {seat.name}
+                                  {muted ? (
+                                    <span className="ml-1 text-[10px] uppercase">
+                                      {t("draftMark")}
+                                    </span>
+                                  ) : null}
+                                </span>
+                              ) : (
+                                "—"
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </section>
+
       <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-sm font-medium text-zinc-900">{t("downloadBws")}</p>
+            <p className="text-sm font-medium text-zinc-900">{t("bwsStepTitle")}</p>
             <p className="mt-0.5 text-xs text-zinc-600">
               {bwsReady ? t("downloadBwsHint") : t("downloadBwsNotReady")}
             </p>
@@ -289,187 +522,6 @@ export function HonorSeatingOverview() {
         round={round}
         enabled={!loading && !!payload}
       />
-
-      {error ? (
-        <p className="text-sm text-red-700" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      <section>
-        <h2 className="text-lg font-semibold text-zinc-900">{t("matchesHeading")}</h2>
-        <p className="mt-1 text-sm text-zinc-600">
-          {t("phaseLabel", {
-            phase:
-              payload.phase === "blind" ? t("phaseBlind") : t("phaseSequential"),
-          })}
-        </p>
-        <div className="mt-3 grid gap-3 md:grid-cols-2">
-          {payload.matches.map((match) => {
-            const homeUnlockKey = `${match.match_id}:home`;
-            const awayUnlockKey = `${match.match_id}:away`;
-            const inOrder = match.lock_status === "both";
-            return (
-              <article
-                key={match.match_id}
-                className={`rounded-lg border p-4 ${
-                  inOrder
-                    ? "border-emerald-300 bg-emerald-50"
-                    : "border-zinc-200 bg-white"
-                }`}
-              >
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <p className="font-medium text-zinc-900">
-                      {match.home_team.name} vs {match.away_team.name}
-                    </p>
-                    <p className="mt-0.5 text-xs text-zinc-600">
-                      {formatBrussels(match.datetime, intlLocale)}
-                      {match.venue_tables
-                        ? ` · ${t("tablesLabel", {
-                            open: match.venue_tables.openTable,
-                            closed: match.venue_tables.closedTable,
-                          })}`
-                        : null}
-                    </p>
-                  </div>
-                  <span
-                    className={`rounded border px-2 py-0.5 text-xs font-medium ${lockBadgeClass(
-                      match.lock_status,
-                    )}`}
-                  >
-                    {lockLabel(match.lock_status)}
-                  </span>
-                </div>
-
-                <ul className="mt-3 space-y-1 text-sm text-zinc-700">
-                  <li>
-                    {t("sideStatus", {
-                      side: t("home"),
-                      status: match.home_lineup_locked_at
-                        ? t("locked")
-                        : match.home_seats_complete
-                          ? t("draftComplete")
-                          : t("notReady"),
-                    })}
-                  </li>
-                  <li>
-                    {t("sideStatus", {
-                      side: t("away"),
-                      status: match.away_lineup_locked_at
-                        ? t("locked")
-                        : match.away_seats_complete
-                          ? t("draftComplete")
-                          : t("notReady"),
-                    })}
-                  </li>
-                </ul>
-
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Link
-                    href={`/matches/${match.match_id}`}
-                    className="rounded border border-zinc-300 bg-white px-2.5 py-1 text-sm text-zinc-800 hover:border-zinc-500"
-                  >
-                    {t("openMatch")}
-                  </Link>
-                  {payload.can_unlock && match.home_lineup_locked_at ? (
-                    <button
-                      type="button"
-                      disabled={unlocking === homeUnlockKey}
-                      onClick={() => void unlockSide(match, "home")}
-                      className="rounded border border-zinc-300 bg-white px-2.5 py-1 text-sm text-zinc-800 hover:border-zinc-500 disabled:opacity-50"
-                    >
-                      {unlocking === homeUnlockKey
-                        ? t("unlocking")
-                        : t("unlockHome")}
-                    </button>
-                  ) : null}
-                  {payload.can_unlock && match.away_lineup_locked_at ? (
-                    <button
-                      type="button"
-                      disabled={unlocking === awayUnlockKey}
-                      onClick={() => void unlockSide(match, "away")}
-                      className="rounded border border-zinc-300 bg-white px-2.5 py-1 text-sm text-zinc-800 hover:border-zinc-500 disabled:opacity-50"
-                    >
-                      {unlocking === awayUnlockKey
-                        ? t("unlocking")
-                        : t("unlockAway")}
-                    </button>
-                  ) : null}
-                </div>
-              </article>
-            );
-          })}
-          {payload.matches.length === 0 ? (
-            <p className="text-sm text-zinc-600">{t("noMatches")}</p>
-          ) : null}
-        </div>
-      </section>
-
-      <section>
-        <h2 className="text-lg font-semibold text-zinc-900">{t("tablesHeading")}</h2>
-        <p className="mt-1 text-sm text-zinc-600">{t("tablesHint")}</p>
-        <div className="mt-3 overflow-x-auto">
-          <table className="min-w-full border-collapse text-sm">
-            <thead>
-              <tr className="border-b border-zinc-200 text-left text-xs uppercase tracking-wide text-zinc-500">
-                <th className="px-2 py-2 font-medium">{t("colTable")}</th>
-                <th className="px-2 py-2 font-medium">{t("colRoom")}</th>
-                <th className="px-2 py-2 font-medium">{t("colTeams")}</th>
-                <th className="px-2 py-2 font-medium">N</th>
-                <th className="px-2 py-2 font-medium">S</th>
-                <th className="px-2 py-2 font-medium">E</th>
-                <th className="px-2 py-2 font-medium">W</th>
-              </tr>
-            </thead>
-            <tbody>
-              {payload.tables.map((row) => (
-                <tr
-                  key={row.table}
-                  className="border-b border-zinc-100 align-top"
-                >
-                  <td className="px-2 py-2 font-medium text-zinc-900">
-                    {row.table}
-                  </td>
-                  <td className="px-2 py-2 text-zinc-700">
-                    {row.room === "open" ? t("roomOpen") : t("roomClosed")}
-                  </td>
-                  <td className="px-2 py-2 text-zinc-700">
-                    {row.home_team_name && row.away_team_name
-                      ? `${row.home_team_name} / ${row.away_team_name}`
-                      : "—"}
-                  </td>
-                  {(["N", "S", "E", "W"] as const).map((dir) => {
-                    const seat = row.seats.find((s) => s.direction === dir);
-                    const muted = seat?.player_id && !seat.side_locked;
-                    return (
-                      <td
-                        key={dir}
-                        className={`px-2 py-2 ${
-                          muted ? "text-zinc-400" : "text-zinc-900"
-                        }`}
-                      >
-                        {seat?.name ? (
-                          <span>
-                            {seat.name}
-                            {muted ? (
-                              <span className="ml-1 text-[10px] uppercase">
-                                {t("draftMark")}
-                              </span>
-                            ) : null}
-                          </span>
-                        ) : (
-                          "—"
-                        )}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
     </div>
   );
 }

@@ -513,6 +513,12 @@
       "roomOpen": "Open",
       "roomClosed": "Gesloten",
       "draftMark": "concept",
+      "lineupsStepTitle": "1. Line-ups",
+      "lineupsCollapsedComplete": "Alle line-ups vastgelegd · {count} wedstrijden",
+      "lineupsCollapsedIncomplete": "Wachten op line-ups · {ready}/{count} wedstrijden klaar",
+      "lineupsExpand": "Line-ups tonen",
+      "lineupsCollapse": "Line-ups verbergen",
+      "bwsStepTitle": "2. Download .bws voor BCS",
       "downloadBws": "Download .bws voor BCS",
       "downloadBwsHint": "Open dit bestand in BCS (File → Open), voeg tafels toe aan de server en speel.",
       "downloadBwsNotReady": "Alle line-ups moeten vastliggen met volledige zitplaatsen vóór export.",
@@ -520,7 +526,7 @@
       "downloadingBws": "Bezig met downloaden…"
     },
     "honorButler": {
-      "title": "Butler: import & publicatie",
+      "title": "3. Butler: import & publicatie",
       "description": "Upload PBN-handrecords en het Bridgemate .bws-resultaatbestand. Butler-IMPs worden automatisch herberekend.",
       "uploadPbn": "PBN uploaden",
       "uploadBws": ".bws uploaden",
@@ -556,7 +562,7 @@
       "processingPublish": "Ronde wordt gepubliceerd…"
     },
     "honorResults": {
-      "title": "Bordresultaten aanpassen",
+      "title": "4. Bordresultaten aanpassen",
       "description": "Corrigeer scores of los speciale resultaten op. Na publicatie worden wedstrijd-IMP’s/VP’s automatisch bijgewerkt.",
       "loading": "Resultaten laden…",
       "empty": "Geen resultaten voor deze ronde.",

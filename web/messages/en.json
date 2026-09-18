@@ -513,6 +513,12 @@
       "roomOpen": "Open",
       "roomClosed": "Closed",
       "draftMark": "draft",
+      "lineupsStepTitle": "1. Line-ups",
+      "lineupsCollapsedComplete": "All line-ups locked · {count} matches",
+      "lineupsCollapsedIncomplete": "Waiting for line-ups · {ready}/{count} matches ready",
+      "lineupsExpand": "Show line-ups",
+      "lineupsCollapse": "Hide line-ups",
+      "bwsStepTitle": "2. Download .bws for BCS",
       "downloadBws": "Download .bws for BCS",
       "downloadBwsHint": "Open this file in BCS (File → Open), add tables to the server, then play.",
       "downloadBwsNotReady": "All line-ups must be locked with complete seats before export.",
@@ -520,7 +526,7 @@
       "downloadingBws": "Downloading…"
     },
     "honorButler": {
-      "title": "Butler: import & publish",
+      "title": "3. Butler: import & publish",
       "description": "Upload PBN hand records and the Bridgemate .bws results file. Butler IMPs recalculate automatically.",
       "uploadPbn": "Upload PBN",
       "uploadBws": "Upload .bws",
@@ -556,7 +562,7 @@
       "processingPublish": "Publishing round…"
     },
     "honorResults": {
-      "title": "Adjust board results",
+      "title": "4. Adjust board results",
       "description": "Correct scores or resolve special results. After publish, match IMPs/VPs update automatically.",
       "loading": "Loading results…",
       "empty": "No results for this round.",

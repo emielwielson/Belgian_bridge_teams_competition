@@ -512,6 +512,12 @@
       "roomOpen": "Ouverte",
       "roomClosed": "Fermée",
       "draftMark": "brouillon",
+      "lineupsStepTitle": "1. Line-ups",
+      "lineupsCollapsedComplete": "Tous les line-ups verrouillés · {count} rencontres",
+      "lineupsCollapsedIncomplete": "En attente des line-ups · {ready}/{count} rencontres prêtes",
+      "lineupsExpand": "Afficher les line-ups",
+      "lineupsCollapse": "Masquer les line-ups",
+      "bwsStepTitle": "2. Télécharger .bws pour BCS",
       "downloadBws": "Télécharger .bws pour BCS",
       "downloadBwsHint": "Ouvrez ce fichier dans BCS (File → Open), ajoutez les tables au serveur, puis jouez.",
       "downloadBwsNotReady": "Tous les line-ups doivent être verrouillés avec places complètes avant l'export.",
@@ -519,7 +525,7 @@
       "downloadingBws": "Téléchargement…"
     },
     "honorButler": {
-      "title": "Butler : import & publication",
+      "title": "3. Butler : import & publication",
       "description": "Importez les donnes PBN et le fichier .bws Bridgemate. Les IMPs Butler sont recalculés automatiquement.",
       "uploadPbn": "Importer PBN",
       "uploadBws": "Importer .bws",
@@ -555,7 +561,7 @@
       "processingPublish": "Publication de la manche…"
     },
     "honorResults": {
-      "title": "Ajuster les résultats",
+      "title": "4. Ajuster les résultats",
       "description": "Corrigez les scores ou résolvez les résultats spéciaux. Après publication, les IMP/VP de match sont mis à jour automatiquement.",
       "loading": "Chargement…",
       "empty": "Aucun résultat pour cette manche.",
