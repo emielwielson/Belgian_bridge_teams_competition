@@ -401,24 +401,22 @@ export function HonorBoardResultsEditor({
             <button
               type="button"
               onClick={() => setPickBy("match")}
-              className={[
-                "rounded border px-3 py-1.5 text-sm",
+              className={
                 pickBy === "match"
-                  ? "border-zinc-900 bg-zinc-900 text-white"
-                  : "border-zinc-300 bg-white text-zinc-800",
-              ].join(" ")}
+                  ? "rounded border border-zinc-900 bg-zinc-900 px-3 py-1.5 text-sm text-white"
+                  : "rounded border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-800"
+              }
             >
               {t("pickByMatch")}
             </button>
             <button
               type="button"
               onClick={() => setPickBy("table")}
-              className={[
-                "rounded border px-3 py-1.5 text-sm",
+              className={
                 pickBy === "table"
-                  ? "border-zinc-900 bg-zinc-900 text-white"
-                  : "border-zinc-300 bg-white text-zinc-800",
-              ].join(" ")}
+                  ? "rounded border border-zinc-900 bg-zinc-900 px-3 py-1.5 text-sm text-white"
+                  : "rounded border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-800"
+              }
             >
               {t("pickByTable")}
             </button>
