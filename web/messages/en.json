@@ -421,7 +421,7 @@
     "nav": {
       "label": "Arbiter sections",
       "inbox": "Inbox",
-      "honor": "Honor seating"
+      "honor": "Honor"
     },
     "pageTitle": "Arbiter inbox",
     "pageDescription": "Open requests from team captains. Mark resolved when handled.",
