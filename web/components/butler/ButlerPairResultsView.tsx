@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { formatContract, formatImps } from "@/lib/butler/format";
+import { ContractLabel } from "@/components/butler/ContractLabel";
+import { formatImps } from "@/lib/butler/format";
+import { formatPairDisplayName } from "@/lib/butler/person-name";
 import { createPublicClient } from "@/lib/supabase/server-client";
 
 export async function ButlerPairResultsView({
@@ -61,13 +63,11 @@ export async function ButlerPairResultsView({
         boardNumber: boardNumber ?? 0,
         direction: isNs ? "NS" : "EW",
         imps: Number(isNs ? r.ns_butler_imps : r.ew_butler_imps),
-        contract: formatContract({
-          contractLevel: r.contract_level as number | null,
-          contractDenomination: r.contract_denomination as string | null,
-          doubling: (r.doubling as string) ?? "NONE",
-          declarer: r.declarer as string | null,
-          tricksResult: r.tricks_result as string | null,
-        }),
+        contractLevel: r.contract_level as number | null,
+        contractDenomination: r.contract_denomination as string | null,
+        doubling: (r.doubling as string) ?? "NONE",
+        declarer: r.declarer as string | null,
+        tricksResult: r.tricks_result as string | null,
         opponentId: (isNs ? r.ew_combination_id : r.ns_combination_id) as
           | string
           | null,
@@ -88,7 +88,10 @@ export async function ButlerPairResultsView({
         .in("id", oppIds)
     : { data: [] };
   const oppNames = new Map(
-    (opps ?? []).map((o) => [o.id as string, o.display_name as string]),
+    (opps ?? []).map((o) => [
+      o.id as string,
+      formatPairDisplayName(o.display_name as string),
+    ]),
   );
 
   return (
@@ -102,10 +105,14 @@ export async function ButlerPairResultsView({
           }
           className="text-zinc-600 hover:underline"
         >
-          {tournamentRound != null ? t("backRound") : t("backOverview")}
+          {tournamentRound != null
+            ? t("backRound", { round: tournamentRound })
+            : t("backOverview")}
         </Link>
       </p>
-      <h1 className="mt-2 text-2xl font-semibold">{combo.display_name}</h1>
+      <h1 className="mt-2 text-2xl font-semibold">
+        {formatPairDisplayName(combo.display_name)}
+      </h1>
       <p className="mt-1 text-sm text-zinc-600">{teamName}</p>
 
       <section className="mt-8">
@@ -118,15 +125,25 @@ export async function ButlerPairResultsView({
               <thead className="bg-zinc-50 text-zinc-500">
                 <tr>
                   {tournamentRound == null ? (
-                    <th className="px-3 py-2 font-medium">R</th>
+                    <th className="whitespace-nowrap px-3 py-2 font-medium">
+                      R
+                    </th>
                   ) : null}
-                  <th className="px-3 py-2 font-medium">Board</th>
-                  <th className="px-3 py-2 font-medium">{t("direction")}</th>
-                  <th className="px-3 py-2 font-medium">{t("contract")}</th>
-                  <th className="px-3 py-2 text-right font-medium">
+                  <th className="whitespace-nowrap px-3 py-2 font-medium">
+                    {t("boards")}
+                  </th>
+                  <th className="whitespace-nowrap px-3 py-2 font-medium">
+                    {t("direction")}
+                  </th>
+                  <th className="whitespace-nowrap px-3 py-2 font-medium">
+                    {t("contract")}
+                  </th>
+                  <th className="whitespace-nowrap px-3 py-2 text-right font-medium">
                     {t("imps")}
                   </th>
-                  <th className="px-3 py-2 font-medium">{t("opponent")}</th>
+                  <th className="whitespace-nowrap px-3 py-2 font-medium">
+                    {t("opponent")}
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
@@ -144,7 +161,15 @@ export async function ButlerPairResultsView({
                       </Link>
                     </td>
                     <td className="px-3 py-2">{r.direction}</td>
-                    <td className="px-3 py-2 font-mono text-xs">{r.contract}</td>
+                    <td className="px-3 py-2">
+                      <ContractLabel
+                        contractLevel={r.contractLevel}
+                        contractDenomination={r.contractDenomination}
+                        doubling={r.doubling}
+                        declarer={r.declarer}
+                        tricksResult={r.tricksResult}
+                      />
+                    </td>
                     <td className="px-3 py-2 text-right font-mono tabular-nums">
                       {formatImps(r.imps)}
                     </td>

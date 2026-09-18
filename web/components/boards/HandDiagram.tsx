@@ -88,11 +88,12 @@ function DealPlate({
         minWidth: 40,
         minHeight: 40,
         boxSizing: "border-box",
-        // Thin sides: top/bottom = NS, left/right = EW; red = vul, green = not.
-        borderTop: `3px solid ${nsColor}`,
-        borderBottom: `3px solid ${nsColor}`,
-        borderLeft: `3px solid ${ewColor}`,
-        borderRight: `3px solid ${ewColor}`,
+        borderRadius: 6,
+        // Sides: top/bottom = NS, left/right = EW; red = vul, green = not.
+        borderTop: `5px solid ${nsColor}`,
+        borderBottom: `5px solid ${nsColor}`,
+        borderLeft: `5px solid ${ewColor}`,
+        borderRight: `5px solid ${ewColor}`,
       }}
     >
       <span className="text-sm font-bold leading-none text-zinc-900">

@@ -1,3 +1,5 @@
+import { formatPersonName } from "@/lib/butler/person-name";
+
 /** Direction-agnostic player pair key (lexicographic min/max). */
 
 export type CanonicalPlayerIds = {
@@ -26,7 +28,7 @@ export function combinationDisplayName(
   const { playerLowId } = canonicalPlayerIds(player1Id, player2Id);
   const lowName = player1Id === playerLowId ? player1Name : player2Name;
   const highName = player1Id === playerLowId ? player2Name : player1Name;
-  return `${lowName} · ${highName}`;
+  return `${formatPersonName(lowName)} · ${formatPersonName(highName)}`;
 }
 
 export type CombinationUpsertRow = {

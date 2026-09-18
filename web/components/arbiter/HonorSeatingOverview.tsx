@@ -308,13 +308,13 @@ export function HonorSeatingOverview() {
           {payload.matches.map((match) => {
             const homeUnlockKey = `${match.match_id}:home`;
             const awayUnlockKey = `${match.match_id}:away`;
-            const needsChase = match.lock_status !== "both";
+            const inOrder = match.lock_status === "both";
             return (
               <article
                 key={match.match_id}
                 className={`rounded-lg border p-4 ${
-                  needsChase
-                    ? "border-amber-300 bg-amber-50/60"
+                  inOrder
+                    ? "border-emerald-300 bg-emerald-50"
                     : "border-zinc-200 bg-white"
                 }`}
               >

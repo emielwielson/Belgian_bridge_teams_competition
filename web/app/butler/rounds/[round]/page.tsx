@@ -5,6 +5,7 @@ import { createPublicClient } from "@/lib/supabase/server-client";
 import { resolvePublicHonorGroup } from "@/lib/butler/honor-group";
 import { getPublishedRoundStandings } from "@/lib/butler/public-standings";
 import { formatImps } from "@/lib/butler/format";
+import { formatPairDisplayName } from "@/lib/butler/person-name";
 
 export default async function ButlerRoundPage({
   params,
@@ -86,7 +87,7 @@ export default async function ButlerRoundPage({
               </thead>
               <tbody className="divide-y divide-zinc-100">
                 {standings.map((row) => (
-                  <tr key={row.combinationId}>
+                  <tr key={row.combinationId} className="odd:bg-zinc-50">
                     <td className="px-3 py-2 tabular-nums text-zinc-500">
                       {row.rank}
                     </td>
@@ -95,7 +96,7 @@ export default async function ButlerRoundPage({
                         href={`/butler/rounds/${round}/pairs/${row.combinationId}`}
                         className="link-inline"
                       >
-                        {row.displayName}
+                        {formatPairDisplayName(row.displayName)}
                       </Link>
                     </td>
                     <td className="px-3 py-2 text-zinc-600">{row.teamName}</td>

@@ -2,9 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { HandDiagram } from "@/components/boards/HandDiagram";
+import { ContractLabel } from "@/components/butler/ContractLabel";
 import type { BoardHands, Dealer, Vulnerability } from "@/lib/boards/types";
 import { handDiagramLabelsFromButler } from "@/lib/boards/hand-diagram-labels";
-import { formatContract, formatImps } from "@/lib/butler/format";
+import { formatImps } from "@/lib/butler/format";
+import { formatPairDisplayName } from "@/lib/butler/person-name";
 import { createPublicClient } from "@/lib/supabase/server-client";
 
 export default async function ButlerBoardPage({
@@ -66,7 +68,10 @@ export default async function ButlerBoardPage({
         .in("id", comboIds)
     : { data: [] };
   const comboNames = new Map(
-    (combos ?? []).map((c) => [c.id as string, c.display_name as string]),
+    (combos ?? []).map((c) => [
+      c.id as string,
+      formatPairDisplayName(c.display_name as string),
+    ]),
   );
 
   const dealer = (board.dealer as Dealer | null) ?? null;
@@ -89,7 +94,7 @@ export default async function ButlerBoardPage({
           href={`/butler/rounds/${board.tournament_round}`}
           className="text-zinc-600 hover:underline"
         >
-          {t("backRound")}
+          {t("backRound", { round: board.tournament_round })}
         </Link>
       </p>
 
@@ -191,33 +196,47 @@ export default async function ButlerBoardPage({
               <table className="min-w-full text-left text-sm">
                 <thead className="bg-zinc-50 text-zinc-500">
                   <tr>
-                    <th className="px-3 py-2 font-medium">{t("room")}</th>
-                    <th className="px-3 py-2 font-medium">{t("contract")}</th>
-                    <th className="px-3 py-2 text-right font-medium">
+                    <th className="whitespace-nowrap px-3 py-2 font-medium">
+                      {t("room")}
+                    </th>
+                    <th className="whitespace-nowrap px-3 py-2 font-medium">
+                      {t("contract")}
+                    </th>
+                    <th className="whitespace-nowrap px-3 py-2 text-right font-medium">
                       {t("scoreNs")}
                     </th>
-                    <th className="px-3 py-2 text-right font-medium">
+                    <th className="whitespace-nowrap px-3 py-2 text-right font-medium">
                       {t("nsImps")}
                     </th>
-                    <th className="px-3 py-2 text-right font-medium">
+                    <th className="whitespace-nowrap px-3 py-2 text-right font-medium">
                       {t("ewImps")}
                     </th>
-                    <th className="px-3 py-2 font-medium">{t("ns")}</th>
-                    <th className="px-3 py-2 font-medium">{t("ew")}</th>
+                    <th className="whitespace-nowrap px-3 py-2 font-medium">
+                      {t("ns")}
+                    </th>
+                    <th className="whitespace-nowrap px-3 py-2 font-medium">
+                      {t("ew")}
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100">
                   {(results ?? []).map((r) => (
                     <tr key={r.id}>
-                      <td className="px-3 py-2 capitalize">{r.room}</td>
-                      <td className="px-3 py-2 font-mono text-xs">
-                        {formatContract({
-                          contractLevel: r.contract_level,
-                          contractDenomination: r.contract_denomination,
-                          doubling: r.doubling,
-                          declarer: r.declarer,
-                          tricksResult: r.tricks_result,
-                        })}
+                      <td className="whitespace-nowrap px-3 py-2">
+                        {r.room === "closed"
+                          ? t("roomClosed")
+                          : r.room === "open"
+                            ? t("roomOpen")
+                            : r.room}
+                      </td>
+                      <td className="px-3 py-2">
+                        <ContractLabel
+                          contractLevel={r.contract_level}
+                          contractDenomination={r.contract_denomination}
+                          doubling={r.doubling}
+                          declarer={r.declarer}
+                          tricksResult={r.tricks_result}
+                        />
                       </td>
                       <td className="px-3 py-2 text-right font-mono tabular-nums">
                         {r.ns_score ?? "—"}

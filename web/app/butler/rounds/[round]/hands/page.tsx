@@ -44,7 +44,7 @@ export default async function ButlerRoundHandsPage({
           href={`/butler/rounds/${round}`}
           className="text-zinc-600 hover:underline"
         >
-          {t("backRound")}
+          {t("backRound", { round })}
         </Link>
       </p>
       <h1 className="mt-2 text-2xl font-semibold">
