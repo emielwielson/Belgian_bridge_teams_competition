@@ -634,6 +634,8 @@
     "player": "Joueur",
     "team": "Équipe",
     "imps": "IMP",
+    "matches": "Matchs",
+    "minMatches": "Min. matchs",
     "boards": "Donnes",
     "avg": "Moy.",
     "total": "Total",

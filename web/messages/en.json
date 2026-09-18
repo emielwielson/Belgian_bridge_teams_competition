@@ -635,6 +635,8 @@
     "player": "Player",
     "team": "Team",
     "imps": "IMP",
+    "matches": "Matches",
+    "minMatches": "Min. matches",
     "boards": "Boards",
     "avg": "Avg",
     "total": "Total",

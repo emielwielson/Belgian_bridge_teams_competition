@@ -635,6 +635,8 @@
     "player": "Speler",
     "team": "Team",
     "imps": "IMP",
+    "matches": "Wedstrijden",
+    "minMatches": "Min. wedstrijden",
     "boards": "Giften",
     "avg": "Gem.",
     "total": "Totaal",

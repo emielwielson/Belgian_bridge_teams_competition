@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { ButlerOverallModeTabs } from "@/components/butler/ButlerOverallModeTabs";
+import {
+  ButlerOverallPlayerStandings,
+  ButlerOverallStandings,
+} from "@/components/butler/ButlerOverallStandings";
 import { ButlerStandingsTabs } from "@/components/butler/ButlerStandingsTabs";
 import { createPublicClient } from "@/lib/supabase/server-client";
 import { resolvePublicHonorGroup } from "@/lib/butler/honor-group";
@@ -50,143 +54,16 @@ export default async function ButlerOverviewPage() {
               playerLabel={t("viewPlayer")}
               ariaLabel={t("viewModeAria")}
               pair={
-                <div className="overflow-x-auto rounded-lg border border-zinc-200">
-                  <table className="min-w-full text-left text-sm">
-                    <thead className="bg-zinc-50 text-zinc-500">
-                      <tr>
-                        <th className="whitespace-nowrap px-3 py-2 font-medium">
-                          {t("rank")}
-                        </th>
-                        <th className="whitespace-nowrap px-3 py-2 font-medium">
-                          {t("pair")}
-                        </th>
-                        <th className="whitespace-nowrap px-3 py-2 font-medium">
-                          {t("team")}
-                        </th>
-                        <th className="whitespace-nowrap px-3 py-2 text-right font-medium">
-                          {t("imps")}
-                        </th>
-                        <th className="hidden whitespace-nowrap px-3 py-2 text-right font-medium sm:table-cell">
-                          {t("boards")}
-                        </th>
-                        <th className="hidden whitespace-nowrap px-3 py-2 text-right font-medium md:table-cell">
-                          {t("avg")}
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-zinc-100">
-                      {standings.combinations.map((row, index) => {
-                        const stripe =
-                          index % 2 === 1 ? "bg-zinc-50" : "bg-white";
-                        return (
-                          <tr
-                            key={row.combinationId}
-                            className="hover:[&>td]:bg-zinc-100/80"
-                          >
-                            <td
-                              className={`px-3 py-2 tabular-nums text-zinc-500 ${stripe}`}
-                            >
-                              {row.rank}
-                            </td>
-                            <td className={`px-3 py-2 ${stripe}`}>
-                              <Link
-                                href={`/butler/pairs/${row.combinationId}`}
-                                className="link-inline"
-                              >
-                                {formatPairDisplayName(row.displayName)}
-                              </Link>
-                            </td>
-                            <td className={`px-3 py-2 text-zinc-600 ${stripe}`}>
-                              {row.teamName}
-                            </td>
-                            <td
-                              className={`px-3 py-2 text-right font-mono tabular-nums ${stripe}`}
-                            >
-                              {formatImps(row.totalImps)}
-                            </td>
-                            <td
-                              className={`hidden px-3 py-2 text-right tabular-nums text-zinc-500 sm:table-cell ${stripe}`}
-                            >
-                              {row.boardsPlayed}
-                            </td>
-                            <td
-                              className={`hidden px-3 py-2 text-right font-mono tabular-nums text-zinc-500 md:table-cell ${stripe}`}
-                            >
-                              {formatImps(row.averageImps)}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                <ButlerOverallStandings
+                  combinations={standings.combinations}
+                  maxRounds={standings.rounds.length}
+                />
               }
               player={
-                <div className="overflow-x-auto rounded-lg border border-zinc-200">
-                  <table className="min-w-full text-left text-sm">
-                    <thead className="bg-zinc-50 text-zinc-500">
-                      <tr>
-                        <th className="whitespace-nowrap px-3 py-2 font-medium">
-                          {t("rank")}
-                        </th>
-                        <th className="whitespace-nowrap px-3 py-2 font-medium">
-                          {t("player")}
-                        </th>
-                        <th className="whitespace-nowrap px-3 py-2 font-medium">
-                          {t("team")}
-                        </th>
-                        <th className="whitespace-nowrap px-3 py-2 text-right font-medium">
-                          {t("imps")}
-                        </th>
-                        <th className="hidden whitespace-nowrap px-3 py-2 text-right font-medium sm:table-cell">
-                          {t("boards")}
-                        </th>
-                        <th className="hidden whitespace-nowrap px-3 py-2 text-right font-medium md:table-cell">
-                          {t("avg")}
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-zinc-100">
-                      {playerStandings.map((row, index) => {
-                        const stripe =
-                          index % 2 === 1 ? "bg-zinc-50" : "bg-white";
-                        return (
-                          <tr
-                            key={row.playerId}
-                            className="hover:[&>td]:bg-zinc-100/80"
-                          >
-                            <td
-                              className={`px-3 py-2 tabular-nums text-zinc-500 ${stripe}`}
-                            >
-                              {row.rank}
-                            </td>
-                            <td className={`px-3 py-2 ${stripe}`}>
-                              {row.displayName}
-                            </td>
-                            <td className={`px-3 py-2 text-zinc-600 ${stripe}`}>
-                              {row.teamName}
-                            </td>
-                            <td
-                              className={`px-3 py-2 text-right font-mono tabular-nums ${stripe}`}
-                            >
-                              {formatImps(row.totalImps)}
-                            </td>
-                            <td
-                              className={`hidden px-3 py-2 text-right tabular-nums text-zinc-500 sm:table-cell ${stripe}`}
-                            >
-                              {row.boardsPlayed}
-                            </td>
-                            <td
-                              className={`hidden px-3 py-2 text-right font-mono tabular-nums text-zinc-500 md:table-cell ${stripe}`}
-                            >
-                              {formatImps(row.averageImps)}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                <ButlerOverallPlayerStandings
+                  players={playerStandings}
+                  maxRounds={standings.rounds.length}
+                />
               }
             />
           }

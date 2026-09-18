@@ -18,6 +18,8 @@ export type PublicCombinationStandingRow = {
   teamName: string;
   totalImps: number;
   boardsPlayed: number;
+  /** Distinct published rounds with Butler IMP credits (matches played). */
+  roundsPlayed: number;
   averageImps: number | null;
   rank: number;
 };
@@ -29,6 +31,8 @@ export type PublicPlayerStandingRow = {
   teamName: string;
   totalImps: number;
   boardsPlayed: number;
+  /** Distinct published rounds with Butler IMP credits (matches played). */
+  roundsPlayed: number;
   averageImps: number | null;
   rank: number;
 };
@@ -139,20 +143,6 @@ export async function getPublishedCombinationStandings(
     ]),
   );
 
-  const combinations: PublicCombinationStandingRow[] = standings.map((s) => {
-    const meta = comboMap.get(s.combinationId);
-    return {
-      combinationId: s.combinationId,
-      displayName: meta?.displayName ?? s.combinationId,
-      teamId: meta?.teamId ?? "",
-      teamName: meta?.teamName ?? "",
-      totalImps: s.totalImps,
-      boardsPlayed: s.boardsPlayed,
-      averageImps: s.averageImps,
-      rank: s.rank,
-    };
-  });
-
   const matrix: Record<string, Record<number, { imps: number; boards: number }>> =
     {};
   for (const cell of cells) {
@@ -163,6 +153,21 @@ export async function getPublishedCombinationStandings(
       boards: cell.boardsPlayed,
     };
   }
+
+  const combinations: PublicCombinationStandingRow[] = standings.map((s) => {
+    const meta = comboMap.get(s.combinationId);
+    return {
+      combinationId: s.combinationId,
+      displayName: meta?.displayName ?? s.combinationId,
+      teamId: meta?.teamId ?? "",
+      teamName: meta?.teamName ?? "",
+      totalImps: s.totalImps,
+      boardsPlayed: s.boardsPlayed,
+      roundsPlayed: Object.keys(matrix[s.combinationId] ?? {}).length,
+      averageImps: s.averageImps,
+      rank: s.rank,
+    };
+  });
 
   return {
     combinations,
@@ -206,12 +211,19 @@ export async function getPublishedPlayerStandings(
     string,
     Map<string, { teamId: string; teamName: string; boards: number }>
   >();
+  const playerRounds = new Map<string, Set<string>>();
 
   for (const credit of credits) {
     const combo = comboPlayers.get(credit.combinationId);
     if (!combo) continue;
     for (const playerId of [combo.playerLowId, combo.playerHighId]) {
       playerCredits.push({ playerId, imps: credit.imps });
+      let rounds = playerRounds.get(playerId);
+      if (!rounds) {
+        rounds = new Set();
+        playerRounds.set(playerId, rounds);
+      }
+      rounds.add(credit.roundId);
       let byTeam = teamBoards.get(playerId);
       if (!byTeam) {
         byTeam = new Map();
@@ -260,6 +272,7 @@ export async function getPublishedPlayerStandings(
       teamName: best.teamName,
       totalImps: s.totalImps,
       boardsPlayed: s.boardsPlayed,
+      roundsPlayed: playerRounds.get(s.playerId)?.size ?? 0,
       averageImps: s.averageImps,
       rank: s.rank,
     };
@@ -339,6 +352,7 @@ export async function getPublishedRoundStandings(
       teamName: meta?.teamName ?? "",
       totalImps: s.totalImps,
       boardsPlayed: s.boardsPlayed,
+      roundsPlayed: 1,
       averageImps: s.averageImps,
       rank: s.rank,
     };
