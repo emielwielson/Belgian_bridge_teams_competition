@@ -1,9 +1,13 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { ButlerOverallModeTabs } from "@/components/butler/ButlerOverallModeTabs";
 import { ButlerStandingsTabs } from "@/components/butler/ButlerStandingsTabs";
 import { createPublicClient } from "@/lib/supabase/server-client";
 import { resolvePublicHonorGroup } from "@/lib/butler/honor-group";
-import { getPublishedCombinationStandings } from "@/lib/butler/public-standings";
+import {
+  getPublishedCombinationStandings,
+  getPublishedPlayerStandings,
+} from "@/lib/butler/public-standings";
 import { formatImps } from "@/lib/butler/format";
 import { formatPairDisplayName } from "@/lib/butler/person-name";
 
@@ -21,7 +25,10 @@ export default async function ButlerOverviewPage() {
     );
   }
 
-  const standings = await getPublishedCombinationStandings(client, group.id);
+  const [standings, playerStandings] = await Promise.all([
+    getPublishedCombinationStandings(client, group.id),
+    getPublishedPlayerStandings(client, group.id),
+  ]);
 
   return (
     <main className="page-container max-w-5xl">
@@ -38,76 +45,150 @@ export default async function ButlerOverviewPage() {
           byRoundLabel={t("roundMatrix")}
           ariaLabel={t("tabAria")}
           overall={
-            <div className="overflow-x-auto rounded-lg border border-zinc-200">
-              <table className="min-w-full text-left text-sm">
-                <thead className="bg-zinc-50 text-zinc-500">
-                  <tr>
-                    <th className="whitespace-nowrap px-3 py-2 font-medium">
-                      {t("rank")}
-                    </th>
-                    <th className="whitespace-nowrap px-3 py-2 font-medium">
-                      {t("pair")}
-                    </th>
-                    <th className="whitespace-nowrap px-3 py-2 font-medium">
-                      {t("team")}
-                    </th>
-                    <th className="whitespace-nowrap px-3 py-2 text-right font-medium">
-                      {t("imps")}
-                    </th>
-                    <th className="hidden whitespace-nowrap px-3 py-2 text-right font-medium sm:table-cell">
-                      {t("boards")}
-                    </th>
-                    <th className="hidden whitespace-nowrap px-3 py-2 text-right font-medium md:table-cell">
-                      {t("avg")}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-100">
-                  {standings.combinations.map((row, index) => {
-                    const stripe =
-                      index % 2 === 1 ? "bg-zinc-50" : "bg-white";
-                    return (
-                      <tr
-                        key={row.combinationId}
-                        className="hover:[&>td]:bg-zinc-100/80"
-                      >
-                        <td
-                          className={`px-3 py-2 tabular-nums text-zinc-500 ${stripe}`}
-                        >
-                          {row.rank}
-                        </td>
-                        <td className={`px-3 py-2 ${stripe}`}>
-                          <Link
-                            href={`/butler/pairs/${row.combinationId}`}
-                            className="link-inline"
-                          >
-                            {formatPairDisplayName(row.displayName)}
-                          </Link>
-                        </td>
-                        <td className={`px-3 py-2 text-zinc-600 ${stripe}`}>
-                          {row.teamName}
-                        </td>
-                        <td
-                          className={`px-3 py-2 text-right font-mono tabular-nums ${stripe}`}
-                        >
-                          {formatImps(row.totalImps)}
-                        </td>
-                        <td
-                          className={`hidden px-3 py-2 text-right tabular-nums text-zinc-500 sm:table-cell ${stripe}`}
-                        >
-                          {row.boardsPlayed}
-                        </td>
-                        <td
-                          className={`hidden px-3 py-2 text-right font-mono tabular-nums text-zinc-500 md:table-cell ${stripe}`}
-                        >
-                          {formatImps(row.averageImps)}
-                        </td>
+            <ButlerOverallModeTabs
+              pairLabel={t("viewPair")}
+              playerLabel={t("viewPlayer")}
+              ariaLabel={t("viewModeAria")}
+              pair={
+                <div className="overflow-x-auto rounded-lg border border-zinc-200">
+                  <table className="min-w-full text-left text-sm">
+                    <thead className="bg-zinc-50 text-zinc-500">
+                      <tr>
+                        <th className="whitespace-nowrap px-3 py-2 font-medium">
+                          {t("rank")}
+                        </th>
+                        <th className="whitespace-nowrap px-3 py-2 font-medium">
+                          {t("pair")}
+                        </th>
+                        <th className="whitespace-nowrap px-3 py-2 font-medium">
+                          {t("team")}
+                        </th>
+                        <th className="whitespace-nowrap px-3 py-2 text-right font-medium">
+                          {t("imps")}
+                        </th>
+                        <th className="hidden whitespace-nowrap px-3 py-2 text-right font-medium sm:table-cell">
+                          {t("boards")}
+                        </th>
+                        <th className="hidden whitespace-nowrap px-3 py-2 text-right font-medium md:table-cell">
+                          {t("avg")}
+                        </th>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-100">
+                      {standings.combinations.map((row, index) => {
+                        const stripe =
+                          index % 2 === 1 ? "bg-zinc-50" : "bg-white";
+                        return (
+                          <tr
+                            key={row.combinationId}
+                            className="hover:[&>td]:bg-zinc-100/80"
+                          >
+                            <td
+                              className={`px-3 py-2 tabular-nums text-zinc-500 ${stripe}`}
+                            >
+                              {row.rank}
+                            </td>
+                            <td className={`px-3 py-2 ${stripe}`}>
+                              <Link
+                                href={`/butler/pairs/${row.combinationId}`}
+                                className="link-inline"
+                              >
+                                {formatPairDisplayName(row.displayName)}
+                              </Link>
+                            </td>
+                            <td className={`px-3 py-2 text-zinc-600 ${stripe}`}>
+                              {row.teamName}
+                            </td>
+                            <td
+                              className={`px-3 py-2 text-right font-mono tabular-nums ${stripe}`}
+                            >
+                              {formatImps(row.totalImps)}
+                            </td>
+                            <td
+                              className={`hidden px-3 py-2 text-right tabular-nums text-zinc-500 sm:table-cell ${stripe}`}
+                            >
+                              {row.boardsPlayed}
+                            </td>
+                            <td
+                              className={`hidden px-3 py-2 text-right font-mono tabular-nums text-zinc-500 md:table-cell ${stripe}`}
+                            >
+                              {formatImps(row.averageImps)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              }
+              player={
+                <div className="overflow-x-auto rounded-lg border border-zinc-200">
+                  <table className="min-w-full text-left text-sm">
+                    <thead className="bg-zinc-50 text-zinc-500">
+                      <tr>
+                        <th className="whitespace-nowrap px-3 py-2 font-medium">
+                          {t("rank")}
+                        </th>
+                        <th className="whitespace-nowrap px-3 py-2 font-medium">
+                          {t("player")}
+                        </th>
+                        <th className="whitespace-nowrap px-3 py-2 font-medium">
+                          {t("team")}
+                        </th>
+                        <th className="whitespace-nowrap px-3 py-2 text-right font-medium">
+                          {t("imps")}
+                        </th>
+                        <th className="hidden whitespace-nowrap px-3 py-2 text-right font-medium sm:table-cell">
+                          {t("boards")}
+                        </th>
+                        <th className="hidden whitespace-nowrap px-3 py-2 text-right font-medium md:table-cell">
+                          {t("avg")}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-100">
+                      {playerStandings.map((row, index) => {
+                        const stripe =
+                          index % 2 === 1 ? "bg-zinc-50" : "bg-white";
+                        return (
+                          <tr
+                            key={row.playerId}
+                            className="hover:[&>td]:bg-zinc-100/80"
+                          >
+                            <td
+                              className={`px-3 py-2 tabular-nums text-zinc-500 ${stripe}`}
+                            >
+                              {row.rank}
+                            </td>
+                            <td className={`px-3 py-2 ${stripe}`}>
+                              {row.displayName}
+                            </td>
+                            <td className={`px-3 py-2 text-zinc-600 ${stripe}`}>
+                              {row.teamName}
+                            </td>
+                            <td
+                              className={`px-3 py-2 text-right font-mono tabular-nums ${stripe}`}
+                            >
+                              {formatImps(row.totalImps)}
+                            </td>
+                            <td
+                              className={`hidden px-3 py-2 text-right tabular-nums text-zinc-500 sm:table-cell ${stripe}`}
+                            >
+                              {row.boardsPlayed}
+                            </td>
+                            <td
+                              className={`hidden px-3 py-2 text-right font-mono tabular-nums text-zinc-500 md:table-cell ${stripe}`}
+                            >
+                              {formatImps(row.averageImps)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              }
+            />
           }
           byRound={
             <div className="overflow-x-auto rounded-lg border border-zinc-200">

@@ -321,8 +321,49 @@ export function aggregateCombinationRoundMatrix(
   });
 }
 
+export type PlayerImpCredit = {
+  playerId: string;
+  imps: number;
+};
+
+/**
+ * Player standings ranked by average IMP (same rules as combination standings).
+ * Callers expand pair/combination board credits to both players before passing in.
+ */
+export function aggregatePlayerStandingsByAverage(
+  credits: readonly PlayerImpCredit[],
+  config: AggregateConfig = {},
+): PlayerStanding[] {
+  const map = new Map<string, { totalImps: number; boardsPlayed: number }>();
+  for (const c of credits) {
+    const cur = map.get(c.playerId) ?? { totalImps: 0, boardsPlayed: 0 };
+    cur.totalImps += c.imps;
+    cur.boardsPlayed += 1;
+    map.set(c.playerId, cur);
+  }
+  const rows = [...map.entries()].map(([playerId, v]) => ({
+    playerId,
+    totalImps: v.totalImps,
+    boardsPlayed: v.boardsPlayed,
+    averageImps: v.boardsPlayed > 0 ? v.totalImps / v.boardsPlayed : null,
+  }));
+  rows.sort((a, b) => {
+    const avgA = a.averageImps ?? Number.NEGATIVE_INFINITY;
+    const avgB = b.averageImps ?? Number.NEGATIVE_INFINITY;
+    if (avgB !== avgA) return avgB - avgA;
+    if (b.totalImps !== a.totalImps) return b.totalImps - a.totalImps;
+    return a.playerId.localeCompare(b.playerId);
+  });
+  const ranks = assignSharedRanks(
+    rows.map((r) => r.averageImps ?? Number.NEGATIVE_INFINITY),
+    config.sharedRanksOnTies !== false,
+  );
+  return rows.map((r, i) => ({ ...r, rank: ranks[i]! }));
+}
+
 /**
  * Player-level aggregation: each board IMP for a pair is credited to both players.
+ * Ranks by total IMP (legacy pair-style ranking).
  */
 export function aggregatePlayerStandings(
   credits: readonly BoardImpCredit[],

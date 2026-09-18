@@ -5,6 +5,7 @@ import {
   aggregateCombinationStandings,
   aggregatePairStandings,
   aggregatePlayerStandings,
+  aggregatePlayerStandingsByAverage,
   assignSharedRanks,
   pairBoardCredits,
   scoreAndAggregate,
@@ -325,6 +326,22 @@ describe("aggregation", () => {
     expect(byId.pl2!.totalImps).toBe(6);
     expect(byId.pl1!.boardsPlayed).toBe(2);
     expect(byId.pl3!.totalImps).toBe(-3);
+  });
+
+  it("aggregates player standings by average IMP", () => {
+    const standings = aggregatePlayerStandingsByAverage([
+      { playerId: "a", imps: 10 },
+      { playerId: "a", imps: 10 },
+      { playerId: "b", imps: 12 },
+      { playerId: "c", imps: 6 },
+      { playerId: "c", imps: 6 },
+    ]);
+    expect(standings[0]!.playerId).toBe("b");
+    expect(standings[0]!.averageImps).toBe(12);
+    expect(standings[1]!.playerId).toBe("a");
+    expect(standings[1]!.averageImps).toBe(10);
+    expect(standings[2]!.playerId).toBe("c");
+    expect(standings[2]!.averageImps).toBe(6);
   });
 
   it("scoreAndAggregate wires boards + optional players", () => {

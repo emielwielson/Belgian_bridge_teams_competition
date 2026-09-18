@@ -6,10 +6,24 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   aggregateCombinationRoundMatrix,
   aggregateCombinationStandings,
+  aggregatePlayerStandingsByAverage,
+  type PlayerImpCredit,
 } from "@/lib/butler/engine";
+import { formatPersonName } from "@/lib/butler/person-name";
 
 export type PublicCombinationStandingRow = {
   combinationId: string;
+  displayName: string;
+  teamId: string;
+  teamName: string;
+  totalImps: number;
+  boardsPlayed: number;
+  averageImps: number | null;
+  rank: number;
+};
+
+export type PublicPlayerStandingRow = {
+  playerId: string;
   displayName: string;
   teamId: string;
   teamName: string;
@@ -23,13 +37,19 @@ export type PublicRoundColumn = {
   tournamentRound: number;
 };
 
-export async function getPublishedCombinationStandings(
+function unwrapTeamName(
+  teams: { name: string } | { name: string }[] | null,
+): string {
+  if (!teams) return "";
+  return Array.isArray(teams) ? (teams[0]?.name ?? "") : (teams.name ?? "");
+}
+
+async function loadPublishedBoardCredits(
   client: SupabaseClient,
   groupId: string,
 ): Promise<{
-  combinations: PublicCombinationStandingRow[];
-  rounds: PublicRoundColumn[];
-  matrix: Record<string, Record<number, { imps: number; boards: number }>>;
+  publishedRounds: number[];
+  credits: { combinationId: string; imps: number; roundId: string }[];
 }> {
   const { data: pubs } = await client
     .from("honor_round_publication")
@@ -40,7 +60,7 @@ export async function getPublishedCombinationStandings(
 
   const publishedRounds = (pubs ?? []).map((p) => p.tournament_round as number);
   if (!publishedRounds.length) {
-    return { combinations: [], rounds: [], matrix: {} };
+    return { publishedRounds: [], credits: [] };
   }
 
   const { data: results } = await client
@@ -76,6 +96,25 @@ export async function getPublishedCombinationStandings(
     }
   }
 
+  return { publishedRounds, credits };
+}
+
+export async function getPublishedCombinationStandings(
+  client: SupabaseClient,
+  groupId: string,
+): Promise<{
+  combinations: PublicCombinationStandingRow[];
+  rounds: PublicRoundColumn[];
+  matrix: Record<string, Record<number, { imps: number; boards: number }>>;
+}> {
+  const { publishedRounds, credits } = await loadPublishedBoardCredits(
+    client,
+    groupId,
+  );
+  if (!publishedRounds.length) {
+    return { combinations: [], rounds: [], matrix: {} };
+  }
+
   const standings = aggregateCombinationStandings(credits);
   const cells = aggregateCombinationRoundMatrix(credits);
 
@@ -88,20 +127,16 @@ export async function getPublishedCombinationStandings(
     : { data: [] };
 
   const comboMap = new Map(
-    (combos ?? []).map((c) => {
-      const team = c.teams as { name: string } | { name: string }[] | null;
-      const teamName = Array.isArray(team)
-        ? (team[0]?.name ?? "")
-        : (team?.name ?? "");
-      return [
-        c.id as string,
-        {
-          displayName: c.display_name as string,
-          teamId: c.team_id as string,
-          teamName,
-        },
-      ];
-    }),
+    (combos ?? []).map((c) => [
+      c.id as string,
+      {
+        displayName: c.display_name as string,
+        teamId: c.team_id as string,
+        teamName: unwrapTeamName(
+          c.teams as { name: string } | { name: string }[] | null,
+        ),
+      },
+    ]),
   );
 
   const combinations: PublicCombinationStandingRow[] = standings.map((s) => {
@@ -134,6 +169,101 @@ export async function getPublishedCombinationStandings(
     rounds: publishedRounds.map((tournamentRound) => ({ tournamentRound })),
     matrix,
   };
+}
+
+export async function getPublishedPlayerStandings(
+  client: SupabaseClient,
+  groupId: string,
+): Promise<PublicPlayerStandingRow[]> {
+  const { publishedRounds, credits } = await loadPublishedBoardCredits(
+    client,
+    groupId,
+  );
+  if (!publishedRounds.length || !credits.length) return [];
+
+  const comboIds = [...new Set(credits.map((c) => c.combinationId))];
+  const { data: combos } = await client
+    .from("honor_player_combinations")
+    .select("id, player_low_id, player_high_id, team_id, teams(name)")
+    .in("id", comboIds);
+
+  const comboPlayers = new Map(
+    (combos ?? []).map((c) => [
+      c.id as string,
+      {
+        playerLowId: c.player_low_id as string,
+        playerHighId: c.player_high_id as string,
+        teamId: c.team_id as string,
+        teamName: unwrapTeamName(
+          c.teams as { name: string } | { name: string }[] | null,
+        ),
+      },
+    ]),
+  );
+
+  const playerCredits: PlayerImpCredit[] = [];
+  const teamBoards = new Map<
+    string,
+    Map<string, { teamId: string; teamName: string; boards: number }>
+  >();
+
+  for (const credit of credits) {
+    const combo = comboPlayers.get(credit.combinationId);
+    if (!combo) continue;
+    for (const playerId of [combo.playerLowId, combo.playerHighId]) {
+      playerCredits.push({ playerId, imps: credit.imps });
+      let byTeam = teamBoards.get(playerId);
+      if (!byTeam) {
+        byTeam = new Map();
+        teamBoards.set(playerId, byTeam);
+      }
+      const key = combo.teamId;
+      const cur = byTeam.get(key) ?? {
+        teamId: combo.teamId,
+        teamName: combo.teamName,
+        boards: 0,
+      };
+      cur.boards += 1;
+      byTeam.set(key, cur);
+    }
+  }
+
+  const standings = aggregatePlayerStandingsByAverage(playerCredits);
+  const playerIds = standings.map((s) => s.playerId);
+  const { data: players } = playerIds.length
+    ? await client.from("players").select("id, name").in("id", playerIds)
+    : { data: [] };
+
+  const nameMap = new Map(
+    (players ?? []).map((p) => [p.id as string, p.name as string]),
+  );
+
+  return standings.map((s) => {
+    const teams = teamBoards.get(s.playerId);
+    let best = { teamId: "", teamName: "", boards: -1 };
+    if (teams) {
+      for (const entry of teams.values()) {
+        if (
+          entry.boards > best.boards ||
+          (entry.boards === best.boards &&
+            entry.teamId.localeCompare(best.teamId) < 0)
+        ) {
+          best = entry;
+        }
+      }
+    }
+    const rawName = nameMap.get(s.playerId);
+    return {
+      playerId: s.playerId,
+      displayName: rawName ? formatPersonName(rawName) : s.playerId,
+      teamId: best.teamId,
+      teamName: best.teamName,
+      totalImps: s.totalImps,
+      boardsPlayed: s.boardsPlayed,
+      averageImps: s.averageImps,
+      rank: s.rank,
+    };
+  });
 }
 
 export async function getPublishedRoundStandings(
@@ -188,20 +318,16 @@ export async function getPublishedRoundStandings(
     : { data: [] };
 
   const comboMap = new Map(
-    (combos ?? []).map((c) => {
-      const team = c.teams as { name: string } | { name: string }[] | null;
-      const teamName = Array.isArray(team)
-        ? (team[0]?.name ?? "")
-        : (team?.name ?? "");
-      return [
-        c.id as string,
-        {
-          displayName: c.display_name as string,
-          teamId: c.team_id as string,
-          teamName,
-        },
-      ];
-    }),
+    (combos ?? []).map((c) => [
+      c.id as string,
+      {
+        displayName: c.display_name as string,
+        teamId: c.team_id as string,
+        teamName: unwrapTeamName(
+          c.teams as { name: string } | { name: string }[] | null,
+        ),
+      },
+    ]),
   );
 
   return standings.map((s) => {
