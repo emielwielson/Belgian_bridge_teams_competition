@@ -47,6 +47,19 @@ function mockServiceClient() {
             }),
         };
       }
+      if (table === "arbiter_competition_scopes") {
+        return {
+          select: () => ({
+            eq: () => ({
+              in: () =>
+                Promise.resolve({
+                  data: [{ user_id: "arbiter-1" }],
+                  error: null,
+                }),
+            }),
+          }),
+        };
+      }
       if (table === "arbiter_requests") {
         return {
           select: () => ({

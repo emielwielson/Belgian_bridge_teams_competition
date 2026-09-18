@@ -74,11 +74,30 @@ where code = 'wallonia';
 
 Kinds: `national`, `flanders`, `wallonia`. Leaving `competition_manager_scopes` empty keeps the manager global (all competitions). `system_admin` is always global.
 
+**Arbiters (preferred):** use **Admin → Arbiters** (`/admin/arbiters`) after applying `0067_arbiter_scopes.sql`. Competition managers can create/remove arbiter accounts by email and assign only competitions they manage. Scopes:
+
+- `arbiter_competition_scopes` → inbox for that competition kind (National / Flanders / Wallonia)
+- `arbiter_honor_access` → Honor Division tab (`/arbiter/honor`); grantable only by managers who manage National
+
+Honor-only arbiters see the honor tab but not the inbox. Empty competition scopes mean no inbox (unlike managers). Existing arbiters are backfilled to all kinds + honor when `0067` runs. Manual SQL (fallback):
+
+```sql
+insert into public.user_roles (user_id, role)
+values ('<auth-users-id>', 'arbiter');
+
+insert into public.arbiter_competition_scopes (user_id, competition_kind_id)
+select '<auth-users-id>', id from public.competition_kinds where code = 'flanders';
+
+insert into public.arbiter_honor_access (user_id) values ('<auth-users-id>');
+```
+
+Removing the arbiter role/scopes does **not** delete the player record.
+
 For each step, open **SQL Editor** → **New query**, paste the file contents, and run.
 
 Optional: use **Database** → **Migrations** in the Dashboard if you prefer its migration UI.
 
-**Task 5 (operational workflows):** apply through `0026_arbiter_requests.sql` (includes `0021`–`0025` for postponement, home/away switch, operational file storage, warnings/rulings audit, arbiter requests). Then run [`supabase/tests/task5_operational_smoke_test.sql`](supabase/tests/task5_operational_smoke_test.sql). Assign the `arbiter` role in `user_roles` for users who should use `/arbiter`. Storage bucket: `operational-files` (private; uploads via `/api/files/upload`).
+**Task 5 (operational workflows):** apply through `0026_arbiter_requests.sql` (includes `0021`–`0025` for postponement, home/away switch, operational file storage, warnings/rulings audit, arbiter requests). Then run [`supabase/tests/task5_operational_smoke_test.sql`](supabase/tests/task5_operational_smoke_test.sql). Prefer assigning arbiters via `/admin/arbiters` (migration `0067`). Storage bucket: `operational-files` (private; uploads via `/api/files/upload`).
 
 **Scoped competition managers:** apply `0061_competition_kinds_and_manager_scopes.sql` and `0062_scope_competition_manager_resources.sql`, then run [`supabase/tests/scoped_competition_manager_smoke_test.sql`](supabase/tests/scoped_competition_manager_smoke_test.sql).
 

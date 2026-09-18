@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 import { AccountMenu } from "@/components/auth/AccountMenu";
-import { ARBITER_ACCESS_ROLES, hasAnyRole } from "@/lib/auth/roles";
+import { resolveArbiterNavAccess } from "@/lib/auth/arbiter-scope";
 import type { ActivePlayer, LinkedPlayer } from "@/lib/auth/active-player";
 
 type MeResponse = {
@@ -14,6 +14,11 @@ type MeResponse = {
   teams?: { id: string; name: string }[];
   activePlayer?: ActivePlayer | null;
   linkedPlayers?: LinkedPlayer[];
+  arbiterAccess?: {
+    kinds: string[];
+    honor: boolean;
+    inbox: boolean;
+  };
 };
 
 function navLinkClass(active: boolean): string {
@@ -51,9 +56,25 @@ export function SiteHeader() {
   const showAdminDashboard =
     me?.roles.includes("system_admin") ||
     me?.roles.includes("competition_manager");
-  const showArbiterInbox = me
-    ? hasAnyRole(me.roles, [...ARBITER_ACCESS_ROLES])
-    : false;
+  const arbiterNav = me
+    ? resolveArbiterNavAccess({
+        roles: me.roles,
+        arbiterAccess: me.arbiterAccess
+          ? {
+              kinds: me.arbiterAccess.kinds as (
+                | "national"
+                | "flanders"
+                | "wallonia"
+              )[],
+              kindIds: [],
+              honor: me.arbiterAccess.honor,
+              inbox: me.arbiterAccess.inbox,
+            }
+          : null,
+      })
+    : { showInbox: false, showHonor: false, href: null };
+  const showArbiterLink = arbiterNav.href != null;
+  const arbiterHref = arbiterNav.href ?? "/arbiter";
 
   const primaryLinks = (
     <>
@@ -87,9 +108,9 @@ export function SiteHeader() {
           {t("manuals")}
         </Link>
       ) : null}
-      {showArbiterInbox ? (
+      {showArbiterLink ? (
         <Link
-          href="/arbiter"
+          href={arbiterHref}
           className={navLinkClass(pathname.startsWith("/arbiter"))}
         >
           {t("arbiterInbox")}
@@ -163,9 +184,9 @@ export function SiteHeader() {
               {t("manuals")}
             </Link>
           ) : null}
-          {showArbiterInbox ? (
+          {showArbiterLink ? (
             <Link
-              href="/arbiter"
+              href={arbiterHref}
               className={mobileLinkClass(pathname.startsWith("/arbiter"))}
             >
               {t("arbiterInbox")}

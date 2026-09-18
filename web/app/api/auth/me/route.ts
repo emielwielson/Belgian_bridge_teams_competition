@@ -1,4 +1,5 @@
 import { getActivePlayer, getLinkedPlayers } from "@/lib/auth/active-player";
+import { getArbiterAccess } from "@/lib/auth/arbiter-scope";
 import { getUserRoles } from "@/lib/auth/session";
 import { loadTeamsForUser } from "@/lib/competition/team-queries";
 import { jsonOk, jsonErrorCode } from "@/lib/http/api-response";
@@ -25,6 +26,7 @@ export async function GET() {
       getActivePlayer(supabase, user.id),
       getLinkedPlayers(supabase, user.id),
     ]);
+  const arbiterAccess = await getArbiterAccess(supabase, user.id, roles);
   return jsonOk({
     user: { id: user.id, email: user.email },
     roles,
@@ -32,5 +34,10 @@ export async function GET() {
     preferredLocale,
     activePlayer,
     linkedPlayers,
+    arbiterAccess: {
+      kinds: arbiterAccess.kinds,
+      honor: arbiterAccess.honor,
+      inbox: arbiterAccess.inbox,
+    },
   });
 }

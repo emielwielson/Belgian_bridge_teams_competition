@@ -38,6 +38,12 @@ export default async function AdminPage() {
             {t("teamCaptainsHubDescription")}
           </p>
         </Link>
+        <Link href="/admin/arbiters" className="card hover:border-zinc-400">
+          <span className="font-medium">{t("arbitersHub")}</span>
+          <p className="mt-1 text-sm font-normal text-zinc-600">
+            {t("arbitersHubDescription")}
+          </p>
+        </Link>
       </nav>
     </main>
   );

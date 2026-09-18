@@ -1,4 +1,5 @@
 import { AuthError } from "@/lib/auth/auth-error";
+import { getArbiterAccess, hasArbiterHonorAccess } from "@/lib/auth/arbiter-scope";
 import { requireAuth } from "@/lib/auth/route-auth";
 import { loadMatchContext } from "@/lib/auth/match-access";
 import type { HonorSide } from "@/lib/competition/honor-lineup";
@@ -56,7 +57,14 @@ export async function POST(request: Request, { params }: Params) {
       roles,
       match,
     );
-    if (!canUnlockHonorLineup({ roles, viewerSide })) {
+    const arbiterAccess = await getArbiterAccess(supabase, user.id, roles);
+    if (
+      !canUnlockHonorLineup({
+        roles,
+        viewerSide,
+        hasHonorAccess: hasArbiterHonorAccess(arbiterAccess),
+      })
+    ) {
       throw new AuthError("Forbidden: cannot unlock lineup for this match", 403);
     }
 

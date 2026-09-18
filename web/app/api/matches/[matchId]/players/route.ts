@@ -1,4 +1,5 @@
 import { AuthError } from "@/lib/auth/auth-error";
+import { getArbiterAccess, hasArbiterHonorAccess } from "@/lib/auth/arbiter-scope";
 import { requireAuth } from "@/lib/auth/route-auth";
 import {
   assertCanEditLineup,
@@ -105,6 +106,7 @@ export async function GET(_request: Request, { params }: Params) {
       roles,
       match,
     );
+    const arbiterAccess = await getArbiterAccess(supabase, user.id, roles);
     const perms = honorPermissionsForViewer({
       viewerSide,
       phase: honorCtx.phase,
@@ -112,6 +114,7 @@ export async function GET(_request: Request, { params }: Params) {
       awayLocked: honorCtx.awayLocked,
       played: match.played_at != null,
       roles,
+      hasHonorAccess: hasArbiterHonorAccess(arbiterAccess),
     });
 
     const visible = filterLineupVisibility(

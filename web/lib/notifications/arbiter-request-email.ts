@@ -145,25 +145,55 @@ function uniqueEmails(addresses: string[]): string[] {
 
 async function loadArbiterRequestCc(matchId: string): Promise<string[]> {
   const [arbiterEmails, captainEmails, managerEmails] = await Promise.all([
-    loadArbiterEmails(),
+    loadArbiterEmails(matchId),
     loadCaptainEmailsForMatch(matchId),
     loadCompetitionManagerEmails(matchId),
   ]);
   return uniqueEmails([...arbiterEmails, ...captainEmails, ...managerEmails]);
 }
 
-async function loadArbiterEmails(): Promise<string[]> {
+async function loadArbiterEmails(matchId: string): Promise<string[]> {
   const supabase = createServiceClient();
+
+  const { data: matchRow, error: matchError } = await supabase
+    .from("matches")
+    .select(
+      "id, groups!inner(divisions!inner(leagues!inner(competition_kind_id)))",
+    )
+    .eq("id", matchId)
+    .maybeSingle();
+  if (matchError) throw matchError;
+
+  const groups = matchRow?.groups as
+    | { divisions: { leagues: { competition_kind_id: string } } }
+    | { divisions: { leagues: { competition_kind_id: string } } }[]
+    | null
+    | undefined;
+  const group = Array.isArray(groups) ? groups[0] : groups;
+  const kindId = group?.divisions?.leagues?.competition_kind_id;
+  if (!kindId) return [];
+
   const { data: roleRows, error: roleError } = await supabase
     .from("user_roles")
     .select("user_id")
     .eq("role", "arbiter");
-
   if (roleError) throw roleError;
 
+  const arbiterIds = (roleRows ?? []).map((r) => r.user_id);
+  if (arbiterIds.length === 0) return [];
+
+  const { data: scopeRows, error: scopeError } = await supabase
+    .from("arbiter_competition_scopes")
+    .select("user_id")
+    .eq("competition_kind_id", kindId)
+    .in("user_id", arbiterIds);
+  if (scopeError) throw scopeError;
+
+  const recipientIds = [...new Set((scopeRows ?? []).map((r) => r.user_id))];
+
   const emails: string[] = [];
-  for (const row of roleRows ?? []) {
-    const { data, error } = await supabase.auth.admin.getUserById(row.user_id);
+  for (const userId of recipientIds) {
+    const { data, error } = await supabase.auth.admin.getUserById(userId);
     if (!error && data.user?.email) {
       emails.push(data.user.email);
     }

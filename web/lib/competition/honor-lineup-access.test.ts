@@ -5,10 +5,27 @@ import {
 } from "./honor-lineup-access";
 
 describe("canUnlockHonorLineup", () => {
-  it("allows arbiter access roles", () => {
+  it("allows arbiter with honor access", () => {
     expect(
-      canUnlockHonorLineup({ roles: ["arbiter"], viewerSide: "other" }),
+      canUnlockHonorLineup({
+        roles: ["arbiter"],
+        viewerSide: "other",
+        hasHonorAccess: true,
+      }),
     ).toBe(true);
+  });
+
+  it("denies arbiter without honor access", () => {
+    expect(
+      canUnlockHonorLineup({
+        roles: ["arbiter"],
+        viewerSide: "other",
+        hasHonorAccess: false,
+      }),
+    ).toBe(false);
+  });
+
+  it("allows competition managers", () => {
     expect(
       canUnlockHonorLineup({
         roles: ["competition_manager"],
@@ -31,7 +48,7 @@ describe("canUnlockHonorLineup", () => {
 });
 
 describe("honorPermissionsForViewer canUnlock", () => {
-  it("exposes canUnlock from roles", () => {
+  it("exposes canUnlock from honor access", () => {
     const perms = honorPermissionsForViewer({
       viewerSide: "other",
       phase: "sequential",
@@ -39,6 +56,7 @@ describe("honorPermissionsForViewer canUnlock", () => {
       awayLocked: true,
       played: false,
       roles: ["arbiter"],
+      hasHonorAccess: true,
     });
     expect(perms.canUnlock).toBe(true);
   });

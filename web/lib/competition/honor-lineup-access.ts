@@ -3,9 +3,9 @@ import type { MatchContext } from "@/lib/auth/match-access";
 import { userManagesMatch } from "@/lib/auth/competition-scope";
 import { isUserOnTeam } from "@/lib/auth/match-access";
 import {
-  ARBITER_ACCESS_ROLES,
   COMPETITION_ADMIN_ROLES,
   hasAnyRole,
+  ROLES,
 } from "@/lib/auth/roles";
 import {
   canEditHonorSide,
@@ -115,12 +115,18 @@ export function canViewerSeeTeamLineup(options: {
   });
 }
 
-/** Floor directors (arbiter access) and scoped competition managers may unlock. */
+/** Floor directors with honor access and scoped competition managers may unlock. */
 export function canUnlockHonorLineup(options: {
   roles: string[];
   viewerSide: HonorSide | "manager" | "other";
+  hasHonorAccess?: boolean;
 }): boolean {
-  if (hasAnyRole(options.roles, [...ARBITER_ACCESS_ROLES])) return true;
+  if (hasAnyRole(options.roles, [ROLES.COMPETITION_MANAGER, ROLES.SYSTEM_ADMIN])) {
+    return true;
+  }
+  if (options.roles.includes(ROLES.ARBITER) && options.hasHonorAccess) {
+    return true;
+  }
   return options.viewerSide === "manager";
 }
 
@@ -131,11 +137,13 @@ export function honorPermissionsForViewer(options: {
   awayLocked: boolean;
   played: boolean;
   roles?: string[];
+  hasHonorAccess?: boolean;
 }) {
   const isManager = options.viewerSide === "manager";
   const canUnlock = canUnlockHonorLineup({
     roles: options.roles ?? [],
     viewerSide: options.viewerSide,
+    hasHonorAccess: options.hasHonorAccess,
   });
   return {
     canEditHome: canEditHonorSide({

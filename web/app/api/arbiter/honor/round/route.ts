@@ -1,3 +1,4 @@
+import { assertArbiterHonorApiAccess } from "@/lib/auth/arbiter-scope";
 import { ARBITER_ACCESS_ROLES } from "@/lib/auth/roles";
 import { requireRoles } from "@/lib/auth/route-auth";
 import {
@@ -12,7 +13,8 @@ import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
 
 export async function GET(request: Request) {
   try {
-    const { supabase } = await requireRoles([...ARBITER_ACCESS_ROLES]);
+    const { user, roles, supabase } = await requireRoles([...ARBITER_ACCESS_ROLES]);
+    await assertArbiterHonorApiAccess(supabase, user.id, roles);
     const group = await resolveActiveHonorGroup(supabase);
     if (!group) {
       return jsonError("Honor division group not found for the active season", 404);

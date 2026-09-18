@@ -1,4 +1,5 @@
 import { getLocale } from "next-intl/server";
+import { assertArbiterInboxApiAccess } from "@/lib/auth/arbiter-scope";
 import { ARBITER_ACCESS_ROLES } from "@/lib/auth/roles";
 import { requireRoles } from "@/lib/auth/route-auth";
 import {
@@ -25,7 +26,10 @@ type Params = { params: Promise<{ requestId: string }> };
 export async function POST(request: Request, { params }: Params) {
   try {
     const { requestId } = await params;
-    const { supabase } = await requireRoles([...ARBITER_ACCESS_ROLES]);
+    const { user, roles, supabase } = await requireRoles([
+      ...ARBITER_ACCESS_ROLES,
+    ]);
+    await assertArbiterInboxApiAccess(supabase, user.id, roles);
 
     const body = (await request.json()) as Record<string, unknown>;
     const filePath = String(body.file_path ?? body.filePath ?? "").trim();

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { assertArbiterHonorApiAccess } from "@/lib/auth/arbiter-scope";
 import { ARBITER_ACCESS_ROLES } from "@/lib/auth/roles";
 import { requireRoles } from "@/lib/auth/route-auth";
 import { revalidateStandingsForGroup } from "@/lib/competition/revalidate-standings";
@@ -43,7 +44,8 @@ function numOrNull(raw: unknown): number | null | undefined {
 
 export async function POST(request: Request, { params }: Params) {
   try {
-    const { user } = await requireRoles([...ARBITER_ACCESS_ROLES]);
+    const { user, roles, supabase } = await requireRoles([...ARBITER_ACCESS_ROLES]);
+    await assertArbiterHonorApiAccess(supabase, user.id, roles);
     const { id } = await params;
     const body = (await request.json()) as Record<string, unknown>;
     const service = createServiceClient();

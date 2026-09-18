@@ -4,6 +4,7 @@ import {
 } from "@/lib/auth/competition-scope";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getActivePlayerId } from "@/lib/auth/active-player";
+import { userIsArbiterForMatch } from "@/lib/auth/arbiter-scope";
 import { AuthError } from "./auth-error";
 import { COMPETITION_ADMIN_ROLES } from "./roles";
 import { FINISHED_SCORE_EDIT_ROLES, hasAnyRole, ROLES } from "./roles";
@@ -212,6 +213,12 @@ export async function assertCanEditFinishedScoreForMatch(
 ): Promise<void> {
   assertCanEditFinishedScore(roles);
   if (roles.includes(ROLES.ARBITER) && !hasAnyRole(roles, [...COMPETITION_ADMIN_ROLES])) {
+    if (!(await userIsArbiterForMatch(supabase, matchId))) {
+      throw new AuthError(
+        "Forbidden: only arbiters or competition managers can edit official scores",
+        403,
+      );
+    }
     return;
   }
   if (!(await userManagesMatch(supabase, matchId))) {

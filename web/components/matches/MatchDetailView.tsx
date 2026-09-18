@@ -11,6 +11,7 @@ import {
   canViewMatchOps,
   type MatchContext,
 } from "@/lib/auth/match-access";
+import { getArbiterAccess, hasArbiterHonorAccess } from "@/lib/auth/arbiter-scope";
 import { COMPETITION_ADMIN_ROLES } from "@/lib/auth/roles";
 import { ARBITER_ACCESS_ROLES, FINISHED_SCORE_EDIT_ROLES, hasAnyRole } from "@/lib/auth/roles";
 import {
@@ -135,6 +136,7 @@ export async function MatchDetailView({
       roles,
       match,
     );
+    const arbiterAccess = await getArbiterAccess(supabase, userId, roles);
     honorPerms = honorPermissionsForViewer({
       viewerSide,
       phase: honorCtx.phase,
@@ -142,6 +144,7 @@ export async function MatchDetailView({
       awayLocked: honorCtx.awayLocked,
       played: match.played_at != null,
       roles,
+      hasHonorAccess: hasArbiterHonorAccess(arbiterAccess),
     });
   }
 

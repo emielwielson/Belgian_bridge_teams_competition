@@ -1,4 +1,5 @@
 import { ARBITER_ACCESS_ROLES } from "@/lib/auth/roles";
+import { assertArbiterInboxApiAccess } from "@/lib/auth/arbiter-scope";
 import { requireRoles } from "@/lib/auth/route-auth";
 import type { InboxMatchContext } from "@/lib/competition/arbiter-request";
 import { loadGroupScoringContext } from "@/lib/competition/match-scoring-context";
@@ -62,7 +63,10 @@ async function enrichMatchContext(
 
 export async function GET(request: Request) {
   try {
-    const { supabase } = await requireRoles([...ARBITER_ACCESS_ROLES]);
+    const { user, roles, supabase } = await requireRoles([
+      ...ARBITER_ACCESS_ROLES,
+    ]);
+    await assertArbiterInboxApiAccess(supabase, user.id, roles);
     const status = new URL(request.url).searchParams.get("status") ?? "open";
 
     let query = supabase

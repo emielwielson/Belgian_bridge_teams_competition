@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { assertArbiterHonorApiAccess } from "@/lib/auth/arbiter-scope";
 import { ARBITER_ACCESS_ROLES } from "@/lib/auth/roles";
 import { requireRoles } from "@/lib/auth/route-auth";
 import { recalculateHonorButler } from "@/lib/butler/recalculate";
@@ -15,7 +16,8 @@ export async function POST(
   context: { params: Promise<{ round: string }> },
 ) {
   try {
-    await requireRoles([...ARBITER_ACCESS_ROLES]);
+    const { user, roles, supabase } = await requireRoles([...ARBITER_ACCESS_ROLES]);
+    await assertArbiterHonorApiAccess(supabase, user.id, roles);
     const service = createServiceClient();
     const group = await resolveActiveHonorGroup(service);
     if (!group) {
