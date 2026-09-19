@@ -57,7 +57,7 @@ export async function resolveHonorSpecialResult(params: {
     return {
       ok: false,
       error:
-        "Arbitrale score is niet meer beschikbaar. Gebruik split-score, gewogen score of correctie.",
+        "Arbitrale score is niet meer beschikbaar. Gebruik gewogen score, correctie of geannuleerd.",
     };
   }
 

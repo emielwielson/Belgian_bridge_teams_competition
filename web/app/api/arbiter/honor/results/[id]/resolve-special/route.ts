@@ -89,7 +89,7 @@ export async function POST(request: Request, { params }: Params) {
 
     if (mode === "artificial") {
       return jsonError(
-        "Arbitrale score is niet meer beschikbaar. Gebruik split-score, gewogen score of correctie.",
+        "Arbitrale score is niet meer beschikbaar. Gebruik gewogen score, correctie of geannuleerd.",
         400,
       );
     }

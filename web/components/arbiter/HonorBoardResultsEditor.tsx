@@ -37,15 +37,10 @@ export type HonorResultRow = {
   adjustment_mode: string | null;
 };
 
-type Mode = "cancelled" | "split" | "weighted" | "correct";
+type Mode = "cancelled" | "weighted" | "correct";
 type PickBy = "match" | "table";
 
-const MODES: readonly Mode[] = [
-  "cancelled",
-  "split",
-  "weighted",
-  "correct",
-];
+const MODES: readonly Mode[] = ["cancelled", "weighted", "correct"];
 
 function isMode(value: string): value is Mode {
   return (MODES as readonly string[]).includes(value);
@@ -116,8 +111,6 @@ export function HonorBoardResultsEditor({
 
   // Shared form fields
   const [reason, setReason] = useState("");
-  const [adminNsScore, setAdminNsScore] = useState("");
-  const [adminEwScore, setAdminEwScore] = useState("");
   const [datumEligible, setDatumEligible] = useState(true);
   const [weightedLegs, setWeightedLegs] = useState<WeightedLegForm[]>([
     emptyLeg(),
@@ -287,22 +280,6 @@ export function HonorBoardResultsEditor({
 
   useEffect(() => {
     if (!selected) return;
-    setAdminNsScore(
-      selected.admin_adjusted_ns_score != null
-        ? String(selected.admin_adjusted_ns_score)
-        : selected.ns_score != null
-          ? String(selected.ns_score)
-          : "",
-    );
-    setAdminEwScore(
-      selected.admin_adjusted_ew_score != null
-        ? String(selected.admin_adjusted_ew_score)
-        : selected.admin_adjusted_ns_score != null
-          ? String(-selected.admin_adjusted_ns_score)
-          : selected.ns_score != null
-            ? String(-selected.ns_score)
-            : "",
-    );
     setDatumEligible(selected.datum_eligible !== false);
     setWeightedLegs([emptyLeg(), emptyLeg()]);
     setContractLevel(
@@ -316,8 +293,6 @@ export function HonorBoardResultsEditor({
     setReason("");
     if (selected.adjustment_mode === "cancelled") {
       setMode("cancelled");
-    } else if (selected.adjustment_mode === "split") {
-      setMode("split");
     } else if (selected.adjustment_mode === "weighted") {
       setMode("weighted");
     } else if (selected.adjustment_mode === "correction") {
@@ -329,8 +304,10 @@ export function HonorBoardResultsEditor({
       setMode("cancelled");
     } else if (
       selected.validation_status === "special" ||
-      selected.adjustment_mode === "artificial"
+      selected.adjustment_mode === "artificial" ||
+      selected.adjustment_mode === "split"
     ) {
+      // Legacy split/artificial: re-enter via weighted
       setMode("weighted");
     } else {
       setMode("weighted");
@@ -434,11 +411,7 @@ export function HonorBoardResultsEditor({
           mode,
           reason: reason || null,
         };
-        if (mode === "split") {
-          payload.adminAdjustedNsScore = Number(adminNsScore);
-          payload.adminAdjustedEwScore = Number(adminEwScore);
-          payload.datumEligible = datumEligible;
-        } else if (mode === "weighted") {
+        if (mode === "weighted") {
           payload.legs = weightedLegs.map((leg) => ({
             score: Number(leg.score),
             weightNs: Number(leg.weightNs),
@@ -714,7 +687,6 @@ export function HonorBoardResultsEditor({
               disabled={busy}
             >
               <option value="cancelled">{t("modeCancelled")}</option>
-              <option value="split">{t("modeSplit")}</option>
               <option value="weighted">{t("modeWeighted")}</option>
               <option value="correct">{t("modeCorrect")}</option>
             </select>
@@ -724,42 +696,9 @@ export function HonorBoardResultsEditor({
             {t(`modeHelp_${isMode(mode) ? mode : "weighted"}`)}
           </p>
 
-          {mode === "split" ? (
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="text-zinc-600">{t("adminNsScore")}</span>
-                <input
-                  type="number"
-                  value={adminNsScore}
-                  onChange={(e) => setAdminNsScore(e.target.value)}
-                  className="rounded border border-zinc-300 bg-white px-2 py-1.5"
-                  disabled={busy}
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="text-zinc-600">{t("adminEwScore")}</span>
-                <input
-                  type="number"
-                  value={adminEwScore}
-                  onChange={(e) => setAdminEwScore(e.target.value)}
-                  className="rounded border border-zinc-300 bg-white px-2 py-1.5"
-                  disabled={busy}
-                />
-              </label>
-              <label className="flex items-center gap-2 text-sm sm:col-span-2">
-                <input
-                  type="checkbox"
-                  checked={datumEligible}
-                  onChange={(e) => setDatumEligible(e.target.checked)}
-                  disabled={busy}
-                />
-                {t("datumEligible")}
-              </label>
-            </div>
-          ) : null}
-
           {mode === "weighted" ? (
             <div className="mt-3 space-y-3">
+              <p className="text-xs text-zinc-600">{t("weightedWeightsHelp")}</p>
               {weightedLegs.map((leg, index) => (
                 <div
                   key={index}
