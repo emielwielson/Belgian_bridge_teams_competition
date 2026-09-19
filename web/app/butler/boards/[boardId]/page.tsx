@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { HandDiagram } from "@/components/boards/HandDiagram";
 import { ContractLabel } from "@/components/butler/ContractLabel";
+import { DatumScoreInfo } from "@/components/butler/DatumScoreInfo";
 import { LeadLabel } from "@/components/butler/LeadLabel";
 import type { BoardHands, Dealer, Vulnerability } from "@/lib/boards/types";
 import { handDiagramLabelsFromButler } from "@/lib/boards/hand-diagram-labels";
@@ -153,7 +154,7 @@ export default async function ButlerBoardPage({
       ) : null}
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(18rem,22rem)_minmax(0,1fr)] lg:items-start">
-        <aside className="space-y-4">
+        <aside>
           {board.hands ? (
             <HandDiagram
               boardNumber={board.board_number}
@@ -166,30 +167,35 @@ export default async function ButlerBoardPage({
           ) : (
             <p className="text-sm text-zinc-500">{t("noBoards")}</p>
           )}
+        </aside>
 
-          <div className="rounded-lg border border-zinc-200 px-3 py-2 text-sm">
-            <h2 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-              {t("datum")}
-            </h2>
+        <section className="min-w-0">
+          <h2 className="mb-3 text-lg font-semibold">{t("fieldComparison")}</h2>
+          <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-zinc-200 px-3 py-2 text-sm">
+            <div className="flex items-center gap-1.5">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                {t("datum")}
+              </h3>
+              <DatumScoreInfo
+                ariaLabel={t("datumInfoAria")}
+                helpText={t("datumHelp")}
+              />
+            </div>
             {board.ns_datum != null ? (
-              <dl className="grid grid-cols-2 gap-x-2 gap-y-1">
-                <dt className="text-zinc-500">{t("datumNs")}</dt>
-                <dd className="text-right font-mono tabular-nums">
-                  {board.ns_datum}
-                </dd>
-                <dt className="text-zinc-500">{t("datumEw")}</dt>
-                <dd className="text-right font-mono tabular-nums">
-                  {board.ew_datum}
-                </dd>
+              <dl className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <div className="flex items-center gap-1.5">
+                  <dt className="text-zinc-500">{t("datumNs")}</dt>
+                  <dd className="font-mono tabular-nums">{board.ns_datum}</dd>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <dt className="text-zinc-500">{t("datumEw")}</dt>
+                  <dd className="font-mono tabular-nums">{board.ew_datum}</dd>
+                </div>
               </dl>
             ) : (
               <p className="text-zinc-500">{t("datumMissing")}</p>
             )}
           </div>
-        </aside>
-
-        <section className="min-w-0">
-          <h2 className="mb-3 text-lg font-semibold">{t("fieldComparison")}</h2>
           {(results ?? []).length === 0 ? (
             <p className="text-sm text-zinc-600">{t("noResults")}</p>
           ) : (

@@ -663,6 +663,8 @@
     "datumNs": "NS datum",
     "datumEw": "EW datum",
     "datumMissing": "Datum could not be computed.",
+    "datumInfoAria": "What is the datum score?",
+    "datumHelp": "The datum is the reference score for this board, derived from the field results (trimmed mean of included table scores, rounded). Each table’s Butler IMPs are the difference between that table’s score and this datum.",
     "fieldComparison": "Field comparison",
     "contract": "Contract",
     "lead": "Lead",

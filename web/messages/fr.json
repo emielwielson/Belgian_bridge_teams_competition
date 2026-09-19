@@ -662,6 +662,8 @@
     "datumNs": "Datum NS",
     "datumEw": "Datum EO",
     "datumMissing": "Datum non calculable.",
+    "datumInfoAria": "Qu’est-ce que le datum ?",
+    "datumHelp": "Le datum est le score de référence de cette donne, calculé à partir des résultats du champ (moyenne tronquée des scores de table inclus, arrondie). Les IMP Butler de chaque table sont la différence entre le score de cette table et ce datum.",
     "fieldComparison": "Comparaison du champ",
     "contract": "Contrat",
     "lead": "Entame",

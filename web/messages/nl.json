@@ -663,6 +663,8 @@
     "datumNs": "NZ-datum",
     "datumEw": "OW-datum",
     "datumMissing": "Datum kon niet berekend worden.",
+    "datumInfoAria": "Wat is de datumscore?",
+    "datumHelp": "De datum is de referentiescore voor dit spel, afgeleid van de veldresultaten (getrimd gemiddelde van de meegenomen tafelscores, afgerond). De Butler-IMP’s per tafel zijn het verschil tussen die tafelscore en deze datum.",
     "fieldComparison": "Vergelijking veld",
     "contract": "Contract",
     "lead": "Uitkomst",
