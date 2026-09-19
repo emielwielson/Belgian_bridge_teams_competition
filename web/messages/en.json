@@ -660,7 +660,7 @@
     "backRound": "Back to round {round}",
     "dealTitle": "Board {board}",
     "openBoard": "Open board {board}",
-    "datum": "Datum (NS)",
+    "datum": "Datum score",
     "datumNs": "NS datum",
     "datumEw": "EW datum",
     "datumMissing": "Datum could not be computed.",

@@ -660,7 +660,7 @@
     "backRound": "Terug naar ronde {round}",
     "dealTitle": "Gift {board}",
     "openBoard": "Open gift {board}",
-    "datum": "Datum (NZ)",
+    "datum": "Datum-score",
     "datumNs": "NZ-datum",
     "datumEw": "OW-datum",
     "datumMissing": "Datum kon niet berekend worden.",

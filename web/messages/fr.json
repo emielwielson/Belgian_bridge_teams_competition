@@ -659,7 +659,7 @@
     "backRound": "Retour à la manche {round}",
     "dealTitle": "Donne {board}",
     "openBoard": "Ouvrir la donne {board}",
-    "datum": "Datum (NS)",
+    "datum": "Score datum",
     "datumNs": "Datum NS",
     "datumEw": "Datum EO",
     "datumMissing": "Datum non calculable.",
