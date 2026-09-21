@@ -8,6 +8,9 @@ import {
 } from "@/components/butler/ButlerPairResultsTable";
 import type { BoardHands, Dealer, Vulnerability } from "@/lib/boards/types";
 import { formatPairDisplayName } from "@/lib/butler/person-name";
+import { parseAveragePmAwards } from "@/lib/results/adjustment-helpers";
+import { averageAwardLabel } from "@/lib/results/average-pm-labels";
+import type { AverageAward } from "@/lib/results/types";
 import { createPublicClient } from "@/lib/supabase/server-client";
 
 export async function ButlerPairResultsView({
@@ -35,7 +38,7 @@ export async function ButlerPairResultsView({
   let query = client
     .from("honor_board_results")
     .select(
-      "id, tournament_round, room, board_id, ns_combination_id, ew_combination_id, ns_butler_imps, ew_butler_imps, ns_score, contract_level, contract_denomination, doubling, declarer, tricks_result, lead_card, honor_boards(board_number)",
+      "id, tournament_round, room, board_id, ns_combination_id, ew_combination_id, ns_butler_imps, ew_butler_imps, ns_score, contract_level, contract_denomination, doubling, declarer, tricks_result, lead_card, adjustment_mode, adjustment_meta, honor_boards(board_number)",
     )
     .eq("processing_status", "published")
     .or(
@@ -50,6 +53,11 @@ export async function ButlerPairResultsView({
 
   const { data: results } = await query;
 
+  const awardLabels = {
+    plus: t("averageAwardPlus"),
+    minus: t("averageAwardMinus"),
+  };
+
   const rawRows = (results ?? [])
     .map((r) => {
       const isNs = r.ns_combination_id === combinationId;
@@ -60,13 +68,24 @@ export async function ButlerPairResultsView({
       const boardNumber = Array.isArray(board)
         ? board[0]?.board_number
         : board?.board_number;
+      const rawImps = isNs ? r.ns_butler_imps : r.ew_butler_imps;
+      const awards =
+        r.adjustment_mode === "average_pm"
+          ? parseAveragePmAwards(
+              r.adjustment_meta as Record<string, unknown> | null,
+            )
+          : { nsAward: null, ewAward: null };
+      const sideAward: AverageAward | null = isNs
+        ? awards.nsAward
+        : awards.ewAward;
       return {
         id: r.id,
         round: r.tournament_round as number,
         boardId: r.board_id as string,
         boardNumber: boardNumber ?? 0,
         direction: isNs ? "NS" : "EW",
-        imps: Number(isNs ? r.ns_butler_imps : r.ew_butler_imps),
+        imps: rawImps == null ? null : Number(rawImps),
+        averageAwardLabel: averageAwardLabel(sideAward, awardLabels),
         contractLevel: r.contract_level as number | null,
         contractDenomination: r.contract_denomination as string | null,
         doubling: (r.doubling as string) ?? "NONE",

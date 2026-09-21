@@ -43,10 +43,11 @@ type ResultRow = {
   admin_ew_butler_imps: number | null;
   adjustment_mode: string | null;
   adjustment_meta: Record<string, unknown> | null;
+  processing_status: string | null;
 };
 
 const RESULT_SELECT =
-  "id, board_id, tournament_round, ns_combination_id, ew_combination_id, included_in_datum, ns_score, computed_score, admin_adjusted_ns_score, admin_adjusted_ew_score, admin_ns_butler_imps, admin_ew_butler_imps, adjustment_mode, adjustment_meta";
+  "id, board_id, tournament_round, ns_combination_id, ew_combination_id, included_in_datum, ns_score, computed_score, admin_adjusted_ns_score, admin_adjusted_ew_score, admin_ns_butler_imps, admin_ew_butler_imps, adjustment_mode, adjustment_meta, processing_status";
 
 function isAveragePmRow(r: ResultRow): boolean {
   return r.adjustment_mode === "average_pm";
@@ -255,7 +256,9 @@ export async function recalculateHonorButler(
           ns_butler_imps: nsButlerImps,
           ew_butler_imps: ewButlerImps,
           score_diff: scoreDiff,
-          processing_status: "calculated",
+          // Keep public pages in sync: do not demote already-published rows.
+          processing_status:
+            r.processing_status === "published" ? "published" : "calculated",
           updated_at: new Date().toISOString(),
         })
         .eq("id", r.id);

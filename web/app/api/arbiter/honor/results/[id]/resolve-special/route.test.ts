@@ -25,9 +25,14 @@ vi.mock("@/lib/competition/revalidate-standings", () => ({
   revalidateStandingsForGroup: vi.fn(),
 }));
 
+vi.mock("@/lib/butler/revalidate-butler", () => ({
+  revalidateButlerPublicPages: vi.fn(),
+}));
+
 import { requireRoles } from "@/lib/auth/route-auth";
 import { resolveHonorSpecialResult } from "@/lib/results/special-resolve";
 import { revalidateStandingsForGroup } from "@/lib/competition/revalidate-standings";
+import { revalidateButlerPublicPages } from "@/lib/butler/revalidate-butler";
 
 describe("POST /api/arbiter/honor/results/[id]/resolve-special", () => {
   beforeEach(() => {
@@ -70,6 +75,7 @@ describe("POST /api/arbiter/honor/results/[id]/resolve-special", () => {
       }),
     );
     expect(revalidateStandingsForGroup).not.toHaveBeenCalled();
+    expect(revalidateButlerPublicPages).toHaveBeenCalled();
   });
 
   it("rejects artificial mode", async () => {

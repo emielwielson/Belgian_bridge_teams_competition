@@ -12,6 +12,7 @@ import {
   loadHonorRoundSeating,
   resolveActiveHonorGroup,
 } from "@/lib/competition/honor-seating-overview";
+import { revalidateButlerPublicPages } from "@/lib/butler/revalidate-butler";
 import { revalidateStandingsForGroup } from "@/lib/competition/revalidate-standings";
 import { createServiceClient } from "@/lib/supabase/server-client";
 import { jsonError, jsonFromError } from "@/lib/http/api-response";
@@ -112,6 +113,7 @@ export async function POST(
     }
 
     await revalidateStandingsForGroup(service, group.id);
+    revalidateButlerPublicPages();
 
     return NextResponse.json({
       ok: true,

@@ -7,6 +7,7 @@ import type {
   Declarer,
   Doubling,
 } from "@/lib/boards/types";
+import { revalidateButlerPublicPages } from "@/lib/butler/revalidate-butler";
 import { revalidateStandingsForGroup } from "@/lib/competition/revalidate-standings";
 import { applyHonorBoardCorrection } from "@/lib/results/corrections";
 import type { CorrectionInput } from "@/lib/results/types";
@@ -57,6 +58,7 @@ export async function PATCH(request: Request, { params }: Params) {
     if (result.matchScores.refreshed) {
       await revalidateStandingsForGroup(service, result.groupId);
     }
+    revalidateButlerPublicPages();
 
     return NextResponse.json({
       ok: true,

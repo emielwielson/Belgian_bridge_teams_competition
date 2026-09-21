@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { assertArbiterHonorApiAccess } from "@/lib/auth/arbiter-scope";
 import { ARBITER_ACCESS_ROLES } from "@/lib/auth/roles";
 import { requireRoles } from "@/lib/auth/route-auth";
+import { revalidateButlerPublicPages } from "@/lib/butler/revalidate-butler";
 import { revalidateStandingsForGroup } from "@/lib/competition/revalidate-standings";
 import {
   buildAveragePmAdjustment,
@@ -260,6 +261,7 @@ export async function POST(request: Request, { params }: Params) {
     if (result.matchScores.refreshed) {
       await revalidateStandingsForGroup(service, result.groupId);
     }
+    revalidateButlerPublicPages();
 
     return NextResponse.json({
       ok: true,

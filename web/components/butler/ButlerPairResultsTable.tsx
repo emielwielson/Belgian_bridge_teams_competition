@@ -16,7 +16,9 @@ export type PairResultRow = {
   boardId: string;
   boardNumber: number;
   direction: string;
-  imps: number;
+  imps: number | null;
+  /** Localized A+/G+/M+ when this side has an average± award. */
+  averageAwardLabel: string | null;
   contractLevel: number | null;
   contractDenomination: string | null;
   doubling: string;
@@ -103,16 +105,26 @@ export function ButlerPairResultsTable({
                   </td>
                   <td className="px-3 py-2">{r.direction}</td>
                   <td className="px-3 py-2">
-                    <ContractLabel
-                      contractLevel={r.contractLevel}
-                      contractDenomination={r.contractDenomination}
-                      doubling={r.doubling}
-                      declarer={r.declarer}
-                      tricksResult={r.tricksResult}
-                    />
+                    {r.averageAwardLabel ? (
+                      <span className="font-mono tabular-nums">
+                        {r.averageAwardLabel}
+                      </span>
+                    ) : (
+                      <ContractLabel
+                        contractLevel={r.contractLevel}
+                        contractDenomination={r.contractDenomination}
+                        doubling={r.doubling}
+                        declarer={r.declarer}
+                        tricksResult={r.tricksResult}
+                      />
+                    )}
                   </td>
                   <td className="px-3 py-2">
-                    <LeadLabel leadCard={r.leadCard} />
+                    {r.averageAwardLabel ? (
+                      "—"
+                    ) : (
+                      <LeadLabel leadCard={r.leadCard} />
+                    )}
                   </td>
                   <td className="px-3 py-2 text-right font-mono tabular-nums">
                     {formatImps(r.imps)}
