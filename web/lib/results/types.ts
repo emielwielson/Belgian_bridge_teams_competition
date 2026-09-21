@@ -53,7 +53,11 @@ export type AdjustmentMode =
   | "artificial"
   | "split"
   | "weighted"
+  | "average_pm"
   | "correction";
+
+/** Assigned average +/− on one side of a table (A+/A−, G+/G−). */
+export type AverageAward = "plus" | "minus";
 
 export type ResolveSpecialInput = {
   specialResultKind: SpecialResultKind;

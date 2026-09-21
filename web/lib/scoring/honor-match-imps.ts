@@ -6,13 +6,27 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { effectiveNsScoreForDatum } from "@/lib/butler/special-results";
 import type { HonorRoundMatchSeating } from "@/lib/competition/honor-seating-overview";
+import {
+  hasAveragePmAward,
+  parseAveragePmAwards,
+} from "@/lib/results/adjustment-helpers";
+import type { AverageAward } from "@/lib/results/types";
 import { pointsToImps } from "@/lib/scoring/wbf-imp-table";
 import { lookupVp } from "@/lib/scoring/vp-lookup";
 
 export type HonorBoardNsPair = {
+  kind?: "compared";
   openNs: number;
   closedNs: number;
 };
+
+export type HonorBoardAssignedImps = {
+  kind: "assigned";
+  homeImps: number;
+  awayImps: number;
+};
+
+export type HonorBoardMatchEntry = HonorBoardNsPair | HonorBoardAssignedImps;
 
 export type HonorMatchImps = {
   impsHome: number;
@@ -27,16 +41,62 @@ export type HonorPublishedMatchScore = {
   vpAway: number;
 };
 
+const ASSIGNED_MATCH_IMPS = 3;
+
+/**
+ * Prefer minus over plus for a team's board awards (open NS + closed EW = home;
+ * open EW + closed NS = away). Returns +3, −3, or 0.
+ */
+export function teamBoardImpsFromAwards(
+  awards: readonly (AverageAward | null | undefined)[],
+): number {
+  let sawMinus = false;
+  let sawPlus = false;
+  for (const a of awards) {
+    if (a === "minus") sawMinus = true;
+    else if (a === "plus") sawPlus = true;
+  }
+  if (sawMinus) return -ASSIGNED_MATCH_IMPS;
+  if (sawPlus) return ASSIGNED_MATCH_IMPS;
+  return 0;
+}
+
+export function assignedMatchImpsFromRoomAwards(input: {
+  openNs: AverageAward | null;
+  openEw: AverageAward | null;
+  closedNs: AverageAward | null;
+  closedEw: AverageAward | null;
+}): { homeImps: number; awayImps: number } {
+  return {
+    homeImps: teamBoardImpsFromAwards([input.openNs, input.closedEw]),
+    awayImps: teamBoardImpsFromAwards([input.openEw, input.closedNs]),
+  };
+}
+
 /**
  * Open room NS = home; closed room NS = away.
- * Home point difference = openNs - closedNs → WBF IMPs, then split into positive totals.
+ * Compared boards: openNs − closedNs → WBF IMPs.
+ * Assigned boards: fixed home/away IMP awards (±3).
  */
 export function computeHonorMatchImps(
-  boards: HonorBoardNsPair[],
+  boards: HonorBoardMatchEntry[],
 ): HonorMatchImps {
   let impsHome = 0;
   let impsAway = 0;
   for (const board of boards) {
+    if (board.kind === "assigned") {
+      // Positive awards credit that side. A lone negative credits the opponent;
+      // opposite or both-negative awards must not double-count.
+      if (board.homeImps > 0) impsHome += board.homeImps;
+      if (board.awayImps > 0) impsAway += board.awayImps;
+      if (board.homeImps < 0 && board.awayImps === 0) {
+        impsAway += -board.homeImps;
+      }
+      if (board.awayImps < 0 && board.homeImps === 0) {
+        impsHome += -board.awayImps;
+      }
+      continue;
+    }
     const boardImps = pointsToImps(board.openNs - board.closedNs);
     if (boardImps > 0) impsHome += boardImps;
     else if (boardImps < 0) impsAway += -boardImps;
@@ -52,19 +112,21 @@ type ResultRow = {
   computed_score: number | null;
   admin_adjusted_ns_score: number | null;
   included_in_match_score: boolean | null;
+  adjustment_mode?: string | null;
+  adjustment_meta?: Record<string, unknown> | null;
 };
 
 export function groupHonorMatchBoardPairs(
   rows: ResultRow[],
   matchId: string,
-): HonorBoardNsPair[] | { error: string } {
+): HonorBoardMatchEntry[] | { error: string } {
   return groupBoardPairs(rows, matchId);
 }
 
 function groupBoardPairs(
   rows: ResultRow[],
   matchId: string,
-): HonorBoardNsPair[] | { error: string } {
+): HonorBoardMatchEntry[] | { error: string } {
   const byBoard = new Map<
     string,
     {
@@ -74,6 +136,12 @@ function groupBoardPairs(
       closedIncluded: boolean;
       seenOpen: boolean;
       seenClosed: boolean;
+      openNsAward: AverageAward | null;
+      openEwAward: AverageAward | null;
+      closedNsAward: AverageAward | null;
+      closedEwAward: AverageAward | null;
+      openHasAverage: boolean;
+      closedHasAverage: boolean;
     }
   >();
 
@@ -82,6 +150,12 @@ function groupBoardPairs(
     if (row.room !== "open" && row.room !== "closed") continue;
 
     const included = row.included_in_match_score !== false;
+    const isAveragePm = row.adjustment_mode === "average_pm";
+    const awards = isAveragePm
+      ? parseAveragePmAwards(row.adjustment_meta)
+      : { nsAward: null, ewAward: null };
+    const hasAverage = isAveragePm && hasAveragePmAward(row.adjustment_meta);
+
     const entry = byBoard.get(row.board_id) ?? {
       openNs: null,
       closedNs: null,
@@ -89,18 +163,57 @@ function groupBoardPairs(
       closedIncluded: true,
       seenOpen: false,
       seenClosed: false,
+      openNsAward: null,
+      openEwAward: null,
+      closedNsAward: null,
+      closedEwAward: null,
+      openHasAverage: false,
+      closedHasAverage: false,
     };
 
-    if (!included) {
-      if (row.room === "open") {
-        entry.openIncluded = false;
-        entry.seenOpen = true;
-      } else {
-        entry.closedIncluded = false;
-        entry.seenClosed = true;
+    if (row.room === "open") {
+      entry.seenOpen = true;
+      if (hasAverage) {
+        entry.openHasAverage = true;
+        entry.openNsAward = awards.nsAward;
+        entry.openEwAward = awards.ewAward;
       }
-      byBoard.set(row.board_id, entry);
-      continue;
+      if (!included && !hasAverage) {
+        entry.openIncluded = false;
+        byBoard.set(row.board_id, entry);
+        continue;
+      }
+      if (hasAverage) {
+        // Assigned average replaces table points for match IMPs
+        byBoard.set(row.board_id, entry);
+        continue;
+      }
+      if (!included) {
+        entry.openIncluded = false;
+        byBoard.set(row.board_id, entry);
+        continue;
+      }
+    } else {
+      entry.seenClosed = true;
+      if (hasAverage) {
+        entry.closedHasAverage = true;
+        entry.closedNsAward = awards.nsAward;
+        entry.closedEwAward = awards.ewAward;
+      }
+      if (!included && !hasAverage) {
+        entry.closedIncluded = false;
+        byBoard.set(row.board_id, entry);
+        continue;
+      }
+      if (hasAverage) {
+        byBoard.set(row.board_id, entry);
+        continue;
+      }
+      if (!included) {
+        entry.closedIncluded = false;
+        byBoard.set(row.board_id, entry);
+        continue;
+      }
     }
 
     const ns = effectiveNsScoreForDatum({
@@ -116,16 +229,25 @@ function groupBoardPairs(
 
     if (row.room === "open") {
       entry.openNs = ns;
-      entry.seenOpen = true;
     } else {
       entry.closedNs = ns;
-      entry.seenClosed = true;
     }
     byBoard.set(row.board_id, entry);
   }
 
-  const pairs: HonorBoardNsPair[] = [];
+  const pairs: HonorBoardMatchEntry[] = [];
   for (const [boardId, entry] of byBoard) {
+    if (entry.openHasAverage || entry.closedHasAverage) {
+      const { homeImps, awayImps } = assignedMatchImpsFromRoomAwards({
+        openNs: entry.openNsAward,
+        openEw: entry.openEwAward,
+        closedNs: entry.closedNsAward,
+        closedEw: entry.closedEwAward,
+      });
+      pairs.push({ kind: "assigned", homeImps, awayImps });
+      continue;
+    }
+
     if (!entry.openIncluded || !entry.closedIncluded) {
       // Cancelled in either room → skip board for match IMPs
       continue;
@@ -179,7 +301,7 @@ export async function applyHonorRoundMatchScores(
   const { data: results, error: resultsErr } = await service
     .from("honor_board_results")
     .select(
-      "match_id, room, board_id, ns_score, computed_score, admin_adjusted_ns_score, included_in_match_score",
+      "match_id, room, board_id, ns_score, computed_score, admin_adjusted_ns_score, included_in_match_score, adjustment_mode, adjustment_meta",
     )
     .eq("group_id", params.groupId)
     .eq("tournament_round", params.tournamentRound)

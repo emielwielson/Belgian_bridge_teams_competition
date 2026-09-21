@@ -4,10 +4,13 @@
 
 import type {
   AdjustmentMode,
+  AverageAward,
   WeightedScoreLeg,
   WeightedScoresInput,
 } from "@/lib/results/types";
 import type { SpecialResultKind } from "@/lib/boards/types";
+
+export type { AverageAward };
 
 export function computeWeightedSideScore(
   legs: readonly WeightedScoreLeg[],
@@ -135,4 +138,66 @@ export function buildWeightedAdjustment(
       computedEwScore: computedEw,
     },
   };
+}
+
+function isAverageAward(value: unknown): value is AverageAward {
+  return value === "plus" || value === "minus";
+}
+
+/**
+ * Assigned average +/− (A+/A−). Excluded from Butler datum; match IMPs use ±3.
+ * Butler IMPs are computed at recalc time from the combination's round average.
+ */
+export function buildAveragePmAdjustment(input: {
+  nsAward?: AverageAward | null;
+  ewAward?: AverageAward | null;
+  reason?: string | null;
+}): BuiltAdjustment {
+  const nsAward = input.nsAward ?? null;
+  const ewAward = input.ewAward ?? null;
+  if (nsAward != null && !isAverageAward(nsAward)) {
+    throw new Error("Ongeldige NZ-toekenning voor gemiddelde +/-.");
+  }
+  if (ewAward != null && !isAverageAward(ewAward)) {
+    throw new Error("Ongeldige OW-toekenning voor gemiddelde +/-.");
+  }
+  if (nsAward == null && ewAward == null) {
+    throw new Error("Gemiddelde +/- vereist minstens één toekenning (NZ of OW).");
+  }
+  return {
+    specialResultKind: "ADJUSTED",
+    adminAdjustedNsScore: null,
+    adminAdjustedEwScore: null,
+    adminNsButlerImps: null,
+    adminEwButlerImps: null,
+    datumEligible: false,
+    includedInDatum: false,
+    includedInMatchScore: true,
+    adjustmentMode: "average_pm",
+    adjustmentMeta: {
+      reason: input.reason ?? null,
+      nsAward,
+      ewAward,
+    },
+  };
+}
+
+/** Read NS/EW average awards from adjustment_meta (null if absent/invalid). */
+export function parseAveragePmAwards(
+  meta: Record<string, unknown> | null | undefined,
+): { nsAward: AverageAward | null; ewAward: AverageAward | null } {
+  if (!meta || typeof meta !== "object") {
+    return { nsAward: null, ewAward: null };
+  }
+  return {
+    nsAward: isAverageAward(meta.nsAward) ? meta.nsAward : null,
+    ewAward: isAverageAward(meta.ewAward) ? meta.ewAward : null,
+  };
+}
+
+export function hasAveragePmAward(
+  meta: Record<string, unknown> | null | undefined,
+): boolean {
+  const { nsAward, ewAward } = parseAveragePmAwards(meta);
+  return nsAward != null || ewAward != null;
 }

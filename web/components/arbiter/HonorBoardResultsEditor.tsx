@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { formatContract } from "@/lib/butler/format";
-import { computeWeightedScores } from "@/lib/results/adjustment-helpers";
+import { computeWeightedScores, parseAveragePmAwards } from "@/lib/results/adjustment-helpers";
+import { formatAveragePmScoreCell } from "@/lib/results/average-pm-labels";
+import type { AverageAward } from "@/lib/results/types";
 
 export type HonorResultRow = {
   id: string;
@@ -35,12 +37,13 @@ export type HonorResultRow = {
   admin_ns_butler_imps: number | null;
   admin_ew_butler_imps: number | null;
   adjustment_mode: string | null;
+  adjustment_meta: Record<string, unknown> | null;
 };
 
-type Mode = "cancelled" | "weighted" | "correct";
+type Mode = "cancelled" | "weighted" | "average_pm" | "correct";
 type PickBy = "match" | "table";
 
-const MODES: readonly Mode[] = ["cancelled", "weighted", "correct"];
+const MODES: readonly Mode[] = ["cancelled", "weighted", "average_pm", "correct"];
 
 function isMode(value: string): value is Mode {
   return (MODES as readonly string[]).includes(value);
@@ -54,6 +57,15 @@ type WeightedLegForm = {
 
 function emptyLeg(): WeightedLegForm {
   return { score: "", weightNs: "1", weightEw: "1" };
+}
+
+function awardSelectValue(award: AverageAward | null): string {
+  return award ?? "none";
+}
+
+function parseAwardSelect(value: string): AverageAward | null {
+  if (value === "plus" || value === "minus") return value;
+  return null;
 }
 
 function isAdjustedResult(row: HonorResultRow): boolean {
@@ -116,6 +128,8 @@ export function HonorBoardResultsEditor({
     emptyLeg(),
     emptyLeg(),
   ]);
+  const [nsAward, setNsAward] = useState<AverageAward | null>(null);
+  const [ewAward, setEwAward] = useState<AverageAward | null>(null);
   const [contractLevel, setContractLevel] = useState("");
   const [contractDenom, setContractDenom] = useState("NT");
   const [doubling, setDoubling] = useState("NONE");
@@ -271,6 +285,8 @@ export function HonorBoardResultsEditor({
         return t("modeSplit");
       case "weighted":
         return t("modeWeighted");
+      case "average_pm":
+        return t("modeAveragePm");
       case "correction":
         return t("modeCorrect");
       default:
@@ -282,6 +298,9 @@ export function HonorBoardResultsEditor({
     if (!selected) return;
     setDatumEligible(selected.datum_eligible !== false);
     setWeightedLegs([emptyLeg(), emptyLeg()]);
+    const awards = parseAveragePmAwards(selected.adjustment_meta);
+    setNsAward(awards.nsAward);
+    setEwAward(awards.ewAward);
     setContractLevel(
       selected.contract_level != null ? String(selected.contract_level) : "",
     );
@@ -295,6 +314,8 @@ export function HonorBoardResultsEditor({
       setMode("cancelled");
     } else if (selected.adjustment_mode === "weighted") {
       setMode("weighted");
+    } else if (selected.adjustment_mode === "average_pm") {
+      setMode("average_pm");
     } else if (selected.adjustment_mode === "correction") {
       setMode("correct");
     } else if (
@@ -337,6 +358,21 @@ export function HonorBoardResultsEditor({
       return null;
     }
   }, [weightedLegs]);
+
+  const selectedScoreLabel = useMemo(() => {
+    if (!selected) return "—";
+    if (selected.adjustment_mode === "average_pm") {
+      return (
+        formatAveragePmScoreCell(selected.adjustment_meta, {
+          plus: t("averageAwardPlus"),
+          minus: t("averageAwardMinus"),
+        }) ?? t("modeAveragePm")
+      );
+    }
+    return (
+      selected.admin_adjusted_ns_score ?? selected.ns_score ?? "—"
+    );
+  }, [selected, t]);
 
   const selectedContractLabel = useMemo(() => {
     if (!selected) return "—";
@@ -418,6 +454,10 @@ export function HonorBoardResultsEditor({
             weightEw: Number(leg.weightEw),
           }));
           payload.datumEligible = datumEligible;
+        }
+        if (mode === "average_pm") {
+          payload.nsAward = nsAward;
+          payload.ewAward = ewAward;
         }
 
         const res = await fetch(
@@ -658,17 +698,11 @@ export function HonorBoardResultsEditor({
               ? t("selectedMeta", {
                   table: selected.table_number,
                   contract: selectedContractLabel,
-                  score:
-                    selected.admin_adjusted_ns_score ??
-                    selected.ns_score ??
-                    "—",
+                  score: selectedScoreLabel,
                 })
               : t("selectedMetaNoTable", {
                   contract: selectedContractLabel,
-                  score:
-                    selected.admin_adjusted_ns_score ??
-                    selected.ns_score ??
-                    "—",
+                  score: selectedScoreLabel,
                 })}
           </p>
           <p className="mt-1 text-xs text-zinc-700">
@@ -687,6 +721,7 @@ export function HonorBoardResultsEditor({
               disabled={busy}
             >
               <option value="cancelled">{t("modeCancelled")}</option>
+              <option value="average_pm">{t("modeAveragePm")}</option>
               <option value="weighted">{t("modeWeighted")}</option>
               <option value="correct">{t("modeCorrect")}</option>
             </select>
@@ -695,6 +730,37 @@ export function HonorBoardResultsEditor({
           <p className="mt-2 text-xs text-zinc-600">
             {t(`modeHelp_${isMode(mode) ? mode : "weighted"}`)}
           </p>
+
+          {mode === "average_pm" ? (
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="text-zinc-600">{t("averageAwardNs")}</span>
+                <select
+                  value={awardSelectValue(nsAward)}
+                  onChange={(e) => setNsAward(parseAwardSelect(e.target.value))}
+                  className="rounded border border-zinc-300 bg-white px-2 py-1.5"
+                  disabled={busy}
+                >
+                  <option value="none">{t("averageAwardNone")}</option>
+                  <option value="plus">{t("averageAwardPlus")}</option>
+                  <option value="minus">{t("averageAwardMinus")}</option>
+                </select>
+              </label>
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="text-zinc-600">{t("averageAwardEw")}</span>
+                <select
+                  value={awardSelectValue(ewAward)}
+                  onChange={(e) => setEwAward(parseAwardSelect(e.target.value))}
+                  className="rounded border border-zinc-300 bg-white px-2 py-1.5"
+                  disabled={busy}
+                >
+                  <option value="none">{t("averageAwardNone")}</option>
+                  <option value="plus">{t("averageAwardPlus")}</option>
+                  <option value="minus">{t("averageAwardMinus")}</option>
+                </select>
+              </label>
+            </div>
+          ) : null}
 
           {mode === "weighted" ? (
             <div className="mt-3 space-y-3">

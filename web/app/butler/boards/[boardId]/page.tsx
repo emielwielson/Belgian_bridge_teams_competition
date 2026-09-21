@@ -9,6 +9,7 @@ import type { BoardHands, Dealer, Vulnerability } from "@/lib/boards/types";
 import { handDiagramLabelsFromButler } from "@/lib/boards/hand-diagram-labels";
 import { formatImps } from "@/lib/butler/format";
 import { formatPairDisplayName } from "@/lib/butler/person-name";
+import { formatAveragePmScoreCell } from "@/lib/results/average-pm-labels";
 import { createPublicClient } from "@/lib/supabase/server-client";
 
 export default async function ButlerBoardPage({
@@ -34,7 +35,7 @@ export default async function ButlerBoardPage({
     client
       .from("honor_board_results")
       .select(
-        "id, room, ns_score, score_diff, ns_butler_imps, ew_butler_imps, contract_level, contract_denomination, doubling, declarer, tricks_result, lead_card, ns_combination_id, ew_combination_id, match_id",
+        "id, room, ns_score, score_diff, ns_butler_imps, ew_butler_imps, contract_level, contract_denomination, doubling, declarer, tricks_result, lead_card, ns_combination_id, ew_combination_id, match_id, adjustment_mode, adjustment_meta",
       )
       .eq("board_id", boardId)
       .eq("processing_status", "published"),
@@ -252,7 +253,18 @@ export default async function ButlerBoardPage({
                         <LeadLabel leadCard={r.lead_card as string | null} />
                       </td>
                       <td className="px-3 py-2 text-right font-mono tabular-nums">
-                        {r.ns_score ?? "—"}
+                        {r.adjustment_mode === "average_pm"
+                          ? (formatAveragePmScoreCell(
+                              r.adjustment_meta as Record<
+                                string,
+                                unknown
+                              > | null,
+                              {
+                                plus: t("averageAwardPlus"),
+                                minus: t("averageAwardMinus"),
+                              },
+                            ) ?? "—")
+                          : (r.ns_score ?? "—")}
                       </td>
                       <td className="px-3 py-2 text-right font-mono tabular-nums">
                         {formatImps(

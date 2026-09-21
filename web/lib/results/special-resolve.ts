@@ -164,7 +164,9 @@ export async function resolveHonorSpecialResult(params: {
 
   const butler = await recalculateHonorButler(params.service, {
     groupId: existing.group_id as string,
-    boardId: existing.board_id as string,
+    ...(params.input.adjustmentMode === "average_pm"
+      ? { tournamentRound: existing.tournament_round as number }
+      : { boardId: existing.board_id as string }),
   });
   if (!butler.ok) return { ok: false, error: butler.error };
 

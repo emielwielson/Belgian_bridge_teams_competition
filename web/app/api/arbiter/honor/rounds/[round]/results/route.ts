@@ -105,6 +105,7 @@ export async function GET(
         admin_ns_butler_imps,
         admin_ew_butler_imps,
         adjustment_mode,
+        adjustment_meta,
         honor_boards ( board_number )
       `,
       )
@@ -168,6 +169,7 @@ export async function GET(
         admin_ns_butler_imps: row.admin_ns_butler_imps,
         admin_ew_butler_imps: row.admin_ew_butler_imps,
         adjustment_mode: row.adjustment_mode,
+        adjustment_meta: row.adjustment_meta,
       };
     });
 

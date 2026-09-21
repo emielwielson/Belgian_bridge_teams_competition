@@ -4,6 +4,7 @@ import { ARBITER_ACCESS_ROLES } from "@/lib/auth/roles";
 import { requireRoles } from "@/lib/auth/route-auth";
 import { revalidateStandingsForGroup } from "@/lib/competition/revalidate-standings";
 import {
+  buildAveragePmAdjustment,
   buildCancelledAdjustment,
   buildSplitAdjustment,
   buildWeightedAdjustment,
@@ -11,6 +12,7 @@ import {
 import { resolveHonorSpecialResult } from "@/lib/results/special-resolve";
 import type {
   AdjustmentMode,
+  AverageAward,
   ResolveSpecialInput,
   WeightedScoreLeg,
 } from "@/lib/results/types";
@@ -40,6 +42,14 @@ function numOrNull(raw: unknown): number | null | undefined {
   if (raw === null || raw === "") return null;
   const n = Number(raw);
   return Number.isFinite(n) ? n : undefined;
+}
+
+function parseAverageAward(raw: unknown): AverageAward | null | "invalid" {
+  if (raw === undefined || raw === null || raw === "" || raw === "none") {
+    return null;
+  }
+  if (raw === "plus" || raw === "minus") return raw;
+  return "invalid";
 }
 
 function parseWeightedLegs(body: Record<string, unknown>): WeightedScoreLeg[] | null {
@@ -172,6 +182,39 @@ export async function POST(request: Request, { params }: Params) {
       } catch (e) {
         return jsonError(
           e instanceof Error ? e.message : "Ongeldige gewogen score",
+          400,
+        );
+      }
+    } else if (mode === "average_pm") {
+      const nsAward = parseAverageAward(body.nsAward);
+      const ewAward = parseAverageAward(body.ewAward);
+      if (nsAward === "invalid" || ewAward === "invalid") {
+        return jsonError(
+          "Gemiddelde +/- vereist geldige NZ- en OW-toekenningen (plus, minus of none).",
+          400,
+        );
+      }
+      try {
+        const built = buildAveragePmAdjustment({
+          nsAward,
+          ewAward,
+          reason,
+        });
+        input = {
+          specialResultKind: built.specialResultKind,
+          adminAdjustedNsScore: built.adminAdjustedNsScore,
+          adminAdjustedEwScore: built.adminAdjustedEwScore,
+          adminNsButlerImps: built.adminNsButlerImps,
+          adminEwButlerImps: built.adminEwButlerImps,
+          datumEligible: built.datumEligible,
+          includedInMatchScore: built.includedInMatchScore,
+          adjustmentMode: built.adjustmentMode,
+          adjustmentMeta: built.adjustmentMeta,
+          reason,
+        };
+      } catch (e) {
+        return jsonError(
+          e instanceof Error ? e.message : "Ongeldige gemiddelde +/-",
           400,
         );
       }

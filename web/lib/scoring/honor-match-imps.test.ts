@@ -1,7 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import {
   applyHonorRoundMatchScores,
+  assignedMatchImpsFromRoomAwards,
   computeHonorMatchImps,
+  teamBoardImpsFromAwards,
 } from "./honor-match-imps";
 import type { HonorRoundMatchSeating } from "@/lib/competition/honor-seating-overview";
 
@@ -37,6 +39,29 @@ describe("computeHonorMatchImps", () => {
       { openNs: 100, closedNs: 100 }, // 0
     ]);
     expect(result).toEqual({ impsHome: 1, impsAway: 3 });
+  });
+
+  it("sums assigned average_pm boards with compared boards", () => {
+    expect(
+      computeHonorMatchImps([
+        { kind: "assigned", homeImps: 3, awayImps: -3 },
+        { openNs: 420, closedNs: 400 },
+      ]),
+    ).toEqual({ impsHome: 4, impsAway: 0 });
+  });
+});
+
+describe("assigned average match IMPs", () => {
+  it("prefers G- when a team has both awards across rooms", () => {
+    expect(teamBoardImpsFromAwards(["plus", "minus"])).toBe(-3);
+    expect(
+      assignedMatchImpsFromRoomAwards({
+        openNs: "plus",
+        openEw: null,
+        closedNs: null,
+        closedEw: "minus",
+      }),
+    ).toEqual({ homeImps: -3, awayImps: 0 });
   });
 });
 
