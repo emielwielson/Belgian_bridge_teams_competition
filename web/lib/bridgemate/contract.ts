@@ -5,6 +5,12 @@ import type {
   SpecialResultKind,
 } from "@/lib/boards/types";
 import type { ReceivedDataRow } from "@/lib/bridgemate/types";
+import {
+  buildAveragePmAdjustment,
+  buildCancelledAdjustment,
+  type BuiltAdjustment,
+} from "@/lib/results/adjustment-helpers";
+import type { AverageAward } from "@/lib/results/types";
 
 export type DecodedContract = {
   contractLevel: number | null;
@@ -16,6 +22,8 @@ export type DecodedContract = {
   bridgemateScore: number | null;
   specialResultKind: SpecialResultKind;
   remarks: string | null;
+  /** Auto-resolved adjustment when Bridgemate encoding is unambiguous. */
+  resolvedAdjustment: BuiltAdjustment | null;
 };
 
 function asString(v: unknown): string | null {
@@ -150,31 +158,158 @@ export function parseBridgemateResult(raw: string | null): string | null {
   return t;
 }
 
-function detectSpecialKind(
-  remarks: string | null,
-  erased: boolean,
-  contract: string | null,
-): SpecialResultKind {
-  if (erased) return "ERASED";
-  if (!remarks) return "NONE";
-  const r = remarks.toLowerCase();
+/** Map Bridgemate MP percentage to average award; null = flat 50; undefined = invalid. */
+function mapPercentAward(pct: number): AverageAward | null | undefined {
+  if (pct === 60) return "plus";
+  if (pct === 40) return "minus";
+  if (pct === 50) return null;
+  return undefined;
+}
+
+/** Parse one average± token (G+, A-, Ave+, …). undefined = not a label. */
+function parseAwardLabel(token: string): AverageAward | undefined {
+  const t = token.trim().toUpperCase().replace(/\s+/g, "").replace(/[−–]/g, "-");
+  if (!t) return undefined;
   if (
-    /\bnot\s*played\b/.test(r) ||
-    /\bniet\s*gespeeld\b/.test(r) ||
-    r.includes("np")
+    t === "+" ||
+    t === "G+" ||
+    t === "A+" ||
+    t === "M+" ||
+    t === "AVE+" ||
+    t === "AVG+"
   ) {
-    return "NOT_PLAYED";
+    return "plus";
   }
+  if (
+    t === "-" ||
+    t === "G-" ||
+    t === "A-" ||
+    t === "M-" ||
+    t === "AVE-" ||
+    t === "AVG-"
+  ) {
+    return "minus";
+  }
+  return undefined;
+}
+
+const AWARD_TOKEN =
+  String.raw`(?:G\+|G-|A\+|A-|M\+|M-|AVE\+|AVE-|AVG\+|AVG-|\+|-)`;
+
+/**
+ * Parse NS/EW average awards from Remarks or Contract labels.
+ * Supports Bridgemate `60%-40%` and locale labels `G+/G-`, `A+/A-`, `M+/M-`.
+ */
+export function parseAveragePmFromText(raw: string | null | undefined): {
+  nsAward: AverageAward | null;
+  ewAward: AverageAward | null;
+} | null {
+  if (!raw || !raw.trim()) return null;
+  const s = raw.trim();
+  const compact = s.toUpperCase().replace(/\s+/g, "").replace(/[−–]/g, "-");
+
+  // Bridgemate percentage pair: 60%-40%, 40%/60%, en-dash, optional spaces
+  const pct = s.match(/^(\d{2})\s*%\s*[-−–/]\s*(\d{2})\s*%$/i);
+  if (pct) {
+    const ns = mapPercentAward(Number(pct[1]));
+    const ew = mapPercentAward(Number(pct[2]));
+    if (ns === undefined || ew === undefined) return null;
+    if (ns == null && ew == null) return null; // 50%-50% — leave for arbiter
+    return { nsAward: ns, ewAward: ew };
+  }
+
+  // Label pair with explicit tokens so "A-" is not split on the minus
+  const pairRe = new RegExp(
+    `^(${AWARD_TOKEN})[/-](${AWARD_TOKEN})$`,
+    "i",
+  );
+  const pair = compact.match(pairRe);
+  if (pair) {
+    const ns = parseAwardLabel(pair[1]!);
+    const ew = parseAwardLabel(pair[2]!);
+    if (ns !== undefined && ew !== undefined) {
+      return { nsAward: ns, ewAward: ew };
+    }
+  }
+
+  // Single-side label (typically Contract field): G+, A-
+  const single = parseAwardLabel(compact);
+  if (single !== undefined) {
+    return { nsAward: single, ewAward: null };
+  }
+
+  return null;
+}
+
+function isNotPlayedText(raw: string | null | undefined): boolean {
+  if (!raw || !raw.trim()) return false;
+  const r = raw.trim().toLowerCase();
+  if (/\bnot\s*played\b/.test(r)) return true;
+  if (/\bniet\s*gespeeld\b/.test(r)) return true;
+  // Exact NG / NP only — avoid matching substrings like "input"
+  return /^(ng|np)$/i.test(raw.trim());
+}
+
+export type DetectedSpecial = {
+  specialResultKind: SpecialResultKind;
+  resolvedAdjustment: BuiltAdjustment | null;
+};
+
+/**
+ * Detect Bridgemate special results from Contract + Remarks.
+ * Auto-resolves NG → cancelled and unambiguous G± / 40%/60% → average_pm.
+ */
+export function detectBridgemateSpecial(input: {
+  remarks: string | null;
+  erased: boolean;
+  contract: string | null;
+}): DetectedSpecial {
+  const { remarks, erased, contract } = input;
+
+  if (erased) {
+    return { specialResultKind: "ERASED", resolvedAdjustment: null };
+  }
+
+  if (isNotPlayedText(remarks) || isNotPlayedText(contract)) {
+    return {
+      specialResultKind: "NOT_PLAYED",
+      resolvedAdjustment: buildCancelledAdjustment({
+        reason: remarks ?? contract,
+      }),
+    };
+  }
+
+  const fromRemarks = parseAveragePmFromText(remarks);
+  const fromContract = parseAveragePmFromText(contract);
+  const awards = fromRemarks ?? fromContract;
+  if (awards && (awards.nsAward != null || awards.ewAward != null)) {
+    return {
+      specialResultKind: "ADJUSTED",
+      resolvedAdjustment: buildAveragePmAdjustment({
+        nsAward: awards.nsAward,
+        ewAward: awards.ewAward,
+        reason: remarks ?? contract,
+      }),
+    };
+  }
+
+  if (!remarks) {
+    return { specialResultKind: "NONE", resolvedAdjustment: null };
+  }
+
+  const r = remarks.toLowerCase();
   if (
     /arbitral|arbitr|adjusted|aanpass|percentage|procent|%/.test(r)
   ) {
-    return "ARBITRAL";
+    return { specialResultKind: "ARBITRAL", resolvedAdjustment: null };
   }
   // Empty contract with remarks often means special
   if (!contract || !contract.trim()) {
-    if (r.length > 0) return "ARBITRAL";
+    if (r.length > 0) {
+      return { specialResultKind: "ARBITRAL", resolvedAdjustment: null };
+    }
   }
-  return "NONE";
+  return { specialResultKind: "NONE", resolvedAdjustment: null };
 }
 
 /**
@@ -189,7 +324,11 @@ export function decodeReceivedDataContract(row: ReceivedDataRow): DecodedContrac
   const erased = truthyFlag(rowField(row, "Erased"));
   const scoreNs = asNumber(rowField(row, "ScoreNS", "NSScore"));
 
-  const specialResultKind = detectSpecialKind(remarks, erased, contractRaw);
+  const detected = detectBridgemateSpecial({
+    remarks,
+    erased,
+    contract: contractRaw,
+  });
   const parsed = parseBridgemateContract(contractRaw);
   const declarer =
     parsed.contractDenomination === "PASS"
@@ -206,15 +345,26 @@ export function decodeReceivedDataContract(row: ReceivedDataRow): DecodedContrac
     tricksResult = "PASS";
   }
 
+  // When special labels occupy Contract (or board was not played / average±),
+  // do not treat residual contract fields as a real result.
+  const clearContract =
+    detected.resolvedAdjustment != null ||
+    (detected.specialResultKind !== "NONE" &&
+      parsed.contractDenomination == null &&
+      parsed.contractLevel == null);
+
   return {
-    contractLevel: parsed.contractLevel,
-    contractDenomination: parsed.contractDenomination,
-    doubling: parsed.doubling,
-    declarer,
-    tricksResult,
-    tricksTaken,
+    contractLevel: clearContract ? null : parsed.contractLevel,
+    contractDenomination: clearContract
+      ? null
+      : parsed.contractDenomination,
+    doubling: clearContract ? "NONE" : parsed.doubling,
+    declarer: clearContract ? null : declarer,
+    tricksResult: clearContract ? null : tricksResult,
+    tricksTaken: clearContract ? null : tricksTaken,
     bridgemateScore: scoreNs,
-    specialResultKind,
+    specialResultKind: detected.specialResultKind,
     remarks,
+    resolvedAdjustment: detected.resolvedAdjustment,
   };
 }

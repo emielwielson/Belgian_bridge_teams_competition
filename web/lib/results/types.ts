@@ -4,6 +4,7 @@ import type {
   Doubling,
   SpecialResultKind,
 } from "@/lib/boards/types";
+import type { BuiltAdjustment } from "@/lib/results/adjustment-helpers";
 
 /**
  * Normalized board-result row — shape Task 5 Bridgemate adapter will emit.
@@ -27,6 +28,11 @@ export type NormalizedBoardResultInput = {
   specialResultKind?: SpecialResultKind;
   /** Bridgemate Remarks — % arbitral must not be silently converted */
   remarks?: string | null;
+  /**
+   * Pre-resolved adjustment from unambiguous Bridgemate specials
+   * (NG → cancelled, 60%/40% or G± → average_pm).
+   */
+  resolvedAdjustment?: BuiltAdjustment | null;
   sourceIdentifier?: string | null;
   /** Frozen snapshot of the source row */
   originalPayload: Record<string, unknown>;

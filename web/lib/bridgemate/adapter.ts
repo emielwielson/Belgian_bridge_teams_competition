@@ -88,6 +88,7 @@ export function adaptReceivedDataToNormalized(
       bridgemateScore: decoded.bridgemateScore,
       specialResultKind: decoded.specialResultKind,
       remarks: decoded.remarks,
+      resolvedAdjustment: decoded.resolvedAdjustment,
       sourceIdentifier: sourceId(raw, index),
       originalPayload,
     };

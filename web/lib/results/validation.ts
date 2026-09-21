@@ -120,8 +120,21 @@ export function validateNormalizedResult(
   }
 
   let kind = input.specialResultKind ?? "NONE";
-  if (isPercentageArbitralRemark(input.remarks) && kind === "NONE") {
+  const resolved = input.resolvedAdjustment ?? null;
+  const adminResolved = resolved != null;
+
+  // Pre-resolved Bridgemate specials already chose the kind; skip %-→ARBITRAL bump.
+  if (
+    !adminResolved &&
+    isPercentageArbitralRemark(input.remarks) &&
+    kind === "NONE"
+  ) {
     kind = "ARBITRAL";
+  }
+
+  // Prefer kind from resolved adjustment when present
+  if (resolved) {
+    kind = resolved.specialResultKind;
   }
 
   const special = resolveSpecialResultFlags({
@@ -130,6 +143,9 @@ export function validateNormalizedResult(
     defaultExcludeSpecialFromDatum: opts?.defaultExcludeSpecialFromDatum,
     requireAdminResolutionForPercentageArbitral:
       opts?.requireAdminResolutionForPercentageArbitral,
+    adminResolved,
+    datumEligible: resolved?.datumEligible,
+    hasAdjustedNsScore: resolved?.adminAdjustedNsScore != null,
   });
   issues.push(
     ...special.errors.map((message) => ({ code: "SPECIAL", message })),
@@ -203,18 +219,25 @@ export function validateNormalizedResult(
     special.validationStatus;
   if (hasHard) validationStatus = "INVALID";
   else if (
+    !adminResolved &&
     issues.some((i) => i.code === "CONTRACT_LEVEL" || i.code === "CONTRACT_DENOM")
   ) {
     validationStatus = "INVALID";
   }
+
+  const includedInDatum = adminResolved
+    ? resolved!.includedInDatum && validationStatus !== "INVALID"
+    : special.includedInDatum && validationStatus === "VALID";
 
   return {
     issues,
     computedScore,
     nsScore,
     validationStatus,
-    includedInDatum: special.includedInDatum && validationStatus === "VALID",
+    includedInDatum,
     specialResultKind: special.specialResultKind,
-    requiresAdminResolution: special.requiresAdminResolution,
+    requiresAdminResolution: adminResolved
+      ? false
+      : special.requiresAdminResolution,
   };
 }

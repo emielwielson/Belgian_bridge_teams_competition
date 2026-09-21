@@ -201,6 +201,7 @@ export async function ingestHonorBoardResults(params: {
         );
       }
 
+      const adj = row.resolvedAdjustment ?? null;
       const insertRow = {
         group_id: params.groupId,
         match_id: row.matchId,
@@ -223,12 +224,29 @@ export async function ingestHonorBoardResults(params: {
         processing_status:
           validated.validationStatus === "VALID" ? "validated" : "imported",
         validation_status: validationToDb(validated.validationStatus),
-        correction_status: "original",
-        special_result_kind: specialToDb(validated.specialResultKind),
-        included_in_datum: validated.includedInDatum,
+        correction_status: adj ? "corrected" : "original",
+        special_result_kind: specialToDb(
+          adj?.specialResultKind ?? validated.specialResultKind,
+        ),
+        included_in_datum: adj
+          ? adj.includedInDatum
+          : validated.includedInDatum,
+        included_in_match_score: adj ? adj.includedInMatchScore : true,
+        datum_eligible: adj ? adj.datumEligible : null,
+        admin_adjusted_ns_score: adj?.adminAdjustedNsScore ?? null,
+        admin_adjusted_ew_score: adj?.adminAdjustedEwScore ?? null,
+        admin_ns_butler_imps: adj?.adminNsButlerImps ?? null,
+        admin_ew_butler_imps: adj?.adminEwButlerImps ?? null,
+        adjustment_mode: adj?.adjustmentMode ?? null,
+        adjustment_meta: adj?.adjustmentMeta ?? null,
         original_payload: row.originalPayload,
         validation_errors: validated.issues.map((i) => i.message),
         imported_at: new Date().toISOString(),
+        ...(adj
+          ? {
+              corrected_at: new Date().toISOString(),
+            }
+          : {}),
       };
 
       const { data: created, error } = await params.service
