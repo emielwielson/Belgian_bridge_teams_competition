@@ -141,12 +141,13 @@ export function buildWeightedAdjustment(
 }
 
 function isAverageAward(value: unknown): value is AverageAward {
-  return value === "plus" || value === "minus";
+  return value === "plus" || value === "minus" || value === "zero";
 }
 
 /**
- * Assigned average +/− (A+/A−). Excluded from Butler datum; match IMPs use ±3.
- * Butler IMPs are computed at recalc time from the combination's round average.
+ * Assigned average award (A+/A/A−). Excluded from Butler datum; match IMPs use
+ * ±3 for plus/minus and 0 for zero. Butler IMPs are computed at recalc time
+ * from the combination's round average (zero → 0).
  */
 export function buildAveragePmAdjustment(input: {
   nsAward?: AverageAward | null;

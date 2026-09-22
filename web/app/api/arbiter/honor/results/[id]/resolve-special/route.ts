@@ -49,7 +49,7 @@ function parseAverageAward(raw: unknown): AverageAward | null | "invalid" {
   if (raw === undefined || raw === null || raw === "" || raw === "none") {
     return null;
   }
-  if (raw === "plus" || raw === "minus") return raw;
+  if (raw === "plus" || raw === "minus" || raw === "zero") return raw;
   return "invalid";
 }
 

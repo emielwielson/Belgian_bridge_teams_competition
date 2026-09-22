@@ -45,7 +45,7 @@ const ASSIGNED_MATCH_IMPS = 3;
 
 /**
  * Prefer minus over plus for a team's board awards (open NS + closed EW = home;
- * open EW + closed NS = away). Returns +3, −3, or 0.
+ * open EW + closed NS = away). Zero awards are ignored. Returns +3, −3, or 0.
  */
 export function teamBoardImpsFromAwards(
   awards: readonly (AverageAward | null | undefined)[],

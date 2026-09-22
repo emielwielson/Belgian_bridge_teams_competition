@@ -1,16 +1,17 @@
 /**
- * Butler IMP awards for average +/− (A+/A−, G+/G−).
+ * Butler IMP awards for average awards (A+/A/A−, G+/G/G−).
  */
 
 import type { AverageAward } from "@/lib/results/types";
 
 export const AVERAGE_PM_BUTLER_FLOOR = 2;
 
-/** G+: max(2, avg); G−: min(−2, avg); missing avg → ±2. */
+/** G+: max(2, avg); G−: min(−2, avg); G: 0; missing avg → ±2 for ±. */
 export function butlerImpsForAverageAward(
   award: AverageAward,
   averageImps: number | null,
 ): number {
+  if (award === "zero") return 0;
   if (award === "plus") {
     if (averageImps == null) return AVERAGE_PM_BUTLER_FLOOR;
     return Math.max(AVERAGE_PM_BUTLER_FLOOR, averageImps);

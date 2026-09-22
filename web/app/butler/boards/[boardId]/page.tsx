@@ -262,6 +262,7 @@ export default async function ButlerBoardPage({
                               {
                                 plus: t("averageAwardPlus"),
                                 minus: t("averageAwardMinus"),
+                                zero: t("averageAwardZero"),
                               },
                             ) ?? "—")
                           : (r.ns_score ?? "—")}

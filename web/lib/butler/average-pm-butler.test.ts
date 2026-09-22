@@ -18,6 +18,12 @@ describe("butlerImpsForAverageAward", () => {
     expect(butlerImpsForAverageAward("minus", -2)).toBe(-2);
     expect(butlerImpsForAverageAward("minus", -5)).toBe(-5);
   });
+
+  it("awards 0 for zero regardless of average", () => {
+    expect(butlerImpsForAverageAward("zero", null)).toBe(0);
+    expect(butlerImpsForAverageAward("zero", 5)).toBe(0);
+    expect(butlerImpsForAverageAward("zero", -5)).toBe(0);
+  });
 });
 
 describe("combinationRoundAverages", () => {

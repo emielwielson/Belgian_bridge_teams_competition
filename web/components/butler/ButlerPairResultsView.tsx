@@ -56,6 +56,7 @@ export async function ButlerPairResultsView({
   const awardLabels = {
     plus: t("averageAwardPlus"),
     minus: t("averageAwardMinus"),
+    zero: t("averageAwardZero"),
   };
 
   const rawRows = (results ?? [])

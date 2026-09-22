@@ -220,4 +220,39 @@ describe("POST /api/arbiter/honor/results/[id]/resolve-special", () => {
       }),
     );
   });
+
+  it("resolves average_pm with zero awards", async () => {
+    vi.mocked(resolveHonorSpecialResult).mockResolvedValue({
+      ok: true,
+      resultId: "r1",
+      boardId: "b1",
+      groupId: "g1",
+      tournamentRound: 1,
+      matchScores: { refreshed: false, reason: "round_not_published" },
+    });
+
+    const res = await POST(
+      new Request("http://x", {
+        method: "POST",
+        body: JSON.stringify({
+          mode: "average_pm",
+          nsAward: "zero",
+          ewAward: "zero",
+        }),
+      }),
+      { params: Promise.resolve({ id: "r1" }) },
+    );
+    expect(res.status).toBe(200);
+    expect(resolveHonorSpecialResult).toHaveBeenCalledWith(
+      expect.objectContaining({
+        input: expect.objectContaining({
+          adjustmentMode: "average_pm",
+          adjustmentMeta: expect.objectContaining({
+            nsAward: "zero",
+            ewAward: "zero",
+          }),
+        }),
+      }),
+    );
+  });
 });

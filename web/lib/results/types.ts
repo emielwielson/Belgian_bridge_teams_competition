@@ -30,7 +30,7 @@ export type NormalizedBoardResultInput = {
   remarks?: string | null;
   /**
    * Pre-resolved adjustment from unambiguous Bridgemate specials
-   * (NG → cancelled, 60%/40% or G± → average_pm).
+   * (NG → cancelled, 60%/40%/50% or G±/G → average_pm).
    */
   resolvedAdjustment?: BuiltAdjustment | null;
   sourceIdentifier?: string | null;
@@ -62,8 +62,8 @@ export type AdjustmentMode =
   | "average_pm"
   | "correction";
 
-/** Assigned average +/− on one side of a table (A+/A−, G+/G−). */
-export type AverageAward = "plus" | "minus";
+/** Assigned average award on one side of a table (A+/A/A−, G+/G/G−). */
+export type AverageAward = "plus" | "minus" | "zero";
 
 export type ResolveSpecialInput = {
   specialResultKind: SpecialResultKind;

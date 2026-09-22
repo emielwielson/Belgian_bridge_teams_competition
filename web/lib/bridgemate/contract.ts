@@ -158,15 +158,15 @@ export function parseBridgemateResult(raw: string | null): string | null {
   return t;
 }
 
-/** Map Bridgemate MP percentage to average award; null = flat 50; undefined = invalid. */
-function mapPercentAward(pct: number): AverageAward | null | undefined {
+/** Map Bridgemate MP percentage to average award; undefined = invalid. */
+function mapPercentAward(pct: number): AverageAward | undefined {
   if (pct === 60) return "plus";
   if (pct === 40) return "minus";
-  if (pct === 50) return null;
+  if (pct === 50) return "zero";
   return undefined;
 }
 
-/** Parse one average± token (G+, A-, Ave+, …). undefined = not a label. */
+/** Parse one average award token (G+, G, A-, Ave, …). undefined = not a label. */
 function parseAwardLabel(token: string): AverageAward | undefined {
   const t = token.trim().toUpperCase().replace(/\s+/g, "").replace(/[−–]/g, "-");
   if (!t) return undefined;
@@ -190,15 +190,24 @@ function parseAwardLabel(token: string): AverageAward | undefined {
   ) {
     return "minus";
   }
+  if (
+    t === "G" ||
+    t === "A" ||
+    t === "M" ||
+    t === "AVE" ||
+    t === "AVG"
+  ) {
+    return "zero";
+  }
   return undefined;
 }
 
 const AWARD_TOKEN =
-  String.raw`(?:G\+|G-|A\+|A-|M\+|M-|AVE\+|AVE-|AVG\+|AVG-|\+|-)`;
+  String.raw`(?:G\+|G-|A\+|A-|M\+|M-|AVE\+|AVE-|AVG\+|AVG-|AVE|AVG|G|A|M|\+|-)`;
 
 /**
  * Parse NS/EW average awards from Remarks or Contract labels.
- * Supports Bridgemate `60%-40%` and locale labels `G+/G-`, `A+/A-`, `M+/M-`.
+ * Supports Bridgemate `60%-40%` / `50%-50%` and locale labels `G+/G/G-`, `A+/A/A-`, `M+/M/M-`.
  */
 export function parseAveragePmFromText(raw: string | null | undefined): {
   nsAward: AverageAward | null;
@@ -208,13 +217,12 @@ export function parseAveragePmFromText(raw: string | null | undefined): {
   const s = raw.trim();
   const compact = s.toUpperCase().replace(/\s+/g, "").replace(/[−–]/g, "-");
 
-  // Bridgemate percentage pair: 60%-40%, 40%/60%, en-dash, optional spaces
+  // Bridgemate percentage pair: 60%-40%, 50%/50%, en-dash, optional spaces
   const pct = s.match(/^(\d{2})\s*%\s*[-−–/]\s*(\d{2})\s*%$/i);
   if (pct) {
     const ns = mapPercentAward(Number(pct[1]));
     const ew = mapPercentAward(Number(pct[2]));
     if (ns === undefined || ew === undefined) return null;
-    if (ns == null && ew == null) return null; // 50%-50% — leave for arbiter
     return { nsAward: ns, ewAward: ew };
   }
 
@@ -232,7 +240,7 @@ export function parseAveragePmFromText(raw: string | null | undefined): {
     }
   }
 
-  // Single-side label (typically Contract field): G+, A-
+  // Single-side label (typically Contract field): G+, G, A-
   const single = parseAwardLabel(compact);
   if (single !== undefined) {
     return { nsAward: single, ewAward: null };
@@ -257,7 +265,7 @@ export type DetectedSpecial = {
 
 /**
  * Detect Bridgemate special results from Contract + Remarks.
- * Auto-resolves NG → cancelled and unambiguous G± / 40%/60% → average_pm.
+ * Auto-resolves NG → cancelled and unambiguous G± / G / 40%/60%/50% → average_pm.
  */
 export function detectBridgemateSpecial(input: {
   remarks: string | null;

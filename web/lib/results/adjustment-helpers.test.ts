@@ -94,6 +94,18 @@ describe("adjustment-helpers", () => {
     });
   });
 
+  it("builds average_pm with zero awards", () => {
+    const a = buildAveragePmAdjustment({ nsAward: "zero", ewAward: "zero" });
+    expect(a.adjustmentMode).toBe("average_pm");
+    expect(a.includedInDatum).toBe(false);
+    expect(a.includedInMatchScore).toBe(true);
+    expect(parseAveragePmAwards(a.adjustmentMeta)).toEqual({
+      nsAward: "zero",
+      ewAward: "zero",
+    });
+    expect(hasAveragePmAward(a.adjustmentMeta)).toBe(true);
+  });
+
   it("requires at least one average award", () => {
     expect(() => buildAveragePmAdjustment({})).toThrow(/minstens één/i);
   });

@@ -23,16 +23,19 @@ describe("parseAveragePmFromText", () => {
     });
     expect(parseAveragePmFromText("60% - 50%")).toEqual({
       nsAward: "plus",
-      ewAward: null,
+      ewAward: "zero",
     });
   });
 
-  it("rejects flat 50%-50% and invalid percentages", () => {
-    expect(parseAveragePmFromText("50%-50%")).toBeNull();
+  it("parses flat 50%-50% as zero awards and rejects invalid percentages", () => {
+    expect(parseAveragePmFromText("50%-50%")).toEqual({
+      nsAward: "zero",
+      ewAward: "zero",
+    });
     expect(parseAveragePmFromText("55%-45%")).toBeNull();
   });
 
-  it("parses locale G± / A± / M± pairs and singles", () => {
+  it("parses locale G± / A± / M± pairs and singles including plain G", () => {
     expect(parseAveragePmFromText("G+/G-")).toEqual({
       nsAward: "plus",
       ewAward: "minus",
@@ -44,6 +47,18 @@ describe("parseAveragePmFromText", () => {
     expect(parseAveragePmFromText("G+")).toEqual({
       nsAward: "plus",
       ewAward: null,
+    });
+    expect(parseAveragePmFromText("G")).toEqual({
+      nsAward: "zero",
+      ewAward: null,
+    });
+    expect(parseAveragePmFromText("G/G")).toEqual({
+      nsAward: "zero",
+      ewAward: "zero",
+    });
+    expect(parseAveragePmFromText("A/A+")).toEqual({
+      nsAward: "zero",
+      ewAward: "plus",
     });
   });
 });
@@ -105,8 +120,33 @@ describe("detectBridgemateSpecial", () => {
     });
   });
 
+  it("auto-resolves bare G and 50%-50% to average_pm zero", () => {
+    const g = detectBridgemateSpecial({
+      remarks: null,
+      erased: false,
+      contract: "G",
+    });
+    expect(g.specialResultKind).toBe("ADJUSTED");
+    expect(g.resolvedAdjustment?.adjustmentMode).toBe("average_pm");
+    expect(g.resolvedAdjustment?.adjustmentMeta).toMatchObject({
+      nsAward: "zero",
+      ewAward: null,
+    });
+
+    const flat = detectBridgemateSpecial({
+      remarks: "50%-50%",
+      erased: false,
+      contract: null,
+    });
+    expect(flat.specialResultKind).toBe("ADJUSTED");
+    expect(flat.resolvedAdjustment?.adjustmentMeta).toMatchObject({
+      nsAward: "zero",
+      ewAward: "zero",
+    });
+  });
+
   it("leaves undecided arbitral and odd percentages for admin", () => {
-    for (const remarks of ["Arbitral score", "55%-45%", "50%-50%"]) {
+    for (const remarks of ["Arbitral score", "55%-45%"]) {
       const d = detectBridgemateSpecial({
         remarks,
         erased: false,

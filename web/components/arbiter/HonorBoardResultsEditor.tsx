@@ -64,7 +64,7 @@ function awardSelectValue(award: AverageAward | null): string {
 }
 
 function parseAwardSelect(value: string): AverageAward | null {
-  if (value === "plus" || value === "minus") return value;
+  if (value === "plus" || value === "minus" || value === "zero") return value;
   return null;
 }
 
@@ -366,6 +366,7 @@ export function HonorBoardResultsEditor({
         formatAveragePmScoreCell(selected.adjustment_meta, {
           plus: t("averageAwardPlus"),
           minus: t("averageAwardMinus"),
+          zero: t("averageAwardZero"),
         }) ?? t("modeAveragePm")
       );
     }
@@ -743,6 +744,7 @@ export function HonorBoardResultsEditor({
                 >
                   <option value="none">{t("averageAwardNone")}</option>
                   <option value="plus">{t("averageAwardPlus")}</option>
+                  <option value="zero">{t("averageAwardZero")}</option>
                   <option value="minus">{t("averageAwardMinus")}</option>
                 </select>
               </label>
@@ -756,6 +758,7 @@ export function HonorBoardResultsEditor({
                 >
                   <option value="none">{t("averageAwardNone")}</option>
                   <option value="plus">{t("averageAwardPlus")}</option>
+                  <option value="zero">{t("averageAwardZero")}</option>
                   <option value="minus">{t("averageAwardMinus")}</option>
                 </select>
               </label>

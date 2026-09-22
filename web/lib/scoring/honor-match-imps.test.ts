@@ -63,6 +63,20 @@ describe("assigned average match IMPs", () => {
       }),
     ).toEqual({ homeImps: -3, awayImps: 0 });
   });
+
+  it("treats zero awards as 0 match IMPs", () => {
+    expect(teamBoardImpsFromAwards(["zero", "zero"])).toBe(0);
+    expect(teamBoardImpsFromAwards(["zero", "plus"])).toBe(3);
+    expect(teamBoardImpsFromAwards(["zero", "minus"])).toBe(-3);
+    expect(
+      assignedMatchImpsFromRoomAwards({
+        openNs: "zero",
+        openEw: "zero",
+        closedNs: "zero",
+        closedEw: "zero",
+      }),
+    ).toEqual({ homeImps: 0, awayImps: 0 });
+  });
 });
 
 function seating(matchId: string): HonorRoundMatchSeating {
