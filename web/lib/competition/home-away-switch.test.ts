@@ -54,8 +54,18 @@ describe("shouldShowHomeAwaySwitchSection", () => {
 });
 
 describe("canAccessHomeAwaySwitchWorkflow", () => {
-  it("allows captains on unscored matches", () => {
-    expect(canAccessHomeAwaySwitchWorkflow(baseState())).toBe(true);
+  it("allows captains who can propose on unscored matches", () => {
+    expect(
+      canAccessHomeAwaySwitchWorkflow(baseState({ can_propose: true })),
+    ).toBe(true);
+  });
+
+  it("allows competition managers who can propose without captain_teams", () => {
+    expect(
+      canAccessHomeAwaySwitchWorkflow(
+        baseState({ captain_teams: [], can_propose: true }),
+      ),
+    ).toBe(true);
   });
 
   it("allows users who may respond to a pending request", () => {
@@ -66,7 +76,7 @@ describe("canAccessHomeAwaySwitchWorkflow", () => {
     ).toBe(true);
   });
 
-  it("denies regular players without captain or respond actions", () => {
+  it("denies regular players without propose or respond actions", () => {
     expect(
       canAccessHomeAwaySwitchWorkflow(baseState({ captain_teams: [] })),
     ).toBe(false);
@@ -75,7 +85,10 @@ describe("canAccessHomeAwaySwitchWorkflow", () => {
   it("denies when match is played", () => {
     expect(
       canAccessHomeAwaySwitchWorkflow(
-        baseState({ played_at: "2025-01-01T00:00:00.000Z" }),
+        baseState({
+          played_at: "2025-01-01T00:00:00.000Z",
+          can_propose: true,
+        }),
       ),
     ).toBe(false);
     expect(canAccessHomeAwaySwitchWorkflow(null)).toBe(false);
