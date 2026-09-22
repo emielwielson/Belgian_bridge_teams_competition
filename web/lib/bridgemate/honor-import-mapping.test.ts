@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { bridgematePairNumber } from "./honor-bws-export";
-import {
-  buildHonorMappingContext,
-  toBridgemateSessionBoards,
-} from "./honor-import-mapping";
+import { buildHonorMappingContext } from "./honor-import-mapping";
 import type { HonorRoundMatchSeating } from "@/lib/competition/honor-seating-overview";
 
 function seat(
@@ -85,21 +82,5 @@ describe("buildHonorMappingContext", () => {
     expect(result.ctx.tables).toHaveLength(2);
     expect(result.ctx.tables[0]?.bridgemateTable).toBe(1);
     expect(result.ctx.tables[1]?.bridgemateTable).toBe(2);
-  });
-});
-
-describe("toBridgemateSessionBoards", () => {
-  it("renumbers absolute PBN boards to session 1..N", () => {
-    expect(
-      toBridgemateSessionBoards([
-        { id: "b32", boardNumber: 32 },
-        { id: "b17", boardNumber: 17 },
-        { id: "b18", boardNumber: 18 },
-      ]),
-    ).toEqual([
-      { id: "b17", boardNumber: 1 },
-      { id: "b18", boardNumber: 2 },
-      { id: "b32", boardNumber: 3 },
-    ]);
   });
 });

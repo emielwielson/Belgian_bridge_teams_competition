@@ -12,19 +12,6 @@ import type { HonorDirection, HonorRoom } from "@/lib/competition/honor-lineup";
 
 const SECTION = "A";
 
-/**
- * BCS / Bridgemate sessions number boards 1..N for the sitting.
- * PBN (and honor_boards.board_number) may use absolute numbers (e.g. 17–32).
- * Map by ascending ordinal so Bridgemate board k → k-th board of the round.
- */
-export function toBridgemateSessionBoards(
-  boards: Array<{ id: string; boardNumber: number }>,
-): Array<{ id: string; boardNumber: number }> {
-  return [...boards]
-    .sort((a, b) => a.boardNumber - b.boardNumber || a.id.localeCompare(b.id))
-    .map((b, i) => ({ id: b.id, boardNumber: i + 1 }));
-}
-
 export type HonorMappedTable = BridgemateMappingContext["tables"][number] & {
   room: HonorRoom;
   nsPlayerIds: [string, string] | null;

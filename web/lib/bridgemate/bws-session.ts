@@ -1,3 +1,5 @@
+import { slotsPerMatchDay } from "@/lib/competition/national-match-schedule";
+
 export type BwsSessionTableInput = {
   id: string;
   bridgemateSection: string | null;
@@ -5,6 +7,20 @@ export type BwsSessionTableInput = {
   nsPairId: string | null;
   ewPairId: string | null;
 };
+
+/**
+ * Absolute Bridgemate board range for an Honor tournament round.
+ * Match-day slots cycle boards 1–48: slot 1 → 1–16, slot 2 → 17–32, slot 3 → 33–48.
+ */
+export function bridgemateBoardRangeForRound(
+  tournamentRound: number,
+  boardCount: number,
+): { lowBoard: number; highBoard: number } {
+  const slots = slotsPerMatchDay("honor");
+  const slotIndex = (tournamentRound - 1) % slots;
+  const lowBoard = slotIndex * boardCount + 1;
+  return { lowBoard, highBoard: lowBoard + boardCount - 1 };
+}
 
 export type BwsSessionMatchInput = {
   id: string;
@@ -245,16 +261,22 @@ export function buildBwsSession(
     group: p.group,
   }));
 
-  const roundData: BwsRoundDataRow[] = pending.map((p) => ({
-    section: sectionIdByLetter.get(p.sectionLetter)!,
-    table: p.table,
-    round: BCS_ROUND,
-    nsPair: p.nsPair,
-    ewPair: p.ewPair,
-    lowBoard: 1,
-    highBoard: p.boardCount,
-    customBoards: null,
-  }));
+  const roundData: BwsRoundDataRow[] = pending.map((p) => {
+    const { lowBoard, highBoard } = bridgemateBoardRangeForRound(
+      input.tournamentRoundNumber,
+      p.boardCount,
+    );
+    return {
+      section: sectionIdByLetter.get(p.sectionLetter)!,
+      table: p.table,
+      round: BCS_ROUND,
+      nsPair: p.nsPair,
+      ewPair: p.ewPair,
+      lowBoard,
+      highBoard,
+      customBoards: null,
+    };
+  });
 
   const rawName =
     input.sessionName?.trim() || `Honneur ronde ${input.tournamentRoundNumber}`;

@@ -1,9 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { adaptReceivedDataToNormalized } from "@/lib/bridgemate/adapter";
-import {
-  buildHonorMappingContext,
-  toBridgemateSessionBoards,
-} from "@/lib/bridgemate/honor-import-mapping";
+import { buildHonorMappingContext } from "@/lib/bridgemate/honor-import-mapping";
 import { parseBwsBuffer } from "@/lib/bridgemate/parse-bws";
 import { parseReceivedDataJson } from "@/lib/bridgemate/parse-received";
 import type { HonorRoundMatchSeating } from "@/lib/competition/honor-seating-overview";
@@ -51,9 +48,7 @@ export async function importHonorBwsForRound(params: {
   const mapping = buildHonorMappingContext(
     params.tournamentRound,
     params.matches,
-    toBridgemateSessionBoards(
-      (boards ?? []).map((b) => ({ id: b.id, boardNumber: b.board_number })),
-    ),
+    (boards ?? []).map((b) => ({ id: b.id, boardNumber: b.board_number })),
   );
   if (!mapping.ok) {
     return { ok: false, error: mapping.errors[0] ?? "Mapping mislukt.", mappingErrors: mapping.errors };

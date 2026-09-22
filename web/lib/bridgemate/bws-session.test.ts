@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildBwsSession } from "./bws-session";
+import { bridgemateBoardRangeForRound, buildBwsSession } from "./bws-session";
 
 function honorDivisionInput() {
   const pairs = [
@@ -151,8 +151,8 @@ describe("buildBwsSession", () => {
       round: 1,
       nsPair: 11,
       ewPair: 81,
-      lowBoard: 1,
-      highBoard: 16,
+      lowBoard: 33,
+      highBoard: 48,
       customBoards: null,
     });
     expect(result.plan.roundData[1]).toMatchObject({
@@ -183,5 +183,26 @@ describe("buildBwsSession", () => {
     expect(result.errors.some((e) => /Dubbele Bridgemate-tafel/.test(e))).toBe(
       true,
     );
+  });
+});
+
+describe("bridgemateBoardRangeForRound", () => {
+  it("maps match-day slots to absolute boards 1-48", () => {
+    expect(bridgemateBoardRangeForRound(1, 16)).toEqual({
+      lowBoard: 1,
+      highBoard: 16,
+    });
+    expect(bridgemateBoardRangeForRound(2, 16)).toEqual({
+      lowBoard: 17,
+      highBoard: 32,
+    });
+    expect(bridgemateBoardRangeForRound(3, 16)).toEqual({
+      lowBoard: 33,
+      highBoard: 48,
+    });
+    expect(bridgemateBoardRangeForRound(4, 16)).toEqual({
+      lowBoard: 1,
+      highBoard: 16,
+    });
   });
 });

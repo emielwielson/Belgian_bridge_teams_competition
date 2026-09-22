@@ -111,6 +111,7 @@ describe("buildHonorBwsSessionInput", () => {
       table: 1,
       nsPair: 31,
       ewPair: 81,
+      lowBoard: 1,
       highBoard: 16,
     });
     expect(exported.plan.roundData[1]).toMatchObject({
