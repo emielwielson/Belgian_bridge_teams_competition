@@ -1,7 +1,12 @@
 import { redirect } from "next/navigation";
 import { ManualsPage } from "@/components/manuals/ManualsPage";
-import { isCaptainOfAnyTeam } from "@/lib/auth/team-access";
+import {
+  isCaptainOfAnyTeam,
+  isPlayerOnHonorTeam,
+} from "@/lib/auth/team-access";
 import { createSessionClient } from "@/lib/supabase/server-client";
+
+export const dynamic = "force-dynamic";
 
 export default async function ManualsRoutePage() {
   const supabase = await createSessionClient();
@@ -13,7 +18,15 @@ export default async function ManualsRoutePage() {
     redirect("/login?next=/manuals");
   }
 
-  const showCaptainGuides = await isCaptainOfAnyTeam(supabase, user.id);
+  const [showCaptainGuides, showHonorGuides] = await Promise.all([
+    isCaptainOfAnyTeam(supabase, user.id),
+    isPlayerOnHonorTeam(supabase, user.id),
+  ]);
 
-  return <ManualsPage showCaptainGuides={showCaptainGuides} />;
+  return (
+    <ManualsPage
+      showCaptainGuides={showCaptainGuides}
+      showHonorGuides={showHonorGuides}
+    />
+  );
 }

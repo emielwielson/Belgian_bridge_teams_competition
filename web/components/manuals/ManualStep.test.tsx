@@ -14,7 +14,8 @@ describe("ManualStep", () => {
         stepNumber={2}
         title="Save the home lineup"
         body="Select at least four players."
-        imageSrc="/manuals/player-03-home-lineup.png"
+        imageSrc="/manuals/nl/player-03-home-lineup.png"
+        imageFallbackSrc="/manuals/player-03-home-lineup.png"
         imageAlt="Home lineup"
       />,
     );
@@ -24,7 +25,7 @@ describe("ManualStep", () => {
     expect(screen.getByText("Select at least four players.")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Home lineup" })).toHaveAttribute(
       "src",
-      "/manuals/player-03-home-lineup.png",
+      "/manuals/nl/player-03-home-lineup.png",
     );
   });
 

@@ -1386,6 +1386,38 @@
         }
       }
     },
+    "honor": {
+      "sectionTitle": "Eredivisie",
+      "lineup": {
+        "title": "De eredivisie-line-up invoeren",
+        "steps": {
+          "open-match": {
+            "title": "Open een eredivisie-wedstrijd",
+            "body": "Meld u aan en open een wedstrijd van de Eredivisie via het spelersdashboard, uw teampagina of het klassement. Op de wedstrijdpagina ziet u per team plaatsen (Open/Closed room en richting) in plaats van een gewone lijst van vier spelers."
+          },
+          "phase-rules": {
+            "title": "Bekijk de volgorde van vastleggen",
+            "body": "In de eerste twee round robins legt het uitteam eerst vast; daarna mag het thuisteam de uit-line-up zien en zelf invullen. In de derde round robin is de line-up blind: beide teams vullen in zonder elkaars plaatsen te zien tot beide zijn vastgelegd."
+          },
+          "fill-seats": {
+            "title": "Vul alle plaatsen in",
+            "body": "Thuis speelt Open N/S en Closed E/W; uit speelt Open E/W en Closed N/S. Kies voor elke plaats een speler uit de selectie. Waar bekend toont het platform ook het tafelnummer op de speellocatie."
+          },
+          "substitutes": {
+            "title": "Voeg indien nodig een invaller toe",
+            "body": "Gebruik + Invaller toevoegen om een clublid toe te voegen dat niet op de teamselectie staat. Wijs de invaller daarna toe aan een plaats."
+          },
+          "lock-lineup": {
+            "title": "Leg de line-up vast",
+            "body": "Als alle plaatsen zijn ingevuld, klikt u op Line-up vastleggen en bevestigt u. Daarna kunt u de plaatsen niet meer zelf wijzigen."
+          },
+          "after-lock": {
+            "title": "Na vastleggen",
+            "body": "Zichtbaarheid van de tegenstander volgt de ronderegels hierboven. Wanneer beide line-ups vastliggen, staan de plaatsen vast tot een arbiter ontgrendelt. Scores worden niet door kapiteins ingevoerd: ze volgen uit Bridgemate-resultaten wanneer de ronde wordt gepubliceerd."
+          }
+        }
+      }
+    },
     "captain": {
       "sectionTitle": "Handleiding voor kapiteins",
       "addMembers": {

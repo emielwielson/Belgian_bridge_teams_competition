@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { loadGroupScoringContext } from "@/lib/competition/match-scoring-context";
 import { loadTeamsForUser } from "@/lib/competition/team-queries";
+import { isHonorDivision } from "@/lib/scoring/board-count-rules";
 import { AuthError } from "./auth-error";
 import { ROLES } from "./roles";
 
@@ -24,6 +26,42 @@ export async function isCaptainOfAnyTeam(
     if (await isCaptainOfTeam(supabase, team.id)) {
       return true;
     }
+  }
+  return false;
+}
+
+/**
+ * True when the user's active player is on a national Honor Division team
+ * in the active season (excludes regional Liga).
+ *
+ * Reuses loadTeamsForUser (same source as "My team"), then checks each team's
+ * group with the same national+honor rule as match UI.
+ */
+export async function isPlayerOnHonorTeam(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<boolean> {
+  const teams = await loadTeamsForUser(supabase, userId);
+  if (teams.length === 0) return false;
+
+  const { data, error } = await supabase
+    .from("teams")
+    .select("group_id")
+    .in(
+      "id",
+      teams.map((team) => team.id),
+    );
+
+  if (error) throw error;
+
+  const groupIds = new Set<string>();
+  for (const row of data ?? []) {
+    if (typeof row.group_id === "string") groupIds.add(row.group_id);
+  }
+
+  for (const groupId of groupIds) {
+    const scoring = await loadGroupScoringContext(supabase, groupId);
+    if (isHonorDivision(scoring)) return true;
   }
   return false;
 }

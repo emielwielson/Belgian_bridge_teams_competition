@@ -1,6 +1,12 @@
-import { useTranslations } from "next-intl";
+"use client";
+
+import { useLocale, useTranslations } from "next-intl";
+import type { Locale } from "@/i18n/config";
 import type { ManualGuideDef } from "@/lib/manuals/content";
-import { manualImageSrc } from "@/lib/manuals/content";
+import {
+  manualImageFallbackSrc,
+  manualImageSrc,
+} from "@/lib/manuals/content";
 import { ManualStep } from "./ManualStep";
 
 type ManualGuideProps = {
@@ -9,6 +15,7 @@ type ManualGuideProps = {
 
 export function ManualGuide({ guide }: ManualGuideProps) {
   const t = useTranslations("manuals");
+  const locale = useLocale() as Locale;
 
   return (
     <section id={guide.anchor} className="scroll-mt-20">
@@ -22,7 +29,8 @@ export function ManualGuide({ guide }: ManualGuideProps) {
             stepNumber={index + 1}
             title={t(`${guide.translationKey}.steps.${step.id}.title`)}
             body={t(`${guide.translationKey}.steps.${step.id}.body`)}
-            imageSrc={manualImageSrc(step.image)}
+            imageSrc={manualImageSrc(step.image, locale)}
+            imageFallbackSrc={manualImageFallbackSrc(step.image)}
             imageAlt={t(`${guide.translationKey}.steps.${step.id}.title`)}
           />
         ))}

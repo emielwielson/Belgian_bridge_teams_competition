@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import {
   CAPTAIN_GUIDES,
+  HONOR_GUIDES,
   PLAYER_GUIDES,
   type ManualGuideDef,
 } from "@/lib/manuals/content";
@@ -10,6 +11,7 @@ import { ManualGuide } from "./ManualGuide";
 
 type ManualsPageProps = {
   showCaptainGuides: boolean;
+  showHonorGuides: boolean;
 };
 
 function TocLink({ guide, label }: { guide: ManualGuideDef; label: string }) {
@@ -23,7 +25,10 @@ function TocLink({ guide, label }: { guide: ManualGuideDef; label: string }) {
   );
 }
 
-export function ManualsPage({ showCaptainGuides }: ManualsPageProps) {
+export function ManualsPage({
+  showCaptainGuides,
+  showHonorGuides,
+}: ManualsPageProps) {
   const t = useTranslations("manuals");
 
   return (
@@ -46,6 +51,16 @@ export function ManualsPage({ showCaptainGuides }: ManualsPageProps) {
               />
             </li>
           ))}
+          {showHonorGuides
+            ? HONOR_GUIDES.map((guide) => (
+                <li key={guide.id}>
+                  <TocLink
+                    guide={guide}
+                    label={t(`${guide.translationKey}.title`)}
+                  />
+                </li>
+              ))
+            : null}
           {showCaptainGuides
             ? CAPTAIN_GUIDES.map((guide) => (
                 <li key={guide.id}>
@@ -63,6 +78,18 @@ export function ManualsPage({ showCaptainGuides }: ManualsPageProps) {
         {PLAYER_GUIDES.map((guide) => (
           <ManualGuide key={guide.id} guide={guide} />
         ))}
+
+        {showHonorGuides ? (
+          <>
+            <hr className="border-zinc-200" />
+            <h2 className="text-lg font-semibold text-zinc-900">
+              {t("honor.sectionTitle")}
+            </h2>
+            {HONOR_GUIDES.map((guide) => (
+              <ManualGuide key={guide.id} guide={guide} />
+            ))}
+          </>
+        ) : null}
 
         {showCaptainGuides ? (
           <>

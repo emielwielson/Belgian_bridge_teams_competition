@@ -1386,6 +1386,38 @@
         }
       }
     },
+    "honor": {
+      "sectionTitle": "Honor Division",
+      "lineup": {
+        "title": "Enter the Honor Division line-up",
+        "steps": {
+          "open-match": {
+            "title": "Open an Honor match",
+            "body": "Sign in and open an Honor Division match from the player dashboard, your team page, or the standings. On the match page you assign seats (Open/Closed room and direction) instead of a flat list of four players."
+          },
+          "phase-rules": {
+            "title": "Check the lock order",
+            "body": "In the first two round robins the away team locks first; then the home team can see the away line-up and enter theirs. In the third round robin line-ups are blind: both sides enter without seeing each other until both have locked."
+          },
+          "fill-seats": {
+            "title": "Fill every seat",
+            "body": "Home plays Open N/S and Closed E/W; away plays Open E/W and Closed N/S. Pick a roster player for each seat. Where known, the platform also shows the venue table number."
+          },
+          "substitutes": {
+            "title": "Add a substitute if needed",
+            "body": "Use + Add substitute to add a club member who is not on the team roster, then assign that substitute to a seat."
+          },
+          "lock-lineup": {
+            "title": "Lock the line-up",
+            "body": "When every seat is filled, click Lock line-up and confirm. After locking you cannot change seats yourself."
+          },
+          "after-lock": {
+            "title": "After locking",
+            "body": "Opponent visibility follows the round rules above. When both line-ups are locked, seats stay fixed until an arbiter unlocks them. Captains do not submit scores: results come from Bridgemate when the round is published."
+          }
+        }
+      }
+    },
     "captain": {
       "sectionTitle": "Captain guides",
       "addMembers": {

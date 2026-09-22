@@ -1385,6 +1385,38 @@
         }
       }
     },
+    "honor": {
+      "sectionTitle": "Division d'honneur",
+      "lineup": {
+        "title": "Saisir la composition Division d'honneur",
+        "steps": {
+          "open-match": {
+            "title": "Ouvrir une rencontre d'honneur",
+            "body": "Connectez-vous et ouvrez une rencontre de Division d'honneur depuis le tableau joueur, la page de votre équipe ou le classement. Sur la page, vous assignez des places (salle Open/Closed et direction) au lieu d'une simple liste de quatre joueurs."
+          },
+          "phase-rules": {
+            "title": "Vérifier l'ordre de verrouillage",
+            "body": "Dans les deux premiers round robins, l'équipe visiteuse verrouille d'abord ; ensuite l'équipe à domicile peut voir la composition adverse et saisir la sienne. Au troisième round robin, les compositions sont à l'aveugle : les deux camps saisissent sans se voir jusqu'à ce que les deux aient verrouillé."
+          },
+          "fill-seats": {
+            "title": "Remplir toutes les places",
+            "body": "À domicile : salle ouverte N/S et salle fermée E/W ; à l'extérieur : salle ouverte E/W et salle fermée N/S. Choisissez un joueur de l'effectif pour chaque place. Lorsque c'est connu, la plateforme affiche aussi le numéro de table sur le lieu de jeu."
+          },
+          "substitutes": {
+            "title": "Ajouter un remplaçant si besoin",
+            "body": "Utilisez + Ajouter un remplaçant pour ajouter un membre du club hors effectif, puis assignez-le à une place."
+          },
+          "lock-lineup": {
+            "title": "Verrouiller le line-up",
+            "body": "Lorsque toutes les places sont remplies, cliquez sur Verrouiller le line-up et confirmez. Ensuite vous ne pouvez plus modifier les places vous-même."
+          },
+          "after-lock": {
+            "title": "Après le verrouillage",
+            "body": "La visibilité de l'adversaire suit les règles de journée ci-dessus. Quand les deux compositions sont verrouillées, les places restent fixes jusqu'à ce qu'un arbitre les déverrouille. Les capitaines ne soumettent pas le score : les résultats viennent de Bridgemate lorsque la journée est publiée."
+          }
+        }
+      }
+    },
     "captain": {
       "sectionTitle": "Guides capitaine",
       "addMembers": {

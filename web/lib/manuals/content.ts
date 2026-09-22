@@ -1,6 +1,8 @@
+import type { Locale } from "@/i18n/config";
+
 export type ManualStepDef = {
   id: string;
-  /** Filename under /manuals/ (e.g. player-01-find-match.png). Omit until screenshot exists. */
+  /** Filename under /manuals/{locale}/ (e.g. player-01-find-match.png). Omit until screenshot exists. */
   image?: string;
 };
 
@@ -24,6 +26,22 @@ export const PLAYER_GUIDES: ManualGuideDef[] = [
       { id: "away-lineup", image: "player-04-away-lineup.png" },
       { id: "score-form", image: "player-05-score-form.png" },
       { id: "score-submitted", image: "player-06-score-submitted.png" },
+    ],
+  },
+];
+
+export const HONOR_GUIDES: ManualGuideDef[] = [
+  {
+    id: "honor-lineup",
+    anchor: "honor-lineup",
+    translationKey: "honor.lineup",
+    steps: [
+      { id: "open-match", image: "honor-lineup-open-match.png" },
+      { id: "phase-rules", image: "honor-lineup-phase-rules.png" },
+      { id: "fill-seats", image: "honor-lineup-fill-seats.png" },
+      { id: "substitutes", image: "honor-lineup-substitutes.png" },
+      { id: "lock-lineup", image: "honor-lineup-lock-lineup.png" },
+      { id: "after-lock", image: "honor-lineup-after-lock.png" },
     ],
   },
 ];
@@ -64,7 +82,19 @@ export const CAPTAIN_GUIDES: ManualGuideDef[] = [
   },
 ];
 
-export function manualImageSrc(filename: string | undefined): string | undefined {
+/** Locale-specific screenshot path: /manuals/{locale}/{filename} */
+export function manualImageSrc(
+  filename: string | undefined,
+  locale: Locale,
+): string | undefined {
+  if (!filename) return undefined;
+  return `/manuals/${locale}/${filename}`;
+}
+
+/** Legacy unscoped path used as onError fallback while older PNGs live at /manuals/*.png */
+export function manualImageFallbackSrc(
+  filename: string | undefined,
+): string | undefined {
   if (!filename) return undefined;
   return `/manuals/${filename}`;
 }
