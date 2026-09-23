@@ -55,6 +55,29 @@ function getPage(buffer: Buffer, page: number): Buffer {
   return buffer.subarray(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 }
 
+/**
+ * Jet4 table definitions may span pages. Continuation pages store payload from
+ * offset 8; concatenate so column defs/names parse as one logical buffer.
+ */
+function loadTdefLogical(buffer: Buffer, tdefPage: number): Buffer {
+  const chunks: Buffer[] = [];
+  let page = tdefPage;
+  let first = true;
+  const seen = new Set<number>();
+  while (page && !seen.has(page)) {
+    seen.add(page);
+    const pageBuf = getPage(buffer, page);
+    if (pageBuf[0] !== 2) {
+      throw new Error(`Ongeldige tabeldefinitie-pagina ${page}.`);
+    }
+    const next = pageBuf.readUInt32LE(4);
+    chunks.push(first ? Buffer.from(pageBuf) : Buffer.from(pageBuf.subarray(8)));
+    first = false;
+    page = next;
+  }
+  return Buffer.concat(chunks);
+}
+
 function recordStart(pageBuf: Buffer, row: number): number {
   return pageBuf.readUInt16LE(DATA_RECORD_COUNT + 2 + row * 2) & 0x1fff;
 }
@@ -124,6 +147,8 @@ const TEMPLATE_TDEF_PAGES: Record<string, number> = {
   Tables: 97,
   RoundData: 80,
   ReceivedData: 75,
+  PlayerNumbers: 73,
+  Settings: 86,
 };
 
 export function tableMetaFromPage(
@@ -131,7 +156,7 @@ export function tableMetaFromPage(
   name: string,
   tdefPage: number,
 ): JetTableMeta {
-  const tdef = getPage(buffer, tdefPage);
+  const tdef = loadTdefLogical(buffer, tdefPage);
   if (tdef[0] !== 2) {
     throw new Error(`Ongeldige tabeldefinitie voor ${name}.`);
   }

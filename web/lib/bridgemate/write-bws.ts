@@ -46,7 +46,7 @@ export type BwsReceivedDataInsert = {
   SuspiciousContract?: number | null;
 };
 
-/** Write Session/Section/Tables/RoundData (and optional ReceivedData) into a template copy. */
+/** Write Session/Section/Tables/RoundData/PlayerNumbers/Settings (and optional ReceivedData). */
 export function writeBwsFromPlan(
   plan: BwsSessionPlan,
   template: Buffer = loadBwsTemplate(),
@@ -130,6 +130,31 @@ export function writeBwsFromPlan(
       now,
     ),
   );
+
+  if (plan.playerNumbers.length) {
+    buffer = Buffer.from(
+      insertRows(
+        buffer,
+        "PlayerNumbers",
+        plan.playerNumbers.map((p) => ({
+          Section: p.section,
+          Table: p.table,
+          Direction: p.direction,
+          Number: p.number,
+          Name: p.name,
+          Updated: p.updated,
+          TimeLog: now,
+          Processed: p.processed,
+          Round: p.round,
+        })),
+        now,
+      ),
+    );
+  }
+
+  if (plan.settings.length) {
+    buffer = Buffer.from(insertRows(buffer, "Settings", plan.settings, now));
+  }
 
   if (receivedData.length) {
     buffer = Buffer.from(insertRows(buffer, "ReceivedData", receivedData, now));

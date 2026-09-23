@@ -12,6 +12,10 @@ import {
   type BwsSessionPlan,
   type BwsSessionResult,
 } from "@/lib/bridgemate/bws-session";
+import {
+  honorBwsNameSettings,
+  playerNumbersFromHonorMatches,
+} from "@/lib/bridgemate/honor-bws-player-numbers";
 import { writeBwsFromPlan } from "@/lib/bridgemate/write-bws";
 import type { HonorRoundMatchSeating } from "@/lib/competition/honor-seating-overview";
 
@@ -143,13 +147,19 @@ export function exportHonorRoundBws(
   });
   if (!built.ok) return built;
 
+  const plan: BwsSessionPlan = {
+    ...built.plan,
+    playerNumbers: playerNumbersFromHonorMatches(matches),
+    settings: [honorBwsNameSettings()],
+  };
+
   try {
     const buffer = writeBwsFromPlan(
-      built.plan,
+      plan,
       options?.template,
       options?.now,
     );
-    return { ok: true, plan: built.plan, buffer };
+    return { ok: true, plan, buffer };
   } catch (e) {
     return {
       ok: false,

@@ -5,7 +5,45 @@ import {
   exportHonorRoundBws,
   honorRoundReadyForBws,
 } from "./honor-bws-export";
+import {
+  bridgematePlayerName,
+  playerNumbersFromHonorMatches,
+} from "./honor-bws-player-numbers";
 import type { HonorRoundMatchSeating } from "@/lib/competition/honor-seating-overview";
+import type { HonorDirection, HonorRoom } from "@/lib/competition/honor-lineup";
+
+function seat(
+  team_id: string,
+  room: HonorRoom,
+  direction: HonorDirection,
+  name: string,
+  player_id = `${team_id}-${room}-${direction}`,
+): HonorRoundMatchSeating["seats"][number] {
+  return {
+    player_id,
+    name,
+    team_id,
+    room,
+    direction,
+    is_substitute: false,
+  };
+}
+
+function fullSeats(
+  homeId: string,
+  awayId: string,
+): HonorRoundMatchSeating["seats"] {
+  return [
+    seat(homeId, "open", "N", "HOME OPEN N"),
+    seat(homeId, "open", "S", "HOME OPEN S"),
+    seat(awayId, "open", "E", "AWAY OPEN E"),
+    seat(awayId, "open", "W", "AWAY OPEN W"),
+    seat(awayId, "closed", "N", "AWAY CLOSED N"),
+    seat(awayId, "closed", "S", "AWAY CLOSED S"),
+    seat(homeId, "closed", "E", "HOME CLOSED E"),
+    seat(homeId, "closed", "W", "HOME CLOSED W"),
+  ];
+}
 
 function readyMatch(
   overrides: Partial<HonorRoundMatchSeating> & {
@@ -17,6 +55,8 @@ function readyMatch(
     venue_tables: { openTable: number; closedTable: number };
   },
 ): HonorRoundMatchSeating {
+  const homeId = overrides.home_team.id;
+  const awayId = overrides.away_team.id;
   return {
     round: 1,
     datetime: "2026-01-01T10:00:00Z",
@@ -27,7 +67,7 @@ function readyMatch(
     lock_status: "both",
     home_seats_complete: true,
     away_seats_complete: true,
-    seats: [],
+    seats: fullSeats(homeId, awayId),
     ...overrides,
   };
 }
@@ -36,6 +76,45 @@ describe("bridgematePairNumber", () => {
   it("uses slot*10 + room pair", () => {
     expect(bridgematePairNumber(3, 1)).toBe(31);
     expect(bridgematePairNumber(8, 2)).toBe(82);
+  });
+});
+
+describe("bridgematePlayerName", () => {
+  it("formats and truncates to 18 characters", () => {
+    expect(bridgematePlayerName("JAN JANSSEN")).toBe("Jan Janssen");
+    expect(bridgematePlayerName("ABCDEFGHIJKLMNOPQRSTUVWXYZ")).toBe(
+      "Abcdefghijklmnopqr",
+    );
+  });
+});
+
+describe("playerNumbersFromHonorMatches", () => {
+  it("emits 4 directions per open/closed table", () => {
+    const matches = [
+      readyMatch({
+        match_id: "m1",
+        home_team: { id: "t3", name: "T3" },
+        away_team: { id: "t8", name: "T8" },
+        home_slot: 3,
+        away_slot: 8,
+        venue_tables: { openTable: 1, closedTable: 2 },
+      }),
+    ];
+    const rows = playerNumbersFromHonorMatches(matches);
+    expect(rows).toHaveLength(8);
+    expect(rows.filter((r) => r.table === 1).map((r) => r.direction)).toEqual([
+      "N",
+      "S",
+      "E",
+      "W",
+    ]);
+    expect(rows.find((r) => r.table === 1 && r.direction === "N")?.name).toBe(
+      "Home Open N",
+    );
+    expect(rows.find((r) => r.table === 2 && r.direction === "E")?.name).toBe(
+      "Home Closed E",
+    );
+    expect(rows.every((r) => r.updated && r.round === 0)).toBe(true);
   });
 });
 
@@ -107,6 +186,20 @@ describe("buildHonorBwsSessionInput", () => {
     expect(exported.plan.filename).toBe("honneur-ronde-1.bws");
     expect(exported.plan.tables).toHaveLength(8);
     expect(exported.plan.roundData).toHaveLength(8);
+    expect(exported.plan.playerNumbers).toHaveLength(32);
+    expect(exported.plan.settings).toHaveLength(1);
+    expect(exported.plan.settings[0]).toMatchObject({
+      BM2NameSource: 2,
+      BM2ShowPlayerNames: 1,
+      MemberNumbers: false,
+    });
+    expect(exported.plan.playerNumbers[0]).toMatchObject({
+      table: 1,
+      direction: "N",
+      name: "Home Open N",
+      updated: true,
+      round: 0,
+    });
     expect(exported.plan.roundData[0]).toMatchObject({
       table: 1,
       nsPair: 31,

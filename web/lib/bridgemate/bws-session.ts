@@ -84,11 +84,31 @@ export type BwsSessionRow = {
   ewReturnHome: boolean;
 };
 
+/** Pre-registered Bridgemate II/III seat name (PlayerNumbers). */
+export type BwsPlayerNumberRow = {
+  section: number;
+  table: number;
+  direction: "N" | "S" | "E" | "W";
+  number: string | null;
+  name: string;
+  updated: boolean;
+  processed: boolean;
+  round: number;
+};
+
+/**
+ * BCS Settings row. Values match Bridgemate defaults except name-display fields
+ * (BM2NameSource=2, BM2ShowPlayerNames=1, MemberNumbers=false).
+ */
+export type BwsSettingsRow = Record<string, string | number | boolean>;
+
 export type BwsSessionPlan = {
   session: BwsSessionRow;
   sections: BwsSectionRow[];
   tables: BwsTableRow[];
   roundData: BwsRoundDataRow[];
+  playerNumbers: BwsPlayerNumberRow[];
+  settings: BwsSettingsRow[];
   filename: string;
 };
 
@@ -304,6 +324,8 @@ export function buildBwsSession(
       sections,
       tables,
       roundData,
+      playerNumbers: [],
+      settings: [],
       filename: `honneur-ronde-${input.tournamentRoundNumber}.bws`,
     },
   };

@@ -4,6 +4,7 @@ import * as os from "os";
 import * as path from "path";
 import { describe, expect, it } from "vitest";
 import { buildBwsSession } from "./bws-session";
+import { honorBwsNameSettings } from "./honor-bws-player-numbers";
 import { writeBwsFromPlan } from "./write-bws";
 
 function honorPlan() {
@@ -66,7 +67,32 @@ function honorPlan() {
     { guid: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" },
   );
   if (!built.ok) throw new Error(built.errors.join("; "));
-  return built.plan;
+  return {
+    ...built.plan,
+    playerNumbers: [
+      {
+        section: 1,
+        table: 1,
+        direction: "N" as const,
+        number: null,
+        name: "Alice North",
+        updated: true,
+        processed: false,
+        round: 0,
+      },
+      {
+        section: 1,
+        table: 1,
+        direction: "S" as const,
+        number: null,
+        name: "Bob South",
+        updated: true,
+        processed: false,
+        round: 0,
+      },
+    ],
+    settings: [honorBwsNameSettings()],
+  };
 }
 
 /** Jest cannot import ESM mdb-reader; spawn Node to round-trip the buffer. */
@@ -88,6 +114,8 @@ function readBwsTables(buffer: Buffer) {
       section: dump("Section"),
       tables: dump("Tables"),
       roundData: dump("RoundData"),
+      playerNumbers: dump("PlayerNumbers"),
+      settings: dump("Settings"),
       received: dump("ReceivedData"),
     };
     console.log(JSON.stringify(data, (_, v) => (v instanceof Date ? v.toISOString() : v)));
@@ -102,6 +130,8 @@ function readBwsTables(buffer: Buffer) {
       section: Array<Record<string, unknown>>;
       tables: Array<Record<string, unknown>>;
       roundData: Array<Record<string, unknown>>;
+      playerNumbers: Array<Record<string, unknown>>;
+      settings: Array<Record<string, unknown>>;
       received: Array<Record<string, unknown>>;
     };
   } finally {
@@ -110,7 +140,7 @@ function readBwsTables(buffer: Buffer) {
 }
 
 describe("writeBwsFromPlan", () => {
-  it("inserts Session/Section/Tables/RoundData readable by mdb-reader", () => {
+  it("inserts Session/Section/Tables/RoundData/PlayerNumbers/Settings readable by mdb-reader", () => {
     const template = fs.readFileSync(
       path.join(process.cwd(), "fixtures/bridgemate/Template_Access2000_v5.bws"),
     );
@@ -121,7 +151,15 @@ describe("writeBwsFromPlan", () => {
       new Date("2026-08-17T12:00:00Z"),
     );
 
-    const { session, section, tables, roundData, received } = readBwsTables(buffer);
+    const {
+      session,
+      section,
+      tables,
+      roundData,
+      playerNumbers,
+      settings,
+      received,
+    } = readBwsTables(buffer);
 
     expect(session).toHaveLength(1);
     expect(session[0].ID).toBe(1);
@@ -163,6 +201,34 @@ describe("writeBwsFromPlan", () => {
     );
     expect(roundData[0].CustomBoards == null || roundData[0].CustomBoards === "").toBe(
       true,
+    );
+
+    expect(playerNumbers).toHaveLength(2);
+    expect(playerNumbers[0]).toEqual(
+      expect.objectContaining({
+        Section: 1,
+        Table: 1,
+        Direction: "N",
+        Name: "Alice North",
+        Updated: true,
+        Round: 0,
+      }),
+    );
+    expect(playerNumbers[1]).toEqual(
+      expect.objectContaining({
+        Direction: "S",
+        Name: "Bob South",
+      }),
+    );
+
+    expect(settings).toHaveLength(1);
+    expect(settings[0]).toEqual(
+      expect.objectContaining({
+        Section: 1,
+        BM2NameSource: 2,
+        BM2ShowPlayerNames: 1,
+        MemberNumbers: false,
+      }),
     );
 
     expect(received).toHaveLength(0);

@@ -1,8 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GET } from "./route";
 
-vi.mock("@/lib/auth/route-auth", () => ({
-  requireRoles: vi.fn(),
+vi.mock("@/lib/auth/route-auth", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/auth/route-auth")>();
+  return {
+    ...actual,
+    requireRoles: vi.fn(),
+  };
+});
+
+vi.mock("@/lib/auth/arbiter-scope", () => ({
+  assertArbiterHonorApiAccess: vi.fn(),
 }));
 
 vi.mock("@/lib/competition/honor-seating-overview", () => ({
@@ -66,6 +74,8 @@ describe("GET /api/arbiter/honor/bridgemate/bws", () => {
         sections: [],
         tables: [],
         roundData: [],
+        playerNumbers: [],
+        settings: [],
       },
       buffer: Buffer.from("bws-bytes"),
     });
