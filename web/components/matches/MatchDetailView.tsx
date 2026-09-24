@@ -284,9 +284,9 @@ export async function MatchDetailView({
             </span>
           ) : null}
         </p>
-        {!userId ? (
+        {!userId && !match.played_at ? (
           <p className="mt-3 text-sm text-zinc-600">
-            {t.rich("signInPrompt", {
+            {t.rich(honorCtx.isHonor ? "signInPromptHonor" : "signInPrompt", {
               link: (chunks) => (
                 <Link
                   href={`/login?next=/matches/${matchId}`}

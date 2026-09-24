@@ -109,9 +109,10 @@
     "status": {
       "played": "Gespeeld",
       "scheduled": "Gepland",
-      "scoredAt": "Gescored op {datetime}"
+      "scoredAt": "De score werd ingegeven op {datetime}"
     },
-    "signInPrompt": "<link>Meld u aan</link> om deze wedstrijd te scoren of opstellingen te beheren als u bij een van de teams hoort.",
+    "signInPrompt": "<link>Meld u aan</link> om het resultaat van deze wedstrijd in te geven of opstellingen te beheren als u bij een van de teams hoort.",
+    "signInPromptHonor": "<link>Meld u aan</link> om opstellingen te beheren als u bij een van de teams hoort.",
     "workflows": {
       "hideReschedule": "Uitstel verbergen",
       "rescheduleMatch": "Wedstrijd verplaatsen",

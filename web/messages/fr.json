@@ -109,9 +109,10 @@
     "status": {
       "played": "Jouée",
       "scheduled": "Programmée",
-      "scoredAt": "Marquée le {datetime}"
+      "scoredAt": "Le score a été saisi le {datetime}"
     },
-    "signInPrompt": "<link>Connectez-vous</link> pour marquer cette rencontre ou gérer les compositions si vous faites partie d'une des équipes.",
+    "signInPrompt": "<link>Connectez-vous</link> pour saisir le résultat de cette rencontre ou gérer les compositions si vous faites partie d'une des équipes.",
+    "signInPromptHonor": "<link>Connectez-vous</link> pour gérer les compositions si vous faites partie d'une des équipes.",
     "workflows": {
       "hideReschedule": "Masquer le report",
       "rescheduleMatch": "Reporter la rencontre",

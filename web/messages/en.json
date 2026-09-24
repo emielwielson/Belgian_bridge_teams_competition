@@ -109,9 +109,10 @@
     "status": {
       "played": "Played",
       "scheduled": "Scheduled",
-      "scoredAt": "Scored {datetime}"
+      "scoredAt": "The score was entered on {datetime}"
     },
-    "signInPrompt": "<link>Sign in</link> to score this match or manage lineups if you are on one of the teams.",
+    "signInPrompt": "<link>Sign in</link> to enter the result of this match or manage lineups if you are on one of the teams.",
+    "signInPromptHonor": "<link>Sign in</link> to manage lineups if you are on one of the teams.",
     "workflows": {
       "hideReschedule": "Hide reschedule",
       "rescheduleMatch": "Reschedule match",
