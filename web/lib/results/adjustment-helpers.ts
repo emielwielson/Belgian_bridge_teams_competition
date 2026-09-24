@@ -5,12 +5,19 @@
 import type {
   AdjustmentMode,
   AverageAward,
+  NonOffendingSide,
+  WeightedMatchImpsOverride,
   WeightedScoreLeg,
   WeightedScoresInput,
+  WeightedAdjustmentInput,
 } from "@/lib/results/types";
 import type { SpecialResultKind } from "@/lib/boards/types";
 
-export type { AverageAward };
+export type {
+  AverageAward,
+  NonOffendingSide,
+  WeightedMatchImpsOverride,
+};
 
 export function computeWeightedSideScore(
   legs: readonly WeightedScoreLeg[],
@@ -114,11 +121,27 @@ export function buildSplitAdjustment(input: {
 }
 
 export function buildWeightedAdjustment(
-  input: WeightedScoresInput & {
+  input: WeightedAdjustmentInput & {
     datumEligible?: boolean | null;
     reason?: string | null;
   },
 ): BuiltAdjustment {
+  if (input.nonOffendingSide !== "ns" && input.nonOffendingSide !== "ew") {
+    throw new Error(
+      "Gewogen score vereist een niet-overtredende partij (NZ of OW).",
+    );
+  }
+  const override = input.matchImpsOverride ?? null;
+  if (override != null) {
+    if (
+      !Number.isInteger(override.homeImps) ||
+      !Number.isInteger(override.awayImps)
+    ) {
+      throw new Error(
+        "Handmatige wedstrijd-IMP’s moeten gehele getallen zijn.",
+      );
+    }
+  }
   const { computedNs, computedEw } = computeWeightedScores(input);
   const datumEligible = input.datumEligible ?? true;
   return {
@@ -136,6 +159,8 @@ export function buildWeightedAdjustment(
       legs: input.legs,
       computedNsScore: computedNs,
       computedEwScore: computedEw,
+      nonOffendingSide: input.nonOffendingSide,
+      matchImpsOverride: override,
     },
   };
 }

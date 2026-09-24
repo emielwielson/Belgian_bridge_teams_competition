@@ -87,8 +87,24 @@ export type WeightedScoreLeg = {
   weightEw: number;
 };
 
+/** Non-offending side at the adjusted table (for .5 IMP rounding). */
+export type NonOffendingSide = "ns" | "ew";
+
+/** Manual home/away match IMP override for a weighted board. */
+export type WeightedMatchImpsOverride = {
+  homeImps: number;
+  awayImps: number;
+};
+
 export type WeightedScoresInput = {
   legs: WeightedScoreLeg[];
+};
+
+export type WeightedAdjustmentInput = WeightedScoresInput & {
+  /** Required for automatic match-IMP weighting (Law 12C1c). */
+  nonOffendingSide: NonOffendingSide;
+  /** When set, bypasses IMP-weighted calc for match IMPs. */
+  matchImpsOverride?: WeightedMatchImpsOverride | null;
 };
 
 /** @deprecated Use WeightedScoresInput / WeightedScoreLeg. */

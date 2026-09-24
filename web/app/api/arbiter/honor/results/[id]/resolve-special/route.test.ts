@@ -125,6 +125,7 @@ describe("POST /api/arbiter/honor/results/[id]/resolve-special", () => {
             { score: 50, weightNs: 1, weightEw: 1 },
             { score: 0, weightNs: 1, weightEw: 2 },
           ],
+          nonOffendingSide: "ns",
           datumEligible: true,
         }),
       }),
@@ -137,12 +138,72 @@ describe("POST /api/arbiter/honor/results/[id]/resolve-special", () => {
           adjustmentMode: "weighted",
           adminAdjustedNsScore: 223,
           adminAdjustedEwScore: 118,
+          adjustmentMeta: expect.objectContaining({
+            nonOffendingSide: "ns",
+            matchImpsOverride: null,
+          }),
         }),
       }),
     );
     expect(revalidateStandingsForGroup).toHaveBeenCalledWith(
       expect.anything(),
       "g1",
+    );
+  });
+
+  it("rejects weighted mode without nonOffendingSide", async () => {
+    const res = await POST(
+      new Request("http://x", {
+        method: "POST",
+        body: JSON.stringify({
+          mode: "weighted",
+          legs: [
+            { score: 100, weightNs: 1, weightEw: 1 },
+            { score: 0, weightNs: 1, weightEw: 1 },
+          ],
+        }),
+      }),
+      { params: Promise.resolve({ id: "r1" }) },
+    );
+    expect(res.status).toBe(400);
+    expect(resolveHonorSpecialResult).not.toHaveBeenCalled();
+  });
+
+  it("accepts weighted mode with match IMP override", async () => {
+    vi.mocked(resolveHonorSpecialResult).mockResolvedValue({
+      ok: true,
+      resultId: "r1",
+      boardId: "b1",
+      groupId: "g1",
+      tournamentRound: 1,
+      matchScores: { refreshed: false, reason: "round_not_published" },
+    });
+
+    const res = await POST(
+      new Request("http://x", {
+        method: "POST",
+        body: JSON.stringify({
+          mode: "weighted",
+          legs: [
+            { score: 100, weightNs: 1, weightEw: 1 },
+            { score: 0, weightNs: 1, weightEw: 1 },
+          ],
+          nonOffendingSide: "ew",
+          matchImpsOverride: { homeImps: 3, awayImps: 1 },
+        }),
+      }),
+      { params: Promise.resolve({ id: "r1" }) },
+    );
+    expect(res.status).toBe(200);
+    expect(resolveHonorSpecialResult).toHaveBeenCalledWith(
+      expect.objectContaining({
+        input: expect.objectContaining({
+          adjustmentMeta: expect.objectContaining({
+            nonOffendingSide: "ew",
+            matchImpsOverride: { homeImps: 3, awayImps: 1 },
+          }),
+        }),
+      }),
     );
   });
 

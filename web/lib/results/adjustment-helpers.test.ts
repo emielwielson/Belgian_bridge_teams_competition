@@ -58,11 +58,43 @@ describe("adjustment-helpers", () => {
         { score: 100, weightNs: 1, weightEw: 1 },
         { score: 0, weightNs: 1, weightEw: 3 },
       ],
+      nonOffendingSide: "ns",
     });
     expect(a.adminAdjustedNsScore).toBe(50);
     expect(a.adminAdjustedEwScore).toBe(25);
     expect(a.adjustmentMeta?.computedNsScore).toBe(50);
     expect(a.adjustmentMeta?.computedEwScore).toBe(25);
+    expect(a.adjustmentMeta?.nonOffendingSide).toBe("ns");
+    expect(a.adjustmentMeta?.matchImpsOverride).toBeNull();
+  });
+
+  it("stores match IMP override on weighted meta", () => {
+    const a = buildWeightedAdjustment({
+      legs: [
+        { score: 100, weightNs: 1, weightEw: 1 },
+        { score: 0, weightNs: 1, weightEw: 1 },
+      ],
+      nonOffendingSide: "ew",
+      matchImpsOverride: { homeImps: 5, awayImps: 0 },
+    });
+    expect(a.adjustmentMeta?.nonOffendingSide).toBe("ew");
+    expect(a.adjustmentMeta?.matchImpsOverride).toEqual({
+      homeImps: 5,
+      awayImps: 0,
+    });
+  });
+
+  it("requires non-offending side for weighted", () => {
+    expect(() =>
+      buildWeightedAdjustment({
+        legs: [
+          { score: 100, weightNs: 1, weightEw: 1 },
+          { score: 0, weightNs: 1, weightEw: 1 },
+        ],
+        // @ts-expect-error intentional
+        nonOffendingSide: null,
+      }),
+    ).toThrow(/niet-overtredende/i);
   });
 
   it("builds average_pm excluding datum, including match, without frozen IMPs", () => {

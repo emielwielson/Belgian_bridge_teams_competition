@@ -5,7 +5,12 @@ import { useTranslations } from "next-intl";
 import { formatContract } from "@/lib/butler/format";
 import { computeWeightedScores, parseAveragePmAwards } from "@/lib/results/adjustment-helpers";
 import { formatAveragePmScoreCell } from "@/lib/results/average-pm-labels";
-import type { AverageAward } from "@/lib/results/types";
+import type { AverageAward, NonOffendingSide } from "@/lib/results/types";
+import {
+  parseWeightedMatchMeta,
+  weightedMatchImpsFromLegs,
+} from "@/lib/scoring/weighted-match-imps";
+import { effectiveNsScoreForDatum } from "@/lib/butler/special-results";
 
 export type HonorResultRow = {
   id: string;
@@ -128,6 +133,10 @@ export function HonorBoardResultsEditor({
     emptyLeg(),
     emptyLeg(),
   ]);
+  const [nonOffendingSide, setNonOffendingSide] =
+    useState<NonOffendingSide>("ns");
+  const [overrideHomeImps, setOverrideHomeImps] = useState("");
+  const [overrideAwayImps, setOverrideAwayImps] = useState("");
   const [nsAward, setNsAward] = useState<AverageAward | null>(null);
   const [ewAward, setEwAward] = useState<AverageAward | null>(null);
   const [contractLevel, setContractLevel] = useState("");
@@ -298,6 +307,9 @@ export function HonorBoardResultsEditor({
     if (!selected) return;
     setDatumEligible(selected.datum_eligible !== false);
     setWeightedLegs([emptyLeg(), emptyLeg()]);
+    setNonOffendingSide("ns");
+    setOverrideHomeImps("");
+    setOverrideAwayImps("");
     const awards = parseAveragePmAwards(selected.adjustment_meta);
     setNsAward(awards.nsAward);
     setEwAward(awards.ewAward);
@@ -314,6 +326,23 @@ export function HonorBoardResultsEditor({
       setMode("cancelled");
     } else if (selected.adjustment_mode === "weighted") {
       setMode("weighted");
+      const weighted = parseWeightedMatchMeta(selected.adjustment_meta);
+      if (weighted.legs) {
+        setWeightedLegs(
+          weighted.legs.map((leg) => ({
+            score: String(leg.score),
+            weightNs: String(leg.weightNs),
+            weightEw: String(leg.weightEw),
+          })),
+        );
+      }
+      if (weighted.nonOffendingSide) {
+        setNonOffendingSide(weighted.nonOffendingSide);
+      }
+      if (weighted.matchImpsOverride) {
+        setOverrideHomeImps(String(weighted.matchImpsOverride.homeImps));
+        setOverrideAwayImps(String(weighted.matchImpsOverride.awayImps));
+      }
     } else if (selected.adjustment_mode === "average_pm") {
       setMode("average_pm");
     } else if (selected.adjustment_mode === "correction") {
@@ -358,6 +387,103 @@ export function HonorBoardResultsEditor({
       return null;
     }
   }, [weightedLegs]);
+
+  const otherRoomNs = useMemo(() => {
+    if (!selected) return null;
+    const otherRoom = selected.room === "open" ? "closed" : "open";
+    const other = rows.find(
+      (r) =>
+        r.match_id === selected.match_id &&
+        r.board_id === selected.board_id &&
+        r.room === otherRoom,
+    );
+    if (!other) return null;
+    if (other.adjustment_mode === "weighted") {
+      const meta = parseWeightedMatchMeta(other.adjustment_meta);
+      if (meta.legs) {
+        return { kind: "weighted" as const, legs: meta.legs, nop: meta.nonOffendingSide };
+      }
+    }
+    const ns = effectiveNsScoreForDatum({
+      adminAdjustedNsScore: other.admin_adjusted_ns_score,
+      nsScore: other.ns_score,
+      computedScore: other.computed_score,
+    });
+    return ns == null ? null : { kind: "fixed" as const, nsScore: ns };
+  }, [selected, rows]);
+
+  const weightedMatchImpsPreview = useMemo(() => {
+    if (overrideHomeImps !== "" || overrideAwayImps !== "") {
+      const homeImps = Number(overrideHomeImps);
+      const awayImps = Number(overrideAwayImps);
+      if (
+        Number.isInteger(homeImps) &&
+        Number.isInteger(awayImps) &&
+        overrideHomeImps !== "" &&
+        overrideAwayImps !== ""
+      ) {
+        return { homeImps, awayImps, source: "override" as const };
+      }
+      return null;
+    }
+    const legs = weightedLegs.map((leg) => ({
+      score: Number(leg.score),
+      weightNs: Number(leg.weightNs),
+      weightEw: Number(leg.weightEw),
+    }));
+    if (
+      legs.length < 2 ||
+      !legs.every(
+        (leg) =>
+          Number.isFinite(leg.score) &&
+          leg.weightNs > 0 &&
+          leg.weightEw > 0,
+      ) ||
+      !otherRoomNs ||
+      !selected
+    ) {
+      return null;
+    }
+    try {
+      const thisSide = {
+        legs,
+        nonOffendingSide,
+      };
+      const open =
+        selected.room === "open"
+          ? thisSide
+          : otherRoomNs.kind === "weighted"
+            ? {
+                legs: otherRoomNs.legs,
+                nonOffendingSide: otherRoomNs.nop,
+              }
+            : { nsScore: otherRoomNs.nsScore };
+      const closed =
+        selected.room === "closed"
+          ? thisSide
+          : otherRoomNs.kind === "weighted"
+            ? {
+                legs: otherRoomNs.legs,
+                nonOffendingSide: otherRoomNs.nop,
+              }
+            : { nsScore: otherRoomNs.nsScore };
+      const result = weightedMatchImpsFromLegs({ open, closed });
+      return {
+        homeImps: result.homeImps,
+        awayImps: result.awayImps,
+        source: "auto" as const,
+      };
+    } catch {
+      return null;
+    }
+  }, [
+    weightedLegs,
+    nonOffendingSide,
+    otherRoomNs,
+    selected,
+    overrideHomeImps,
+    overrideAwayImps,
+  ]);
 
   const selectedScoreLabel = useMemo(() => {
     if (!selected) return "—";
@@ -454,7 +580,14 @@ export function HonorBoardResultsEditor({
             weightNs: Number(leg.weightNs),
             weightEw: Number(leg.weightEw),
           }));
+          payload.nonOffendingSide = nonOffendingSide;
           payload.datumEligible = datumEligible;
+          if (overrideHomeImps !== "" || overrideAwayImps !== "") {
+            payload.matchImpsOverride = {
+              homeImps: Number(overrideHomeImps),
+              awayImps: Number(overrideAwayImps),
+            };
+          }
         }
         if (mode === "average_pm") {
           payload.nsAward = nsAward;
@@ -853,6 +986,73 @@ export function HonorBoardResultsEditor({
                   ew: weightedPreview?.computedEw ?? "—",
                 })}
               </p>
+              <fieldset className="space-y-2">
+                <legend className="text-sm font-medium text-zinc-800">
+                  {t("nonOffendingSide")}
+                </legend>
+                <p className="text-xs text-zinc-600">{t("nonOffendingSideHelp")}</p>
+                <div className="flex flex-wrap gap-4 text-sm">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="nonOffendingSide"
+                      checked={nonOffendingSide === "ns"}
+                      onChange={() => setNonOffendingSide("ns")}
+                      disabled={busy}
+                    />
+                    {t("nonOffendingNs")}
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="nonOffendingSide"
+                      checked={nonOffendingSide === "ew"}
+                      onChange={() => setNonOffendingSide("ew")}
+                      disabled={busy}
+                    />
+                    {t("nonOffendingEw")}
+                  </label>
+                </div>
+              </fieldset>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="flex flex-col gap-1 text-sm">
+                  <span className="text-zinc-600">{t("overrideHomeImps")}</span>
+                  <input
+                    type="number"
+                    step="1"
+                    value={overrideHomeImps}
+                    onChange={(e) => setOverrideHomeImps(e.target.value)}
+                    placeholder={t("overrideImpsOptional")}
+                    className="rounded border border-zinc-300 bg-white px-2 py-1.5"
+                    disabled={busy}
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-sm">
+                  <span className="text-zinc-600">{t("overrideAwayImps")}</span>
+                  <input
+                    type="number"
+                    step="1"
+                    value={overrideAwayImps}
+                    onChange={(e) => setOverrideAwayImps(e.target.value)}
+                    placeholder={t("overrideImpsOptional")}
+                    className="rounded border border-zinc-300 bg-white px-2 py-1.5"
+                    disabled={busy}
+                  />
+                </label>
+              </div>
+              <p className="text-xs text-zinc-600">{t("overrideImpsHelp")}</p>
+              {weightedMatchImpsPreview ? (
+                <p className="text-sm text-zinc-700">
+                  {t("weightedMatchImpsPreview", {
+                    home: weightedMatchImpsPreview.homeImps,
+                    away: weightedMatchImpsPreview.awayImps,
+                  })}
+                </p>
+              ) : (
+                <p className="text-xs text-zinc-500">
+                  {t("weightedMatchImpsPreviewPending")}
+                </p>
+              )}
               <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"

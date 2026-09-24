@@ -14,12 +14,17 @@ import { resolveHonorSpecialResult } from "@/lib/results/special-resolve";
 import type {
   AdjustmentMode,
   AverageAward,
+  NonOffendingSide,
   ResolveSpecialInput,
   WeightedScoreLeg,
 } from "@/lib/results/types";
 import { createServiceClient } from "@/lib/supabase/server-client";
 import { jsonError, jsonFromError } from "@/lib/http/api-response";
 import type { SpecialResultKind } from "@/lib/boards/types";
+import {
+  parseMatchImpsOverride,
+  parseNonOffendingSide,
+} from "@/lib/scoring/weighted-match-imps";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -161,9 +166,43 @@ export async function POST(request: Request, { params }: Params) {
           400,
         );
       }
+      const nonOffendingSide = parseNonOffendingSide(
+        body.nonOffendingSide ?? body.non_offending_side,
+      );
+      if (!nonOffendingSide) {
+        return jsonError(
+          "Gewogen score vereist een niet-overtredende partij (NZ of OW).",
+          400,
+        );
+      }
+      let matchImpsOverride = null as ReturnType<typeof parseMatchImpsOverride>;
+      const rawOverride =
+        body.matchImpsOverride ?? body.match_imps_override ?? null;
+      if (rawOverride != null) {
+        matchImpsOverride = parseMatchImpsOverride(rawOverride);
+        if (!matchImpsOverride) {
+          return jsonError(
+            "Handmatige wedstrijd-IMP’s moeten gehele getallen zijn (thuis en uit).",
+            400,
+          );
+        }
+      } else if (body.homeImps != null || body.awayImps != null) {
+        matchImpsOverride = parseMatchImpsOverride({
+          homeImps: body.homeImps,
+          awayImps: body.awayImps,
+        });
+        if (!matchImpsOverride) {
+          return jsonError(
+            "Handmatige wedstrijd-IMP’s moeten gehele getallen zijn (thuis en uit).",
+            400,
+          );
+        }
+      }
       try {
         const built = buildWeightedAdjustment({
           legs,
+          nonOffendingSide: nonOffendingSide as NonOffendingSide,
+          matchImpsOverride,
           datumEligible:
             body.datumEligible === undefined ? true : Boolean(body.datumEligible),
           reason,

@@ -15,10 +15,19 @@ import {
   hasAveragePmAward,
   parseAveragePmAwards,
 } from "@/lib/results/adjustment-helpers";
-import type { AverageAward } from "@/lib/results/types";
+import type {
+  AverageAward,
+  NonOffendingSide,
+  WeightedScoreLeg,
+} from "@/lib/results/types";
 import { assignedMatchImpsFromRoomAwards } from "@/lib/scoring/honor-match-imps";
 import type { MatchLineupEntry } from "@/lib/scoring/match-operations";
 import { pointsToImps } from "@/lib/scoring/wbf-imp-table";
+import {
+  parseWeightedMatchMeta,
+  weightedMatchImpsFromLegs,
+  type WeightedRoomSide,
+} from "@/lib/scoring/weighted-match-imps";
 import type { Dealer, Vulnerability } from "@/lib/boards/types";
 
 export type ScorecardContract = {
@@ -200,6 +209,14 @@ type BoardAcc = {
   openEwAward: AverageAward | null;
   closedNsAward: AverageAward | null;
   closedEwAward: AverageAward | null;
+  openWeighted: boolean;
+  closedWeighted: boolean;
+  openLegs: WeightedScoreLeg[] | null;
+  closedLegs: WeightedScoreLeg[] | null;
+  openNop: NonOffendingSide | null;
+  closedNop: NonOffendingSide | null;
+  openOverride: { homeImps: number; awayImps: number } | null;
+  closedOverride: { homeImps: number; awayImps: number } | null;
   seenOpen: boolean;
   seenClosed: boolean;
 };
@@ -218,10 +235,14 @@ export function buildScorecardBoardRows(
 
     const included = row.includedInMatchScore !== false;
     const isAveragePm = row.adjustmentMode === "average_pm";
+    const isWeighted = row.adjustmentMode === "weighted";
     const awards = isAveragePm
       ? parseAveragePmAwards(row.adjustmentMeta)
       : { nsAward: null, ewAward: null };
     const hasAverage = isAveragePm && hasAveragePmAward(row.adjustmentMeta);
+    const weightedMeta = isWeighted
+      ? parseWeightedMatchMeta(row.adjustmentMeta)
+      : null;
 
     const entry = byBoard.get(row.boardId) ?? {
       boardId: row.boardId,
@@ -240,6 +261,14 @@ export function buildScorecardBoardRows(
       openEwAward: null,
       closedNsAward: null,
       closedEwAward: null,
+      openWeighted: false,
+      closedWeighted: false,
+      openLegs: null,
+      closedLegs: null,
+      openNop: null,
+      closedNop: null,
+      openOverride: null,
+      closedOverride: null,
       seenOpen: false,
       seenClosed: false,
     };
@@ -254,7 +283,13 @@ export function buildScorecardBoardRows(
         entry.openNsAward = awards.nsAward;
         entry.openEwAward = awards.ewAward;
       }
-      if (!included && !hasAverage) {
+      if (isWeighted && weightedMeta) {
+        entry.openWeighted = true;
+        entry.openLegs = weightedMeta.legs;
+        entry.openNop = weightedMeta.nonOffendingSide;
+        entry.openOverride = weightedMeta.matchImpsOverride;
+      }
+      if (!included && !hasAverage && !isWeighted) {
         entry.openIncluded = false;
         byBoard.set(row.boardId, entry);
         continue;
@@ -270,7 +305,13 @@ export function buildScorecardBoardRows(
         entry.closedNsAward = awards.nsAward;
         entry.closedEwAward = awards.ewAward;
       }
-      if (!included && !hasAverage) {
+      if (isWeighted && weightedMeta) {
+        entry.closedWeighted = true;
+        entry.closedLegs = weightedMeta.legs;
+        entry.closedNop = weightedMeta.nonOffendingSide;
+        entry.closedOverride = weightedMeta.matchImpsOverride;
+      }
+      if (!included && !hasAverage && !isWeighted) {
         entry.closedIncluded = false;
         byBoard.set(row.boardId, entry);
         continue;
@@ -321,6 +362,115 @@ export function buildScorecardBoardRows(
         impsAway: display.impsAway,
         kind: "assigned",
       });
+      continue;
+    }
+
+    if (entry.openWeighted || entry.closedWeighted) {
+      if (!entry.openIncluded || !entry.closedIncluded) {
+        boards.push({
+          boardId: entry.boardId,
+          boardNumber: entry.boardNumber,
+          dealer: entry.dealer,
+          vulnerability: entry.vulnerability,
+          open: entry.open,
+          closed: entry.closed,
+          deltaMp: null,
+          impsHome: 0,
+          impsAway: 0,
+          kind: "excluded",
+        });
+        continue;
+      }
+
+      const override = entry.openOverride ?? entry.closedOverride;
+      if (override) {
+        const display = displayImpsFromAssigned(override);
+        boards.push({
+          boardId: entry.boardId,
+          boardNumber: entry.boardNumber,
+          dealer: entry.dealer,
+          vulnerability: entry.vulnerability,
+          open: entry.open,
+          closed: entry.closed,
+          deltaMp: null,
+          impsHome: display.impsHome,
+          impsAway: display.impsAway,
+          kind: "assigned",
+        });
+        continue;
+      }
+
+      const openSide: WeightedRoomSide | { nsScore: number } | null =
+        entry.openWeighted
+          ? entry.openLegs
+            ? {
+                legs: entry.openLegs,
+                nonOffendingSide: entry.openNop,
+              }
+            : null
+          : entry.openNs != null
+            ? { nsScore: entry.openNs }
+            : null;
+      const closedSide: WeightedRoomSide | { nsScore: number } | null =
+        entry.closedWeighted
+          ? entry.closedLegs
+            ? {
+                legs: entry.closedLegs,
+                nonOffendingSide: entry.closedNop,
+              }
+            : null
+          : entry.closedNs != null
+            ? { nsScore: entry.closedNs }
+            : null;
+
+      if (openSide == null || closedSide == null) {
+        boards.push({
+          boardId: entry.boardId,
+          boardNumber: entry.boardNumber,
+          dealer: entry.dealer,
+          vulnerability: entry.vulnerability,
+          open: entry.open,
+          closed: entry.closed,
+          deltaMp: null,
+          impsHome: 0,
+          impsAway: 0,
+          kind: "excluded",
+        });
+        continue;
+      }
+
+      try {
+        const assigned = weightedMatchImpsFromLegs({
+          open: openSide,
+          closed: closedSide,
+        });
+        const display = displayImpsFromAssigned(assigned);
+        boards.push({
+          boardId: entry.boardId,
+          boardNumber: entry.boardNumber,
+          dealer: entry.dealer,
+          vulnerability: entry.vulnerability,
+          open: entry.open,
+          closed: entry.closed,
+          deltaMp: null,
+          impsHome: display.impsHome,
+          impsAway: display.impsAway,
+          kind: "assigned",
+        });
+      } catch {
+        boards.push({
+          boardId: entry.boardId,
+          boardNumber: entry.boardNumber,
+          dealer: entry.dealer,
+          vulnerability: entry.vulnerability,
+          open: entry.open,
+          closed: entry.closed,
+          deltaMp: null,
+          impsHome: 0,
+          impsAway: 0,
+          kind: "excluded",
+        });
+      }
       continue;
     }
 

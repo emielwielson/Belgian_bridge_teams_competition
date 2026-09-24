@@ -10,9 +10,14 @@ import {
   hasAveragePmAward,
   parseAveragePmAwards,
 } from "@/lib/results/adjustment-helpers";
-import type { AverageAward } from "@/lib/results/types";
+import type { AverageAward, NonOffendingSide, WeightedScoreLeg } from "@/lib/results/types";
 import { pointsToImps } from "@/lib/scoring/wbf-imp-table";
 import { lookupVp } from "@/lib/scoring/vp-lookup";
+import {
+  parseWeightedMatchMeta,
+  weightedMatchImpsFromLegs,
+  type WeightedRoomSide,
+} from "@/lib/scoring/weighted-match-imps";
 
 export type HonorBoardNsPair = {
   kind?: "compared";
@@ -142,6 +147,14 @@ function groupBoardPairs(
       closedEwAward: AverageAward | null;
       openHasAverage: boolean;
       closedHasAverage: boolean;
+      openWeighted: boolean;
+      closedWeighted: boolean;
+      openLegs: WeightedScoreLeg[] | null;
+      closedLegs: WeightedScoreLeg[] | null;
+      openNop: NonOffendingSide | null;
+      closedNop: NonOffendingSide | null;
+      openOverride: { homeImps: number; awayImps: number } | null;
+      closedOverride: { homeImps: number; awayImps: number } | null;
     }
   >();
 
@@ -151,10 +164,14 @@ function groupBoardPairs(
 
     const included = row.included_in_match_score !== false;
     const isAveragePm = row.adjustment_mode === "average_pm";
+    const isWeighted = row.adjustment_mode === "weighted";
     const awards = isAveragePm
       ? parseAveragePmAwards(row.adjustment_meta)
       : { nsAward: null, ewAward: null };
     const hasAverage = isAveragePm && hasAveragePmAward(row.adjustment_meta);
+    const weightedMeta = isWeighted
+      ? parseWeightedMatchMeta(row.adjustment_meta)
+      : null;
 
     const entry = byBoard.get(row.board_id) ?? {
       openNs: null,
@@ -169,6 +186,14 @@ function groupBoardPairs(
       closedEwAward: null,
       openHasAverage: false,
       closedHasAverage: false,
+      openWeighted: false,
+      closedWeighted: false,
+      openLegs: null,
+      closedLegs: null,
+      openNop: null,
+      closedNop: null,
+      openOverride: null,
+      closedOverride: null,
     };
 
     if (row.room === "open") {
@@ -178,17 +203,22 @@ function groupBoardPairs(
         entry.openNsAward = awards.nsAward;
         entry.openEwAward = awards.ewAward;
       }
-      if (!included && !hasAverage) {
+      if (isWeighted && weightedMeta) {
+        entry.openWeighted = true;
+        entry.openLegs = weightedMeta.legs;
+        entry.openNop = weightedMeta.nonOffendingSide;
+        entry.openOverride = weightedMeta.matchImpsOverride;
+      }
+      if (!included && !hasAverage && !isWeighted) {
         entry.openIncluded = false;
         byBoard.set(row.board_id, entry);
         continue;
       }
       if (hasAverage) {
-        // Assigned average replaces table points for match IMPs
         byBoard.set(row.board_id, entry);
         continue;
       }
-      if (!included) {
+      if (!included && !isWeighted) {
         entry.openIncluded = false;
         byBoard.set(row.board_id, entry);
         continue;
@@ -200,7 +230,13 @@ function groupBoardPairs(
         entry.closedNsAward = awards.nsAward;
         entry.closedEwAward = awards.ewAward;
       }
-      if (!included && !hasAverage) {
+      if (isWeighted && weightedMeta) {
+        entry.closedWeighted = true;
+        entry.closedLegs = weightedMeta.legs;
+        entry.closedNop = weightedMeta.nonOffendingSide;
+        entry.closedOverride = weightedMeta.matchImpsOverride;
+      }
+      if (!included && !hasAverage && !isWeighted) {
         entry.closedIncluded = false;
         byBoard.set(row.board_id, entry);
         continue;
@@ -209,11 +245,27 @@ function groupBoardPairs(
         byBoard.set(row.board_id, entry);
         continue;
       }
-      if (!included) {
+      if (!included && !isWeighted) {
         entry.closedIncluded = false;
         byBoard.set(row.board_id, entry);
         continue;
       }
+    }
+
+    // Weighted rooms still need a fallback NS for display/legacy; prefer legs path later
+    if (isWeighted) {
+      const ns = effectiveNsScoreForDatum({
+        adminAdjustedNsScore: row.admin_adjusted_ns_score,
+        nsScore: row.ns_score,
+        computedScore: row.computed_score,
+      });
+      if (row.room === "open") {
+        if (ns != null) entry.openNs = ns;
+      } else if (ns != null) {
+        entry.closedNs = ns;
+      }
+      byBoard.set(row.board_id, entry);
+      continue;
     }
 
     const ns = effectiveNsScoreForDatum({
@@ -245,6 +297,66 @@ function groupBoardPairs(
         closedEw: entry.closedEwAward,
       });
       pairs.push({ kind: "assigned", homeImps, awayImps });
+      continue;
+    }
+
+    if (entry.openWeighted || entry.closedWeighted) {
+      if (!entry.openIncluded || !entry.closedIncluded) {
+        continue;
+      }
+      const override = entry.openOverride ?? entry.closedOverride;
+      if (override) {
+        pairs.push({
+          kind: "assigned",
+          homeImps: override.homeImps,
+          awayImps: override.awayImps,
+        });
+        continue;
+      }
+
+      const openSide: WeightedRoomSide | { nsScore: number } | null =
+        entry.openWeighted
+          ? entry.openLegs
+            ? {
+                legs: entry.openLegs,
+                nonOffendingSide: entry.openNop,
+              }
+            : null
+          : entry.openNs != null
+            ? { nsScore: entry.openNs }
+            : null;
+      const closedSide: WeightedRoomSide | { nsScore: number } | null =
+        entry.closedWeighted
+          ? entry.closedLegs
+            ? {
+                legs: entry.closedLegs,
+                nonOffendingSide: entry.closedNop,
+              }
+            : null
+          : entry.closedNs != null
+            ? { nsScore: entry.closedNs }
+            : null;
+
+      if (openSide == null || closedSide == null) {
+        return {
+          error: `Match ${matchId}: incomplete weighted open/closed pair for board ${boardId}`,
+        };
+      }
+
+      try {
+        const { homeImps, awayImps } = weightedMatchImpsFromLegs({
+          open: openSide,
+          closed: closedSide,
+        });
+        pairs.push({ kind: "assigned", homeImps, awayImps });
+      } catch (e) {
+        return {
+          error:
+            e instanceof Error
+              ? `Match ${matchId} board ${boardId}: ${e.message}`
+              : `Match ${matchId}: ongeldige gewogen score voor board ${boardId}`,
+        };
+      }
       continue;
     }
 
