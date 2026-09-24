@@ -58,6 +58,28 @@ function isMatchLineupReady(m: HonorRoundMatchSeating): boolean {
   );
 }
 
+function LoadingSpinner({ className = "h-3.5 w-3.5" }: { className?: string }) {
+  return (
+    <span
+      className={`inline-block shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent ${className}`}
+      aria-hidden
+    />
+  );
+}
+
+function LoadingLine({ label }: { label: string }) {
+  return (
+    <p
+      className="flex items-center gap-2 text-sm text-zinc-600"
+      role="status"
+      aria-live="polite"
+    >
+      <LoadingSpinner className="h-4 w-4 text-zinc-500" />
+      <span>{label}</span>
+    </p>
+  );
+}
+
 export function HonorSeatingOverview() {
   const t = useTranslations("arbiter.honorSeating");
   const locale = useLocale() as Locale;
@@ -261,14 +283,15 @@ export function HonorSeatingOverview() {
     .slice(0, 3)
     .map((m) => `${m.home_team.name}–${m.away_team.name}`);
   const pendingExtra = pendingMatches.length - pendingNames.length;
-  const lineupsSummary = !bwsReady
-    ? t("lineupsCollapsedIncomplete", {
-        ready: readyMatchCount,
-        count: matchCount,
-      })
-    : null;
+  const lineupsSummary =
+    !loading && !bwsReady
+      ? t("lineupsCollapsedIncomplete", {
+          ready: readyMatchCount,
+          count: matchCount,
+        })
+      : null;
   const lineupsPendingDetail =
-    !bwsReady && pendingNames.length > 0
+    !loading && !bwsReady && pendingNames.length > 0
       ? t("lineupsCollapsedPending", {
           matches:
             pendingExtra > 0
@@ -287,8 +310,9 @@ export function HonorSeatingOverview() {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
+              disabled={loading}
               onClick={() => setMatchDayFilter(null)}
-              className={`rounded border px-2.5 py-1 text-sm ${
+              className={`rounded border px-2.5 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50 ${
                 matchDayFilter == null
                   ? "border-zinc-900 bg-zinc-900 text-white"
                   : "border-zinc-300 bg-white text-zinc-800 hover:border-zinc-500"
@@ -300,6 +324,7 @@ export function HonorSeatingOverview() {
               <button
                 key={day}
                 type="button"
+                disabled={loading}
                 onClick={() => {
                   setMatchDayFilter(day);
                   const first = (payload.round_options ?? []).find(
@@ -309,7 +334,7 @@ export function HonorSeatingOverview() {
                     void onRoundChange(first.round);
                   }
                 }}
-                className={`rounded border px-2.5 py-1 text-sm ${
+                className={`rounded border px-2.5 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50 ${
                   matchDayFilter === day
                     ? "border-zinc-900 bg-zinc-900 text-white"
                     : "border-zinc-300 bg-white text-zinc-800 hover:border-zinc-500"
@@ -321,26 +346,38 @@ export function HonorSeatingOverview() {
           </div>
         </div>
 
-        <label className="flex flex-col gap-1 text-sm text-zinc-700">
-          <span className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-            {t("round")}
-          </span>
-          <select
-            className="min-w-[14rem] rounded border border-zinc-300 bg-white px-2 py-1.5"
-            value={round ?? payload.round}
-            onChange={(e) => void onRoundChange(Number(e.target.value))}
-            disabled={loading}
-          >
-            {roundOptions.map((opt) => (
-              <option key={opt.round} value={opt.round}>
-                {t("roundOption", {
-                  round: opt.round,
-                  time: opt.slotTime,
-                })}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="flex flex-col gap-1">
+          <label className="flex flex-col gap-1 text-sm text-zinc-700">
+            <span className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+              {t("round")}
+            </span>
+            <select
+              className="min-w-[14rem] rounded border border-zinc-300 bg-white px-2 py-1.5"
+              value={round ?? payload.round}
+              onChange={(e) => void onRoundChange(Number(e.target.value))}
+              disabled={loading}
+            >
+              {roundOptions.map((opt) => (
+                <option key={opt.round} value={opt.round}>
+                  {t("roundOption", {
+                    round: opt.round,
+                    time: opt.slotTime,
+                  })}
+                </option>
+              ))}
+            </select>
+          </label>
+          {loading ? (
+            <p
+              className="flex items-center gap-1.5 text-xs text-zinc-600"
+              role="status"
+              aria-live="polite"
+            >
+              <LoadingSpinner className="h-3 w-3 text-zinc-500" />
+              <span>{t("loadingShort")}</span>
+            </p>
+          ) : null}
+        </div>
       </div>
 
       {error ? (
@@ -361,20 +398,31 @@ export function HonorSeatingOverview() {
               <h2 className="text-lg font-semibold text-zinc-900">
                 {t("lineupsStepTitle")}
               </h2>
-              <span
-                className={`rounded border px-2 py-0.5 text-xs font-medium ${
-                  bwsReady
-                    ? "border-emerald-300 bg-emerald-50 text-emerald-900"
-                    : "border-amber-300 bg-amber-50 text-amber-950"
-                }`}
-              >
-                {bwsReady
-                  ? t("lineupsStatusReady")
-                  : t("lineupsStatusWaiting", {
-                      ready: readyMatchCount,
-                      count: matchCount,
-                    })}
-              </span>
+              {loading ? (
+                <span
+                  className="inline-flex items-center gap-1.5 rounded border border-zinc-300 bg-zinc-50 px-2 py-0.5 text-xs font-medium text-zinc-700"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <LoadingSpinner className="h-3 w-3" />
+                  {t("loadingShort")}
+                </span>
+              ) : (
+                <span
+                  className={`rounded border px-2 py-0.5 text-xs font-medium ${
+                    bwsReady
+                      ? "border-emerald-300 bg-emerald-50 text-emerald-900"
+                      : "border-amber-300 bg-amber-50 text-amber-950"
+                  }`}
+                >
+                  {bwsReady
+                    ? t("lineupsStatusReady")
+                    : t("lineupsStatusWaiting", {
+                        ready: readyMatchCount,
+                        count: matchCount,
+                      })}
+                </span>
+              )}
             </div>
             <p className="mt-1 text-sm text-zinc-600">{phaseLabel}</p>
             {!lineupsOpen && (lineupsSummary || lineupsPendingDetail) ? (
@@ -403,7 +451,7 @@ export function HonorSeatingOverview() {
               </h3>
               <div className="mt-3 grid gap-3 md:grid-cols-2">
                 {loading && payload.matches.length === 0 ? (
-                  <p className="text-sm text-zinc-600">{t("loading")}</p>
+                  <LoadingLine label={t("loading")} />
                 ) : (
                   <>
                     {payload.matches.map((match) => {
@@ -515,7 +563,9 @@ export function HonorSeatingOverview() {
               </h3>
               <p className="mt-1 text-sm text-zinc-600">{t("tablesHint")}</p>
               {loading && payload.tables.length === 0 ? (
-                <p className="mt-3 text-sm text-zinc-600">{t("loading")}</p>
+                <div className="mt-3">
+                  <LoadingLine label={t("loading")} />
+                </div>
               ) : (
               <div className="mt-3 overflow-x-auto">
                 <table className="min-w-full border-collapse text-sm">

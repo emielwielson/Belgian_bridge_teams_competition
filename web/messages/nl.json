@@ -477,6 +477,7 @@
       "pageTitle": "Eredivisie-opstelling",
       "pageDescription": "Speeldagoverzicht van open/gesloten kamer, tafelnummers en vastgelegde line-ups voor de Eredivisie.",
       "loading": "Eredivisie-opstelling laden…",
+      "loadingShort": "Laden…",
       "loadFailed": "Eredivisie-opstelling laden mislukt",
       "none": "Geen Eredivisie-opstellingsgegevens beschikbaar.",
       "matchDay": "Speeldag",
