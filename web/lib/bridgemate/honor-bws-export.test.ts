@@ -202,6 +202,12 @@ describe("buildHonorBwsSessionInput", () => {
       BM2NameSource: 2,
       BM2ShowPlayerNames: 1,
       MemberNumbers: false,
+      LeadCard: true,
+      BM2ValidateLeadCard: true,
+      HandRecordValidation: true,
+      BM2ViewHandRecord: false,
+      BM2ShowHands: false,
+      BM3ViewHandrecord: false,
     });
     expect(exported.plan.playerNumbers[0]).toMatchObject({
       table: 1,
