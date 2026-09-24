@@ -84,6 +84,7 @@ export async function POST(
       round,
       boardCount: result.boardCount,
       boardIds: result.boardIds,
+      removedStale: result.removedStale,
       filename,
       uploaded_by: user.id,
     });
