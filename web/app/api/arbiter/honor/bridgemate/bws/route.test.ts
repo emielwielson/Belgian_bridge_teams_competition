@@ -33,11 +33,21 @@ import {
   resolveActiveHonorGroup,
 } from "@/lib/competition/honor-seating-overview";
 
+function mockSupabaseBoards(rows: unknown[] = [{ board_number: 1, hands: {} }]) {
+  const order = vi.fn().mockResolvedValue({ data: rows, error: null });
+  const eqRound = vi.fn().mockReturnValue({ order });
+  const eqGroup = vi.fn().mockReturnValue({ eq: eqRound });
+  const select = vi.fn().mockReturnValue({ eq: eqGroup });
+  return {
+    from: vi.fn().mockReturnValue({ select }),
+  };
+}
+
 describe("GET /api/arbiter/honor/bridgemate/bws", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(requireRoles).mockResolvedValue({
-      supabase: {},
+      supabase: mockSupabaseBoards(),
       user: { id: "u1" },
       roles: ["arbiter"],
     } as never);
@@ -90,6 +100,11 @@ describe("GET /api/arbiter/honor/bridgemate/bws", () => {
     );
     const bytes = Buffer.from(await res.arrayBuffer());
     expect(bytes.toString()).toBe("bws-bytes");
+    expect(exportHonorRoundBws).toHaveBeenCalledWith(
+      1,
+      [{ match_id: "m1" }],
+      [{ board_number: 1, hands: {} }],
+    );
   });
 
   it("returns 400 with errors when seating incomplete", async () => {
@@ -105,6 +120,26 @@ describe("GET /api/arbiter/honor/bridgemate/bws", () => {
     const body = await res.json();
     expect(body.error).toMatch(/vastgelegd/);
     expect(body.errors).toHaveLength(1);
+  });
+
+  it("returns 400 when boards are missing", async () => {
+    vi.mocked(requireRoles).mockResolvedValue({
+      supabase: mockSupabaseBoards([]),
+      user: { id: "u1" },
+      roles: ["arbiter"],
+    } as never);
+    vi.mocked(exportHonorRoundBws).mockReturnValue({
+      ok: false,
+      errors: ["Upload eerst de PBN-handrecords vóór .bws-export."],
+    });
+
+    const res = await GET(
+      new Request("http://localhost/api/arbiter/honor/bridgemate/bws?round=1"),
+    );
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toMatch(/PBN/);
+    expect(exportHonorRoundBws).toHaveBeenCalledWith(1, [{ match_id: "m1" }], []);
   });
 
   it("404 when Honor group missing", async () => {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { assertArbiterHonorApiAccess } from "@/lib/auth/arbiter-scope";
 import { ARBITER_ACCESS_ROLES } from "@/lib/auth/roles";
 import { requireRoles } from "@/lib/auth/route-auth";
+import type { BoardHands } from "@/lib/boards/types";
 import { exportHonorRoundBws } from "@/lib/bridgemate/honor-bws-export";
 import {
   defaultHonorRound,
@@ -32,7 +33,29 @@ export async function GET(request: Request) {
         : defaultHonorRound(meta);
 
     const seating = await loadHonorRoundSeating(supabase, group, round);
-    const exported = exportHonorRoundBws(round, seating.matches);
+
+    const { data: boardRows, error: boardsError } = await supabase
+      .from("honor_boards")
+      .select("board_number, hands")
+      .eq("group_id", group.id)
+      .eq("tournament_round", round)
+      .order("board_number", { ascending: true });
+
+    if (boardsError) {
+      return jsonError(boardsError.message, 500);
+    }
+
+    const boards = (boardRows ?? [])
+      .filter(
+        (row): row is { board_number: number; hands: BoardHands } =>
+          row.hands != null && typeof row.board_number === "number",
+      )
+      .map((row) => ({
+        board_number: row.board_number,
+        hands: row.hands as BoardHands,
+      }));
+
+    const exported = exportHonorRoundBws(round, seating.matches, boards);
     if (!exported.ok) {
       return NextResponse.json(
         {

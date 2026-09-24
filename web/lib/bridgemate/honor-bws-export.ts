@@ -13,6 +13,10 @@ import {
   type BwsSessionResult,
 } from "@/lib/bridgemate/bws-session";
 import {
+  honorBoardsToHandRecords,
+  type HonorBoardForHandRecord,
+} from "@/lib/bridgemate/hand-record";
+import {
   honorBwsNameSettings,
   playerNumbersFromHonorMatches,
 } from "@/lib/bridgemate/honor-bws-player-numbers";
@@ -20,6 +24,7 @@ import { writeBwsFromPlan } from "@/lib/bridgemate/write-bws";
 import type { HonorRoundMatchSeating } from "@/lib/competition/honor-seating-overview";
 
 const SECTION = "A";
+const SECTION_ID = 1;
 
 export function bridgematePairNumber(
   scheduleSlot: number,
@@ -137,8 +142,16 @@ export type HonorBwsExportResult =
 export function exportHonorRoundBws(
   tournamentRoundNumber: number,
   matches: HonorRoundMatchSeating[],
+  boards: HonorBoardForHandRecord[],
   options?: { guid?: string; template?: Buffer; now?: Date },
 ): HonorBwsExportResult {
+  if (!boards.length) {
+    return {
+      ok: false,
+      errors: ["Upload eerst de PBN-handrecords vóór .bws-export."],
+    };
+  }
+
   const builtInput = buildHonorBwsSessionInput(tournamentRoundNumber, matches);
   if (!builtInput.ok) return builtInput;
 
@@ -153,11 +166,15 @@ export function exportHonorRoundBws(
     settings: [honorBwsNameSettings()],
   };
 
+  const handRecords = honorBoardsToHandRecords(boards, SECTION_ID);
+
   try {
     const buffer = writeBwsFromPlan(
       plan,
       options?.template,
       options?.now,
+      [],
+      handRecords,
     );
     return { ok: true, plan, buffer };
   } catch (e) {

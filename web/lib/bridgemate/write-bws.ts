@@ -1,5 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
+import type { BwsHandRecordInsert } from "@/lib/bridgemate/hand-record";
 import type { BwsSessionPlan } from "@/lib/bridgemate/bws-session";
 import { insertRows } from "@/lib/bridgemate/jet4-insert";
 
@@ -46,12 +47,13 @@ export type BwsReceivedDataInsert = {
   SuspiciousContract?: number | null;
 };
 
-/** Write Session/Section/Tables/RoundData/PlayerNumbers/Settings (and optional ReceivedData). */
+/** Write Session/Section/Tables/RoundData/PlayerNumbers/Settings (and optional HandRecord/ReceivedData). */
 export function writeBwsFromPlan(
   plan: BwsSessionPlan,
   template: Buffer = loadBwsTemplate(),
   now: Date = new Date(),
   receivedData: BwsReceivedDataInsert[] = [],
+  handRecords: BwsHandRecordInsert[] = [],
 ): Buffer {
   let buffer: Buffer = Buffer.from(template);
 
@@ -154,6 +156,10 @@ export function writeBwsFromPlan(
 
   if (plan.settings.length) {
     buffer = Buffer.from(insertRows(buffer, "Settings", plan.settings, now));
+  }
+
+  if (handRecords.length) {
+    buffer = Buffer.from(insertRows(buffer, "HandRecord", handRecords, now));
   }
 
   if (receivedData.length) {

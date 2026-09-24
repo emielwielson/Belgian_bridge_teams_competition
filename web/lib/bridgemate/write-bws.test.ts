@@ -3,9 +3,18 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { describe, expect, it } from "vitest";
+import type { BoardHands } from "@/lib/boards/types";
+import { boardHandsToHandRecordRow } from "./hand-record";
 import { buildBwsSession } from "./bws-session";
 import { honorBwsNameSettings } from "./honor-bws-player-numbers";
 import { writeBwsFromPlan } from "./write-bws";
+
+const sampleHands: BoardHands = {
+  N: { S: "AK2", H: "QJ3", D: "T98", C: "7654" },
+  E: { S: "QJ3", H: "AK2", D: "7654", C: "T98" },
+  S: { S: "T98", H: "7654", D: "AK2", C: "QJ3" },
+  W: { S: "7654", H: "T98", D: "QJ3", C: "AK2" },
+};
 
 function honorPlan() {
   const built = buildBwsSession(
@@ -116,6 +125,7 @@ function readBwsTables(buffer: Buffer) {
       roundData: dump("RoundData"),
       playerNumbers: dump("PlayerNumbers"),
       settings: dump("Settings"),
+      handRecord: dump("HandRecord"),
       received: dump("ReceivedData"),
     };
     console.log(JSON.stringify(data, (_, v) => (v instanceof Date ? v.toISOString() : v)));
@@ -132,6 +142,7 @@ function readBwsTables(buffer: Buffer) {
       roundData: Array<Record<string, unknown>>;
       playerNumbers: Array<Record<string, unknown>>;
       settings: Array<Record<string, unknown>>;
+      handRecord: Array<Record<string, unknown>>;
       received: Array<Record<string, unknown>>;
     };
   } finally {
@@ -158,6 +169,7 @@ describe("writeBwsFromPlan", () => {
       roundData,
       playerNumbers,
       settings,
+      handRecord,
       received,
     } = readBwsTables(buffer);
 
@@ -231,6 +243,35 @@ describe("writeBwsFromPlan", () => {
       }),
     );
 
+    expect(handRecord).toHaveLength(0);
     expect(received).toHaveLength(0);
+  });
+
+  it("inserts HandRecord rows readable by mdb-reader", () => {
+    const template = fs.readFileSync(
+      path.join(process.cwd(), "fixtures/bridgemate/Template_Access2000_v5.bws"),
+    );
+    const plan = honorPlan();
+    const hands = boardHandsToHandRecordRow(1, 33, sampleHands);
+    const buffer = writeBwsFromPlan(
+      plan,
+      template,
+      new Date("2026-08-17T12:00:00Z"),
+      [],
+      [hands],
+    );
+
+    const { handRecord } = readBwsTables(buffer);
+    expect(handRecord).toHaveLength(1);
+    expect(handRecord[0]).toEqual(
+      expect.objectContaining({
+        Section: 1,
+        Board: 33,
+        NorthSpades: "AK2",
+        NorthHearts: "QJ3",
+        EastClubs: "T98",
+        WestClubs: "AK2",
+      }),
+    );
   });
 });

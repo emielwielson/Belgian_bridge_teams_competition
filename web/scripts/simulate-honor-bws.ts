@@ -80,7 +80,25 @@ async function main() {
   }
 
   const seating = await loadHonorRoundSeating(supabase, group, round);
-  const exported = exportHonorRoundBws(round, seating.matches, {
+
+  const { data: boardRows, error: boardsError } = await supabase
+    .from("honor_boards")
+    .select("board_number, hands")
+    .eq("group_id", group.id)
+    .eq("tournament_round", round)
+    .order("board_number", { ascending: true });
+  if (boardsError) {
+    console.error(boardsError.message);
+    process.exit(1);
+  }
+  const boards = (boardRows ?? [])
+    .filter((row) => row.hands != null)
+    .map((row) => ({
+      board_number: row.board_number as number,
+      hands: row.hands as import("../lib/boards/types").BoardHands,
+    }));
+
+  const exported = exportHonorRoundBws(round, seating.matches, boards, {
     guid: `sim-honor-r${round}-0000-0000-0000-000000000001`,
     now: new Date("2026-09-18T12:00:00Z"),
   });

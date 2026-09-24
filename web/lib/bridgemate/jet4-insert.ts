@@ -149,6 +149,7 @@ const TEMPLATE_TDEF_PAGES: Record<string, number> = {
   ReceivedData: 75,
   PlayerNumbers: 73,
   Settings: 86,
+  HandRecord: 29,
 };
 
 export function tableMetaFromPage(

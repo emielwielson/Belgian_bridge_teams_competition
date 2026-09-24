@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { BoardHands } from "@/lib/boards/types";
 import {
   bridgematePairNumber,
   buildHonorBwsSessionInput,
@@ -11,6 +12,15 @@ import {
 } from "./honor-bws-player-numbers";
 import type { HonorRoundMatchSeating } from "@/lib/competition/honor-seating-overview";
 import type { HonorDirection, HonorRoom } from "@/lib/competition/honor-lineup";
+
+const sampleHands: BoardHands = {
+  N: { S: "AK2", H: "QJ3", D: "T98", C: "7654" },
+  E: { S: "QJ3", H: "AK2", D: "7654", C: "T98" },
+  S: { S: "T98", H: "7654", D: "AK2", C: "QJ3" },
+  W: { S: "7654", H: "T98", D: "QJ3", C: "AK2" },
+};
+
+const sampleBoards = [{ board_number: 1, hands: sampleHands }];
 
 function seat(
   team_id: string,
@@ -177,7 +187,7 @@ describe("buildHonorBwsSessionInput", () => {
       },
     ]);
 
-    const exported = exportHonorRoundBws(1, matches, {
+    const exported = exportHonorRoundBws(1, matches, sampleBoards, {
       guid: "11111111-2222-3333-4444-555555555555",
     });
     expect(exported.ok).toBe(true);
@@ -223,6 +233,23 @@ describe("buildHonorBwsSessionInput", () => {
       [8, 4],
     ]);
     expect(exported.buffer.length).toBeGreaterThan(0);
+  });
+
+  it("rejects export without boards", () => {
+    const matches = [
+      readyMatch({
+        match_id: "m1",
+        home_team: { id: "t1", name: "Home" },
+        away_team: { id: "t2", name: "Away" },
+        home_slot: 1,
+        away_slot: 2,
+        venue_tables: { openTable: 1, closedTable: 2 },
+      }),
+    ];
+    const exported = exportHonorRoundBws(1, matches, []);
+    expect(exported.ok).toBe(false);
+    if (exported.ok) return;
+    expect(exported.errors[0]).toMatch(/PBN/);
   });
 
   it("rejects incomplete lineups", () => {

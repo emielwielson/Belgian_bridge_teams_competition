@@ -11,8 +11,13 @@ import type {
 import type { Locale } from "@/i18n/config";
 import { toIntlLocale } from "@/i18n/intl-locale";
 import { formatBrussels } from "@/lib/time/brussels";
-import { HonorButlerImportPanel } from "@/components/arbiter/HonorButlerImportPanel";
 import { HonorBoardResultsEditor } from "@/components/arbiter/HonorBoardResultsEditor";
+import {
+  HonorButlerWorkflow,
+  HonorBwsUploadStep,
+  HonorPbnUploadStep,
+  HonorPublishStep,
+} from "@/components/arbiter/HonorButlerImportPanel";
 
 type RoundOption = {
   round: number;
@@ -66,6 +71,7 @@ export function HonorSeatingOverview() {
   const [unlocking, setUnlocking] = useState<string | null>(null);
   const [downloadingBws, setDownloadingBws] = useState(false);
   const [lineupsOpen, setLineupsOpen] = useState(true);
+  const [boardCount, setBoardCount] = useState(0);
   const loadGeneration = useRef(0);
 
   const load = useCallback(async (roundArg?: number | null) => {
@@ -130,6 +136,12 @@ export function HonorSeatingOverview() {
   const bwsReady =
     (payload?.matches.length ?? 0) > 0 &&
     readyMatchCount === (payload?.matches.length ?? 0);
+  const boardsReady = boardCount > 0;
+  const downloadReady = bwsReady && boardsReady;
+
+  useEffect(() => {
+    setBoardCount(0);
+  }, [round]);
 
   useEffect(() => {
     if (round == null) return;
@@ -143,6 +155,7 @@ export function HonorSeatingOverview() {
 
   async function onRoundChange(next: number) {
     setRound(next);
+    setBoardCount(0);
     // Drop previous-round seating immediately so filters stay usable without
     // showing the wrong matches/tables while the new round loads.
     setPayload((prev) =>
@@ -199,7 +212,7 @@ export function HonorSeatingOverview() {
 
   async function downloadBws() {
     const r = round ?? payload?.round;
-    if (r == null || !bwsReady) return;
+    if (r == null || !downloadReady) return;
     setDownloadingBws(true);
     setError(null);
     try {
@@ -570,34 +583,47 @@ export function HonorSeatingOverview() {
         ) : null}
       </section>
 
-      <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm font-medium text-zinc-900">{t("bwsStepTitle")}</p>
-            <p className="mt-0.5 text-xs text-zinc-600">
-              {bwsReady ? t("downloadBwsHint") : t("downloadBwsNotReady")}
-            </p>
+      <HonorButlerWorkflow
+        round={round}
+        enabled={round != null && !!payload}
+        onBoardCountChange={setBoardCount}
+      >
+        <HonorPbnUploadStep />
+
+        <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-medium text-zinc-900">
+                {t("bwsStepTitle")}
+              </p>
+              <p className="mt-0.5 text-xs text-zinc-600">
+                {!bwsReady
+                  ? t("downloadBwsNotReady")
+                  : !boardsReady
+                    ? t("downloadBwsNoBoards")
+                    : t("downloadBwsHint")}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => void downloadBws()}
+              disabled={!downloadReady || downloadingBws || loading}
+              className="shrink-0 rounded border border-zinc-900 bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:border-zinc-300 disabled:bg-zinc-300"
+            >
+              {downloadingBws ? t("downloadingBws") : t("downloadBws")}
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => void downloadBws()}
-            disabled={!bwsReady || downloadingBws || loading}
-            className="shrink-0 rounded border border-zinc-900 bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:border-zinc-300 disabled:bg-zinc-300"
-          >
-            {downloadingBws ? t("downloadingBws") : t("downloadBws")}
-          </button>
         </div>
-      </div>
 
-      <HonorButlerImportPanel
-        round={round}
-        enabled={round != null && !!payload}
-      />
+        <HonorBwsUploadStep />
 
-      <HonorBoardResultsEditor
-        round={round}
-        enabled={round != null && !!payload}
-      />
+        <HonorBoardResultsEditor
+          round={round}
+          enabled={round != null && !!payload}
+        />
+
+        <HonorPublishStep />
+      </HonorButlerWorkflow>
     </div>
   );
 }
