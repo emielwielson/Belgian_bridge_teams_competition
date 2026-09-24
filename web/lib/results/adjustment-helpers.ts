@@ -23,8 +23,8 @@ export function computeWeightedSideScore(
   legs: readonly WeightedScoreLeg[],
   side: "ns" | "ew",
 ): number {
-  if (legs.length < 2) {
-    throw new Error("Gewogen score vereist minstens twee scores.");
+  if (legs.length < 1) {
+    throw new Error("Gewogen score vereist minstens één score.");
   }
   let weightedSum = 0;
   let weightSum = 0;

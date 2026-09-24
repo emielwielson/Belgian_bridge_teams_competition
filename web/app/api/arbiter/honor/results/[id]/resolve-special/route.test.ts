@@ -151,6 +151,38 @@ describe("POST /api/arbiter/honor/results/[id]/resolve-special", () => {
     );
   });
 
+  it("accepts weighted mode with a single score", async () => {
+    vi.mocked(resolveHonorSpecialResult).mockResolvedValue({
+      ok: true,
+      resultId: "r1",
+      boardId: "b1",
+      groupId: "g1",
+      tournamentRound: 1,
+      matchScores: { refreshed: false, reason: "round_not_published" },
+    });
+
+    const res = await POST(
+      new Request("http://x", {
+        method: "POST",
+        body: JSON.stringify({
+          mode: "weighted",
+          legs: [{ score: 420, weightNs: 1, weightEw: 1 }],
+          nonOffendingSide: "ns",
+        }),
+      }),
+      { params: Promise.resolve({ id: "r1" }) },
+    );
+    expect(res.status).toBe(200);
+    expect(resolveHonorSpecialResult).toHaveBeenCalledWith(
+      expect.objectContaining({
+        input: expect.objectContaining({
+          adminAdjustedNsScore: 420,
+          adminAdjustedEwScore: 420,
+        }),
+      }),
+    );
+  });
+
   it("rejects weighted mode without nonOffendingSide", async () => {
     const res = await POST(
       new Request("http://x", {

@@ -131,7 +131,6 @@ export function HonorBoardResultsEditor({
   const [datumEligible, setDatumEligible] = useState(true);
   const [weightedLegs, setWeightedLegs] = useState<WeightedLegForm[]>([
     emptyLeg(),
-    emptyLeg(),
   ]);
   const [nonOffendingSide, setNonOffendingSide] =
     useState<NonOffendingSide>("ns");
@@ -306,7 +305,7 @@ export function HonorBoardResultsEditor({
   useEffect(() => {
     if (!selected) return;
     setDatumEligible(selected.datum_eligible !== false);
-    setWeightedLegs([emptyLeg(), emptyLeg()]);
+    setWeightedLegs([emptyLeg()]);
     setNonOffendingSide("ns");
     setOverrideHomeImps("");
     setOverrideAwayImps("");
@@ -371,7 +370,7 @@ export function HonorBoardResultsEditor({
       weightEw: Number(leg.weightEw),
     }));
     if (
-      legs.length < 2 ||
+      legs.length < 1 ||
       !legs.every(
         (leg) =>
           Number.isFinite(leg.score) &&
@@ -388,7 +387,7 @@ export function HonorBoardResultsEditor({
     }
   }, [weightedLegs]);
 
-  const otherRoomNs = useMemo(() => {
+  const otherRoomResult = useMemo(() => {
     if (!selected) return null;
     const otherRoom = selected.room === "open" ? "closed" : "open";
     const other = rows.find(
@@ -398,19 +397,82 @@ export function HonorBoardResultsEditor({
         r.room === otherRoom,
     );
     if (!other) return null;
+
+    const contract = formatContract({
+      contractLevel: other.contract_level,
+      contractDenomination: other.contract_denomination,
+      doubling: other.doubling ?? "NONE",
+      declarer: other.declarer,
+      tricksResult: other.tricks_result,
+    });
+    const nsPlayers = pairNames(other.players ?? [], "N", "S");
+    const ewPlayers = pairNames(other.players ?? [], "E", "W");
+
     if (other.adjustment_mode === "weighted") {
       const meta = parseWeightedMatchMeta(other.adjustment_meta);
       if (meta.legs) {
-        return { kind: "weighted" as const, legs: meta.legs, nop: meta.nonOffendingSide };
+        return {
+          kind: "weighted" as const,
+          room: otherRoom,
+          tableNumber: other.table_number,
+          legs: meta.legs,
+          nop: meta.nonOffendingSide,
+          nsScore:
+            other.admin_adjusted_ns_score ??
+            effectiveNsScoreForDatum({
+              adminAdjustedNsScore: other.admin_adjusted_ns_score,
+              nsScore: other.ns_score,
+              computedScore: other.computed_score,
+            }),
+          contract,
+          nsPlayers,
+          ewPlayers,
+        };
       }
+    }
+    if (other.adjustment_mode === "average_pm") {
+      return {
+        kind: "average_pm" as const,
+        room: otherRoom,
+        tableNumber: other.table_number,
+        scoreLabel:
+          formatAveragePmScoreCell(other.adjustment_meta, {
+            plus: t("averageAwardPlus"),
+            minus: t("averageAwardMinus"),
+            zero: t("averageAwardZero"),
+          }) ?? t("modeAveragePm"),
+        contract,
+        nsPlayers,
+        ewPlayers,
+      };
     }
     const ns = effectiveNsScoreForDatum({
       adminAdjustedNsScore: other.admin_adjusted_ns_score,
       nsScore: other.ns_score,
       computedScore: other.computed_score,
     });
-    return ns == null ? null : { kind: "fixed" as const, nsScore: ns };
-  }, [selected, rows]);
+    if (ns == null) {
+      return {
+        kind: "missing" as const,
+        room: otherRoom,
+        tableNumber: other.table_number,
+        contract,
+        nsPlayers,
+        ewPlayers,
+      };
+    }
+    return {
+      kind: "fixed" as const,
+      room: otherRoom,
+      tableNumber: other.table_number,
+      nsScore: ns,
+      legs: null as null,
+      nop: null as null,
+      contract,
+      nsPlayers,
+      ewPlayers,
+    };
+  }, [selected, rows, t]);
 
   const weightedMatchImpsPreview = useMemo(() => {
     if (overrideHomeImps !== "" || overrideAwayImps !== "") {
@@ -432,14 +494,15 @@ export function HonorBoardResultsEditor({
       weightEw: Number(leg.weightEw),
     }));
     if (
-      legs.length < 2 ||
+      legs.length < 1 ||
       !legs.every(
         (leg) =>
           Number.isFinite(leg.score) &&
           leg.weightNs > 0 &&
           leg.weightEw > 0,
       ) ||
-      !otherRoomNs ||
+      !otherRoomResult ||
+      (otherRoomResult.kind !== "fixed" && otherRoomResult.kind !== "weighted") ||
       !selected
     ) {
       return null;
@@ -449,24 +512,15 @@ export function HonorBoardResultsEditor({
         legs,
         nonOffendingSide,
       };
-      const open =
-        selected.room === "open"
-          ? thisSide
-          : otherRoomNs.kind === "weighted"
-            ? {
-                legs: otherRoomNs.legs,
-                nonOffendingSide: otherRoomNs.nop,
-              }
-            : { nsScore: otherRoomNs.nsScore };
-      const closed =
-        selected.room === "closed"
-          ? thisSide
-          : otherRoomNs.kind === "weighted"
-            ? {
-                legs: otherRoomNs.legs,
-                nonOffendingSide: otherRoomNs.nop,
-              }
-            : { nsScore: otherRoomNs.nsScore };
+      const otherSide =
+        otherRoomResult.kind === "weighted"
+          ? {
+              legs: otherRoomResult.legs,
+              nonOffendingSide: otherRoomResult.nop,
+            }
+          : { nsScore: otherRoomResult.nsScore };
+      const open = selected.room === "open" ? thisSide : otherSide;
+      const closed = selected.room === "closed" ? thisSide : otherSide;
       const result = weightedMatchImpsFromLegs({ open, closed });
       return {
         homeImps: result.homeImps,
@@ -479,7 +533,7 @@ export function HonorBoardResultsEditor({
   }, [
     weightedLegs,
     nonOffendingSide,
-    otherRoomNs,
+    otherRoomResult,
     selected,
     overrideHomeImps,
     overrideAwayImps,
@@ -900,6 +954,75 @@ export function HonorBoardResultsEditor({
 
           {mode === "weighted" ? (
             <div className="mt-3 space-y-3">
+              <div className="rounded border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-800">
+                <p className="font-medium">{t("otherTableTitle")}</p>
+                {otherRoomResult == null ? (
+                  <p className="mt-1 text-xs text-zinc-500">
+                    {t("otherTableMissing")}
+                  </p>
+                ) : (
+                  <div className="mt-1 space-y-0.5 text-xs text-zinc-700">
+                    <p>
+                      {t("otherTableRoom", {
+                        room:
+                          otherRoomResult.room === "open"
+                            ? t("roomOpen")
+                            : t("roomClosed"),
+                        table:
+                          otherRoomResult.tableNumber != null
+                            ? String(otherRoomResult.tableNumber)
+                            : "—",
+                      })}
+                    </p>
+                    {otherRoomResult.nsPlayers || otherRoomResult.ewPlayers ? (
+                      <p>
+                        {t("otherTablePlayers", {
+                          ns: otherRoomResult.nsPlayers ?? "—",
+                          ew: otherRoomResult.ewPlayers ?? "—",
+                        })}
+                      </p>
+                    ) : null}
+                    {otherRoomResult.contract ? (
+                      <p>
+                        {t("otherTableContract", {
+                          contract: otherRoomResult.contract,
+                        })}
+                      </p>
+                    ) : null}
+                    {otherRoomResult.kind === "fixed" ||
+                    otherRoomResult.kind === "weighted" ? (
+                      <p className="font-medium text-zinc-900">
+                        {t("otherTableNsScore", {
+                          score:
+                            otherRoomResult.nsScore != null
+                              ? String(otherRoomResult.nsScore)
+                              : "—",
+                        })}
+                      </p>
+                    ) : otherRoomResult.kind === "average_pm" ? (
+                      <p className="font-medium text-zinc-900">
+                        {t("otherTableScoreLabel", {
+                          score: otherRoomResult.scoreLabel,
+                        })}
+                      </p>
+                    ) : (
+                      <p className="text-zinc-500">{t("otherTableNoScore")}</p>
+                    )}
+                    {otherRoomResult.kind === "weighted" ? (
+                      <p className="text-zinc-600">
+                        {t("otherTableWeightedLegs", {
+                          detail: otherRoomResult.legs
+                            .map(
+                              (leg) =>
+                                `${leg.score} (NZ ${leg.weightNs}/OW ${leg.weightEw})`,
+                            )
+                            .join(" · "),
+                        })}
+                      </p>
+                    ) : null}
+                  </div>
+                )}
+              </div>
               <p className="text-xs text-zinc-600">{t("weightedWeightsHelp")}</p>
               {weightedLegs.map((leg, index) => (
                 <div
@@ -959,12 +1082,12 @@ export function HonorBoardResultsEditor({
                       type="button"
                       onClick={() =>
                         setWeightedLegs((prev) =>
-                          prev.length <= 2
+                          prev.length <= 1
                             ? prev
                             : prev.filter((_, i) => i !== index),
                         )
                       }
-                      disabled={busy || weightedLegs.length <= 2}
+                      disabled={busy || weightedLegs.length <= 1}
                       className="rounded border border-zinc-300 px-2 py-1.5 text-sm text-zinc-700 disabled:opacity-40"
                     >
                       {t("removeLeg")}

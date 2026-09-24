@@ -142,11 +142,11 @@ export function weightedMatchImpsFromLegs(input: {
     closedWeights = [1];
   }
 
-  if (openWeighted && openScores.length < 2) {
-    throw new Error("Gewogen score vereist minstens twee scores.");
+  if (openWeighted && openScores.length < 1) {
+    throw new Error("Gewogen score vereist minstens één score.");
   }
-  if (closedWeighted && closedScores.length < 2) {
-    throw new Error("Gewogen score vereist minstens twee scores.");
+  if (closedWeighted && closedScores.length < 1) {
+    throw new Error("Gewogen score vereist minstens één score.");
   }
 
   let weightedSum = 0;
@@ -199,7 +199,7 @@ export function parseWeightedLegsFromMeta(
     if (!(weightNs > 0) || !(weightEw > 0)) return null;
     legs.push({ score, weightNs, weightEw });
   }
-  return legs.length >= 2 ? legs : null;
+  return legs.length >= 1 ? legs : null;
 }
 
 export function parseNonOffendingSide(

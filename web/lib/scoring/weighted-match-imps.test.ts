@@ -67,6 +67,23 @@ describe("favorTeamFromRoomNop / resolveFavorTeam", () => {
 });
 
 describe("weightedMatchImpsFromLegs", () => {
+  it("treats a single score as a normal board vs the other room", () => {
+    const result = weightedMatchImpsFromLegs({
+      open: {
+        legs: [{ score: 450, weightNs: 1, weightEw: 1 }],
+        nonOffendingSide: "ns",
+      },
+      closed: { nsScore: 420 },
+    });
+    // 450-420=30 → 1 IMP
+    expect(result).toMatchObject({
+      net: 1,
+      roundedNet: 1,
+      homeImps: 1,
+      awayImps: 0,
+    });
+  });
+
   it("weights IMPs not table points (classic 4.5 case)", () => {
     // Other room +420; this room 50/50 on +450 / −50
     // Point average would be +200 → diff 220 → 6 IMPs (wrong)

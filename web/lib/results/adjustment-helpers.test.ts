@@ -31,6 +31,13 @@ describe("adjustment-helpers", () => {
     expect(scores).toEqual({ computedNs: 75, computedEw: 100 });
   });
 
+  it("allows a single score as a plain assigned (non-weighted) result", () => {
+    const scores = computeWeightedScores({
+      legs: [{ score: 420, weightNs: 1, weightEw: 1 }],
+    });
+    expect(scores).toEqual({ computedNs: 420, computedEw: 420 });
+  });
+
   it("builds cancelled adjustment excluding datum and match", () => {
     const a = buildCancelledAdjustment({ reason: "TD" });
     expect(a.specialResultKind).toBe("NOT_PLAYED");

@@ -72,7 +72,7 @@ function parseWeightedLegs(body: Record<string, unknown>): WeightedScoreLeg[] | 
       }
       legs.push({ score, weightNs, weightEw });
     }
-    return legs.length >= 2 ? legs : null;
+    return legs.length >= 1 ? legs : null;
   }
 
   // Legacy two-leg payload (same weight for NS and EW)
@@ -162,7 +162,7 @@ export async function POST(request: Request, { params }: Params) {
       const legs = parseWeightedLegs(body);
       if (!legs) {
         return jsonError(
-          "Gewogen score vereist minstens twee scores met NS- en OW-gewichten.",
+          "Gewogen score vereist minstens één score met NS- en OW-gewichten.",
           400,
         );
       }
