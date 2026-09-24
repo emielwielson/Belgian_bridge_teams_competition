@@ -94,6 +94,7 @@ export function HonorSeatingOverview() {
   const [downloadingBws, setDownloadingBws] = useState(false);
   const [lineupsOpen, setLineupsOpen] = useState(true);
   const [boardCount, setBoardCount] = useState(0);
+  const [refreshKey, setRefreshKey] = useState(0);
   const loadGeneration = useRef(0);
 
   const load = useCallback(async (roundArg?: number | null) => {
@@ -191,6 +192,12 @@ export function HonorSeatingOverview() {
         : null,
     );
     await load(next);
+  }
+
+  async function onRefresh() {
+    if (round == null) return;
+    setRefreshKey((k) => k + 1);
+    await load(round);
   }
 
   async function unlockSide(match: HonorRoundMatchSeating, side: "home" | "away") {
@@ -347,12 +354,16 @@ export function HonorSeatingOverview() {
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="flex flex-col gap-1 text-sm text-zinc-700">
-            <span className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+          <span className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+            {t("round")}
+          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="sr-only" htmlFor="honor-round-select">
               {t("round")}
-            </span>
+            </label>
             <select
-              className="min-w-[14rem] rounded border border-zinc-300 bg-white px-2 py-1.5"
+              id="honor-round-select"
+              className="min-w-[14rem] rounded border border-zinc-300 bg-white px-2 py-1.5 text-sm text-zinc-700"
               value={round ?? payload.round}
               onChange={(e) => void onRoundChange(Number(e.target.value))}
               disabled={loading}
@@ -366,7 +377,15 @@ export function HonorSeatingOverview() {
                 </option>
               ))}
             </select>
-          </label>
+            <button
+              type="button"
+              onClick={() => void onRefresh()}
+              disabled={loading || round == null}
+              className="rounded border border-zinc-300 bg-white px-2.5 py-1.5 text-sm text-zinc-800 hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {t("refresh")}
+            </button>
+          </div>
           {loading ? (
             <p
               className="flex items-center gap-1.5 text-xs text-zinc-600"
@@ -636,6 +655,7 @@ export function HonorSeatingOverview() {
       <HonorButlerWorkflow
         round={round}
         enabled={round != null && !!payload}
+        refreshKey={refreshKey}
         onBoardCountChange={setBoardCount}
       >
         <HonorPbnUploadStep />
@@ -670,6 +690,7 @@ export function HonorSeatingOverview() {
         <HonorBoardResultsEditor
           round={round}
           enabled={round != null && !!payload}
+          refreshKey={refreshKey}
         />
 
         <HonorPublishStep />

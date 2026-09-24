@@ -478,6 +478,7 @@
       "pageDescription": "Match-day overview of open/closed rooms, table numbers, and locked line-ups for the Honor Division.",
       "loading": "Loading Honor seating…",
       "loadingShort": "Loading…",
+      "refresh": "Refresh",
       "loadFailed": "Failed to load Honor seating",
       "none": "No Honor seating data available.",
       "matchDay": "Match day",

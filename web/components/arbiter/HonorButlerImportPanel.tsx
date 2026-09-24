@@ -133,11 +133,14 @@ export function HonorButlerWorkflow({
   enabled,
   children,
   onBoardCountChange,
+  refreshKey = 0,
 }: {
   round: number | null;
   enabled: boolean;
   children: ReactNode;
   onBoardCountChange?: (boardCount: number) => void;
+  /** Bump to reload publish status without resetting file picks. */
+  refreshKey?: number;
 }) {
   const t = useTranslations("arbiter.honorButler");
   const [status, setStatus] = useState<StatusPayload | null>(null);
@@ -158,7 +161,6 @@ export function HonorButlerWorkflow({
     if (round == null || !enabled) return;
     const generation = ++loadGeneration.current;
     setStatusLoading(true);
-    setStatus(null);
     try {
       const res = await fetch(`/api/arbiter/honor/rounds/${round}/publish`);
       if (!res.ok) {
@@ -186,7 +188,7 @@ export function HonorButlerWorkflow({
 
   useEffect(() => {
     void load();
-  }, [load]);
+  }, [load, refreshKey]);
 
   useEffect(() => {
     setStatus(null);

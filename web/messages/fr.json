@@ -477,6 +477,7 @@
       "pageDescription": "Vue du jour de jeu : salles ouverte/fermée, numéros de table et line-ups verrouillés pour la division Honor.",
       "loading": "Chargement du placement Honor…",
       "loadingShort": "Chargement…",
+      "refresh": "Actualiser",
       "loadFailed": "Échec du chargement du placement Honor",
       "none": "Aucune donnée de placement Honor disponible.",
       "matchDay": "Journée",
