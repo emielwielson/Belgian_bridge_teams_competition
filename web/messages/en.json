@@ -266,6 +266,41 @@
       "searchPlayer": "Search player…",
       "noPlayerMatches": "No matching players"
     },
+    "scorecard": {
+      "title": "Round {round}: {homeTeam} – {awayTeam}",
+      "openRoom": "Open room",
+      "closedRoom": "Closed room",
+      "openRoomWithTable": "Open room ({table})",
+      "closedRoomWithTable": "Closed room ({table})",
+      "ns": "NS",
+      "ew": "EW",
+      "board": "Bd",
+      "dealerCol": "Dlr",
+      "vulCol": "Vul",
+      "homeNs": "Home (NS)",
+      "awayEw": "Away (EW)",
+      "homeEw": "Home (EW)",
+      "awayNs": "Away (NS)",
+      "scoreHome": "Home score",
+      "deltaMp": "ΔMP",
+      "impsHome": "Home",
+      "impsAway": "Away",
+      "result": "Result",
+      "totalImps": "Total IMPs",
+      "resultVp": "Result in VP",
+      "dealer": {
+        "N": "N",
+        "E": "E",
+        "S": "S",
+        "W": "W"
+      },
+      "vulnerability": {
+        "NONE": "–",
+        "NS": "NS",
+        "EW": "EW",
+        "BOTH": "ALL"
+      }
+    },
     "score": {
       "title": "Score",
       "submitTitle": "Submit score",

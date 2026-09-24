@@ -266,6 +266,41 @@
       "searchPlayer": "Zoek speler…",
       "noPlayerMatches": "Geen overeenkomende spelers"
     },
+    "scorecard": {
+      "title": "Ronde {round}: {homeTeam} – {awayTeam}",
+      "openRoom": "Open zaal",
+      "closedRoom": "Gesloten zaal",
+      "openRoomWithTable": "Open zaal ({table})",
+      "closedRoomWithTable": "Gesloten zaal ({table})",
+      "ns": "NZ",
+      "ew": "OW",
+      "board": "Gft",
+      "dealerCol": "Gvr",
+      "vulCol": "Kwb",
+      "homeNs": "Thuis (NZ)",
+      "awayEw": "Uit (OW)",
+      "homeEw": "Thuis (OW)",
+      "awayNs": "Uit (NZ)",
+      "scoreHome": "Score thuis",
+      "deltaMp": "ΔMP",
+      "impsHome": "Thuis",
+      "impsAway": "Uit",
+      "result": "Uitslag",
+      "totalImps": "Totaal IMP",
+      "resultVp": "Resultaat in VP",
+      "dealer": {
+        "N": "N",
+        "E": "O",
+        "S": "Z",
+        "W": "W"
+      },
+      "vulnerability": {
+        "NONE": "–",
+        "NS": "NZ",
+        "EW": "OW",
+        "BOTH": "ALL"
+      }
+    },
     "score": {
       "title": "Uitslag",
       "submitTitle": "Score indienen",
