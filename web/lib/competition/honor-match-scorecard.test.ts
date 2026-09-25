@@ -151,6 +151,9 @@ describe("buildScorecardBoardRows", () => {
         includedInMatchScore: false,
         nsScore: null,
         computedScore: null,
+        contractLevel: 4,
+        contractDenomination: "HEARTS",
+        declarer: "E",
       }),
       baseRow({
         boardId: "b2",
@@ -165,14 +168,69 @@ describe("buildScorecardBoardRows", () => {
     ]);
     expect(rows[0]?.kind).toBe("assigned");
     expect(rows[0]?.deltaMp).toBeNull();
-    // Home = open NS + closed EW → both plus → +3 home
-    // Away = open EW + closed NS → both minus → prefers minus → −3 away display as+3 away
     expect(displayImpsFromAssigned({ homeImps: 3, awayImps: -3 })).toEqual({
       impsHome: 3,
       impsAway: 0,
     });
     expect(rows[0]?.impsHome).toBe(3);
     expect(rows[0]?.impsAway).toBe(0);
+    // Open: home=NS plus, away=EW minus — no leftover contract
+    expect(rows[0]?.open.isAveragePm).toBe(true);
+    expect(rows[0]?.open.averageHome).toBe("plus");
+    expect(rows[0]?.open.averageAway).toBe("minus");
+    expect(rows[0]?.open.homeContract).toBeNull();
+    expect(rows[0]?.open.awayContract).toBeNull();
+    // Closed: home=EW plus, away=NS minus
+    expect(rows[0]?.closed.isAveragePm).toBe(true);
+    expect(rows[0]?.closed.averageHome).toBe("plus");
+    expect(rows[0]?.closed.averageAway).toBe("minus");
+  });
+
+  it("keeps open table result but shows closed average awards (board-17 style)", () => {
+    const rows = buildScorecardBoardRows([
+      baseRow({
+        boardId: "b17",
+        boardNumber: 17,
+        room: "open",
+        dealer: "N",
+        vulnerability: "NONE",
+        contractLevel: 7,
+        contractDenomination: "NT",
+        declarer: "N",
+        tricksResult: "=",
+        nsScore: 1520,
+      }),
+      baseRow({
+        boardId: "b17",
+        boardNumber: 17,
+        room: "closed",
+        dealer: "N",
+        vulnerability: "NONE",
+        contractLevel: 6,
+        contractDenomination: "SPADES",
+        declarer: "E",
+        tricksResult: "-2",
+        nsScore: null,
+        computedScore: null,
+        adjustmentMode: "average_pm",
+        adjustmentMeta: { nsAward: "plus", ewAward: "minus" },
+        includedInMatchScore: false,
+      }),
+    ]);
+    expect(rows[0]?.kind).toBe("assigned");
+    expect(rows[0]?.deltaMp).toBeNull();
+    // Away = closed NS plus → +3 away
+    expect(rows[0]?.impsHome).toBe(0);
+    expect(rows[0]?.impsAway).toBe(3);
+    expect(rows[0]?.open.isAveragePm).toBe(false);
+    expect(rows[0]?.open.scoreHome).toBe(1520);
+    expect(rows[0]?.open.homeContract?.contractLevel).toBe(7);
+    expect(rows[0]?.closed.isAveragePm).toBe(true);
+    expect(rows[0]?.closed.homeContract).toBeNull();
+    expect(rows[0]?.closed.awayContract).toBeNull();
+    expect(rows[0]?.closed.averageHome).toBe("minus"); // EW
+    expect(rows[0]?.closed.averageAway).toBe("plus"); // NS
+    expect(rows[0]?.closed.scoreHome).toBeNull();
   });
 });
 

@@ -300,7 +300,10 @@
         "NS": "NZ",
         "EW": "OW",
         "BOTH": "ALL"
-      }
+      },
+      "averageAwardPlus": "G+",
+      "averageAwardZero": "G",
+      "averageAwardMinus": "G−"
     },
     "score": {
       "title": "Uitslag",

@@ -300,7 +300,10 @@
         "NS": "NS",
         "EW": "EO",
         "BOTH": "TOUS"
-      }
+      },
+      "averageAwardPlus": "M+",
+      "averageAwardZero": "M",
+      "averageAwardMinus": "M−"
     },
     "score": {
       "title": "Résultat",

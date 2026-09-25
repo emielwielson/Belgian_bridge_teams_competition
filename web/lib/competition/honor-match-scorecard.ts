@@ -45,6 +45,10 @@ export type ScorecardRoomCell = {
   awayContract: ScorecardContract | null;
   /** Home-perspective table score (open NS / closed −NS). */
   scoreHome: number | null;
+  /** average_pm awards mapped to home/away columns for this room. */
+  isAveragePm: boolean;
+  averageHome: AverageAward | null;
+  averageAway: AverageAward | null;
 };
 
 export type ScorecardBoardRow = {
@@ -163,7 +167,14 @@ export function displayImpsFromAssigned(entry: {
 }
 
 function emptyRoomCell(): ScorecardRoomCell {
-  return { homeContract: null, awayContract: null, scoreHome: null };
+  return {
+    homeContract: null,
+    awayContract: null,
+    scoreHome: null,
+    isAveragePm: false,
+    averageHome: null,
+    averageAway: null,
+  };
 }
 
 function toContract(row: ScorecardResultInput): ScorecardContract {
@@ -190,6 +201,27 @@ function placeContract(
   const contract = toContract(row);
   if (column === "home") cell.homeContract = contract;
   else cell.awayContract = contract;
+}
+
+/** Map NS/EW awards onto home/away columns for the room. */
+export function applyAveragePmToRoomCell(
+  cell: ScorecardRoomCell,
+  room: "open" | "closed",
+  awards: { nsAward: AverageAward | null; ewAward: AverageAward | null },
+): void {
+  cell.isAveragePm = true;
+  cell.homeContract = null;
+  cell.awayContract = null;
+  cell.scoreHome = null;
+  if (room === "open") {
+    // Home = NS, Away = EW
+    cell.averageHome = awards.nsAward;
+    cell.averageAway = awards.ewAward;
+  } else {
+    // Home = EW, Away = NS
+    cell.averageHome = awards.ewAward;
+    cell.averageAway = awards.nsAward;
+  }
 }
 
 type BoardAcc = {
@@ -274,7 +306,9 @@ export function buildScorecardBoardRows(
     };
 
     const cell = row.room === "open" ? entry.open : entry.closed;
-    placeContract(cell, row.room, row);
+    if (!hasAverage) {
+      placeContract(cell, row.room, row);
+    }
 
     if (row.room === "open") {
       entry.seenOpen = true;
@@ -282,6 +316,7 @@ export function buildScorecardBoardRows(
         entry.openHasAverage = true;
         entry.openNsAward = awards.nsAward;
         entry.openEwAward = awards.ewAward;
+        applyAveragePmToRoomCell(cell, "open", awards);
       }
       if (isWeighted && weightedMeta) {
         entry.openWeighted = true;
@@ -304,6 +339,7 @@ export function buildScorecardBoardRows(
         entry.closedHasAverage = true;
         entry.closedNsAward = awards.nsAward;
         entry.closedEwAward = awards.ewAward;
+        applyAveragePmToRoomCell(cell, "closed", awards);
       }
       if (isWeighted && weightedMeta) {
         entry.closedWeighted = true;

@@ -6,6 +6,11 @@ import type {
   ScorecardRoomCell,
 } from "@/lib/competition/honor-match-scorecard";
 import type { Dealer, Vulnerability } from "@/lib/boards/types";
+import {
+  averageAwardLabel,
+  type AveragePmLabels,
+} from "@/lib/results/average-pm-labels";
+import type { AverageAward } from "@/lib/results/types";
 import { toIntlLocale } from "@/i18n/intl-locale";
 import type { Locale } from "@/i18n/config";
 
@@ -33,6 +38,18 @@ function ContractCell({ contract }: { contract: ScorecardContract | null }) {
   );
 }
 
+function AwardCell({
+  award,
+  labels,
+}: {
+  award: AverageAward | null;
+  labels: AveragePmLabels;
+}) {
+  const text = averageAwardLabel(award, labels);
+  if (!text) return <span className="text-zinc-300">—</span>;
+  return <span className="whitespace-nowrap font-mono text-sm">{text}</span>;
+}
+
 function ScoreCell({ value }: { value: number | null }) {
   if (value == null) return <span className="text-zinc-300">—</span>;
   return <span className="tabular-nums">{value}</span>;
@@ -51,6 +68,11 @@ export async function HonorMatchScorecardView({ scorecard }: Props) {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   });
+  const awardLabels: AveragePmLabels = {
+    plus: t("averageAwardPlus"),
+    minus: t("averageAwardMinus"),
+    zero: t("averageAwardZero"),
+  };
 
   const dealerLabel = (d: Dealer | null) => {
     if (!d) return "—";
@@ -203,11 +225,17 @@ export async function HonorMatchScorecardView({ scorecard }: Props) {
                   >
                     {vulLabel(board.vulnerability)}
                   </td>
-                  <RoomCells cell={board.open} sectionBorder stripe={stripe} />
+                  <RoomCells
+                    cell={board.open}
+                    sectionBorder
+                    stripe={stripe}
+                    awardLabels={awardLabels}
+                  />
                   <RoomCells
                     cell={board.closed}
                     sectionBorder
                     stripe={stripe}
+                    awardLabels={awardLabels}
                   />
                   <td
                     className={`${SECTION} ${ROW_BOTTOM} px-2 py-1.5 text-right tabular-nums text-zinc-800 ${stripe}`}
@@ -283,20 +311,30 @@ function RoomCells({
   cell,
   sectionBorder,
   stripe,
+  awardLabels,
 }: {
   cell: ScorecardRoomCell;
   sectionBorder?: boolean;
   stripe: string;
+  awardLabels: AveragePmLabels;
 }) {
   return (
     <>
       <td
         className={`${sectionBorder ? SECTION : ""} ${ROW_BOTTOM} px-2 py-1.5 ${stripe}`}
       >
-        <ContractCell contract={cell.homeContract} />
+        {cell.isAveragePm ? (
+          <AwardCell award={cell.averageHome} labels={awardLabels} />
+        ) : (
+          <ContractCell contract={cell.homeContract} />
+        )}
       </td>
       <td className={`${INNER} ${ROW_BOTTOM} px-2 py-1.5 ${stripe}`}>
-        <ContractCell contract={cell.awayContract} />
+        {cell.isAveragePm ? (
+          <AwardCell award={cell.averageAway} labels={awardLabels} />
+        ) : (
+          <ContractCell contract={cell.awayContract} />
+        )}
       </td>
       <td
         className={`${INNER} ${ROW_BOTTOM} px-2 py-1.5 text-right text-zinc-800 ${stripe}`}
