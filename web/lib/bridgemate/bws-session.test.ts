@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bridgemateBoardRangeForRound, buildBwsSession } from "./bws-session";
+import { buildBwsSession } from "./bws-session";
 
 function honorDivisionInput() {
   const pairs = [
@@ -151,14 +151,36 @@ describe("buildBwsSession", () => {
       round: 1,
       nsPair: 11,
       ewPair: 81,
-      lowBoard: 33,
-      highBoard: 48,
+      lowBoard: 1,
+      highBoard: 16,
       customBoards: null,
     });
     expect(result.plan.roundData[1]).toMatchObject({
       table: 2,
       nsPair: 82,
       ewPair: 12,
+    });
+  });
+
+  it("uses explicit boardRange from PBN when provided", () => {
+    const result = buildBwsSession({
+      ...honorDivisionInput(),
+      boardRange: { lowBoard: 1, highBoard: 16 },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.plan.roundData.every((r) => r.lowBoard === 1 && r.highBoard === 16)).toBe(
+      true,
+    );
+  });
+
+  it("falls back to 1..boardCount when boardRange is omitted", () => {
+    const result = buildBwsSession(honorDivisionInput());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.plan.roundData[0]).toMatchObject({
+      lowBoard: 1,
+      highBoard: 16,
     });
   });
 
@@ -183,26 +205,5 @@ describe("buildBwsSession", () => {
     expect(result.errors.some((e) => /Dubbele Bridgemate-tafel/.test(e))).toBe(
       true,
     );
-  });
-});
-
-describe("bridgemateBoardRangeForRound", () => {
-  it("maps match-day slots to absolute boards 1-48", () => {
-    expect(bridgemateBoardRangeForRound(1, 16)).toEqual({
-      lowBoard: 1,
-      highBoard: 16,
-    });
-    expect(bridgemateBoardRangeForRound(2, 16)).toEqual({
-      lowBoard: 17,
-      highBoard: 32,
-    });
-    expect(bridgemateBoardRangeForRound(3, 16)).toEqual({
-      lowBoard: 33,
-      highBoard: 48,
-    });
-    expect(bridgemateBoardRangeForRound(4, 16)).toEqual({
-      lowBoard: 1,
-      highBoard: 16,
-    });
   });
 });

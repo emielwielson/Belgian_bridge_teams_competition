@@ -20,7 +20,10 @@ const sampleHands: BoardHands = {
   W: { S: "7654", H: "T98", D: "QJ3", C: "AK2" },
 };
 
-const sampleBoards = [{ board_number: 1, hands: sampleHands }];
+const sampleBoards = [
+  { board_number: 1, hands: sampleHands },
+  { board_number: 16, hands: sampleHands },
+];
 
 function seat(
   team_id: string,

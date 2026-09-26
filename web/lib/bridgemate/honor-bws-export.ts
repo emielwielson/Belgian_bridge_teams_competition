@@ -155,7 +155,16 @@ export function exportHonorRoundBws(
   const builtInput = buildHonorBwsSessionInput(tournamentRoundNumber, matches);
   if (!builtInput.ok) return builtInput;
 
-  const built: BwsSessionResult = buildBwsSession(builtInput.input, {
+  const boardNumbers = boards.map((b) => b.board_number);
+  const input = {
+    ...builtInput.input,
+    boardRange: {
+      lowBoard: Math.min(...boardNumbers),
+      highBoard: Math.max(...boardNumbers),
+    },
+  };
+
+  const built: BwsSessionResult = buildBwsSession(input, {
     guid: options?.guid,
   });
   if (!built.ok) return built;

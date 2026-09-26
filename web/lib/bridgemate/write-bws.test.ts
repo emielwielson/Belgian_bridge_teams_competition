@@ -207,8 +207,8 @@ describe("writeBwsFromPlan", () => {
         Round: 1,
         NSPair: 11,
         EWPair: 81,
-        LowBoard: 33,
-        HighBoard: 48,
+        LowBoard: 1,
+        HighBoard: 16,
       }),
     );
     expect(roundData[0].CustomBoards == null || roundData[0].CustomBoards === "").toBe(
