@@ -34,6 +34,7 @@ export const ErrorCodes = {
     playerIdRequired: "api.playerIdRequired",
     playerNotClubMember: "api.playerNotClubMember",
     imagePathRequired: "api.imagePathRequired",
+    imagePathsTooMany: "api.imagePathsTooMany",
     proposedDatetimeRequired: "api.proposedDatetimeRequired",
     postponeActionRequired: "api.postponeActionRequired",
     homeAwayNotAvailable: "api.homeAwayNotAvailable",

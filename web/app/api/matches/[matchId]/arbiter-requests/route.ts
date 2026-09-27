@@ -4,8 +4,9 @@ import {
   canAccessArbiterRequestWorkflow,
   createArbiterRequest,
   loadMatchArbiterRequestsForUser,
+  normalizeArbiterRequestImagePaths,
 } from "@/lib/competition/arbiter-request";
-import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
+import { jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
 import { ErrorCodes } from "@/lib/http/error-codes";
 import { sendArbiterRequestCreatedEmail } from "@/lib/notifications/arbiter-request-email";
 
@@ -43,15 +44,15 @@ export async function POST(request: Request, { params }: Params) {
     const { supabase } = await requireAuth();
     const body = (await request.json()) as Record<string, unknown>;
 
-    const imagePath = String(
-      body.image_path ?? body.imagePath ?? "",
-    ).trim();
-
-    if (!imagePath) {
+    const imagePaths = normalizeArbiterRequestImagePaths(body);
+    if ("error" in imagePaths) {
+      if (imagePaths.error === "too_many") {
+        return jsonErrorCode(ErrorCodes.api.imagePathsTooMany, 400);
+      }
       return jsonErrorCode(ErrorCodes.api.imagePathRequired, 400);
     }
 
-    await createArbiterRequest(supabase, matchId, imagePath);
+    await createArbiterRequest(supabase, matchId, imagePaths);
 
     const { state } = await loadMatchArbiterRequestsForUser(supabase, matchId);
 

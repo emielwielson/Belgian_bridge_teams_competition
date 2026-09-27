@@ -32,13 +32,19 @@ import type { Locale } from "@/i18n/config";
 import { toIntlLocale } from "@/i18n/intl-locale";
 import { formatBrussels } from "@/lib/time/brussels";
 
+type InboxAttachment = {
+  storage_path: string;
+  signed_url: string | null;
+  sort_order: number;
+};
+
 type InboxRequest = {
   id: string;
   match_id: string;
   description: string | null;
   status: string;
   created_at: string;
-  image_signed_url: string | null;
+  attachments: InboxAttachment[];
   match: InboxMatchContext | null;
 };
 
@@ -114,7 +120,14 @@ export function ArbiterInbox({ kind }: { kind: CompetitionKindCode }) {
       setLoading(false);
       return;
     }
-    setRequests(body.requests ?? []);
+    setRequests(
+      (body.requests ?? []).map(
+        (r: InboxRequest) => ({
+          ...r,
+          attachments: Array.isArray(r.attachments) ? r.attachments : [],
+        }),
+      ),
+    );
     setLoading(false);
   }, [kind, t]);
 
@@ -312,17 +325,23 @@ export function ArbiterInbox({ kind }: { kind: CompetitionKindCode }) {
                           })
                         : ""}
                     </p>
-                    {r.image_signed_url ? (
-                      <p className="mt-2">
-                        <a
-                          href={r.image_signed_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm font-medium text-emerald-800 underline"
-                        >
-                          {t("viewAttachment")}
-                        </a>
-                      </p>
+                    {r.attachments.some((att) => att.signed_url) ? (
+                      <ul className="mt-2 space-y-1">
+                        {r.attachments
+                          .filter((att) => att.signed_url)
+                          .map((att, index) => (
+                            <li key={`${att.storage_path}-${att.sort_order}`}>
+                              <a
+                                href={att.signed_url!}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm font-medium text-emerald-800 underline"
+                              >
+                                {t("viewAttachmentN", { n: index + 1 })}
+                              </a>
+                            </li>
+                          ))}
+                      </ul>
                     ) : (
                       <p className="mt-2 text-sm text-zinc-600">
                         {t("noAttachment")}

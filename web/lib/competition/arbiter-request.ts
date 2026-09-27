@@ -10,14 +10,23 @@ import {
 } from "@/lib/scoring/board-count-rules";
 import type { ScorePayload } from "@/lib/scoring/match-operations";
 
+export type ArbiterRequestAttachment = {
+  id: string;
+  storage_path: string;
+  sort_order: number;
+};
+
 export type ArbiterRequestRow = {
   id: string;
   description: string | null;
   image_path: string;
+  attachments: ArbiterRequestAttachment[];
   status: string;
   created_at: string;
   resolved_at: string | null;
 };
+
+export const ARBITER_REQUEST_MAX_ATTACHMENTS = 5;
 
 export type MatchArbiterRequestsState = {
   match_id: string;
@@ -63,6 +72,47 @@ export type ResolveArbiterRequestResult = {
   warningIds: string[];
 };
 
+function parseAttachments(
+  raw: unknown,
+  fallbackImagePath: string,
+): ArbiterRequestAttachment[] {
+  const fromArray = Array.isArray(raw)
+    ? raw
+        .map((item, index) => {
+          if (!item || typeof item !== "object") return null;
+          const a = item as Record<string, unknown>;
+          const storagePath =
+            a.storage_path != null ? String(a.storage_path).trim() : "";
+          if (!storagePath) return null;
+          return {
+            id: a.id != null ? String(a.id) : `legacy-${index}`,
+            storage_path: storagePath,
+            sort_order:
+              a.sort_order != null && Number.isFinite(Number(a.sort_order))
+                ? Number(a.sort_order)
+                : index,
+          };
+        })
+        .filter((a): a is ArbiterRequestAttachment => a != null)
+    : [];
+
+  if (fromArray.length > 0) {
+    return fromArray.sort((a, b) => a.sort_order - b.sort_order);
+  }
+
+  if (fallbackImagePath) {
+    return [
+      {
+        id: "legacy-0",
+        storage_path: fallbackImagePath,
+        sort_order: 0,
+      },
+    ];
+  }
+
+  return [];
+}
+
 function parseState(raw: unknown): MatchArbiterRequestsState | null {
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
@@ -72,7 +122,8 @@ function parseState(raw: unknown): MatchArbiterRequestsState | null {
       const row = r as Record<string, unknown>;
       const imagePath =
         row.image_path != null ? String(row.image_path).trim() : "";
-      if (!imagePath) return null;
+      const attachments = parseAttachments(row.attachments, imagePath);
+      if (attachments.length === 0) return null;
       const descriptionRaw = row.description;
       return {
         id: String(row.id),
@@ -80,7 +131,8 @@ function parseState(raw: unknown): MatchArbiterRequestsState | null {
           descriptionRaw != null && String(descriptionRaw).trim() !== ""
             ? String(descriptionRaw)
             : null,
-        image_path: imagePath,
+        image_path: imagePath || attachments[0]!.storage_path,
+        attachments,
         status: String(row.status),
         created_at: String(row.created_at),
         resolved_at: row.resolved_at != null ? String(row.resolved_at) : null,
@@ -93,6 +145,35 @@ function parseState(raw: unknown): MatchArbiterRequestsState | null {
     can_submit: Boolean(o.can_submit),
     requests,
   };
+}
+
+/** Normalize client payload into a de-duplicated path list (max 5). */
+export function normalizeArbiterRequestImagePaths(
+  body: Record<string, unknown>,
+): string[] | { error: "required" | "too_many" } {
+  const rawPaths = body.image_paths ?? body.imagePaths;
+  let paths: string[] = [];
+
+  if (Array.isArray(rawPaths)) {
+    paths = rawPaths.map((p) => String(p ?? "").trim()).filter(Boolean);
+  } else {
+    const single = String(body.image_path ?? body.imagePath ?? "").trim();
+    if (single) paths = [single];
+  }
+
+  const seen = new Set<string>();
+  const unique: string[] = [];
+  for (const path of paths) {
+    if (seen.has(path)) continue;
+    seen.add(path);
+    unique.push(path);
+  }
+
+  if (unique.length === 0) return { error: "required" };
+  if (unique.length > ARBITER_REQUEST_MAX_ATTACHMENTS) {
+    return { error: "too_many" };
+  }
+  return unique;
 }
 
 function parseScoreChangeBody(
@@ -289,11 +370,11 @@ export function canAccessArbiterRequestWorkflow(
 export async function createArbiterRequest(
   supabase: SupabaseClient,
   matchId: string,
-  imagePath: string,
+  imagePaths: string[],
 ): Promise<string> {
   const { data, error } = await supabase.rpc("arbiter_request_create", {
     p_match_id: matchId,
-    p_image_path: imagePath,
+    p_image_paths: imagePaths,
   });
   if (error) throw error;
   return String(data);
@@ -336,11 +417,18 @@ export type InboxMatchContext = {
   allows_board_choice: boolean;
 };
 
+export type OpenArbiterInboxAttachment = {
+  storage_path: string;
+  signed_url: string | null;
+  sort_order: number;
+};
+
 export type OpenArbiterInboxItem = {
   id: string;
   match_id: string;
   description: string | null;
   image_path: string | null;
+  attachments: OpenArbiterInboxAttachment[];
   status: string;
   created_at: string;
   match: InboxMatchContext | null;

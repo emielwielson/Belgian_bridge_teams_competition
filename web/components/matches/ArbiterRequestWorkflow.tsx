@@ -3,7 +3,10 @@
 import { useCallback, useEffect, useId, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { FilePickerField, FILE_PICKER_ACCEPT } from "@/components/files/FilePickerField";
-import type { MatchArbiterRequestsState } from "@/lib/competition/arbiter-request";
+import {
+  ARBITER_REQUEST_MAX_ATTACHMENTS,
+  type MatchArbiterRequestsState,
+} from "@/lib/competition/arbiter-request";
 import { toIntlLocale } from "@/i18n/intl-locale";
 import type { Locale } from "@/i18n/config";
 import { useTranslateApiError } from "@/lib/i18n/translate-api-error";
@@ -24,9 +27,9 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [fileInputKey, setFileInputKey] = useState(0);
-  const [uploadedPath, setUploadedPath] = useState<string | null>(null);
+  const [uploadedPaths, setUploadedPaths] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
 
   const load = useCallback(async () => {
@@ -54,34 +57,58 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
     void load();
   }, [load]);
 
-  async function handleFileChange(next: File | null) {
-    setFile(next);
-    setUploadedPath(null);
+  async function uploadFile(file: File): Promise<string> {
+    const uploadData = new FormData();
+    uploadData.append("file", file);
+    uploadData.append("purpose", "arbiter_request");
+    uploadData.append("matchId", matchId);
+    const uploadRes = await fetch("/api/files/upload", {
+      method: "POST",
+      body: uploadData,
+    });
+    const uploadBody = await uploadRes.json();
+    if (!uploadRes.ok) {
+      throw new Error(
+        translateApiError(uploadBody.error) ?? t("uploadFailed"),
+      );
+    }
+    return uploadBody.path as string;
+  }
+
+  async function handleFilesChange(next: File[]) {
     setError(null);
     setMessage(null);
 
-    if (!next) return;
+    if (next.length < files.length) {
+      setFiles(next);
+      setUploadedPaths((prev) => {
+        const pathByKey = new Map(
+          files.map((f, i) => [
+            `${f.name}:${f.size}:${f.lastModified}`,
+            prev[i]!,
+          ]),
+        );
+        return next
+          .map((f) => pathByKey.get(`${f.name}:${f.size}:${f.lastModified}`))
+          .filter((p): p is string => Boolean(p));
+      });
+      return;
+    }
+
+    const added = next.slice(files.length);
+    setFiles(next);
+    if (added.length === 0) return;
 
     setUploading(true);
     try {
-      const uploadData = new FormData();
-      uploadData.append("file", next);
-      uploadData.append("purpose", "arbiter_request");
-      uploadData.append("matchId", matchId);
-      const uploadRes = await fetch("/api/files/upload", {
-        method: "POST",
-        body: uploadData,
-      });
-      const uploadBody = await uploadRes.json();
-      if (!uploadRes.ok) {
-        throw new Error(
-          translateApiError(uploadBody.error) ?? t("uploadFailed"),
-        );
+      const newPaths: string[] = [];
+      for (const file of added) {
+        newPaths.push(await uploadFile(file));
       }
-      setUploadedPath(uploadBody.path as string);
+      setUploadedPaths((prev) => [...prev, ...newPaths]);
       setMessage(t("uploadedReady"));
     } catch (err) {
-      setFile(null);
+      setFiles(files);
       setFileInputKey((k) => k + 1);
       setError(err instanceof Error ? err.message : t("uploadFailed"));
     } finally {
@@ -91,7 +118,7 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!uploadedPath) {
+    if (uploadedPaths.length === 0) {
       setError(t("uploadBeforeSubmit"));
       return;
     }
@@ -102,7 +129,7 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
       const res = await fetch(`/api/matches/${matchId}/arbiter-requests`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image_path: uploadedPath }),
+        body: JSON.stringify({ image_paths: uploadedPaths }),
       });
       const body = await res.json();
       if (!res.ok) {
@@ -111,8 +138,8 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
         );
       }
       setState(body.state);
-      setFile(null);
-      setUploadedPath(null);
+      setFiles([]);
+      setUploadedPaths([]);
       setFileInputKey((k) => k + 1);
       setMessage(t("submittedSuccess"));
     } catch (err) {
@@ -124,7 +151,11 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
     }
   }
 
-  const canSubmit = Boolean(uploadedPath) && !busy && !uploading;
+  const canSubmit =
+    uploadedPaths.length > 0 &&
+    uploadedPaths.length === files.length &&
+    !busy &&
+    !uploading;
 
   if (loading) {
     return (
@@ -156,8 +187,10 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
           <FilePickerField
             key={fileInputKey}
             id={fileInputId}
-            file={file}
-            onFileChange={handleFileChange}
+            files={files}
+            onFilesChange={handleFilesChange}
+            multiple
+            maxFiles={ARBITER_REQUEST_MAX_ATTACHMENTS}
             hint={t("attachmentHint")}
             accept={FILE_PICKER_ACCEPT}
             disabled={uploading || busy}
@@ -193,6 +226,9 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
                   datetime: formatBrussels(r.created_at, intlLocale),
                 })}
               </span>
+              <p className="mt-1 text-zinc-600">
+                {t("attachmentCount", { count: r.attachments.length })}
+              </p>
               {r.description ? (
                 <p className="mt-1 text-zinc-700">{r.description}</p>
               ) : null}

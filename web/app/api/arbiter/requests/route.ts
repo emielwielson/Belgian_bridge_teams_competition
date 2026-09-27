@@ -32,6 +32,11 @@ type MatchRow = {
   away_team: { id: string; name: string } | { id: string; name: string }[] | null;
 };
 
+type AttachmentRow = {
+  storage_path: string;
+  sort_order: number;
+};
+
 function first<T>(value: T | T[] | null | undefined): T | null {
   if (value == null) return null;
   return Array.isArray(value) ? (value[0] ?? null) : value;
@@ -66,6 +71,29 @@ async function enrichMatchContext(
   };
 }
 
+async function signAttachmentPaths(
+  service: ReturnType<typeof createServiceClient>,
+  paths: { storage_path: string; sort_order: number }[],
+): Promise<
+  { storage_path: string; signed_url: string | null; sort_order: number }[]
+> {
+  return Promise.all(
+    paths.map(async (att) => {
+      let signedUrl: string | null = null;
+      try {
+        signedUrl = await createOperationalSignedUrl(service, att.storage_path);
+      } catch {
+        signedUrl = null;
+      }
+      return {
+        storage_path: att.storage_path,
+        signed_url: signedUrl,
+        sort_order: att.sort_order,
+      };
+    }),
+  );
+}
+
 export async function GET(request: Request) {
   try {
     const { user, roles, supabase } = await requireRoles([
@@ -98,6 +126,10 @@ export async function GET(request: Request) {
         image_path,
         status,
         created_at,
+        attachments:arbiter_request_attachments (
+          storage_path,
+          sort_order
+        ),
         match:matches (
           round,
           datetime,
@@ -136,17 +168,19 @@ export async function GET(request: Request) {
 
     const requests = await Promise.all(
       scopedRows.map(async (row) => {
-        let imageSignedUrl: string | null = null;
-        if (row.image_path) {
-          try {
-            imageSignedUrl = await createOperationalSignedUrl(
-              service,
-              row.image_path,
-            );
-          } catch {
-            imageSignedUrl = null;
-          }
-        }
+        const rawAttachments = Array.isArray(row.attachments)
+          ? (row.attachments as AttachmentRow[])
+          : [];
+        const attachmentPaths =
+          rawAttachments.length > 0
+            ? [...rawAttachments]
+                .filter((a) => a.storage_path)
+                .sort((a, b) => a.sort_order - b.sort_order)
+            : row.image_path
+              ? [{ storage_path: row.image_path, sort_order: 0 }]
+              : [];
+
+        const attachments = await signAttachmentPaths(service, attachmentPaths);
         const match = await enrichMatchContext(
           supabase,
           first(row.match as MatchRow | MatchRow[] | null),
@@ -156,9 +190,9 @@ export async function GET(request: Request) {
           match_id: row.match_id,
           description: row.description,
           image_path: row.image_path,
+          attachments,
           status: row.status,
           created_at: row.created_at,
-          image_signed_url: imageSignedUrl,
           match,
         };
       }),

@@ -13,11 +13,16 @@ vi.mock("@/lib/auth/route-auth", async (importOriginal) => {
   };
 });
 
-vi.mock("@/lib/competition/arbiter-request", () => ({
-  loadMatchArbiterRequestsForUser: vi.fn(),
-  createArbiterRequest: vi.fn(),
-  canAccessArbiterRequestWorkflow: vi.fn(),
-}));
+vi.mock("@/lib/competition/arbiter-request", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/lib/competition/arbiter-request")>();
+  return {
+    ...actual,
+    loadMatchArbiterRequestsForUser: vi.fn(),
+    createArbiterRequest: vi.fn(),
+    canAccessArbiterRequestWorkflow: vi.fn(),
+  };
+});
 
 vi.mock("@/lib/notifications/arbiter-request-email", () => ({
   sendArbiterRequestCreatedEmail: vi.fn(),
@@ -61,7 +66,7 @@ describe("/api/matches/[matchId]/arbiter-requests", () => {
     expect(body.state.can_submit).toBe(true);
   });
 
-  it("POST submits with image_path only", async () => {
+  it("POST submits with legacy image_path", async () => {
     vi.mocked(createArbiterRequest).mockResolvedValue("req-1");
     vi.mocked(loadMatchArbiterRequestsForUser).mockResolvedValue({
       state: {
@@ -72,6 +77,13 @@ describe("/api/matches/[matchId]/arbiter-requests", () => {
             id: "req-1",
             description: null,
             image_path: "arbiter/match-1/file.pdf",
+            attachments: [
+              {
+                id: "a1",
+                storage_path: "arbiter/match-1/file.pdf",
+                sort_order: 0,
+              },
+            ],
             status: "open",
             created_at: "2025-01-01T00:00:00.000Z",
             resolved_at: null,
@@ -93,11 +105,39 @@ describe("/api/matches/[matchId]/arbiter-requests", () => {
     expect(createArbiterRequest).toHaveBeenCalledWith(
       expect.anything(),
       "match-1",
-      "arbiter/match-1/file.pdf",
+      ["arbiter/match-1/file.pdf"],
     );
     expect(sendArbiterRequestCreatedEmail).toHaveBeenCalledWith(
       { matchId: "match-1" },
       "en",
+    );
+  });
+
+  it("POST submits with image_paths array", async () => {
+    vi.mocked(createArbiterRequest).mockResolvedValue("req-2");
+    vi.mocked(loadMatchArbiterRequestsForUser).mockResolvedValue({
+      state: baseState,
+      canSubmitScore: true,
+    });
+
+    const res = await POST(
+      new Request("http://x", {
+        method: "POST",
+        body: JSON.stringify({
+          image_paths: [
+            "arbiter/match-1/a.pdf",
+            "arbiter/match-1/b.pdf",
+          ],
+        }),
+      }),
+      { params: Promise.resolve({ matchId: "match-1" }) },
+    );
+
+    expect(res.status).toBe(200);
+    expect(createArbiterRequest).toHaveBeenCalledWith(
+      expect.anything(),
+      "match-1",
+      ["arbiter/match-1/a.pdf", "arbiter/match-1/b.pdf"],
     );
   });
 
@@ -106,6 +146,20 @@ describe("/api/matches/[matchId]/arbiter-requests", () => {
       new Request("http://x", {
         method: "POST",
         body: JSON.stringify({}),
+      }),
+      { params: Promise.resolve({ matchId: "match-1" }) },
+    );
+    expect(res.status).toBe(400);
+    expect(createArbiterRequest).not.toHaveBeenCalled();
+  });
+
+  it("POST returns 400 when more than 5 paths", async () => {
+    const res = await POST(
+      new Request("http://x", {
+        method: "POST",
+        body: JSON.stringify({
+          image_paths: ["a", "b", "c", "d", "e", "f"],
+        }),
       }),
       { params: Promise.resolve({ matchId: "match-1" }) },
     );

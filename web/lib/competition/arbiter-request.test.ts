@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   canAccessArbiterRequestWorkflow,
   loadMatchArbiterRequestsForUser,
+  normalizeArbiterRequestImagePaths,
   type MatchArbiterRequestsState,
 } from "./arbiter-request";
 
@@ -31,6 +32,13 @@ describe("canAccessArbiterRequestWorkflow", () => {
             id: "r1",
             description: null,
             image_path: "arbiter/m1/file.pdf",
+            attachments: [
+              {
+                id: "a1",
+                storage_path: "arbiter/m1/file.pdf",
+                sort_order: 0,
+              },
+            ],
             status: "open",
             created_at: "2025-01-01T00:00:00Z",
             resolved_at: null,
@@ -49,6 +57,13 @@ describe("canAccessArbiterRequestWorkflow", () => {
             id: "r2",
             description: "Legacy note",
             image_path: "arbiter/m1/old.pdf",
+            attachments: [
+              {
+                id: "a2",
+                storage_path: "arbiter/m1/old.pdf",
+                sort_order: 0,
+              },
+            ],
             status: "resolved",
             created_at: "2025-01-01T00:00:00Z",
             resolved_at: "2025-01-02T00:00:00Z",
@@ -60,6 +75,49 @@ describe("canAccessArbiterRequestWorkflow", () => {
 
   it("denies when no submit and no requests", () => {
     expect(canAccessArbiterRequestWorkflow(base)).toBe(false);
+  });
+});
+
+describe("normalizeArbiterRequestImagePaths", () => {
+  it("accepts legacy single image_path", () => {
+    expect(
+      normalizeArbiterRequestImagePaths({
+        image_path: "arbiter/m1/a.pdf",
+      }),
+    ).toEqual(["arbiter/m1/a.pdf"]);
+  });
+
+  it("accepts image_paths array and dedupes", () => {
+    expect(
+      normalizeArbiterRequestImagePaths({
+        image_paths: [
+          "arbiter/m1/a.pdf",
+          "arbiter/m1/b.pdf",
+          "arbiter/m1/a.pdf",
+        ],
+      }),
+    ).toEqual(["arbiter/m1/a.pdf", "arbiter/m1/b.pdf"]);
+  });
+
+  it("rejects empty", () => {
+    expect(normalizeArbiterRequestImagePaths({})).toEqual({
+      error: "required",
+    });
+  });
+
+  it("rejects more than 5", () => {
+    expect(
+      normalizeArbiterRequestImagePaths({
+        image_paths: [
+          "a.pdf",
+          "b.pdf",
+          "c.pdf",
+          "d.pdf",
+          "e.pdf",
+          "f.pdf",
+        ],
+      }),
+    ).toEqual({ error: "too_many" });
   });
 });
 
