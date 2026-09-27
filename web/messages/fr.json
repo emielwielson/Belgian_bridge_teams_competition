@@ -182,6 +182,7 @@
       "submittedSuccess": "Demande d'arbitre soumise. Les arbitres, les deux capitaines et les gestionnaires de compétition ont été notifiés par e-mail.",
       "statusOpen": "Ouverte",
       "statusResolved": "Traitée",
+      "statusCancelled": "Annulée",
       "submittedAt": " · soumise le {datetime}",
       "attachmentCount": "{count, plural, one {# pièce jointe} other {# pièces jointes}}",
       "board": "Donne {board}",
@@ -189,7 +190,11 @@
       "loadFailed": "Échec du chargement des demandes d'arbitre",
       "submitFailed": "Échec de la soumission de la demande",
       "uploadFailed": "Échec du téléversement",
-      "submitFailedGeneric": "Échec de la soumission"
+      "submitFailedGeneric": "Échec de la soumission",
+      "cancelButton": "Annuler la demande",
+      "cancelConfirm": "Annuler cette demande d'arbitre ? Elle disparaîtra de la boîte de réception de l'arbitre.",
+      "cancelledSuccess": "Demande d'arbitre annulée.",
+      "cancelFailed": "Échec de l'annulation de la demande"
     },
     "lineup": {
       "lineupHeading": "COMPOSITION",
@@ -490,6 +495,10 @@
     "viewPublishedRuling": "Voir la décision publiée",
     "resolveFailed": "Échec du traitement",
     "uploadRulingFailed": "Échec du téléversement de la décision",
+    "cancelButton": "Annuler la demande",
+    "cancelConfirm": "Annuler cette demande d'arbitre ? Elle disparaîtra de la boîte de réception.",
+    "cancelledSuccess": "Demande annulée.",
+    "cancelFailed": "Échec de l'annulation",
     "adjustScore": "Modifier le score du match",
     "addPenalty": "Attribuer une pénalité",
     "addWarning": "Donner un avertissement",

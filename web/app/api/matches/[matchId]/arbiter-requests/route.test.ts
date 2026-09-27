@@ -87,6 +87,7 @@ describe("/api/matches/[matchId]/arbiter-requests", () => {
             status: "open",
             created_at: "2025-01-01T00:00:00.000Z",
             resolved_at: null,
+            can_cancel: false,
           },
         ],
       },

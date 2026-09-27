@@ -182,6 +182,7 @@
       "submittedSuccess": "Arbiter request submitted. Arbiters, both captains, and competition managers were notified by email.",
       "statusOpen": "Open",
       "statusResolved": "Resolved",
+      "statusCancelled": "Cancelled",
       "submittedAt": " · submitted {datetime}",
       "attachmentCount": "{count, plural, one {# attachment} other {# attachments}}",
       "board": "Board {board}",
@@ -189,7 +190,11 @@
       "loadFailed": "Failed to load arbiter requests",
       "submitFailed": "Failed to submit request",
       "uploadFailed": "Upload failed",
-      "submitFailedGeneric": "Submit failed"
+      "submitFailedGeneric": "Submit failed",
+      "cancelButton": "Cancel request",
+      "cancelConfirm": "Cancel this arbiter request? It will be removed from the arbiter inbox.",
+      "cancelledSuccess": "Arbiter request cancelled.",
+      "cancelFailed": "Failed to cancel request"
     },
     "lineup": {
       "lineupHeading": "LINEUP",
@@ -491,6 +496,10 @@
     "viewPublishedRuling": "View published ruling",
     "resolveFailed": "Failed to resolve",
     "uploadRulingFailed": "Failed to upload ruling",
+    "cancelButton": "Cancel request",
+    "cancelConfirm": "Cancel this arbiter request? It will be removed from the inbox.",
+    "cancelledSuccess": "Request cancelled.",
+    "cancelFailed": "Failed to cancel",
     "adjustScore": "Adjust match score",
     "addPenalty": "Give a penalty",
     "addWarning": "Give a warning",

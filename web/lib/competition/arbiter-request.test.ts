@@ -1,6 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   canAccessArbiterRequestWorkflow,
+  cancelArbiterRequest,
   loadMatchArbiterRequestsForUser,
   normalizeArbiterRequestImagePaths,
   type MatchArbiterRequestsState,
@@ -42,6 +43,7 @@ describe("canAccessArbiterRequestWorkflow", () => {
             status: "open",
             created_at: "2025-01-01T00:00:00Z",
             resolved_at: null,
+            can_cancel: false,
           },
         ],
       }),
@@ -67,6 +69,7 @@ describe("canAccessArbiterRequestWorkflow", () => {
             status: "resolved",
             created_at: "2025-01-01T00:00:00Z",
             resolved_at: "2025-01-02T00:00:00Z",
+            can_cancel: false,
           },
         ],
       }),
@@ -171,5 +174,56 @@ describe("loadMatchArbiterRequestsForUser", () => {
     const loaded = await loadMatchArbiterRequestsForUser(supabase, "m1");
 
     expect(loaded.state?.can_submit).toBe(true);
+  });
+
+  it("parses can_cancel on requests", async () => {
+    const supabase = {
+      rpc: (fn: string) => {
+        if (fn === "current_user_can_submit_score") {
+          return Promise.resolve({ data: false, error: null });
+        }
+        if (fn === "get_match_arbiter_requests_state") {
+          return Promise.resolve({
+            data: {
+              match_id: "m1",
+              can_submit: false,
+              requests: [
+                {
+                  id: "r1",
+                  description: null,
+                  image_path: "arbiter/m1/a.pdf",
+                  attachments: [
+                    {
+                      id: "a1",
+                      storage_path: "arbiter/m1/a.pdf",
+                      sort_order: 0,
+                    },
+                  ],
+                  status: "open",
+                  created_at: "2025-01-01T00:00:00Z",
+                  resolved_at: null,
+                  can_cancel: true,
+                },
+              ],
+            },
+            error: null,
+          });
+        }
+        throw new Error(`unexpected ${fn}`);
+      },
+    } as never;
+
+    const loaded = await loadMatchArbiterRequestsForUser(supabase, "m1");
+    expect(loaded.state?.requests[0]?.can_cancel).toBe(true);
+  });
+});
+
+describe("cancelArbiterRequest", () => {
+  it("calls arbiter_request_cancel RPC", async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: null, error: null });
+    await cancelArbiterRequest({ rpc } as never, "req-1");
+    expect(rpc).toHaveBeenCalledWith("arbiter_request_cancel", {
+      p_request_id: "req-1",
+    });
   });
 });

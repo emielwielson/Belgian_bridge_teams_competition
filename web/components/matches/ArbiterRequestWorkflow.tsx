@@ -151,6 +151,43 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
     }
   }
 
+  async function handleCancel(requestId: string) {
+    if (!window.confirm(t("cancelConfirm"))) return;
+
+    setBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/arbiter/requests/${requestId}/cancel`, {
+        method: "POST",
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        throw new Error(
+          translateApiError(body.error) ?? t("cancelFailed"),
+        );
+      }
+      await load();
+      setMessage(t("cancelledSuccess"));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("cancelFailed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function statusLabel(status: string) {
+    if (status === "open") return t("statusOpen");
+    if (status === "cancelled") return t("statusCancelled");
+    return t("statusResolved");
+  }
+
+  function statusClass(status: string) {
+    if (status === "open") return "font-medium text-amber-700";
+    if (status === "cancelled") return "font-medium text-zinc-600";
+    return "font-medium text-emerald-700";
+  }
+
   const canSubmit =
     uploadedPaths.length > 0 &&
     uploadedPaths.length === files.length &&
@@ -212,14 +249,8 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
         <ul className="mt-4 divide-y divide-zinc-200 text-sm">
           {state.requests.map((r) => (
             <li key={r.id} className="py-2">
-              <span
-                className={
-                  r.status === "open"
-                    ? "font-medium text-amber-700"
-                    : "font-medium text-emerald-700"
-                }
-              >
-                {r.status === "open" ? t("statusOpen") : t("statusResolved")}
+              <span className={statusClass(r.status)}>
+                {statusLabel(r.status)}
               </span>
               <span className="text-zinc-500">
                 {t("submittedAt", {
@@ -231,6 +262,16 @@ export function ArbiterRequestWorkflow({ matchId }: Props) {
               </p>
               {r.description ? (
                 <p className="mt-1 text-zinc-700">{r.description}</p>
+              ) : null}
+              {r.can_cancel ? (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void handleCancel(r.id)}
+                  className="mt-2 text-sm text-zinc-600 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {t("cancelButton")}
+                </button>
               ) : null}
             </li>
           ))}

@@ -24,6 +24,7 @@ export type ArbiterRequestRow = {
   status: string;
   created_at: string;
   resolved_at: string | null;
+  can_cancel: boolean;
 };
 
 export const ARBITER_REQUEST_MAX_ATTACHMENTS = 5;
@@ -136,6 +137,7 @@ function parseState(raw: unknown): MatchArbiterRequestsState | null {
         status: String(row.status),
         created_at: String(row.created_at),
         resolved_at: row.resolved_at != null ? String(row.resolved_at) : null,
+        can_cancel: Boolean(row.can_cancel),
       };
     })
     .filter((r): r is ArbiterRequestRow => r != null);
@@ -395,6 +397,16 @@ export async function resolveArbiterRequest(
   });
   if (error) throw error;
   return parseResolveResult(data);
+}
+
+export async function cancelArbiterRequest(
+  supabase: SupabaseClient,
+  requestId: string,
+): Promise<void> {
+  const { error } = await supabase.rpc("arbiter_request_cancel", {
+    p_request_id: requestId,
+  });
+  if (error) throw error;
 }
 
 export type InboxMatchContext = {

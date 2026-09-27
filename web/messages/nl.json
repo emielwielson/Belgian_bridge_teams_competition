@@ -182,6 +182,7 @@
       "submittedSuccess": "Scheidsrechterverzoek ingediend. Scheidsrechters, beide kapiteins en competitiebeheerders werden per e-mail verwittigd.",
       "statusOpen": "Open",
       "statusResolved": "Afgehandeld",
+      "statusCancelled": "Geannuleerd",
       "submittedAt": " · ingediend {datetime}",
       "attachmentCount": "{count, plural, one {# bijlage} other {# bijlagen}}",
       "board": "Bord {board}",
@@ -189,7 +190,11 @@
       "loadFailed": "Scheidsrechterverzoeken laden mislukt",
       "submitFailed": "Verzoek indienen mislukt",
       "uploadFailed": "Upload mislukt",
-      "submitFailedGeneric": "Indienen mislukt"
+      "submitFailedGeneric": "Indienen mislukt",
+      "cancelButton": "Verzoek annuleren",
+      "cancelConfirm": "Dit scheidsrechterverzoek annuleren? Het verdwijnt uit de inbox van de scheidsrechter.",
+      "cancelledSuccess": "Scheidsrechterverzoek geannuleerd.",
+      "cancelFailed": "Verzoek annuleren mislukt"
     },
     "lineup": {
       "lineupHeading": "OPSTELLING",
@@ -491,6 +496,10 @@
     "viewPublishedRuling": "Gepubliceerde uitspraak bekijken",
     "resolveFailed": "Afhandelen mislukt",
     "uploadRulingFailed": "Uitspraak uploaden mislukt",
+    "cancelButton": "Verzoek annuleren",
+    "cancelConfirm": "Dit scheidsrechterverzoek annuleren? Het verdwijnt uit de inbox.",
+    "cancelledSuccess": "Verzoek geannuleerd.",
+    "cancelFailed": "Annuleren mislukt",
     "adjustScore": "Wedstrijdscore aanpassen",
     "addPenalty": "Straf toekennen",
     "addWarning": "Waarschuwing geven",

@@ -95,7 +95,13 @@ function teamOptions(match: InboxMatchContext): {
   };
 }
 
-export function ArbiterInbox({ kind }: { kind: CompetitionKindCode }) {
+export function ArbiterInbox({
+  kind,
+  canCancelRequests = false,
+}: {
+  kind: CompetitionKindCode;
+  canCancelRequests?: boolean;
+}) {
   const t = useTranslations("arbiter");
   const locale = useLocale() as Locale;
   const intlLocale = toIntlLocale(locale);
@@ -280,6 +286,35 @@ export function ArbiterInbox({ kind }: { kind: CompetitionKindCode }) {
       setMessage(t("resolvedSuccess"));
     } catch (e) {
       setMessage(e instanceof Error ? e.message : t("resolveFailed"));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function cancel(request: InboxRequest) {
+    if (!window.confirm(t("cancelConfirm"))) return;
+
+    setBusyId(request.id);
+    setMessage(null);
+
+    try {
+      const res = await fetch(`/api/arbiter/requests/${request.id}/cancel`, {
+        method: "POST",
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        throw new Error(body.error ?? t("cancelFailed"));
+      }
+
+      setResolveDrafts((prev) => {
+        const next = { ...prev };
+        delete next[request.id];
+        return next;
+      });
+      await load();
+      setMessage(t("cancelledSuccess"));
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : t("cancelFailed"));
     } finally {
       setBusyId(null);
     }
@@ -483,6 +518,16 @@ export function ArbiterInbox({ kind }: { kind: CompetitionKindCode }) {
                     >
                       {busyId === r.id ? t("resolving") : t("resolveButton")}
                     </button>
+                    {canCancelRequests ? (
+                      <button
+                        type="button"
+                        disabled={busyId === r.id}
+                        onClick={() => void cancel(r)}
+                        className="mt-3 ml-3 text-sm text-zinc-600 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {t("cancelButton")}
+                      </button>
+                    ) : null}
                     {rulingLink ? (
                       <p className="mt-2 text-sm">
                         <a

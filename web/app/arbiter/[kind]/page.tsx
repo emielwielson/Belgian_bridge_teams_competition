@@ -7,7 +7,7 @@ import {
   loadArbiterNavAccess,
 } from "@/lib/auth/arbiter-scope";
 import { requireRoles } from "@/lib/auth/route-auth";
-import { ARBITER_ACCESS_ROLES } from "@/lib/auth/roles";
+import { ARBITER_ACCESS_ROLES, ROLES } from "@/lib/auth/roles";
 
 type Props = {
   params: Promise<{ kind: string }>;
@@ -24,6 +24,10 @@ export default async function ArbiterKindInboxPage({ params }: Props) {
     if (nav.href) redirect(nav.href);
     redirect("/?error=forbidden");
   }
+
+  const canCancelRequests =
+    roles.includes(ROLES.COMPETITION_MANAGER) ||
+    roles.includes(ROLES.SYSTEM_ADMIN);
 
   const t = await getTranslations("arbiter");
   const tNav = await getTranslations("arbiter.nav");
@@ -46,7 +50,7 @@ export default async function ArbiterKindInboxPage({ params }: Props) {
       </h1>
       <p className="mt-2 text-sm text-zinc-600">{t("pageDescription")}</p>
       <div className="mt-6">
-        <ArbiterInbox kind={kindParam} />
+        <ArbiterInbox kind={kindParam} canCancelRequests={canCancelRequests} />
       </div>
     </main>
   );
