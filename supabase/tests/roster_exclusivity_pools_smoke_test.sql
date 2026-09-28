@@ -87,8 +87,8 @@ begin
     returning id into v_club_id;
   end if;
 
-  insert into public.players (name)
-  values ('Roster Pool Smoke Player')
+  insert into public.players (name, federation)
+  values ('Roster Pool Smoke Player', 'vbl')
   returning id into v_player_id;
 
   insert into public.leagues (season_id, scope, region_id, name, competition_kind_id)
