@@ -223,8 +223,8 @@ export async function findEligibleClubMember(
   const match = (
     await retainZweiffelEligibleRows(
       supabase,
-      (data ?? []).map((row) => ({
-        ...(row as Record<string, unknown>),
+      ((data ?? []) as unknown as Record<string, unknown>[]).map((row) => ({
+        ...row,
         player_id: input.playerId,
       })),
     )
