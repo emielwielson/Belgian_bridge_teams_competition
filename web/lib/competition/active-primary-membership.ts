@@ -220,16 +220,13 @@ export async function findEligibleClubMember(
     .eq("club_id", input.clubId)
     .eq("player_id", input.playerId);
   if (error) throw error;
-  const match = (
-    await retainZweiffelEligibleRows(
-      supabase,
-      ((data ?? []) as unknown as Record<string, unknown>[]).map((row) => ({
-        ...row,
-        player_id: input.playerId,
-      })),
-    )
-  )[0];
-  return match ? { id: match.id as string } : null;
+  const rows: Record<string, unknown>[] = (data ?? []).map((row) => ({
+    ...(row as Record<string, unknown>),
+    player_id: input.playerId,
+  }));
+  const match = (await retainZweiffelEligibleRows(supabase, rows))[0];
+  if (!match || typeof match.id !== "string") return null;
+  return { id: match.id };
 }
 
 /** @deprecated Prefer findEligibleClubMember with competition kind when known. */
