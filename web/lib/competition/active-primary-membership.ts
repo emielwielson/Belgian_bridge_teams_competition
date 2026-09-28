@@ -10,8 +10,17 @@ export const ACTIVE_PRIMARY = {
 export const ACTIVE_MEMBERSHIP_STATUS = "active" as const;
 
 const PRIMARY_ONLY = ["primary"] as const;
-/** Ledenbeheer enum: primary | second (not "secondary"). */
-const PRIMARY_OR_SECOND = ["primary", "second"] as const;
+/**
+ * Zweiffel: primary (active), or second/federation (any status).
+ * Ledenbeheer uses "second" (not "secondary") and "federation" for cross-federation club links.
+ */
+const ZWEIFFEL_MEMBERSHIP_TYPES = [
+  "primary",
+  "second",
+  "federation",
+] as const;
+
+const ZWEIFFEL_STATUS_IGNORED_TYPES = new Set(["second", "federation"]);
 
 export function allowsSecondaryMembers(
   competitionKindCode: string | null | undefined,
@@ -23,29 +32,74 @@ export function eligibleMembershipTypes(
   competitionKindCode?: string | null,
 ): readonly string[] {
   return allowsSecondaryMembers(competitionKindCode)
-    ? PRIMARY_OR_SECOND
+    ? ZWEIFFEL_MEMBERSHIP_TYPES
     : PRIMARY_ONLY;
 }
 
-function withMembershipTypeColumn(select: string): string {
-  if (/(^|[, ])membership_type([, ]|$)/.test(select)) return select;
-  return `${select}, membership_type`;
-}
+export function isEligibleMembershipRow(
+  row: { membership_type?: unknown; status?: unknown },
+  competitionKindCode?: string | null,
+): boolean {
+  const type = String(row.membership_type ?? "");
+  const status = String(row.status ?? "");
 
-function filterRowsByMembershipType<T extends Record<string, unknown>>(
-  rows: T[],
-  membershipTypes: readonly string[],
-): T[] {
-  const allowed = new Set(membershipTypes);
-  return rows.filter((row) =>
-    allowed.has(String(row.membership_type ?? "")),
+  if (allowsSecondaryMembers(competitionKindCode)) {
+    if (type === "primary") return status === ACTIVE_MEMBERSHIP_STATUS;
+    if (ZWEIFFEL_STATUS_IGNORED_TYPES.has(type)) return true;
+    return false;
+  }
+
+  return (
+    type === ACTIVE_PRIMARY.membership_type &&
+    status === ACTIVE_PRIMARY.status
   );
 }
 
+function withMembershipColumns(select: string): string {
+  let next = select;
+  if (!/(^|[, ])membership_type([, ]|$)/.test(next)) {
+    next = `${next}, membership_type`;
+  }
+  if (!/(^|[, ])status([, ]|$)/.test(next)) {
+    next = `${next}, status`;
+  }
+  return next;
+}
+
+function playerIdFromRow(row: Record<string, unknown>): string | null {
+  const id = row.player_id;
+  if (typeof id === "string" && id.length > 0) return id;
+  return null;
+}
+
+/** Keep first eligible row per player_id when present; otherwise keep all eligible rows. */
+function filterEligibleRows<T extends Record<string, unknown>>(
+  rows: T[],
+  competitionKindCode?: string | null,
+): T[] {
+  const eligible = rows.filter((row) =>
+    isEligibleMembershipRow(row, competitionKindCode),
+  );
+  const seen = new Set<string>();
+  const deduped: T[] = [];
+  for (const row of eligible) {
+    const playerId = playerIdFromRow(row);
+    if (playerId == null) {
+      deduped.push(row);
+      continue;
+    }
+    if (seen.has(playerId)) continue;
+    seen.add(playerId);
+    deduped.push(row);
+  }
+  return deduped;
+}
+
 /**
- * Load active club members eligible for the competition kind.
- * Filters membership_type in JS so we never pass unknown enum labels to PostgREST
- * (primary-only uses a SQL eq filter; multi-type loads all active then filters).
+ * Load club members eligible for the competition kind.
+ * Primary-only competitions: SQL filters active primary.
+ * Zweiffel: loads club memberships then applies type/status rules in JS
+ * (second/federation ignore status; primary requires active).
  */
 export async function loadEligibleClubMembers<T = Record<string, unknown>>(
   supabase: SupabaseClient,
@@ -68,13 +122,12 @@ export async function loadEligibleClubMembers<T = Record<string, unknown>>(
 
   const { data, error } = await supabase
     .from("player_club_memberships")
-    .select(withMembershipTypeColumn(select))
-    .eq("club_id", clubId)
-    .eq("status", ACTIVE_MEMBERSHIP_STATUS);
+    .select(withMembershipColumns(select))
+    .eq("club_id", clubId);
   if (error) throw error;
-  return filterRowsByMembershipType(
+  return filterEligibleRows(
     (data ?? []) as unknown as Record<string, unknown>[],
-    membershipTypes,
+    competitionKindCode,
   ) as T[];
 }
 
@@ -112,14 +165,13 @@ export async function findEligibleClubMember(
 
   const { data, error } = await supabase
     .from("player_club_memberships")
-    .select("id, membership_type")
+    .select("id, membership_type, status")
     .eq("club_id", input.clubId)
-    .eq("player_id", input.playerId)
-    .eq("status", ACTIVE_MEMBERSHIP_STATUS);
+    .eq("player_id", input.playerId);
   if (error) throw error;
-  const match = filterRowsByMembershipType(
+  const match = filterEligibleRows(
     (data ?? []) as unknown as Record<string, unknown>[],
-    membershipTypes,
+    input.competitionKindCode,
   )[0];
   return match ? { id: match.id as string } : null;
 }
@@ -176,16 +228,17 @@ export async function loadEligiblePlayerIdsAtClub(
 
   const { data, error } = await supabase
     .from("player_club_memberships")
-    .select("player_id, membership_type")
+    .select("player_id, membership_type, status")
     .eq("club_id", clubId)
-    .in("player_id", playerIds)
-    .eq("status", ACTIVE_MEMBERSHIP_STATUS);
+    .in("player_id", playerIds);
   if (error) throw error;
   return new Set(
-    filterRowsByMembershipType(
+    filterEligibleRows(
       (data ?? []) as unknown as Record<string, unknown>[],
-      membershipTypes,
-    ).map((row) => row.player_id as string),
+      competitionKindCode,
+    )
+      .map((row) => row.player_id as string)
+      .filter(Boolean),
   );
 }
 

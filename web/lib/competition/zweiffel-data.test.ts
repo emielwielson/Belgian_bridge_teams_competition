@@ -19,10 +19,11 @@ describe("allowsSecondaryMembers", () => {
 });
 
 describe("eligibleMembershipTypes", () => {
-  it("includes second for zweiffel", () => {
+  it("includes second and federation for zweiffel", () => {
     expect(eligibleMembershipTypes("zweiffel")).toEqual([
       "primary",
       "second",
+      "federation",
     ]);
     expect(eligibleMembershipTypes("national")).toEqual(["primary"]);
   });

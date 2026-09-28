@@ -16,7 +16,7 @@ begin
     raise exception 'Missing competition_kinds.zweiffel';
   end if;
 
-  -- Captain trigger must allow second membership for Zweiffel
+  -- Captain trigger must allow second/federation without requiring active status
   select pg_get_functiondef(oid) into v_fn
   from pg_proc
   where proname = 'enforce_team_captain_club_membership'
@@ -25,6 +25,14 @@ begin
 
   if v_fn is null or position('''second''' in v_fn) = 0 then
     raise exception 'Captain trigger must allow second membership for Zweiffel';
+  end if;
+  if position('''federation''' in v_fn) = 0 then
+    raise exception 'Captain trigger must allow federation membership for Zweiffel';
+  end if;
+  -- second/federation branch must not require status = active on those types
+  if position('membership_type in (''second'', ''federation'')' in v_fn) = 0
+     and position('pcm.membership_type in (''second'', ''federation'')' in v_fn) = 0 then
+    raise exception 'Captain trigger must accept second/federation without status filter';
   end if;
 
   select pg_get_functiondef(oid) into v_fn
