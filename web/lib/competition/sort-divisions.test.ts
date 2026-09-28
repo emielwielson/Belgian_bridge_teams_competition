@@ -33,4 +33,25 @@ describe("sortDivisionsByCanonicalName", () => {
     const sorted = sortDivisionsByCanonicalName(input);
     expect(sorted.map((d) => d.name)).toEqual(["Honor Division", "Alpha", "Zebra"]);
   });
+
+  it("orders Zweiffel divisions with Honneur first", () => {
+    const input = [
+      { name: "APM 2", id: "apm2" },
+      { name: "2A", id: "2a" },
+      { name: "Honneur", id: "h" },
+      { name: "1", id: "1" },
+      { name: "APM 1", id: "apm1" },
+      { name: "2B", id: "2b" },
+    ];
+
+    const sorted = sortDivisionsByCanonicalName(input);
+    expect(sorted.map((d) => d.name)).toEqual([
+      "Honneur",
+      "1",
+      "2A",
+      "2B",
+      "APM 1",
+      "APM 2",
+    ]);
+  });
 });

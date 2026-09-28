@@ -54,7 +54,7 @@ export function AdminTeamCaptainsPage({ scope, regionCode }: Props) {
         skipTeamLoad
       />
 
-      <TeamCaptainsPanel groupId={groupId} />
+      <TeamCaptainsPanel groupId={groupId} competitionKind={regionCode} />
     </main>
   );
 }

@@ -4,14 +4,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
-import { AccountMenu } from "@/components/auth/AccountMenu";
+import { AccountMenu, type NavTeam } from "@/components/auth/AccountMenu";
 import { resolveArbiterNavAccess } from "@/lib/auth/arbiter-scope";
 import type { ActivePlayer, LinkedPlayer } from "@/lib/auth/active-player";
+import { resolveActiveTeamId } from "@/lib/auth/active-team";
 
 type MeResponse = {
   user: { id: string; email?: string };
   roles: string[];
-  teams?: { id: string; name: string }[];
+  teams?: NavTeam[];
   activePlayer?: ActivePlayer | null;
   linkedPlayers?: LinkedPlayer[];
   arbiterAccess?: {
@@ -39,15 +40,18 @@ export function SiteHeader() {
   const pathname = usePathname();
   const [me, setMe] = useState<MeResponse | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [activeTeamId, setActiveTeamId] = useState<string | null>(null);
 
   const refreshMe = useCallback(async () => {
     const res = await fetch("/api/auth/me");
     if (!res.ok) {
       setMe(null);
+      setActiveTeamId(null);
       return;
     }
     const data = (await res.json()) as MeResponse;
     setMe(data);
+    setActiveTeamId(resolveActiveTeamId(data.teams ?? []));
   }, []);
 
   useEffect(() => {
@@ -66,6 +70,7 @@ export function SiteHeader() {
                 | "national"
                 | "flanders"
                 | "wallonia"
+                | "zweiffel"
               )[],
               kindIds: [],
               honor: me.arbiterAccess.honor,
@@ -76,11 +81,15 @@ export function SiteHeader() {
           | "national"
           | "flanders"
           | "wallonia"
+          | "zweiffel"
         )[],
       })
     : { kinds: [], showHonor: false, href: null };
   const showArbiterLink = arbiterNav.href != null;
   const arbiterHref = arbiterNav.href ?? "/arbiter";
+
+  const teams = me?.teams ?? [];
+  const myTeamHref = activeTeamId ? `/teams/${activeTeamId}` : null;
 
   const primaryLinks = (
     <>
@@ -98,12 +107,12 @@ export function SiteHeader() {
       >
         {t("butler")}
       </Link>
-      {me?.teams?.length === 1 ? (
+      {myTeamHref ? (
         <Link
-          href={`/teams/${me.teams[0].id}`}
+          href={myTeamHref}
           className={navLinkClass(pathname.startsWith("/teams/"))}
         >
-          {t("myTeam")}
+          {teams.length > 1 ? t("myTeams") : t("myTeam")}
         </Link>
       ) : null}
       {me ? (
@@ -152,7 +161,9 @@ export function SiteHeader() {
               email={me?.user.email}
               activePlayer={me?.activePlayer}
               linkedPlayers={me?.linkedPlayers}
+              teams={teams}
               onPlayerSwitched={refreshMe}
+              onTeamSwitched={refreshMe}
             />
           )}
         </div>
@@ -174,12 +185,12 @@ export function SiteHeader() {
           >
             {t("butler")}
           </Link>
-          {me?.teams?.length === 1 ? (
+          {myTeamHref ? (
             <Link
-              href={`/teams/${me.teams[0].id}`}
+              href={myTeamHref}
               className={mobileLinkClass(pathname.startsWith("/teams/"))}
             >
-              {t("myTeam")}
+              {teams.length > 1 ? t("myTeams") : t("myTeam")}
             </Link>
           ) : null}
           {me ? (

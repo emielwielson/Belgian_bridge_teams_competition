@@ -7,10 +7,12 @@
     "signOut": "Se déconnecter",
     "loading": "…",
     "myTeam": "Mon équipe",
+    "myTeams": "Mes équipes",
     "manuals": "Guides",
     "arbiterInbox": "Boîte arbitre",
     "dashboard": "Tableau de bord",
     "playingAs": "Jouer en tant que",
+    "activeTeam": "Mon équipe",
     "language": {
       "label": "Langue",
       "english": "English",
@@ -468,6 +470,7 @@
       "national": "National",
       "flanders": "Flandre",
       "wallonia": "Wallonie",
+    "zweiffel": "Zweiffel",
       "honor": "Division d'Honneur"
     },
     "pageTitle": "Boîte arbitre",
@@ -824,6 +827,7 @@
       "kindNational": "National",
       "kindFlanders": "Flandre",
       "kindWallonia": "Wallonie",
+      "kindZweiffel": "Zweiffel",
       "honor": "Division d'Honneur",
       "add": "Créer / assigner",
       "save": "Enregistrer",
@@ -851,6 +855,7 @@
     "national": "National",
     "flandersRegional": "Flandre (régional)",
     "walloniaRegional": "Wallonie (régional)",
+    "zweiffelRegional": "Zweiffel (régional)",
     "seasonStatus": "Statut de la saison : {status}",
     "competitionStatus": "Statut de la compétition : {status}",
     "settingUpStructure": " · Configuration de la structure…",
@@ -1181,8 +1186,10 @@
     "national": "National",
     "flanders": "Flandre",
     "wallonia": "Wallonie",
+    "zweiffel": "Zweiffel",
     "flandersRegional": "Flandre (régional)",
-    "walloniaRegional": "Wallonie (régional)"
+    "walloniaRegional": "Wallonie (régional)",
+    "zweiffelRegional": "Zweiffel (régional)"
   },
   "divisions": {
     "honor": "Division d'honneur",
@@ -1356,6 +1363,7 @@
       "penaltyFieldsRequired": "team_id, penalty_date et reason sont obligatoires",
       "captainNotClubMember": "Le capitaine doit être membre du club de l'équipe",
       "captainAlreadyOnAnotherTeam": "Le capitaine est déjà sur une autre équipe cette saison ; retirez-le d'abord de cet effectif",
+      "playerAlreadyOnAnotherTeam": "Le joueur est déjà dans une autre équipe cette saison dans la même compétition",
       "cannotRemoveCaptain": "Impossible de retirer le capitaine de l'équipe de l'effectif",
       "invalidRequestBody": "Corps de requête invalide",
       "clubIdRequired": "club_id est obligatoire",

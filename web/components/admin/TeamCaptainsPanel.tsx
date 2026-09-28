@@ -21,9 +21,10 @@ type ClubMember = { id: string; name: string; member_number: string | null };
 
 type Props = {
   groupId: string | null;
+  competitionKind?: string;
 };
 
-export function TeamCaptainsPanel({ groupId }: Props) {
+export function TeamCaptainsPanel({ groupId, competitionKind }: Props) {
   const t = useTranslations("admin.teamsPanel");
   const tPage = useTranslations("admin.teamCaptainsPage");
 
@@ -75,7 +76,11 @@ export function TeamCaptainsPanel({ groupId }: Props) {
 
   async function loadEditMembers(forClubId: string) {
     setMembersLoading(true);
-    const res = await fetch(`/api/admin/competition/clubs/${forClubId}/players`);
+    const base = `/api/admin/competition/clubs/${forClubId}/players`;
+    const url = competitionKind
+      ? `${base}?kind=${encodeURIComponent(competitionKind)}`
+      : base;
+    const res = await fetch(url);
     const body = await res.json();
     setEditMembers((body.players ?? []) as ClubMember[]);
     setMembersLoading(false);

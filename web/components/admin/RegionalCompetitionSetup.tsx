@@ -248,6 +248,7 @@ export function RegionalCompetitionSetup({ regionCode, regionId }: Props) {
               regionId={regionId}
               leagues={filteredLeagues}
               scheduleSettingsLocked={setupLocked}
+              competitionKind={regionCode}
               onStructureChanged={loadAll}
               onTeamsChanged={loadReadiness}
             />

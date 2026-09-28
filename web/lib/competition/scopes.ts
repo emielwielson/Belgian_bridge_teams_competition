@@ -10,6 +10,7 @@ export type CompetitionScope = (typeof SCOPES)[keyof typeof SCOPES];
 export const REGION_CODES = {
   FLANDERS: "flanders",
   WALLONIA: "wallonia",
+  ZWEIFFEL: "zweiffel",
 } as const;
 
 export type RegionCode = (typeof REGION_CODES)[keyof typeof REGION_CODES];
@@ -20,7 +21,11 @@ export function parseScopeParam(scope: string): CompetitionScope | null {
 }
 
 export function parseRegionParam(region: string): RegionCode | null {
-  if (region === REGION_CODES.FLANDERS || region === REGION_CODES.WALLONIA) {
+  if (
+    region === REGION_CODES.FLANDERS ||
+    region === REGION_CODES.WALLONIA ||
+    region === REGION_CODES.ZWEIFFEL
+  ) {
     return region;
   }
   return null;
@@ -28,7 +33,11 @@ export function parseRegionParam(region: string): RegionCode | null {
 
 export function scopeLabel(scope: CompetitionScope, regionCode?: string): string {
   if (scope === SCOPES.NATIONAL) return LEAGUE_NAMES.NATIONAL;
-  if (regionCode === REGION_CODES.WALLONIA || regionCode === REGION_CODES.FLANDERS) {
+  if (
+    regionCode === REGION_CODES.WALLONIA ||
+    regionCode === REGION_CODES.FLANDERS ||
+    regionCode === REGION_CODES.ZWEIFFEL
+  ) {
     return regionalLeagueName(regionCode);
   }
   return LEAGUE_NAMES.FLANDERS;

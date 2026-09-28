@@ -66,6 +66,23 @@ describe("nominalBoardCount", () => {
       nominalBoardCount({ leagueScope: "regional", divisionLevelCode: "third" }),
     ).toBeNull();
   });
+
+  it("zweiffel all levels → 24", () => {
+    expect(
+      nominalBoardCount({
+        leagueScope: "regional",
+        divisionLevelCode: "first",
+        competitionKindCode: "zweiffel",
+      }),
+    ).toBe(24);
+    expect(
+      nominalBoardCount({
+        leagueScope: "regional",
+        divisionLevelCode: "third",
+        competitionKindCode: "zweiffel",
+      }),
+    ).toBe(24);
+  });
 });
 
 describe("allowsBoardChoice", () => {
@@ -79,9 +96,28 @@ describe("allowsBoardChoice", () => {
     expect(
       allowsBoardChoice({ leagueScope: "regional", divisionLevelCode: "first" }),
     ).toBe(false);
+  });
+
+  it("zweiffel never allows board choice", () => {
     expect(
-      allowsBoardChoice({ leagueScope: "national", divisionLevelCode: "second" }),
+      allowsBoardChoice({
+        leagueScope: "regional",
+        divisionLevelCode: "second",
+        competitionKindCode: "zweiffel",
+      }),
     ).toBe(false);
+  });
+});
+
+describe("vpBoardCountsForGroup zweiffel", () => {
+  it("seeds 18 and 24", () => {
+    expect(
+      vpBoardCountsForGroup({
+        leagueScope: "regional",
+        divisionLevelCode: "first",
+        competitionKindCode: "zweiffel",
+      }),
+    ).toEqual([18, 24]);
   });
 });
 
@@ -95,6 +131,7 @@ describe("vpBoardCount", () => {
     expect(vpBoardCount(28, true)).toBe(21);
     expect(vpBoardCount(20, true)).toBe(15);
     expect(vpBoardCount(16, true)).toBe(12);
+    expect(vpBoardCount(24, true)).toBe(18);
   });
 });
 

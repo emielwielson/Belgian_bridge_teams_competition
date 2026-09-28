@@ -1,10 +1,11 @@
 import { REGION_CODES, type RegionCode } from "./scopes";
 
-/** Exactly three leagues per season: National, Flanders, Wallonia. */
+/** Four leagues per season: National, Flanders, Wallonia, Zweiffel. */
 export const LEAGUE_NAMES = {
   NATIONAL: "National",
   FLANDERS: "Flanders",
   WALLONIA: "Wallonia",
+  ZWEIFFEL: "Zweiffel",
 } as const;
 
 export type LeagueName = (typeof LEAGUE_NAMES)[keyof typeof LEAGUE_NAMES];
@@ -13,9 +14,9 @@ export type LeagueName = (typeof LEAGUE_NAMES)[keyof typeof LEAGUE_NAMES];
 export const NATIONAL_LEAGUE_NAME = LEAGUE_NAMES.NATIONAL;
 
 export function regionalLeagueName(regionCode: RegionCode): LeagueName {
-  return regionCode === REGION_CODES.WALLONIA
-    ? LEAGUE_NAMES.WALLONIA
-    : LEAGUE_NAMES.FLANDERS;
+  if (regionCode === REGION_CODES.WALLONIA) return LEAGUE_NAMES.WALLONIA;
+  if (regionCode === REGION_CODES.ZWEIFFEL) return LEAGUE_NAMES.ZWEIFFEL;
+  return LEAGUE_NAMES.FLANDERS;
 }
 
 export function canonicalLeagueName(
@@ -27,4 +28,15 @@ export function canonicalLeagueName(
     throw new Error("regionCode required for regional league");
   }
   return regionalLeagueName(regionCode);
+}
+
+/** Display name for a competition_kinds.code (player “my teams” labels). */
+export function leagueNameForCompetitionKind(
+  kindCode: string | null | undefined,
+): LeagueName | null {
+  if (kindCode === "national") return LEAGUE_NAMES.NATIONAL;
+  if (kindCode === "flanders") return LEAGUE_NAMES.FLANDERS;
+  if (kindCode === "wallonia") return LEAGUE_NAMES.WALLONIA;
+  if (kindCode === "zweiffel") return LEAGUE_NAMES.ZWEIFFEL;
+  return null;
 }

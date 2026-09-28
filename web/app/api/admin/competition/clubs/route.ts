@@ -1,9 +1,28 @@
 import {
+  COMPETITION_KIND_CODES,
   getManagedCompetitionKinds,
   regionCodeForKind,
+  type CompetitionKindCode,
 } from "@/lib/auth/competition-scope";
 import { COMPETITION_ADMIN_ROLES, requireRoles } from "@/lib/auth/route-auth";
+import { REGION_CODES } from "@/lib/competition/scopes";
 import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
+
+function kindFromRegionCode(code: string | undefined): CompetitionKindCode | null {
+  if (code === REGION_CODES.WALLONIA) return COMPETITION_KIND_CODES.WALLONIA;
+  if (code === REGION_CODES.FLANDERS) return COMPETITION_KIND_CODES.FLANDERS;
+  if (code === REGION_CODES.ZWEIFFEL) return COMPETITION_KIND_CODES.ZWEIFFEL;
+  return null;
+}
+
+/** Club geography for listing: Zweiffel uses Flanders+Wallonia clubs. */
+function clubRegionCodesForKind(kind: CompetitionKindCode): string[] {
+  if (kind === COMPETITION_KIND_CODES.ZWEIFFEL) {
+    return [REGION_CODES.FLANDERS, REGION_CODES.WALLONIA];
+  }
+  const code = regionCodeForKind(kind);
+  return code ? [code] : [];
+}
 
 export async function GET(request: Request) {
   try {
@@ -27,30 +46,39 @@ export async function GET(request: Request) {
         .select("code")
         .eq("id", regionId)
         .maybeSingle();
-      const kind =
-        region?.code === "wallonia"
-          ? ("wallonia" as const)
-          : region?.code === "flanders"
-            ? ("flanders" as const)
-            : null;
+      const kind = kindFromRegionCode(region?.code);
       if (
         !kind ||
         (!managed.isGlobal && !managed.kindCodes.includes(kind))
       ) {
         return jsonOk({ clubs: [] });
       }
-      query = query.eq("region_id", regionId);
+
+      const clubRegionCodes = clubRegionCodesForKind(kind);
+      if (kind === COMPETITION_KIND_CODES.ZWEIFFEL) {
+        const { data: regions } = await supabase
+          .from("regions")
+          .select("id")
+          .in("code", clubRegionCodes);
+        const ids = (regions ?? []).map((r) => r.id);
+        if (ids.length === 0) return jsonOk({ clubs: [] });
+        query = query.in("region_id", ids);
+      } else {
+        query = query.eq("region_id", regionId);
+      }
     } else if (!managed.isGlobal) {
-      const regionCodes = managed.kindCodes
-        .map(regionCodeForKind)
-        .filter((c): c is NonNullable<typeof c> => c != null);
-      if (regionCodes.length === 0) {
+      const clubRegionCodes = [
+        ...new Set(
+          managed.kindCodes.flatMap((k) => clubRegionCodesForKind(k)),
+        ),
+      ];
+      if (clubRegionCodes.length === 0) {
         return jsonOk({ clubs: [] });
       }
       const { data: regions } = await supabase
         .from("regions")
         .select("id")
-        .in("code", regionCodes);
+        .in("code", clubRegionCodes);
       const ids = (regions ?? []).map((r) => r.id);
       if (ids.length === 0) return jsonOk({ clubs: [] });
       query = query.in("region_id", ids);
@@ -78,12 +106,19 @@ export async function POST(request: Request) {
       .maybeSingle();
     if (!region) return jsonError("Invalid region", 400);
 
+    if (region.code === REGION_CODES.ZWEIFFEL) {
+      return jsonError(
+        "Clubs cannot be created in the Zweiffel region; use Flanders or Wallonia",
+        400,
+      );
+    }
+
     const managed = await getManagedCompetitionKinds(supabase, user.id, roles);
-    const kind =
-      region.code === "wallonia"
-        ? ("wallonia" as const)
-        : ("flanders" as const);
-    if (!managed.isGlobal && !managed.kindCodes.includes(kind)) {
+    const kind = kindFromRegionCode(region.code);
+    if (
+      !kind ||
+      (!managed.isGlobal && !managed.kindCodes.includes(kind))
+    ) {
       return jsonError("Forbidden: cannot manage this club", 403);
     }
 

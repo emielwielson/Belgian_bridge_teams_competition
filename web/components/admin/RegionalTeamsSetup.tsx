@@ -31,6 +31,7 @@ type Props = {
   regionId: string;
   leagues: League[];
   scheduleSettingsLocked?: boolean;
+  competitionKind?: string;
   onStructureChanged: () => void;
   onTeamsChanged: () => void;
 };
@@ -39,6 +40,7 @@ export function RegionalTeamsSetup({
   regionId,
   leagues,
   scheduleSettingsLocked = false,
+  competitionKind,
   onStructureChanged,
   onTeamsChanged,
 }: Props) {
@@ -164,6 +166,7 @@ export function RegionalTeamsSetup({
             groupId={selectedGroup.groupId}
             divisionLabel={`${selectedGroup.divisionName} — ${selectedGroup.groupName}`}
             clubs={clubs}
+            competitionKind={competitionKind}
             onTeamsChanged={handleTeamsChanged}
           />
         </section>

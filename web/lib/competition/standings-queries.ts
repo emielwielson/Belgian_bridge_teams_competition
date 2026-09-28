@@ -88,6 +88,7 @@ const LEAGUE_PICKER_ORDER: LeagueName[] = [
   LEAGUE_NAMES.NATIONAL,
   LEAGUE_NAMES.FLANDERS,
   LEAGUE_NAMES.WALLONIA,
+  LEAGUE_NAMES.ZWEIFFEL,
 ];
 
 function isMissingHostingTeamIdColumn(error: PostgrestError | null): boolean {

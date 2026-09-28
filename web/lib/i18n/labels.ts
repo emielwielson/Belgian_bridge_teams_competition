@@ -55,6 +55,7 @@ export function translateLeagueName(
   if (leagueName === LEAGUE_NAMES.NATIONAL) return tRegions("national");
   if (leagueName === LEAGUE_NAMES.FLANDERS) return tRegions("flanders");
   if (leagueName === LEAGUE_NAMES.WALLONIA) return tRegions("wallonia");
+  if (leagueName === LEAGUE_NAMES.ZWEIFFEL) return tRegions("zweiffel");
   return leagueName;
 }
 
@@ -64,6 +65,9 @@ export function translateRegionalScopeTitle(
 ): string {
   if (regionCode === REGION_CODES.WALLONIA) {
     return tAdmin("walloniaRegional");
+  }
+  if (regionCode === REGION_CODES.ZWEIFFEL) {
+    return tAdmin("zweiffelRegional");
   }
   return tAdmin("flandersRegional");
 }

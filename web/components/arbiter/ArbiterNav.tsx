@@ -38,6 +38,8 @@ export function ArbiterNav({
         return t("flanders");
       case "wallonia":
         return t("wallonia");
+      case "zweiffel":
+        return t("zweiffel");
     }
   }
 

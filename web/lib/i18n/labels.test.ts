@@ -15,6 +15,9 @@ describe("translateLeagueName", () => {
     expect(translateLeagueName(LEAGUE_NAMES.WALLONIA, tRegions)).toBe(
       "regions:wallonia",
     );
+    expect(translateLeagueName(LEAGUE_NAMES.ZWEIFFEL, tRegions)).toBe(
+      "regions:zweiffel",
+    );
   });
 
   it("falls back to the original name for unknown leagues", () => {

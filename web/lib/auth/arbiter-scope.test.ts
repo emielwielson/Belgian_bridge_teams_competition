@@ -39,14 +39,15 @@ describe("arbiter access helpers", () => {
     expect(arbiterCanAccessMatchKind(a, null)).toBe(false);
   });
 
-  it("orders inbox kinds National → Flanders → Wallonia", () => {
-    expect(orderArbiterInboxKinds(["wallonia", "national", "flanders"])).toEqual(
-      ["national", "flanders", "wallonia"],
-    );
+  it("orders inbox kinds National → Flanders → Wallonia → Zweiffel", () => {
+    expect(
+      orderArbiterInboxKinds(["wallonia", "national", "zweiffel", "flanders"]),
+    ).toEqual(["national", "flanders", "wallonia", "zweiffel"]);
   });
 
   it("validates kind codes", () => {
     expect(isCompetitionKindCode("national")).toBe(true);
+    expect(isCompetitionKindCode("zweiffel")).toBe(true);
     expect(isCompetitionKindCode("honor")).toBe(false);
   });
 });
@@ -59,7 +60,7 @@ describe("resolveArbiterNavAccess", () => {
         arbiterAccess: null,
       }),
     ).toEqual({
-      kinds: ["national", "flanders", "wallonia"],
+      kinds: ["national", "flanders", "wallonia", "zweiffel"],
       showHonor: true,
       href: "/arbiter/national",
     });

@@ -3,7 +3,16 @@
 insert into public.regions (code, name)
 values
   ('flanders', 'Flanders'),
-  ('wallonia', 'Wallonia')
+  ('wallonia', 'Wallonia'),
+  ('zweiffel', 'Zweiffel')
+on conflict (code) do nothing;
+
+insert into public.competition_kinds (code, name)
+values
+  ('national', 'National'),
+  ('flanders', 'Flanders'),
+  ('wallonia', 'Wallonia'),
+  ('zweiffel', 'Zweiffel')
 on conflict (code) do nothing;
 
 insert into public.division_levels (code, name, sort_order)
@@ -18,6 +27,12 @@ insert into public.seasons (name, status, is_active)
 select '2025-26', 'setup', true
 where not exists (
   select 1 from public.seasons where name = '2025-26'
+);
+
+insert into public.seasons (name, status, is_active)
+select '2026-27', 'setup', false
+where not exists (
+  select 1 from public.seasons where name = '2026-27'
 );
 
 -- Three leagues per season: National, Flanders, Wallonia

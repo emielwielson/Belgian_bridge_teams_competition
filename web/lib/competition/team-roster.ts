@@ -1,8 +1,15 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { loadActivePrimaryClubMembers } from "@/lib/competition/active-primary-membership";
+import {
+  loadCompetitionKindCodeForTeam,
+  loadEligibleClubMembers,
+} from "@/lib/competition/active-primary-membership";
+import {
+  rosterExclusivityPool,
+  sameRosterExclusivityPool,
+} from "@/lib/competition/roster-exclusivity";
 import { TeamValidationError } from "@/lib/competition/team-captain";
 import { loadTeamPlayerMatchesPlayed } from "@/lib/competition/team-queries";
-import { getActiveSeason, requireActiveSeason } from "@/lib/competition/season";
+import { getActiveSeason } from "@/lib/competition/season";
 
 export type RosterPlayer = {
   player_id: string;
@@ -29,10 +36,38 @@ type PlayerNameRow = {
 const PLAYER_SELECT =
   "player:players(id, name, first_name, last_name, member_number)";
 
+const TEAM_KIND_SELECT =
+  "group:groups(division:divisions(league:leagues(competition_kind:competition_kinds(code))))";
+
+const ROSTER_POOL_CONFLICT_MESSAGE =
+  "Player is already on another team this season in the same competition";
+
+const CAPTAIN_POOL_CONFLICT_MESSAGE =
+  "Captain is already on another team this season; remove them from that roster first";
+
 function unwrapOne<T>(value: unknown): T | null {
   if (value == null) return null;
   if (Array.isArray(value)) return (value[0] ?? null) as T | null;
   return value as T;
+}
+
+function competitionKindCodeFromTeamRow(team: unknown): string | null {
+  const group = unwrapOne(
+    team && typeof team === "object"
+      ? (team as { group?: unknown }).group
+      : null,
+  );
+  if (!group || typeof group !== "object") return null;
+  const division = unwrapOne((group as { division?: unknown }).division);
+  if (!division || typeof division !== "object") return null;
+  const league = unwrapOne((division as { league?: unknown }).league);
+  if (!league || typeof league !== "object") return null;
+  const kind = unwrapOne(
+    (league as { competition_kind?: unknown }).competition_kind,
+  );
+  if (!kind || typeof kind !== "object") return null;
+  const code = (kind as { code?: unknown }).code;
+  return typeof code === "string" ? code : null;
 }
 
 function namePart(value: string | null | undefined): string {
@@ -59,6 +94,11 @@ function toRosterPlayer(p: PlayerNameRow): RosterPlayer {
     last_name: p.last_name,
     member_number: p.member_number,
   };
+}
+
+function isRosterPoolConflictError(error: { message?: string } | null): boolean {
+  return typeof error?.message === "string" &&
+    error.message.includes("same competition");
 }
 
 export async function loadTeamRosterState(
@@ -88,25 +128,38 @@ export async function loadTeamRosterState(
       .filter((p): p is RosterPlayer => p != null)
       .sort((a, b) => a.name.localeCompare(b.name));
 
-    const memberships = await loadActivePrimaryClubMembers<{
+    const competitionKindCode = await loadCompetitionKindCodeForTeam(
+      supabase,
+      teamId,
+    );
+    const targetPool = rosterExclusivityPool(competitionKindCode);
+    const memberships = await loadEligibleClubMembers<{
       player: unknown;
-    }>(supabase, clubId, `player_id, ${PLAYER_SELECT}`);
+    }>(supabase, clubId, `player_id, ${PLAYER_SELECT}`, competitionKindCode);
 
     const { data: clubTeams, error: clubTeamsError } = await supabase
       .from("teams")
-      .select("id")
+      .select(`id, ${TEAM_KIND_SELECT}`)
       .eq("club_id", clubId);
 
     if (clubTeamsError) throw clubTeamsError;
 
-    const clubTeamIds = clubTeams?.map((t) => t.id) ?? [];
+    const samePoolClubTeamIds = (clubTeams ?? [])
+      .filter((t) =>
+        sameRosterExclusivityPool(
+          competitionKindCode,
+          competitionKindCodeFromTeamRow(t),
+        ),
+      )
+      .map((t) => t.id);
+
     const assignedPlayerIds = new Set<string>();
 
-    if (clubTeamIds.length > 0) {
+    if (samePoolClubTeamIds.length > 0 && targetPool != null) {
       const { data: clubAssignments, error: assignmentsError } = await supabase
         .from("team_players")
         .select("player_id")
-        .in("team_id", clubTeamIds)
+        .in("team_id", samePoolClubTeamIds)
         .eq("season_id", season.id);
 
       if (assignmentsError) throw assignmentsError;
@@ -160,6 +213,9 @@ export async function addPlayerToTeamRoster(
     season_id: params.seasonId,
   });
 
+  if (isRosterPoolConflictError(error)) {
+    throw new TeamValidationError(ROSTER_POOL_CONFLICT_MESSAGE);
+  }
   if (error) throw error;
 }
 
@@ -179,18 +235,27 @@ export async function ensureCaptainOnTeamRoster(
   if (onTeamError) throw onTeamError;
   if (onThisTeam) return;
 
-  const { data: elsewhere, error: elsewhereError } = await supabase
+  const targetKind = await loadCompetitionKindCodeForTeam(
+    supabase,
+    params.teamId,
+  );
+
+  const { data: otherRows, error: elsewhereError } = await supabase
     .from("team_players")
-    .select("team_id")
+    .select(`team_id, team:teams(${TEAM_KIND_SELECT})`)
     .eq("player_id", params.captainId)
-    .eq("season_id", params.seasonId)
-    .maybeSingle();
+    .eq("season_id", params.seasonId);
 
   if (elsewhereError) throw elsewhereError;
-  if (elsewhere) {
-    throw new TeamValidationError(
-      "Captain is already on another team this season; remove them from that roster first",
-    );
+
+  const samePoolConflict = (otherRows ?? []).some((row) => {
+    if (row.team_id === params.teamId) return false;
+    const otherKind = competitionKindCodeFromTeamRow(unwrapOne(row.team));
+    return sameRosterExclusivityPool(targetKind, otherKind);
+  });
+
+  if (samePoolConflict) {
+    throw new TeamValidationError(CAPTAIN_POOL_CONFLICT_MESSAGE);
   }
 
   await addPlayerToTeamRoster(supabase, {

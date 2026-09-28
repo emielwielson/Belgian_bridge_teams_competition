@@ -38,6 +38,8 @@ type Props = {
   divisionLabel: string;
   clubs: Club[];
   maxTeams?: number;
+  /** When set (e.g. zweiffel), club player lists include secondary members. */
+  competitionKind?: string;
   onTeamsChanged?: () => void;
 };
 
@@ -290,6 +292,7 @@ export function TeamsSetupPanel({
   divisionLabel,
   clubs,
   maxTeams,
+  competitionKind,
   onTeamsChanged,
 }: Props) {
   const t = useTranslations("admin.teamsPanel");
@@ -383,6 +386,13 @@ export function TeamsSetupPanel({
     }
   }, [clubId, clubs, divisionLabel]);
 
+  function clubPlayersUrl(forClubId: string) {
+    const base = `/api/admin/competition/clubs/${forClubId}/players`;
+    return competitionKind
+      ? `${base}?kind=${encodeURIComponent(competitionKind)}`
+      : base;
+  }
+
   useEffect(() => {
     if (!clubId) {
       setClubMembers([]);
@@ -391,7 +401,7 @@ export function TeamsSetupPanel({
     }
     let cancelled = false;
     setMembersLoading(true);
-    fetch(`/api/admin/competition/clubs/${clubId}/players`)
+    fetch(clubPlayersUrl(clubId))
       .then((r) => r.json())
       .then((b) => {
         if (cancelled) return;
@@ -407,7 +417,7 @@ export function TeamsSetupPanel({
     return () => {
       cancelled = true;
     };
-  }, [clubId]);
+  }, [clubId, competitionKind]);
 
   const poolItems = useMemo(() => {
     if (!useSlotOrdering) return [];
@@ -544,7 +554,7 @@ export function TeamsSetupPanel({
   }
 
   async function loadEditMembers(forClubId: string) {
-    const res = await fetch(`/api/admin/competition/clubs/${forClubId}/players`);
+    const res = await fetch(clubPlayersUrl(forClubId));
     const body = await res.json();
     setEditMembers((body.players ?? []) as ClubMember[]);
   }

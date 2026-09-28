@@ -13,6 +13,7 @@ export const COMPETITION_KIND_CODES = {
   NATIONAL: "national",
   FLANDERS: "flanders",
   WALLONIA: "wallonia",
+  ZWEIFFEL: "zweiffel",
 } as const;
 
 export type CompetitionKindCode =
@@ -24,9 +25,13 @@ export type ManagedCompetitionKinds =
 
 export function kindCodeForUnit(unit: CompetitionUnit): CompetitionKindCode {
   if (unit.scope === SCOPES.NATIONAL) return COMPETITION_KIND_CODES.NATIONAL;
-  return unit.regionCode === REGION_CODES.WALLONIA
-    ? COMPETITION_KIND_CODES.WALLONIA
-    : COMPETITION_KIND_CODES.FLANDERS;
+  if (unit.regionCode === REGION_CODES.WALLONIA) {
+    return COMPETITION_KIND_CODES.WALLONIA;
+  }
+  if (unit.regionCode === REGION_CODES.ZWEIFFEL) {
+    return COMPETITION_KIND_CODES.ZWEIFFEL;
+  }
+  return COMPETITION_KIND_CODES.FLANDERS;
 }
 
 export function kindCodeForScopeRegion(
@@ -39,6 +44,9 @@ export function kindCodeForScopeRegion(
   }
   if (regionCode === REGION_CODES.WALLONIA) {
     return COMPETITION_KIND_CODES.WALLONIA;
+  }
+  if (regionCode === REGION_CODES.ZWEIFFEL) {
+    return COMPETITION_KIND_CODES.ZWEIFFEL;
   }
   return null;
 }
@@ -299,9 +307,10 @@ export async function filterLeagueRowsByManagedKinds<
       l.scope === SCOPES.NATIONAL
         ? COMPETITION_KIND_CODES.NATIONAL
         : l.region_id
-          ? regionCodeById.get(l.region_id) === REGION_CODES.WALLONIA
-            ? COMPETITION_KIND_CODES.WALLONIA
-            : COMPETITION_KIND_CODES.FLANDERS
+          ? kindCodeForScopeRegion(
+              SCOPES.REGIONAL,
+              regionCodeById.get(l.region_id) ?? null,
+            )
           : null;
     return code != null && managesKindCode(managed, code);
   });
@@ -312,5 +321,6 @@ export function regionCodeForKind(
 ): RegionCode | null {
   if (code === COMPETITION_KIND_CODES.FLANDERS) return REGION_CODES.FLANDERS;
   if (code === COMPETITION_KIND_CODES.WALLONIA) return REGION_CODES.WALLONIA;
+  if (code === COMPETITION_KIND_CODES.ZWEIFFEL) return REGION_CODES.ZWEIFFEL;
   return null;
 }

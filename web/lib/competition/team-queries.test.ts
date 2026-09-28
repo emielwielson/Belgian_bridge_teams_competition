@@ -229,7 +229,21 @@ describe("loadTeamsForUser", () => {
               eq: () => ({
                 eq: () =>
                   Promise.resolve({
-                    data: [{ team: { id: "team-1", name: "Alpha" } }],
+                    data: [
+                      {
+                        team: {
+                          id: "team-1",
+                          name: "Alpha",
+                          group: {
+                            division: {
+                              league: {
+                                competition_kind: { code: "national" },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    ],
                     error: null,
                   }),
               }),
@@ -241,7 +255,12 @@ describe("loadTeamsForUser", () => {
     } as never;
 
     await expect(loadTeamsForUser(supabase, "user-1")).resolves.toEqual([
-      { id: "team-1", name: "Alpha" },
+      {
+        id: "team-1",
+        name: "Alpha",
+        competitionKindCode: "national",
+        competitionName: "National",
+      },
     ]);
   });
 });

@@ -1,6 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { MatchContext } from "@/lib/auth/match-access";
-import { loadActivePrimaryPlayerIdsAtClub } from "@/lib/competition/active-primary-membership";
+import {
+  loadCompetitionKindCodeForTeam,
+  loadEligiblePlayerIdsAtClub,
+} from "@/lib/competition/active-primary-membership";
 import {
   isAllowedHonorSeat,
   isHonorSeatedLineupComplete,
@@ -95,10 +98,15 @@ export async function validateLineupPayload(
 
   if (subIds.length === 0) return;
 
-  const memberIds = await loadActivePrimaryPlayerIdsAtClub(
+  const competitionKindCode = await loadCompetitionKindCodeForTeam(
+    supabase,
+    teamId,
+  );
+  const memberIds = await loadEligiblePlayerIdsAtClub(
     supabase,
     clubId,
     subIds,
+    competitionKindCode,
   );
   for (const id of subIds) {
     if (!memberIds.has(id)) {

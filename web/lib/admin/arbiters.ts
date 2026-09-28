@@ -33,6 +33,7 @@ const ALL_KIND_CODES: CompetitionKindCode[] = [
   COMPETITION_KIND_CODES.NATIONAL,
   COMPETITION_KIND_CODES.FLANDERS,
   COMPETITION_KIND_CODES.WALLONIA,
+  COMPETITION_KIND_CODES.ZWEIFFEL,
 ];
 
 export function parseKindCodes(raw: unknown): CompetitionKindCode[] {

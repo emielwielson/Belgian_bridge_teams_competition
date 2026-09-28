@@ -36,10 +36,9 @@ describe("manager arbiter grant rules", () => {
 
 describe("parseKindCodes", () => {
   it("accepts known codes and drops junk", () => {
-    expect(parseKindCodes(["flanders", "nope", "national", "flanders"])).toEqual([
-      "flanders",
-      "national",
-    ]);
+    expect(
+      parseKindCodes(["flanders", "nope", "national", "zweiffel", "flanders"]),
+    ).toEqual(["flanders", "national", "zweiffel"]);
     expect(parseKindCodes(null)).toEqual([]);
   });
 });

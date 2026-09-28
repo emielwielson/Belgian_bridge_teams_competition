@@ -1,10 +1,13 @@
 import type { CompetitionScope } from "@/lib/competition/scopes";
+import { COMPETITION_KIND_CODES } from "@/lib/auth/competition-scope";
 
 export type DivisionLevelCode = "honor" | "first" | "second" | "third";
 
 export type ScoringContext = {
   leagueScope: CompetitionScope;
   divisionLevelCode: DivisionLevelCode;
+  /** When set, overrides regional defaults (e.g. Zweiffel → fixed 24). */
+  competitionKindCode?: string | null;
 };
 
 /** Honor Division only: national league at the honor level (not regional Liga). */
@@ -12,10 +15,15 @@ export function isHonorDivision(ctx: ScoringContext): boolean {
   return ctx.leagueScope === "national" && ctx.divisionLevelCode === "honor";
 }
 
+export function isZweiffelCompetition(ctx: ScoringContext): boolean {
+  return ctx.competitionKindCode === COMPETITION_KIND_CODES.ZWEIFFEL;
+}
+
 export const BOARD_CHOICE_OPTIONS = [28, 32] as const;
 export type BoardChoice = (typeof BOARD_CHOICE_OPTIONS)[number];
 
 export function allowsBoardChoice(ctx: ScoringContext): boolean {
+  if (isZweiffelCompetition(ctx)) return false;
   return (
     ctx.leagueScope === "regional" &&
     (ctx.divisionLevelCode === "second" || ctx.divisionLevelCode === "third")
@@ -24,6 +32,8 @@ export function allowsBoardChoice(ctx: ScoringContext): boolean {
 
 /** Fixed nominal board count, or null when the scorer must pick 28 or 32. */
 export function nominalBoardCount(ctx: ScoringContext): number | null {
+  if (isZweiffelCompetition(ctx)) return 24;
+
   if (allowsBoardChoice(ctx)) return null;
 
   if (ctx.leagueScope === "national") {
@@ -32,7 +42,7 @@ export function nominalBoardCount(ctx: ScoringContext): number | null {
     return 32;
   }
 
-  // Regional
+  // Regional (Flanders / Wallonia)
   return 32;
 }
 

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getActivePlayerId } from "@/lib/auth/active-player";
+import { leagueNameForCompetitionKind } from "@/lib/competition/league-names";
 import { getActiveSeason } from "@/lib/competition/season";
 import {
   resolveClubMatchLocation,
@@ -346,9 +347,11 @@ export async function loadTeamDetail(
 export type PlayerTeamSummary = {
   id: string;
   name: string;
+  competitionKindCode: string | null;
+  competitionName: string | null;
 };
 
-/** Teams the linked player belongs to in the active season (at most one per season rules). */
+/** Teams the linked player belongs to in the active season (linked + Zweiffel pools). */
 export async function loadTeamsForUser(
   supabase: SupabaseClient,
   userId: string,
@@ -361,7 +364,9 @@ export async function loadTeamsForUser(
 
   const { data: rows, error } = await supabase
     .from("team_players")
-    .select("team:teams(id, name)")
+    .select(
+      "team:teams(id, name, group:groups(division:divisions(league:leagues(competition_kind:competition_kinds(code)))))",
+    )
     .eq("player_id", playerId)
     .eq("season_id", season.id);
 
@@ -369,8 +374,40 @@ export async function loadTeamsForUser(
 
   const teams: PlayerTeamSummary[] = [];
   for (const row of rows ?? []) {
-    const team = unwrapOne<{ id: string; name: string }>(row.team);
-    if (team) teams.push({ id: team.id, name: team.name });
+    const team = unwrapOne<{
+      id: string;
+      name: string;
+      group?: unknown;
+    }>(row.team);
+    if (!team) continue;
+
+    const group = unwrapOne(team.group);
+    const division = unwrapOne(
+      group && typeof group === "object"
+        ? (group as { division?: unknown }).division
+        : null,
+    );
+    const league = unwrapOne(
+      division && typeof division === "object"
+        ? (division as { league?: unknown }).league
+        : null,
+    );
+    const kind = unwrapOne(
+      league && typeof league === "object"
+        ? (league as { competition_kind?: unknown }).competition_kind
+        : null,
+    );
+    const competitionKindCode =
+      kind && typeof kind === "object" && typeof (kind as { code?: unknown }).code === "string"
+        ? ((kind as { code: string }).code)
+        : null;
+
+    teams.push({
+      id: team.id,
+      name: team.name,
+      competitionKindCode,
+      competitionName: leagueNameForCompetitionKind(competitionKindCode),
+    });
   }
 
   return teams.sort((a, b) => a.name.localeCompare(b.name));

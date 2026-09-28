@@ -160,6 +160,7 @@ export async function POST(request: Request) {
     await assertCaptainIsClubMember(supabase, {
       clubId: createInput.club_id,
       playerId: createInput.captain_id,
+      groupId: createInput.group_id,
     });
 
     const { data, error } = await supabase
@@ -222,6 +223,7 @@ export async function PATCH(request: Request) {
       await assertCaptainIsClubMember(supabase, {
         clubId: team.club_id,
         playerId: captainId,
+        teamId,
       });
       patch.captain_id = captainId;
       rosterCaptainId = captainId;

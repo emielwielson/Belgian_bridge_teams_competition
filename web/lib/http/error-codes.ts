@@ -67,6 +67,7 @@ export const ErrorCodes = {
     penaltyFieldsRequired: "api.penaltyFieldsRequired",
     captainNotClubMember: "api.captainNotClubMember",
     captainAlreadyOnAnotherTeam: "api.captainAlreadyOnAnotherTeam",
+    playerAlreadyOnAnotherTeam: "api.playerAlreadyOnAnotherTeam",
     cannotRemoveCaptain: "api.cannotRemoveCaptain",
     invalidRequestBody: "api.invalidRequestBody",
     clubIdRequired: "api.clubIdRequired",

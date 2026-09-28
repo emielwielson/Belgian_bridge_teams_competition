@@ -1,6 +1,9 @@
 import { requireAuth } from "@/lib/auth/route-auth";
 import { assertCanManageTeamRoster } from "@/lib/auth/team-access";
-import { findActivePrimaryClubMember } from "@/lib/competition/active-primary-membership";
+import {
+  findEligibleClubMember,
+  loadCompetitionKindCodeForTeam,
+} from "@/lib/competition/active-primary-membership";
 import { requireActiveSeason } from "@/lib/competition/season";
 import {
   addPlayerToTeamRoster,
@@ -82,9 +85,14 @@ export async function POST(request: Request, { params }: TeamParams) {
       return jsonOk(state);
     }
 
-    const membership = await findActivePrimaryClubMember(supabase, {
+    const competitionKindCode = await loadCompetitionKindCodeForTeam(
+      supabase,
+      teamId,
+    );
+    const membership = await findEligibleClubMember(supabase, {
       clubId: teamRef.clubId,
       playerId,
+      competitionKindCode,
     });
 
     if (!membership) {

@@ -17,7 +17,11 @@ export type AdminHubLink = {
   kind: CompetitionKindCode;
   scope: CompetitionScope;
   regionCode?: RegionCode;
-  labelKey: "national" | "flandersRegional" | "walloniaRegional";
+  labelKey:
+    | "national"
+    | "flandersRegional"
+    | "walloniaRegional"
+    | "zweiffelRegional";
 };
 
 const ALL_HUB_LINKS: AdminHubLink[] = [
@@ -38,6 +42,12 @@ const ALL_HUB_LINKS: AdminHubLink[] = [
     regionCode: REGION_CODES.WALLONIA,
     labelKey: "walloniaRegional",
   },
+  {
+    kind: COMPETITION_KIND_CODES.ZWEIFFEL,
+    scope: SCOPES.REGIONAL,
+    regionCode: REGION_CODES.ZWEIFFEL,
+    labelKey: "zweiffelRegional",
+  },
 ];
 
 export async function getManagedAdminHubLinks(): Promise<AdminHubLink[]> {
@@ -56,12 +66,14 @@ export async function requireManagedAdminScope(
     ...COMPETITION_ADMIN_ROLES,
   ]);
   const managed = await getManagedCompetitionKinds(supabase, user.id, roles);
-  const kind: CompetitionKindCode =
+  const kind =
     scope === SCOPES.NATIONAL
       ? COMPETITION_KIND_CODES.NATIONAL
       : regionCode === REGION_CODES.WALLONIA
         ? COMPETITION_KIND_CODES.WALLONIA
-        : COMPETITION_KIND_CODES.FLANDERS;
+        : regionCode === REGION_CODES.ZWEIFFEL
+          ? COMPETITION_KIND_CODES.ZWEIFFEL
+          : COMPETITION_KIND_CODES.FLANDERS;
   if (!managesKindCode(managed, kind)) {
     notFound();
   }

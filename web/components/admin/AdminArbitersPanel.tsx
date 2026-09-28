@@ -16,6 +16,7 @@ const KIND_OPTIONS: CompetitionKindCode[] = [
   "national",
   "flanders",
   "wallonia",
+  "zweiffel",
 ];
 
 export function AdminArbitersPanel() {
@@ -136,6 +137,7 @@ export function AdminArbitersPanel() {
   function kindLabel(code: CompetitionKindCode): string {
     if (code === "national") return t("arbitersPage.kindNational");
     if (code === "flanders") return t("arbitersPage.kindFlanders");
+    if (code === "zweiffel") return t("arbitersPage.kindZweiffel");
     return t("arbitersPage.kindWallonia");
   }
 

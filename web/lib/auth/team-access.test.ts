@@ -28,8 +28,18 @@ describe("isPlayerOnHonorTeam", () => {
 
   it("returns true when a roster team is national honor", async () => {
     vi.mocked(loadTeamsForUser).mockResolvedValue([
-      { id: "team-1", name: "Alpha" },
-      { id: "team-2", name: "Honor side" },
+      {
+        id: "team-1",
+        name: "Alpha",
+        competitionKindCode: "national",
+        competitionName: "National",
+      },
+      {
+        id: "team-2",
+        name: "Honor side",
+        competitionKindCode: "national",
+        competitionName: "National",
+      },
     ]);
     vi.mocked(loadGroupScoringContext)
       .mockResolvedValueOnce({
@@ -69,7 +79,12 @@ describe("isPlayerOnHonorTeam", () => {
 
   it("returns false for regional honor-coded groups", async () => {
     vi.mocked(loadTeamsForUser).mockResolvedValue([
-      { id: "team-1", name: "Liga" },
+      {
+        id: "team-1",
+        name: "Liga",
+        competitionKindCode: "flanders",
+        competitionName: "Flanders",
+      },
     ]);
     vi.mocked(loadGroupScoringContext).mockResolvedValue({
       groupId: "liga-group",
@@ -98,7 +113,12 @@ describe("isPlayerOnHonorTeam", () => {
 
   it("returns false when the player is only on non-honor teams", async () => {
     vi.mocked(loadTeamsForUser).mockResolvedValue([
-      { id: "team-1", name: "First" },
+      {
+        id: "team-1",
+        name: "First",
+        competitionKindCode: "national",
+        competitionName: "National",
+      },
     ]);
     vi.mocked(loadGroupScoringContext).mockResolvedValue({
       groupId: "first-division",

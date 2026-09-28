@@ -4,10 +4,12 @@ import { redirect } from "next/navigation";
 import { RegularSeasonScoring } from "@/components/player/RegularSeasonScoring";
 import { getActivePlayer } from "@/lib/auth/active-player";
 import { loadTeamsForUser } from "@/lib/competition/team-queries";
+import { translateLeagueName } from "@/lib/i18n/labels";
 import { createSessionClient } from "@/lib/supabase/server-client";
 
 export default async function PlayerPage() {
   const t = await getTranslations("player");
+  const tRegions = await getTranslations("regions");
   const supabase = await createSessionClient();
   const {
     data: { user },
@@ -43,16 +45,24 @@ export default async function PlayerPage() {
             <>
               <p className="text-sm font-medium text-zinc-900">{t("myTeams")}</p>
               <ul className="flex flex-col gap-2">
-                {teams.map((team) => (
-                  <li key={team.id}>
-                    <Link
-                      href={`/teams/${team.id}`}
-                      className="btn-secondary inline-block w-fit px-3 py-1.5 text-sm"
-                    >
-                      {team.name}
-                    </Link>
-                  </li>
-                ))}
+                {teams.map((team) => {
+                  const competitionLabel = team.competitionName
+                    ? translateLeagueName(team.competitionName, tRegions)
+                    : null;
+                  const label = competitionLabel
+                    ? `${team.name} · ${competitionLabel}`
+                    : team.name;
+                  return (
+                    <li key={team.id}>
+                      <Link
+                        href={`/teams/${team.id}`}
+                        className="btn-secondary inline-block w-fit px-3 py-1.5 text-sm"
+                      >
+                        {label}
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
             </>
           )}

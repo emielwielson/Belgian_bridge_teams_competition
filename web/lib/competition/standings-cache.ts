@@ -39,7 +39,8 @@ export async function getCachedLeagueStandings(
 ): Promise<LeagueStandings | null> {
   return unstable_cache(
     async () => loadLeagueStandings(createPublicClient(), leagueId),
-    ["league-standings", leagueId],
+    // v2: include Zweiffel Honneur→APM canonical division order
+    ["league-standings-v2", leagueId],
     { tags: [standingsLeagueTag(leagueId)] },
   )();
 }

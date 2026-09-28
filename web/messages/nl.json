@@ -7,10 +7,12 @@
     "signOut": "Afmelden",
     "loading": "…",
     "myTeam": "Mijn team",
+    "myTeams": "Mijn teams",
     "manuals": "Handleiding",
     "arbiterInbox": "Scheidsrechter",
     "dashboard": "Dashboard",
     "playingAs": "Spelen als",
+    "activeTeam": "Mijn team",
     "language": {
       "label": "Taal",
       "english": "English",
@@ -469,6 +471,7 @@
       "national": "Nationaal",
       "flanders": "Vlaanderen",
       "wallonia": "Wallonië",
+    "zweiffel": "Zweiffel",
       "honor": "Eredivisie"
     },
     "pageTitle": "Scheidsrechter",
@@ -825,6 +828,7 @@
       "kindNational": "Nationaal",
       "kindFlanders": "Vlaanderen",
       "kindWallonia": "Wallonië",
+      "kindZweiffel": "Zweiffel",
       "honor": "Eredivisie",
       "add": "Aanmaken / toewijzen",
       "save": "Opslaan",
@@ -852,6 +856,7 @@
     "national": "Nationaal",
     "flandersRegional": "Vlaanderen (regionaal)",
     "walloniaRegional": "Wallonië (regionaal)",
+    "zweiffelRegional": "Zweiffel (regionaal)",
     "seasonStatus": "Seizoensstatus: {status}",
     "competitionStatus": "Competitiestatus: {status}",
     "settingUpStructure": " · Structuur opzetten…",
@@ -1182,8 +1187,10 @@
     "national": "Nationaal",
     "flanders": "Vlaanderen",
     "wallonia": "Wallonië",
+    "zweiffel": "Zweiffel",
     "flandersRegional": "Vlaanderen (regionaal)",
-    "walloniaRegional": "Wallonië (regionaal)"
+    "walloniaRegional": "Wallonië (regionaal)",
+    "zweiffelRegional": "Zweiffel (regionaal)"
   },
   "divisions": {
     "honor": "Eredivisie",
@@ -1357,6 +1364,7 @@
       "penaltyFieldsRequired": "team_id, penalty_date en reason zijn verplicht",
       "captainNotClubMember": "Kapitein moet lid zijn van de club van het team",
       "captainAlreadyOnAnotherTeam": "De kapitein staat al op een ander team dit seizoen; verwijder hem eerst van die selectie",
+      "playerAlreadyOnAnotherTeam": "De speler staat al op een ander team dit seizoen in dezelfde competitie",
       "cannotRemoveCaptain": "De teamkapitein kan niet van de selectie worden verwijderd",
       "invalidRequestBody": "Ongeldig verzoek",
       "clubIdRequired": "club_id is verplicht",

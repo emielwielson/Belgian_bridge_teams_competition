@@ -1,5 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { findActivePrimaryClubMember } from "@/lib/competition/active-primary-membership";
+import {
+  findEligibleClubMember,
+  loadCompetitionKindCodeForGroup,
+  loadCompetitionKindCodeForTeam,
+} from "@/lib/competition/active-primary-membership";
 
 export class TeamCaptainError extends Error {
   readonly status = 403;
@@ -47,11 +51,26 @@ export function validateTeamCreateBody(body: unknown): TeamCreateInput {
 
 export async function assertCaptainIsClubMember(
   supabase: SupabaseClient,
-  input: { clubId: string; playerId: string },
+  input: {
+    clubId: string;
+    playerId: string;
+    competitionKindCode?: string | null;
+    groupId?: string;
+    teamId?: string;
+  },
 ): Promise<void> {
-  const data = await findActivePrimaryClubMember(supabase, {
+  let kind = input.competitionKindCode ?? null;
+  if (kind == null && input.groupId) {
+    kind = await loadCompetitionKindCodeForGroup(supabase, input.groupId);
+  }
+  if (kind == null && input.teamId) {
+    kind = await loadCompetitionKindCodeForTeam(supabase, input.teamId);
+  }
+
+  const data = await findEligibleClubMember(supabase, {
     clubId: input.clubId,
     playerId: input.playerId,
+    competitionKindCode: kind,
   });
 
   if (!data) {

@@ -22,11 +22,12 @@ export type ArbiterNavAccess = {
   href: string | null;
 };
 
-/** Display order for inbox tabs: National → Flanders → Wallonia. */
+/** Display order for inbox tabs: National → Flanders → Wallonia → Zweiffel. */
 export const ARBITER_INBOX_KIND_ORDER: CompetitionKindCode[] = [
   COMPETITION_KIND_CODES.NATIONAL,
   COMPETITION_KIND_CODES.FLANDERS,
   COMPETITION_KIND_CODES.WALLONIA,
+  COMPETITION_KIND_CODES.ZWEIFFEL,
 ];
 
 export function isCompetitionKindCode(

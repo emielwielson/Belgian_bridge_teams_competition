@@ -1,19 +1,61 @@
-import { assertManagesClub } from "@/lib/auth/competition-scope";
+import {
+  assertManagesClub,
+  assertManagesScopeRegion,
+  COMPETITION_KIND_CODES,
+  type CompetitionKindCode,
+} from "@/lib/auth/competition-scope";
 import { COMPETITION_ADMIN_ROLES, requireRoles } from "@/lib/auth/route-auth";
-import { loadActivePrimaryClubMembers } from "@/lib/competition/active-primary-membership";
+import { loadEligibleClubMembers } from "@/lib/competition/active-primary-membership";
+import { REGION_CODES, SCOPES } from "@/lib/competition/scopes";
 import { jsonFromError, jsonOk } from "@/lib/http/api-response";
 
 type Params = { params: Promise<{ clubId: string }> };
 
-export async function GET(_request: Request, { params }: Params) {
+function parseKindParam(raw: string | null): CompetitionKindCode | null {
+  if (
+    raw === COMPETITION_KIND_CODES.NATIONAL ||
+    raw === COMPETITION_KIND_CODES.FLANDERS ||
+    raw === COMPETITION_KIND_CODES.WALLONIA ||
+    raw === COMPETITION_KIND_CODES.ZWEIFFEL
+  ) {
+    return raw;
+  }
+  return null;
+}
+
+export async function GET(request: Request, { params }: Params) {
   try {
     const { clubId } = await params;
-    const { supabase } = await requireRoles([...COMPETITION_ADMIN_ROLES]);
-    await assertManagesClub(supabase, clubId);
+    const { user, roles, supabase } = await requireRoles([
+      ...COMPETITION_ADMIN_ROLES,
+    ]);
 
-    const memberships = await loadActivePrimaryClubMembers<{
+    const kind = parseKindParam(
+      new URL(request.url).searchParams.get("kind"),
+    );
+
+    // Zweiffel teams use Flanders/Wallonia clubs; authorize via competition unit,
+    // not club-region ownership (which maps only to flanders/wallonia kinds).
+    if (kind === COMPETITION_KIND_CODES.ZWEIFFEL) {
+      await assertManagesScopeRegion(
+        supabase,
+        user.id,
+        roles,
+        SCOPES.REGIONAL,
+        REGION_CODES.ZWEIFFEL,
+      );
+    } else {
+      await assertManagesClub(supabase, clubId);
+    }
+
+    const memberships = await loadEligibleClubMembers<{
       player: unknown;
-    }>(supabase, clubId, "player_id, player:players(id, name, member_number)");
+    }>(
+      supabase,
+      clubId,
+      "player_id, player:players(id, name, member_number)",
+      kind,
+    );
 
     const players = memberships
       .map((row) => {

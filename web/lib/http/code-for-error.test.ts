@@ -44,6 +44,16 @@ describe("codeForError", () => {
     ).toBe(ErrorCodes.api.cannotRemoveCaptain);
   });
 
+  it("maps player roster exclusivity conflicts", () => {
+    expect(
+      codeForError(
+        new TeamValidationError(
+          "Player is already on another team this season in the same competition",
+        ),
+      ),
+    ).toBe(ErrorCodes.api.playerAlreadyOnAnotherTeam);
+  });
+
   it("returns null for unknown dynamic errors", () => {
     expect(codeForError(new Error("duplicate key value"))).toBeNull();
   });

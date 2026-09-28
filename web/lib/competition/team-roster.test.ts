@@ -1,9 +1,29 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { loadCompetitionKindCodeForTeam } from "./active-primary-membership";
 import {
   comparePlayersByLastName,
   ensureCaptainOnTeamRoster,
   removePlayerFromTeamRoster,
 } from "./team-roster";
+
+vi.mock("./active-primary-membership", () => ({
+  loadCompetitionKindCodeForTeam: vi.fn(),
+  loadEligibleClubMembers: vi.fn(),
+}));
+
+const loadKind = vi.mocked(loadCompetitionKindCodeForTeam);
+
+function teamWithKind(code: string) {
+  return {
+    group: {
+      division: {
+        league: {
+          competition_kind: { code },
+        },
+      },
+    },
+  };
+}
 
 describe("comparePlayersByLastName", () => {
   it("sorts by last_name then first_name then name", () => {
@@ -51,6 +71,10 @@ describe("comparePlayersByLastName", () => {
 });
 
 describe("ensureCaptainOnTeamRoster", () => {
+  beforeEach(() => {
+    loadKind.mockReset();
+  });
+
   it("no-ops when captain is already on the team roster", async () => {
     const supabase = {
       from: () => ({
@@ -74,34 +98,42 @@ describe("ensureCaptainOnTeamRoster", () => {
         seasonId: "s1",
       }),
     ).resolves.toBeUndefined();
+    expect(loadKind).not.toHaveBeenCalled();
   });
 
   it("inserts when captain is not on any roster", async () => {
     const insert = vi.fn().mockResolvedValue({ error: null });
     let teamPlayersCalls = 0;
+    loadKind.mockResolvedValue("national");
 
     const supabase = {
-      rpc: () => Promise.resolve({ data: false, error: null }),
       from: (table: string) => {
         if (table !== "team_players") throw new Error(`unexpected ${table}`);
         teamPlayersCalls += 1;
-        if (teamPlayersCalls === 3) {
-          return { insert };
-        }
-        return {
-          select: () => ({
-            eq: () => ({
+        if (teamPlayersCalls === 1) {
+          return {
+            select: () => ({
               eq: () => ({
                 eq: () => ({
-                  maybeSingle: () =>
-                    Promise.resolve({ data: null, error: null }),
+                  eq: () => ({
+                    maybeSingle: () =>
+                      Promise.resolve({ data: null, error: null }),
+                  }),
                 }),
-                maybeSingle: () =>
-                  Promise.resolve({ data: null, error: null }),
               }),
             }),
-          }),
-        };
+          };
+        }
+        if (teamPlayersCalls === 2) {
+          return {
+            select: () => ({
+              eq: () => ({
+                eq: () => Promise.resolve({ data: [], error: null }),
+              }),
+            }),
+          };
+        }
+        return { insert };
       },
     } as never;
 
@@ -118,8 +150,10 @@ describe("ensureCaptainOnTeamRoster", () => {
     });
   });
 
-  it("rejects when captain is on another team", async () => {
+  it("rejects when captain is on another team in the same exclusivity pool", async () => {
     let teamPlayersCalls = 0;
+    loadKind.mockResolvedValue("national");
+
     const supabase = {
       from: () => {
         teamPlayersCalls += 1;
@@ -140,10 +174,16 @@ describe("ensureCaptainOnTeamRoster", () => {
         return {
           select: () => ({
             eq: () => ({
-              eq: () => ({
-                maybeSingle: () =>
-                  Promise.resolve({ data: { team_id: "t-other" }, error: null }),
-              }),
+              eq: () =>
+                Promise.resolve({
+                  data: [
+                    {
+                      team_id: "t-other",
+                      team: teamWithKind("flanders"),
+                    },
+                  ],
+                  error: null,
+                }),
             }),
           }),
         };
@@ -157,6 +197,64 @@ describe("ensureCaptainOnTeamRoster", () => {
         seasonId: "s1",
       }),
     ).rejects.toThrow(/another team/);
+  });
+
+  it("inserts when captain is only on a team in another exclusivity pool", async () => {
+    const insert = vi.fn().mockResolvedValue({ error: null });
+    let teamPlayersCalls = 0;
+    loadKind.mockResolvedValue("zweiffel");
+
+    const supabase = {
+      from: (table: string) => {
+        if (table !== "team_players") throw new Error(`unexpected ${table}`);
+        teamPlayersCalls += 1;
+        if (teamPlayersCalls === 1) {
+          return {
+            select: () => ({
+              eq: () => ({
+                eq: () => ({
+                  eq: () => ({
+                    maybeSingle: () =>
+                      Promise.resolve({ data: null, error: null }),
+                  }),
+                }),
+              }),
+            }),
+          };
+        }
+        if (teamPlayersCalls === 2) {
+          return {
+            select: () => ({
+              eq: () => ({
+                eq: () =>
+                  Promise.resolve({
+                    data: [
+                      {
+                        team_id: "t-national",
+                        team: teamWithKind("national"),
+                      },
+                    ],
+                    error: null,
+                  }),
+              }),
+            }),
+          };
+        }
+        return { insert };
+      },
+    } as never;
+
+    await ensureCaptainOnTeamRoster(supabase, {
+      teamId: "t-zweiffel",
+      captainId: "p1",
+      seasonId: "s1",
+    });
+
+    expect(insert).toHaveBeenCalledWith({
+      team_id: "t-zweiffel",
+      player_id: "p1",
+      season_id: "s1",
+    });
   });
 });
 

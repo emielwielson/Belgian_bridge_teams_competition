@@ -8,9 +8,21 @@ import { canonicalLeagueName } from "./league-names";
 import { REGION_CODES, type RegionCode } from "./scopes";
 
 function kindCodeForRegion(regionCode: RegionCode): CompetitionKindCode {
-  return regionCode === REGION_CODES.WALLONIA
-    ? COMPETITION_KIND_CODES.WALLONIA
-    : COMPETITION_KIND_CODES.FLANDERS;
+  if (regionCode === REGION_CODES.WALLONIA) {
+    return COMPETITION_KIND_CODES.WALLONIA;
+  }
+  if (regionCode === REGION_CODES.ZWEIFFEL) {
+    return COMPETITION_KIND_CODES.ZWEIFFEL;
+  }
+  return COMPETITION_KIND_CODES.FLANDERS;
+}
+
+function isUniqueViolation(error: { code?: string; message?: string }): boolean {
+  return (
+    error.code === "23505" ||
+    (typeof error.message === "string" &&
+      error.message.toLowerCase().includes("duplicate"))
+  );
 }
 
 export async function ensureRegionalLeague(
@@ -33,20 +45,26 @@ export async function ensureRegionalLeague(
     kindCodeForRegion(regionCode),
   );
 
-  const { data: existing } = await supabase
-    .from("leagues")
-    .select("id")
-    .eq("season_id", seasonId)
-    .eq("scope", "regional")
-    .eq("region_id", region.id)
-    .maybeSingle();
+  async function findExisting(): Promise<string | null> {
+    const { data, error } = await supabase
+      .from("leagues")
+      .select("id")
+      .eq("season_id", seasonId)
+      .eq("scope", "regional")
+      .eq("region_id", region.id)
+      .maybeSingle();
+    if (error) throw error;
+    return data?.id ?? null;
+  }
 
-  if (existing) {
-    await supabase
+  const existingId = await findExisting();
+  if (existingId) {
+    const { error: updateError } = await supabase
       .from("leagues")
       .update({ name, competition_kind_id: competitionKindId })
-      .eq("id", existing.id);
-    return { leagueId: existing.id };
+      .eq("id", existingId);
+    if (updateError) throw updateError;
+    return { leagueId: existingId };
   }
 
   const { data: created, error } = await supabase
@@ -60,7 +78,15 @@ export async function ensureRegionalLeague(
     })
     .select("id")
     .single();
-  if (error) throw error;
+
+  if (error) {
+    // Concurrent ensure (e.g. React Strict Mode double mount) — reuse winner.
+    if (isUniqueViolation(error)) {
+      const racedId = await findExisting();
+      if (racedId) return { leagueId: racedId };
+    }
+    throw error;
+  }
 
   return { leagueId: created.id };
 }

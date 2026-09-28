@@ -36,7 +36,9 @@ export default async function ArbiterKindInboxPage({ params }: Props) {
       ? tNav("national")
       : kindParam === "flanders"
         ? tNav("flanders")
-        : tNav("wallonia");
+        : kindParam === "zweiffel"
+          ? tNav("zweiffel")
+          : tNav("wallonia");
 
   return (
     <main className="page-container">

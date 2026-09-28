@@ -6,12 +6,26 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { LanguageSelect } from "@/components/i18n/LanguageSelect";
 import type { ActivePlayer, LinkedPlayer } from "@/lib/auth/active-player";
+import {
+  resolveActiveTeamId,
+  writeActiveTeamId,
+} from "@/lib/auth/active-team";
+import { translateLeagueName } from "@/lib/i18n/labels";
+
+export type NavTeam = {
+  id: string;
+  name: string;
+  competitionKindCode?: string | null;
+  competitionName?: string | null;
+};
 
 type Props = {
   email?: string;
   activePlayer?: ActivePlayer | null;
   linkedPlayers?: LinkedPlayer[];
+  teams?: NavTeam[];
   onPlayerSwitched?: () => void | Promise<void>;
+  onTeamSwitched?: () => void | Promise<void>;
 };
 
 function displayInitial(email: string | undefined, activePlayer?: ActivePlayer | null): string {
@@ -34,15 +48,24 @@ export function AccountMenu({
   email,
   activePlayer,
   linkedPlayers = [],
+  teams = [],
   onPlayerSwitched,
+  onTeamSwitched,
 }: Props) {
   const t = useTranslations("nav");
+  const tRegions = useTranslations("regions");
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [switchingId, setSwitchingId] = useState<string | null>(null);
+  const [activeTeamId, setActiveTeamId] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const signedIn = Boolean(email);
   const showProfileSwitcher = signedIn && linkedPlayers.length > 1;
+  const showTeamSwitcher = signedIn && teams.length > 1;
+
+  useEffect(() => {
+    setActiveTeamId(resolveActiveTeamId(teams));
+  }, [teams]);
 
   useEffect(() => {
     if (!open) return;
@@ -81,6 +104,21 @@ export function AccountMenu({
         await onPlayerSwitched?.();
         router.refresh();
       }
+    } finally {
+      setSwitchingId(null);
+    }
+  }
+
+  async function switchTeam(teamId: string) {
+    if (teamId === activeTeamId || switchingId) return;
+    setSwitchingId(teamId);
+    try {
+      writeActiveTeamId(teamId);
+      setActiveTeamId(teamId);
+      setOpen(false);
+      await onTeamSwitched?.();
+      router.push(`/teams/${teamId}`);
+      router.refresh();
     } finally {
       setSwitchingId(null);
     }
@@ -149,6 +187,45 @@ export function AccountMenu({
                         {player.club_name ? (
                           <span className="block text-xs text-zinc-500">
                             {player.club_name}
+                          </span>
+                        ) : null}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ) : null}
+
+          {showTeamSwitcher ? (
+            <div className="border-b border-zinc-100 px-3 py-2" role="none">
+              <p className="mb-2 text-xs font-medium text-zinc-500">
+                {t("activeTeam")}
+              </p>
+              <ul className="flex flex-col gap-1">
+                {teams.map((team) => {
+                  const isActive = team.id === activeTeamId;
+                  const competitionLabel = team.competitionName
+                    ? translateLeagueName(team.competitionName, tRegions)
+                    : null;
+                  return (
+                    <li key={team.id}>
+                      <button
+                        type="button"
+                        role="menuitemradio"
+                        aria-checked={isActive}
+                        disabled={switchingId !== null}
+                        onClick={() => switchTeam(team.id)}
+                        className={`w-full rounded px-2 py-1.5 text-left text-sm ${
+                          isActive
+                            ? "bg-emerald-50 font-medium text-emerald-900"
+                            : "text-zinc-700 hover:bg-zinc-50"
+                        }`}
+                      >
+                        {team.name}
+                        {competitionLabel ? (
+                          <span className="block text-xs text-zinc-500">
+                            {competitionLabel}
                           </span>
                         ) : null}
                       </button>

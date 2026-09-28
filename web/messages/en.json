@@ -7,10 +7,12 @@
     "signOut": "Sign out",
     "loading": "…",
     "myTeam": "My team",
+    "myTeams": "My teams",
     "manuals": "Manuals",
     "arbiterInbox": "Arbiter inbox",
     "dashboard": "Dashboard",
     "playingAs": "Playing as",
+    "activeTeam": "My team",
     "language": {
       "label": "Language",
       "english": "English",
@@ -469,6 +471,7 @@
       "national": "National",
       "flanders": "Flanders",
       "wallonia": "Wallonia",
+    "zweiffel": "Zweiffel",
       "honor": "Honor"
     },
     "pageTitle": "Arbiter inbox",
@@ -825,6 +828,7 @@
       "kindNational": "National",
       "kindFlanders": "Flanders",
       "kindWallonia": "Wallonia",
+      "kindZweiffel": "Zweiffel",
       "honor": "Honor Division",
       "add": "Create / assign",
       "save": "Save",
@@ -852,6 +856,7 @@
     "national": "National",
     "flandersRegional": "Flanders (regional)",
     "walloniaRegional": "Wallonia (regional)",
+    "zweiffelRegional": "Zweiffel (regional)",
     "seasonStatus": "Season status: {status}",
     "competitionStatus": "Competition status: {status}",
     "settingUpStructure": " · Setting up structure…",
@@ -1182,8 +1187,10 @@
     "national": "National",
     "flanders": "Flanders",
     "wallonia": "Wallonia",
+    "zweiffel": "Zweiffel",
     "flandersRegional": "Flanders (regional)",
-    "walloniaRegional": "Wallonia (regional)"
+    "walloniaRegional": "Wallonia (regional)",
+    "zweiffelRegional": "Zweiffel (regional)"
   },
   "divisions": {
     "honor": "Honor Division",
@@ -1357,6 +1364,7 @@
       "penaltyFieldsRequired": "team_id, penalty_date, and reason are required",
       "captainNotClubMember": "Captain must be a member of the team's club",
       "captainAlreadyOnAnotherTeam": "Captain is already on another team this season; remove them from that roster first",
+      "playerAlreadyOnAnotherTeam": "Player is already on another team this season in the same competition",
       "cannotRemoveCaptain": "Cannot remove the team captain from the roster",
       "invalidRequestBody": "Invalid request body",
       "clubIdRequired": "club_id is required",

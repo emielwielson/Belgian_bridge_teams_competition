@@ -20,11 +20,27 @@ type GroupRow = {
   division: {
     division_level_id: string;
     division_level: { code: string } | { code: string }[];
-    league: { scope: string } | { scope: string }[];
+    league:
+      | {
+          scope: string;
+          competition_kind: { code: string } | { code: string }[] | null;
+        }
+      | {
+          scope: string;
+          competition_kind: { code: string } | { code: string }[] | null;
+        }[];
   } | {
     division_level_id: string;
     division_level: { code: string } | { code: string }[];
-    league: { scope: string } | { scope: string }[];
+    league:
+      | {
+          scope: string;
+          competition_kind: { code: string } | { code: string }[] | null;
+        }
+      | {
+          scope: string;
+          competition_kind: { code: string } | { code: string }[] | null;
+        }[];
   }[];
 };
 
@@ -60,11 +76,14 @@ function parseScoringContextFromGroupRow(group: GroupRow): GroupScoringContext {
     throw new Error(`Unknown league scope: ${league.scope}`);
   }
 
+  const competitionKind = first(league.competition_kind);
+
   return {
     groupId: group.id,
     divisionLevelId: division.division_level_id,
     leagueScope,
     divisionLevelCode: parseDivisionLevelCode(divisionLevel.code),
+    competitionKindCode: competitionKind?.code ?? null,
   };
 }
 
@@ -73,7 +92,10 @@ const GROUP_SCORING_SELECT = `
   division:divisions (
     division_level_id,
     division_level:division_levels ( code ),
-    league:leagues ( scope )
+    league:leagues (
+      scope,
+      competition_kind:competition_kinds ( code )
+    )
   )
 `;
 

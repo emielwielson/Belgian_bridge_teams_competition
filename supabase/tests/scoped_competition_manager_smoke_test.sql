@@ -15,6 +15,10 @@ begin
     raise exception 'Missing competition_kinds seed rows';
   end if;
 
+  if not exists (select 1 from public.competition_kinds where code = 'zweiffel') then
+    raise exception 'Missing competition_kinds.zweiffel';
+  end if;
+
   if exists (
     select 1 from public.leagues where competition_kind_id is null
   ) then
