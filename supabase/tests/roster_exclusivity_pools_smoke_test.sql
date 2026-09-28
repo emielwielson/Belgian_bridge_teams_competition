@@ -1,5 +1,7 @@
 -- Smoke test: roster exclusivity pools (0078)
 -- linked (national/flanders/wallonia) share one slot; Zweiffel is separate.
+-- Reuses existing leagues (one national / one regional per region per season)
+-- and creates temporary groups/teams that are rolled back.
 
 do $$
 begin
@@ -41,9 +43,6 @@ declare
   v_season_id uuid;
   v_flanders_region uuid;
   v_zweiffel_region uuid;
-  v_national_kind uuid;
-  v_flanders_kind uuid;
-  v_zweiffel_kind uuid;
   v_club_id uuid;
   v_player_id uuid;
   v_national_league uuid;
@@ -59,7 +58,6 @@ declare
   v_flanders_team uuid;
   v_zweiffel_team1 uuid;
   v_zweiffel_team2 uuid;
-  v_level_id uuid;
 begin
   select id into v_season_id from public.seasons where is_active = true limit 1;
   if v_season_id is null then
@@ -68,16 +66,56 @@ begin
 
   select id into v_flanders_region from public.regions where code = 'flanders';
   select id into v_zweiffel_region from public.regions where code = 'zweiffel';
-  select id into v_national_kind from public.competition_kinds where code = 'national';
-  select id into v_flanders_kind from public.competition_kinds where code = 'flanders';
-  select id into v_zweiffel_kind from public.competition_kinds where code = 'zweiffel';
-  select id into v_level_id from public.division_levels where code = 'first' limit 1;
 
   if v_flanders_region is null or v_zweiffel_region is null then
     raise exception 'Missing regions for roster exclusivity smoke test';
   end if;
-  if v_national_kind is null or v_flanders_kind is null or v_zweiffel_kind is null then
-    raise exception 'Missing competition_kinds for roster exclusivity smoke test';
+
+  select l.id into v_national_league
+  from public.leagues l
+  join public.competition_kinds ck on ck.id = l.competition_kind_id
+  where l.season_id = v_season_id and ck.code = 'national'
+  limit 1;
+
+  select l.id into v_flanders_league
+  from public.leagues l
+  join public.competition_kinds ck on ck.id = l.competition_kind_id
+  where l.season_id = v_season_id and ck.code = 'flanders'
+  limit 1;
+
+  select l.id into v_zweiffel_league
+  from public.leagues l
+  join public.competition_kinds ck on ck.id = l.competition_kind_id
+  where l.season_id = v_season_id and ck.code = 'zweiffel'
+  limit 1;
+
+  if v_national_league is null then
+    raise exception 'Missing national league for active season';
+  end if;
+  if v_flanders_league is null then
+    raise exception 'Missing Flanders league for active season';
+  end if;
+  if v_zweiffel_league is null then
+    raise exception 'Missing Zweiffel league for active season';
+  end if;
+
+  select id into v_national_div
+  from public.divisions
+  where league_id = v_national_league
+  limit 1;
+
+  select id into v_flanders_div
+  from public.divisions
+  where league_id = v_flanders_league
+  limit 1;
+
+  select id into v_zweiffel_div
+  from public.divisions
+  where league_id = v_zweiffel_league
+  limit 1;
+
+  if v_national_div is null or v_flanders_div is null or v_zweiffel_div is null then
+    raise exception 'Missing divisions — ensure competition structure exists';
   end if;
 
   select id into v_club_id from public.clubs where region_id = v_flanders_region limit 1;
@@ -91,33 +129,7 @@ begin
   values ('Roster Pool Smoke Player', 'vbl')
   returning id into v_player_id;
 
-  insert into public.leagues (season_id, scope, region_id, name, competition_kind_id)
-  values
-    (v_season_id, 'national', null, 'Roster Pool National', v_national_kind)
-  returning id into v_national_league;
-
-  insert into public.leagues (season_id, scope, region_id, name, competition_kind_id)
-  values
-    (v_season_id, 'regional', v_flanders_region, 'Roster Pool Flanders', v_flanders_kind)
-  returning id into v_flanders_league;
-
-  insert into public.leagues (season_id, scope, region_id, name, competition_kind_id)
-  values
-    (v_season_id, 'regional', v_zweiffel_region, 'Roster Pool Zweiffel', v_zweiffel_kind)
-  returning id into v_zweiffel_league;
-
-  insert into public.divisions (league_id, division_level_id, name)
-  values (v_national_league, v_level_id, 'Roster Pool Nat Div')
-  returning id into v_national_div;
-
-  insert into public.divisions (league_id, division_level_id, name)
-  values (v_flanders_league, v_level_id, 'Roster Pool Fl Div')
-  returning id into v_flanders_div;
-
-  insert into public.divisions (league_id, division_level_id, name)
-  values (v_zweiffel_league, v_level_id, 'Roster Pool Zw Div')
-  returning id into v_zweiffel_div;
-
+  -- Temporary groups/teams under existing divisions (rolled back)
   insert into public.groups (division_id, name)
   values (v_national_div, 'Roster Pool Nat G')
   returning id into v_national_group;
