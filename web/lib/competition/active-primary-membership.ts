@@ -73,7 +73,7 @@ export async function loadEligibleClubMembers<T = Record<string, unknown>>(
     .eq("status", ACTIVE_MEMBERSHIP_STATUS);
   if (error) throw error;
   return filterRowsByMembershipType(
-    (data ?? []) as Record<string, unknown>[],
+    (data ?? []) as unknown as Record<string, unknown>[],
     membershipTypes,
   ) as T[];
 }
@@ -117,7 +117,10 @@ export async function findEligibleClubMember(
     .eq("player_id", input.playerId)
     .eq("status", ACTIVE_MEMBERSHIP_STATUS);
   if (error) throw error;
-  const match = filterRowsByMembershipType(data ?? [], membershipTypes)[0];
+  const match = filterRowsByMembershipType(
+    (data ?? []) as unknown as Record<string, unknown>[],
+    membershipTypes,
+  )[0];
   return match ? { id: match.id as string } : null;
 }
 
@@ -179,9 +182,10 @@ export async function loadEligiblePlayerIdsAtClub(
     .eq("status", ACTIVE_MEMBERSHIP_STATUS);
   if (error) throw error;
   return new Set(
-    filterRowsByMembershipType(data ?? [], membershipTypes).map(
-      (row) => row.player_id as string,
-    ),
+    filterRowsByMembershipType(
+      (data ?? []) as unknown as Record<string, unknown>[],
+      membershipTypes,
+    ).map((row) => row.player_id as string),
   );
 }
 

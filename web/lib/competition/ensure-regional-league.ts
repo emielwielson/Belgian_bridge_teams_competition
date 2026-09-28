@@ -39,6 +39,7 @@ export async function ensureRegionalLeague(
     throw new Error(`Region not found: ${regionCode}`);
   }
 
+  const regionId = region.id;
   const name = canonicalLeagueName("regional", regionCode);
   const competitionKindId = await resolveCompetitionKindId(
     supabase,
@@ -51,7 +52,7 @@ export async function ensureRegionalLeague(
       .select("id")
       .eq("season_id", seasonId)
       .eq("scope", "regional")
-      .eq("region_id", region.id)
+      .eq("region_id", regionId)
       .maybeSingle();
     if (error) throw error;
     return data?.id ?? null;
@@ -72,7 +73,7 @@ export async function ensureRegionalLeague(
     .insert({
       season_id: seasonId,
       scope: "regional",
-      region_id: region.id,
+      region_id: regionId,
       name,
       competition_kind_id: competitionKindId,
     })
