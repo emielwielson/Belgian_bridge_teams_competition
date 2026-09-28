@@ -29,10 +29,8 @@ begin
   if position('''federation''' in v_fn) = 0 then
     raise exception 'Captain trigger must allow federation membership for Zweiffel';
   end if;
-  -- second/federation branch must not require status = active on those types
-  if position('membership_type in (''second'', ''federation'')' in v_fn) = 0
-     and position('pcm.membership_type in (''second'', ''federation'')' in v_fn) = 0 then
-    raise exception 'Captain trigger must accept second/federation without status filter';
+  if position('pcm_primary' in v_fn) = 0 then
+    raise exception 'Captain trigger must require active primary for second/federation';
   end if;
 
   select pg_get_functiondef(oid) into v_fn

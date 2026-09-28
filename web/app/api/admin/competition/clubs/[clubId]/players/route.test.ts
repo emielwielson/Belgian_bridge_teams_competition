@@ -67,12 +67,13 @@ describe("GET /api/admin/competition/clubs/[clubId]/players", () => {
     expect(chain.eq).toHaveBeenCalledWith("status", "active");
   });
 
-  it("authorizes via Zweiffel scope and includes second/federation without status filter", async () => {
+  it("authorizes via Zweiffel scope and includes second/federation with active primary", async () => {
     const { assertManagesClub, assertManagesScopeRegion } = await import(
       "@/lib/auth/competition-scope"
     );
 
-    const chain = {
+    let call = 0;
+    const clubChain = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
       in: vi.fn().mockReturnThis(),
@@ -103,12 +104,31 @@ describe("GET /api/admin/competition/clubs/[clubId]/players", () => {
               status: "archived",
               player: { id: "p4", name: "Skip", member_number: null },
             },
+            {
+              player_id: "p5",
+              membership_type: "federation",
+              status: "active",
+              player: { id: "p5", name: "NoHome", member_number: null },
+            },
           ],
           error: null,
         }),
     };
+    const primaryChain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      in: vi.fn().mockReturnThis(),
+      then: (resolve: (v: unknown) => void) =>
+        resolve({
+          data: [{ player_id: "p2" }, { player_id: "p3" }],
+          error: null,
+        }),
+    };
 
-    const from = vi.fn(() => chain);
+    const from = vi.fn(() => {
+      call += 1;
+      return call === 1 ? clubChain : primaryChain;
+    });
     const { requireRoles } = await import("@/lib/auth/route-auth");
     vi.mocked(requireRoles).mockResolvedValue({
       supabase: { from } as never,
@@ -123,9 +143,8 @@ describe("GET /api/admin/competition/clubs/[clubId]/players", () => {
     expect(res.status).toBe(200);
     expect(assertManagesScopeRegion).toHaveBeenCalled();
     expect(assertManagesClub).not.toHaveBeenCalled();
-    expect(chain.eq).toHaveBeenCalledWith("club_id", "c1");
-    expect(chain.eq).not.toHaveBeenCalledWith("status", "active");
-    expect(chain.eq).not.toHaveBeenCalledWith("membership_type", "primary");
+    expect(clubChain.eq).toHaveBeenCalledWith("club_id", "c1");
+    expect(clubChain.eq).not.toHaveBeenCalledWith("status", "active");
     const body = await res.json();
     expect(body.players.map((p: { name: string }) => p.name)).toEqual([
       "Alice",

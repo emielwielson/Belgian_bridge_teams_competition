@@ -64,7 +64,7 @@ describe("isEligibleMembershipRow", () => {
     ).toBe(false);
   });
 
-  it("allows Zweiffel second and federation regardless of status", () => {
+  it("treats Zweiffel second/federation as club-row candidates regardless of status", () => {
     expect(
       isEligibleMembershipRow(
         { membership_type: "second", status: "archived" },
@@ -74,12 +74,6 @@ describe("isEligibleMembershipRow", () => {
     expect(
       isEligibleMembershipRow(
         { membership_type: "federation", status: "active" },
-        "zweiffel",
-      ),
-    ).toBe(true);
-    expect(
-      isEligibleMembershipRow(
-        { membership_type: "federation", status: "archived" },
         "zweiffel",
       ),
     ).toBe(true);
@@ -155,8 +149,9 @@ describe("active-primary-membership", () => {
     expect(ids).toEqual(new Set(["p1", "p2"]));
   });
 
-  it("loads Zweiffel members without global status filter and dedupes players", async () => {
-    const chain = chainThatResolves([
+  it("loads Zweiffel secondaries only when they have an active primary", async () => {
+    let call = 0;
+    const clubChain = chainThatResolves([
       {
         player_id: "p1",
         membership_type: "federation",
@@ -179,13 +174,24 @@ describe("active-primary-membership", () => {
         player_id: "p3",
         membership_type: "second",
         status: "archived",
-        player: { id: "p3", name: "Erik" },
+        player: { id: "p3", name: "NoPrimary" },
+      },
+      {
+        player_id: "p4",
+        membership_type: "primary",
+        status: "active",
+        player: { id: "p4", name: "LocalPrimary" },
       },
     ]);
+    const primaryChain = chainThatResolves([{ player_id: "p1" }]);
+
     const supabase = {
-      from: vi.fn(() => ({
-        select: vi.fn(() => chain),
-      })),
+      from: vi.fn(() => {
+        call += 1;
+        return {
+          select: vi.fn(() => (call === 1 ? clubChain : primaryChain)),
+        };
+      }),
     } as never;
 
     const rows = await loadEligibleClubMembers(
@@ -195,24 +201,30 @@ describe("active-primary-membership", () => {
       "zweiffel",
     );
 
-    expect(chain.eq).toHaveBeenCalledWith("club_id", "club-1");
-    expect(chain.eq).not.toHaveBeenCalledWith("status", "active");
-    expect(rows).toHaveLength(2);
+    expect(clubChain.eq).toHaveBeenCalledWith("club_id", "club-1");
+    expect(clubChain.eq).not.toHaveBeenCalledWith("status", "active");
+    expect(primaryChain.in).toHaveBeenCalledWith("player_id", ["p1", "p3"]);
     expect(rows.map((r) => (r as { player_id: string }).player_id)).toEqual([
       "p1",
-      "p3",
+      "p4",
     ]);
   });
 
-  it("finds Zweiffel captain via archived second membership", async () => {
-    const chain = chainThatResolves([
+  it("finds Zweiffel captain via federation when primary is active elsewhere", async () => {
+    let call = 0;
+    const clubChain = chainThatResolves([
       { id: "m-fed", membership_type: "federation", status: "active" },
       { id: "m-sec", membership_type: "second", status: "archived" },
     ]);
+    const primaryChain = chainThatResolves([{ player_id: "p1" }]);
+
     const supabase = {
-      from: vi.fn(() => ({
-        select: vi.fn(() => chain),
-      })),
+      from: vi.fn(() => {
+        call += 1;
+        return {
+          select: vi.fn(() => (call === 1 ? clubChain : primaryChain)),
+        };
+      }),
     } as never;
 
     const row = await findEligibleClubMember(supabase, {
@@ -221,7 +233,31 @@ describe("active-primary-membership", () => {
       competitionKindCode: "zweiffel",
     });
 
-    expect(chain.eq).not.toHaveBeenCalledWith("status", "active");
     expect(row).toEqual({ id: "m-fed" });
+  });
+
+  it("rejects Zweiffel secondary without active primary", async () => {
+    let call = 0;
+    const clubChain = chainThatResolves([
+      { id: "m-fed", membership_type: "federation", status: "active" },
+    ]);
+    const primaryChain = chainThatResolves([]);
+
+    const supabase = {
+      from: vi.fn(() => {
+        call += 1;
+        return {
+          select: vi.fn(() => (call === 1 ? clubChain : primaryChain)),
+        };
+      }),
+    } as never;
+
+    const row = await findEligibleClubMember(supabase, {
+      clubId: "c1",
+      playerId: "p1",
+      competitionKindCode: "zweiffel",
+    });
+
+    expect(row).toBeNull();
   });
 });

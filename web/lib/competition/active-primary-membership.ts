@@ -11,7 +11,8 @@ export const ACTIVE_MEMBERSHIP_STATUS = "active" as const;
 
 const PRIMARY_ONLY = ["primary"] as const;
 /**
- * Zweiffel: primary (active), or second/federation (any status).
+ * Zweiffel: primary (active), or second/federation (any status) when the player
+ * also has an active primary membership somewhere (home club).
  * Ledenbeheer uses "second" (not "secondary") and "federation" for cross-federation club links.
  */
 const ZWEIFFEL_MEMBERSHIP_TYPES = [
@@ -20,7 +21,7 @@ const ZWEIFFEL_MEMBERSHIP_TYPES = [
   "federation",
 ] as const;
 
-const ZWEIFFEL_STATUS_IGNORED_TYPES = new Set(["second", "federation"]);
+const ZWEIFFEL_SECONDARY_TYPES = new Set(["second", "federation"]);
 
 export function allowsSecondaryMembers(
   competitionKindCode: string | null | undefined,
@@ -36,6 +37,7 @@ export function eligibleMembershipTypes(
     : PRIMARY_ONLY;
 }
 
+/** Club-row candidate for Zweiffel (does not check active primary elsewhere). */
 export function isEligibleMembershipRow(
   row: { membership_type?: unknown; status?: unknown },
   competitionKindCode?: string | null,
@@ -45,7 +47,7 @@ export function isEligibleMembershipRow(
 
   if (allowsSecondaryMembers(competitionKindCode)) {
     if (type === "primary") return status === ACTIVE_MEMBERSHIP_STATUS;
-    if (ZWEIFFEL_STATUS_IGNORED_TYPES.has(type)) return true;
+    if (ZWEIFFEL_SECONDARY_TYPES.has(type)) return true;
     return false;
   }
 
@@ -53,6 +55,12 @@ export function isEligibleMembershipRow(
     type === ACTIVE_PRIMARY.membership_type &&
     status === ACTIVE_PRIMARY.status
   );
+}
+
+export function isZweiffelSecondaryMembershipType(
+  membershipType: unknown,
+): boolean {
+  return ZWEIFFEL_SECONDARY_TYPES.has(String(membershipType ?? ""));
 }
 
 function withMembershipColumns(select: string): string {
@@ -72,8 +80,8 @@ function playerIdFromRow(row: Record<string, unknown>): string | null {
   return null;
 }
 
-/** Keep first eligible row per player_id when present; otherwise keep all eligible rows. */
-function filterEligibleRows<T extends Record<string, unknown>>(
+/** Keep first eligible club-row per player_id when present. */
+function filterEligibleClubRows<T extends Record<string, unknown>>(
   rows: T[],
   competitionKindCode?: string | null,
 ): T[] {
@@ -95,11 +103,54 @@ function filterEligibleRows<T extends Record<string, unknown>>(
   return deduped;
 }
 
+async function loadPlayerIdsWithActivePrimary(
+  supabase: SupabaseClient,
+  playerIds: string[],
+): Promise<Set<string>> {
+  if (playerIds.length === 0) return new Set();
+  const { data, error } = await supabase
+    .from("player_club_memberships")
+    .select("player_id")
+    .in("player_id", playerIds)
+    .eq("membership_type", ACTIVE_PRIMARY.membership_type)
+    .eq("status", ACTIVE_PRIMARY.status);
+  if (error) throw error;
+  return new Set((data ?? []).map((row) => row.player_id as string));
+}
+
+/**
+ * Zweiffel second/federation rows require an active primary membership elsewhere.
+ * Active primary at the team club does not need that extra check.
+ */
+async function retainZweiffelEligibleRows<T extends Record<string, unknown>>(
+  supabase: SupabaseClient,
+  rows: T[],
+): Promise<T[]> {
+  const candidates = filterEligibleClubRows(rows, COMPETITION_KIND_CODES.ZWEIFFEL);
+  const secondaryPlayerIds = [
+    ...new Set(
+      candidates
+        .filter((row) => isZweiffelSecondaryMembershipType(row.membership_type))
+        .map((row) => playerIdFromRow(row))
+        .filter((id): id is string => id != null),
+    ),
+  ];
+  const activePrimaryIds = await loadPlayerIdsWithActivePrimary(
+    supabase,
+    secondaryPlayerIds,
+  );
+
+  return candidates.filter((row) => {
+    if (!isZweiffelSecondaryMembershipType(row.membership_type)) return true;
+    const playerId = playerIdFromRow(row);
+    return playerId != null && activePrimaryIds.has(playerId);
+  });
+}
+
 /**
  * Load club members eligible for the competition kind.
  * Primary-only competitions: SQL filters active primary.
- * Zweiffel: loads club memberships then applies type/status rules in JS
- * (second/federation ignore status; primary requires active).
+ * Zweiffel: club primary+active, or second/federation (any status) with active primary elsewhere.
  */
 export async function loadEligibleClubMembers<T = Record<string, unknown>>(
   supabase: SupabaseClient,
@@ -125,10 +176,10 @@ export async function loadEligibleClubMembers<T = Record<string, unknown>>(
     .select(withMembershipColumns(select))
     .eq("club_id", clubId);
   if (error) throw error;
-  return filterEligibleRows(
+  return (await retainZweiffelEligibleRows(
+    supabase,
     (data ?? []) as unknown as Record<string, unknown>[],
-    competitionKindCode,
-  ) as T[];
+  )) as T[];
 }
 
 /** @deprecated Prefer loadEligibleClubMembers with competition kind when known. */
@@ -165,13 +216,18 @@ export async function findEligibleClubMember(
 
   const { data, error } = await supabase
     .from("player_club_memberships")
-    .select("id, membership_type, status")
+    .select("id, player_id, membership_type, status")
     .eq("club_id", input.clubId)
     .eq("player_id", input.playerId);
   if (error) throw error;
-  const match = filterEligibleRows(
-    (data ?? []) as unknown as Record<string, unknown>[],
-    input.competitionKindCode,
+  const match = (
+    await retainZweiffelEligibleRows(
+      supabase,
+      (data ?? []).map((row) => ({
+        ...(row as Record<string, unknown>),
+        player_id: input.playerId,
+      })),
+    )
   )[0];
   return match ? { id: match.id as string } : null;
 }
@@ -232,11 +288,12 @@ export async function loadEligiblePlayerIdsAtClub(
     .eq("club_id", clubId)
     .in("player_id", playerIds);
   if (error) throw error;
+  const rows = await retainZweiffelEligibleRows(
+    supabase,
+    (data ?? []) as unknown as Record<string, unknown>[],
+  );
   return new Set(
-    filterEligibleRows(
-      (data ?? []) as unknown as Record<string, unknown>[],
-      competitionKindCode,
-    )
+    rows
       .map((row) => row.player_id as string)
       .filter(Boolean),
   );
