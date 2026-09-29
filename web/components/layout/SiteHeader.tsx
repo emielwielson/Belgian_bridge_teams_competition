@@ -112,7 +112,7 @@ export function SiteHeader() {
           href={myTeamHref}
           className={navLinkClass(pathname.startsWith("/teams/"))}
         >
-          {teams.length > 1 ? t("myTeams") : t("myTeam")}
+          {t("myTeam")}
         </Link>
       ) : null}
       {me ? (
@@ -190,7 +190,7 @@ export function SiteHeader() {
               href={myTeamHref}
               className={mobileLinkClass(pathname.startsWith("/teams/"))}
             >
-              {teams.length > 1 ? t("myTeams") : t("myTeam")}
+              {t("myTeam")}
             </Link>
           ) : null}
           {me ? (
