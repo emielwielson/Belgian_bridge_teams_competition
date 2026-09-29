@@ -1,8 +1,12 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { requireAuth } from "@/lib/auth/route-auth";
+import { ROLES } from "@/lib/auth/roles";
 
 export default async function AdminPage() {
+  const { roles } = await requireAuth();
   const t = await getTranslations("admin");
+  const isSystemAdmin = roles.includes(ROLES.SYSTEM_ADMIN);
 
   return (
     <main className="page-container flex flex-col gap-6">
@@ -44,6 +48,17 @@ export default async function AdminPage() {
             {t("arbitersHubDescription")}
           </p>
         </Link>
+        {isSystemAdmin ? (
+          <Link
+            href="/admin/competition-managers"
+            className="card hover:border-zinc-400"
+          >
+            <span className="font-medium">{t("competitionManagersHub")}</span>
+            <p className="mt-1 text-sm font-normal text-zinc-600">
+              {t("competitionManagersHubDescription")}
+            </p>
+          </Link>
+        ) : null}
       </nav>
     </main>
   );
