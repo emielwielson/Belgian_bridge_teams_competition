@@ -108,16 +108,31 @@ describe("GroupStandingsGrid", () => {
       <GroupStandingsGrid grid={sampleGrid} labels={labels} />,
     );
 
-    const penaltyCells = container.querySelectorAll(".left-\\[11\\.5rem\\]");
-    const vpCells = container.querySelectorAll(".left-\\[15\\.5rem\\]");
-    const teamCells = container.querySelectorAll(".w-\\[9rem\\]");
+    const mobilePenaltyCells = container.querySelectorAll(".left-\\[9rem\\]");
+    const desktopPenaltyCells = container.querySelectorAll(
+      ".sm\\:left-\\[11\\.5rem\\]",
+    );
+    const mobileVpCells = container.querySelectorAll(".left-\\[12rem\\]");
+    const desktopVpCells = container.querySelectorAll(".sm\\:left-\\[15\\.5rem\\]");
+    const mobileTeamCells = container.querySelectorAll(".w-\\[7rem\\]");
+    const desktopTeamCells = container.querySelectorAll(".sm\\:w-\\[9rem\\]");
 
-    expect(penaltyCells.length).toBeGreaterThanOrEqual(3);
-    expect(vpCells.length).toBeGreaterThanOrEqual(3);
-    expect(teamCells.length).toBeGreaterThanOrEqual(3);
+    expect(mobilePenaltyCells.length).toBeGreaterThanOrEqual(3);
+    expect(desktopPenaltyCells.length).toBeGreaterThanOrEqual(3);
+    expect(mobileVpCells.length).toBeGreaterThanOrEqual(3);
+    expect(desktopVpCells.length).toBeGreaterThanOrEqual(3);
+    expect(mobileTeamCells.length).toBeGreaterThanOrEqual(3);
+    expect(desktopTeamCells.length).toBeGreaterThanOrEqual(3);
 
-    for (const cell of teamCells) {
+    for (const cell of mobileTeamCells) {
       expect(cell.className).not.toMatch(/min-w-\[9rem\]/);
+    }
+
+    const teamBodyCells = container.querySelectorAll("td.w-\\[7rem\\]");
+    expect(teamBodyCells.length).toBeGreaterThanOrEqual(2);
+    for (const cell of teamBodyCells) {
+      expect(cell.className).toMatch(/max-w-\[7rem\]/);
+      expect(cell.className).toMatch(/sm:max-w-\[9rem\]/);
     }
   });
 });

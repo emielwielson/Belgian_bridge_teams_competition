@@ -33,18 +33,25 @@ function HomeIcon({ linked, homeLabel }: { linked?: boolean; homeLabel: string }
 }
 
 const STICKY_COLS = {
-  rank: { width: "w-10", left: "left-0" },
-  team: { width: "w-[9rem]", left: "left-10" },
-  penalty: { width: "w-16", left: "left-[11.5rem]" },
-  vp: { width: "w-16", left: "left-[15.5rem]" },
+  rank: { width: "w-8 sm:w-10", left: "left-0" },
+  team: { width: "w-[7rem] sm:w-[9rem]", left: "left-8 sm:left-10" },
+  penalty: {
+    width: "w-12 sm:w-16",
+    left: "left-[9rem] sm:left-[11.5rem]",
+  },
+  vp: {
+    width: "w-14 sm:w-16",
+    left: "left-[12rem] sm:left-[15.5rem]",
+  },
 } as const;
 
-const stickyHead = "sticky z-20 shrink-0 bg-white px-2 py-2 text-left font-medium text-zinc-500";
+const stickyHead =
+  "sticky z-20 shrink-0 bg-white px-1 py-2 text-left font-medium text-zinc-500 sm:px-2";
 const stickyHeadEdge =
-  "sticky z-20 shrink-0 bg-white px-2 py-2 text-left font-medium text-zinc-500 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.08)]";
-const stickyCell = "sticky z-10 shrink-0 bg-white px-2 py-1.5";
+  "sticky z-20 shrink-0 bg-white px-1 py-2 text-left font-medium text-zinc-500 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.08)] sm:px-2";
+const stickyCell = "sticky z-10 shrink-0 bg-white px-1 py-1.5 sm:px-2";
 const stickyCellEdge =
-  "sticky z-10 shrink-0 bg-white px-2 py-1.5 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]";
+  "sticky z-10 shrink-0 bg-white px-1 py-1.5 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)] sm:px-2";
 
 export function GroupStandingsGrid({ grid, labels }: Props) {
   const { rounds, rows, hasMatches } = grid;
@@ -108,7 +115,7 @@ export function GroupStandingsGrid({ grid, labels }: Props) {
                   {row.rank}
                 </td>
                 <td
-                  className={`${stickyCell} ${STICKY_COLS.team.left} ${STICKY_COLS.team.width} max-w-[9rem] font-medium`}
+                  className={`${stickyCell} ${STICKY_COLS.team.left} ${STICKY_COLS.team.width} max-w-[7rem] font-medium sm:max-w-[9rem]`}
                 >
                   <Link
                     href={`/teams/${row.teamId}`}
