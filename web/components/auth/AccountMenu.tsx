@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { LanguageSelect } from "@/components/i18n/LanguageSelect";
 import type { ActivePlayer, LinkedPlayer } from "@/lib/auth/active-player";
@@ -55,9 +55,14 @@ export function AccountMenu({
   const t = useTranslations("nav");
   const tRegions = useTranslations("regions");
   const router = useRouter();
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [switchingId, setSwitchingId] = useState<string | null>(null);
+  const [switchingPlayerId, setSwitchingPlayerId] = useState<string | null>(
+    null,
+  );
   const [activeTeamId, setActiveTeamId] = useState<string | null>(null);
+  const [pendingTeamId, setPendingTeamId] = useState<string | null>(null);
+  const [teamSwitchPending, startTeamSwitchTransition] = useTransition();
   const rootRef = useRef<HTMLDivElement>(null);
   const signedIn = Boolean(email);
   const showProfileSwitcher = signedIn && linkedPlayers.length > 1;
@@ -68,10 +73,25 @@ export function AccountMenu({
   const activeTeamName =
     showTeamSwitcher && activeTeam?.name ? activeTeam.name : null;
   const accountLabel = displayLabel(email, activePlayer);
+  const isSwitchingTeam =
+    pendingTeamId !== null || teamSwitchPending;
+  const isBusy = isSwitchingTeam || switchingPlayerId !== null;
 
   useEffect(() => {
+    if (pendingTeamId) return;
     setActiveTeamId(resolveActiveTeamId(teams));
-  }, [teams]);
+  }, [teams, pendingTeamId]);
+
+  useEffect(() => {
+    if (!pendingTeamId || teamSwitchPending) return;
+    if (
+      pathname === `/teams/${pendingTeamId}` ||
+      pathname.startsWith(`/teams/${pendingTeamId}/`)
+    ) {
+      setActiveTeamId(pendingTeamId);
+      setPendingTeamId(null);
+    }
+  }, [pathname, pendingTeamId, teamSwitchPending]);
 
   useEffect(() => {
     if (!open) return;
@@ -97,8 +117,8 @@ export function AccountMenu({
   }, [open]);
 
   async function switchPlayer(playerId: string) {
-    if (playerId === activePlayer?.id || switchingId) return;
-    setSwitchingId(playerId);
+    if (playerId === activePlayer?.id || isBusy) return;
+    setSwitchingPlayerId(playerId);
     try {
       const res = await fetch("/api/auth/active-player", {
         method: "POST",
@@ -111,23 +131,19 @@ export function AccountMenu({
         router.refresh();
       }
     } finally {
-      setSwitchingId(null);
+      setSwitchingPlayerId(null);
     }
   }
 
   async function switchTeam(teamId: string) {
-    if (teamId === activeTeamId || switchingId) return;
-    setSwitchingId(teamId);
-    try {
-      writeActiveTeamId(teamId);
-      setActiveTeamId(teamId);
-      setOpen(false);
-      await onTeamSwitched?.();
+    if (teamId === activeTeamId || isBusy) return;
+    setPendingTeamId(teamId);
+    writeActiveTeamId(teamId);
+    setOpen(false);
+    startTeamSwitchTransition(() => {
       router.push(`/teams/${teamId}`);
-      router.refresh();
-    } finally {
-      setSwitchingId(null);
-    }
+    });
+    await onTeamSwitched?.();
   }
 
   return (
@@ -137,6 +153,8 @@ export function AccountMenu({
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         aria-haspopup="menu"
+        aria-busy={isSwitchingTeam}
+        disabled={isSwitchingTeam}
         aria-label={
           signedIn
             ? activeTeamName && accountLabel
@@ -147,7 +165,7 @@ export function AccountMenu({
               : (activePlayer?.name ?? email)
             : t("signIn")
         }
-        className="flex h-9 max-w-[min(100vw-2rem,20rem)] items-center gap-2 rounded-md border border-zinc-200 bg-white px-2 shadow-sm hover:border-zinc-300 focus:outline-none focus:ring-2 focus:ring-zinc-200"
+        className="flex h-9 max-w-[min(100vw-2rem,20rem)] items-center gap-2 rounded-md border border-zinc-200 bg-white px-2 shadow-sm hover:border-zinc-300 focus:outline-none focus:ring-2 focus:ring-zinc-200 disabled:cursor-wait disabled:opacity-80"
       >
         <span
           aria-hidden
@@ -156,8 +174,14 @@ export function AccountMenu({
           {signedIn ? displayInitial(email, activePlayer) : "?"}
         </span>
         {activeTeamName ? (
-          <span className="min-w-0 truncate rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
-            {activeTeamName}
+          <span className="inline-flex min-w-0 max-w-full items-center gap-1.5 truncate rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
+            {isSwitchingTeam ? (
+              <span
+                aria-hidden
+                className="h-3 w-3 shrink-0 animate-spin rounded-full border-2 border-emerald-700 border-t-transparent"
+              />
+            ) : null}
+            <span className="min-w-0 truncate">{activeTeamName}</span>
           </span>
         ) : signedIn && accountLabel ? (
           <span className="hidden max-w-[7rem] truncate text-sm text-zinc-700 sm:inline">
@@ -165,7 +189,7 @@ export function AccountMenu({
           </span>
         ) : null}
         <span aria-hidden className="shrink-0 text-xs text-zinc-400">
-          ▾
+          {isSwitchingTeam ? t("loading") : "▾"}
         </span>
       </button>
 
@@ -194,7 +218,7 @@ export function AccountMenu({
                         type="button"
                         role="menuitemradio"
                         aria-checked={isActive}
-                        disabled={switchingId !== null}
+                        disabled={isBusy}
                         onClick={() => switchPlayer(player.id)}
                         className={`w-full rounded px-2 py-1.5 text-left text-sm ${
                           isActive
@@ -233,7 +257,7 @@ export function AccountMenu({
                         type="button"
                         role="menuitemradio"
                         aria-checked={isActive}
-                        disabled={switchingId !== null}
+                        disabled={isBusy}
                         onClick={() => switchTeam(team.id)}
                         className={`w-full rounded px-2 py-1.5 text-left text-sm ${
                           isActive
