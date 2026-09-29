@@ -25,14 +25,14 @@ type MeResponse = {
 
 function navLinkClass(active: boolean): string {
   return active
-    ? "text-sm font-medium text-zinc-900"
-    : "text-sm font-medium text-zinc-600 hover:text-zinc-900";
+    ? "border-b-2 border-zinc-900 pb-0.5 text-sm font-semibold text-zinc-900"
+    : "border-b-2 border-transparent pb-0.5 text-sm font-medium text-zinc-600 hover:text-zinc-900";
 }
 
 function mobileLinkClass(active: boolean): string {
   return active
-    ? "whitespace-nowrap text-sm font-medium text-zinc-900"
-    : "whitespace-nowrap text-sm font-medium text-zinc-600";
+    ? "whitespace-nowrap border-b-2 border-zinc-900 pb-0.5 text-sm font-semibold text-zinc-900"
+    : "whitespace-nowrap border-b-2 border-transparent pb-0.5 text-sm font-medium text-zinc-600";
 }
 
 export function SiteHeader() {
