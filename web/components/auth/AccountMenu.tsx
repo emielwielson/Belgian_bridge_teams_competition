@@ -62,6 +62,12 @@ export function AccountMenu({
   const signedIn = Boolean(email);
   const showProfileSwitcher = signedIn && linkedPlayers.length > 1;
   const showTeamSwitcher = signedIn && teams.length > 1;
+  const activeTeam = activeTeamId
+    ? teams.find((team) => team.id === activeTeamId)
+    : undefined;
+  const activeTeamName =
+    showTeamSwitcher && activeTeam?.name ? activeTeam.name : null;
+  const accountLabel = displayLabel(email, activePlayer);
 
   useEffect(() => {
     setActiveTeamId(resolveActiveTeamId(teams));
@@ -131,8 +137,17 @@ export function AccountMenu({
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         aria-haspopup="menu"
-        aria-label={signedIn ? (activePlayer?.name ?? email) : t("signIn")}
-        className="flex h-9 items-center gap-2 rounded-md border border-zinc-200 bg-white px-2 shadow-sm hover:border-zinc-300 focus:outline-none focus:ring-2 focus:ring-zinc-200"
+        aria-label={
+          signedIn
+            ? activeTeamName && accountLabel
+              ? t("activeTeamAria", {
+                  name: accountLabel,
+                  team: activeTeamName,
+                })
+              : (activePlayer?.name ?? email)
+            : t("signIn")
+        }
+        className="flex h-9 max-w-[min(100vw-2rem,20rem)] items-center gap-2 rounded-md border border-zinc-200 bg-white px-2 shadow-sm hover:border-zinc-300 focus:outline-none focus:ring-2 focus:ring-zinc-200"
       >
         <span
           aria-hidden
@@ -140,12 +155,16 @@ export function AccountMenu({
         >
           {signedIn ? displayInitial(email, activePlayer) : "?"}
         </span>
-        {signedIn ? (
+        {activeTeamName ? (
+          <span className="min-w-0 truncate rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
+            {activeTeamName}
+          </span>
+        ) : signedIn && accountLabel ? (
           <span className="hidden max-w-[7rem] truncate text-sm text-zinc-700 sm:inline">
-            {displayLabel(email, activePlayer)}
+            {accountLabel}
           </span>
         ) : null}
-        <span aria-hidden className="text-xs text-zinc-400">
+        <span aria-hidden className="shrink-0 text-xs text-zinc-400">
           ▾
         </span>
       </button>
@@ -153,7 +172,7 @@ export function AccountMenu({
       {open ? (
         <div
           role="menu"
-          className="absolute right-0 z-50 mt-1 w-56 rounded-md border border-zinc-200 bg-white py-1 shadow-lg"
+          className="absolute right-0 top-full z-50 mt-1 w-56 rounded-md border border-zinc-200 bg-white py-1 shadow-lg"
         >
           {signedIn ? (
             <p className="border-b border-zinc-100 px-3 py-2 text-xs text-zinc-500">

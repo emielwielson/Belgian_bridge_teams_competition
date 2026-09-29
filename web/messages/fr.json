@@ -13,6 +13,7 @@
     "dashboard": "Tableau de bord",
     "playingAs": "Jouer en tant que",
     "activeTeam": "Mon équipe",
+    "activeTeamAria": "{name}, {team}",
     "language": {
       "label": "Langue",
       "english": "English",

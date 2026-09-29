@@ -153,7 +153,7 @@ export function SiteHeader() {
           )}
         </nav>
 
-        <div className="ml-auto shrink-0 pl-2">
+        <div className="ml-auto min-w-0 max-w-full pl-2">
           {!loaded ? (
             <span className="inline-block h-9 w-9 animate-pulse rounded-md bg-zinc-100" />
           ) : (
