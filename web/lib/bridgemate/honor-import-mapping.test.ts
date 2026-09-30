@@ -31,6 +31,7 @@ function readyMatch(
 ): HonorRoundMatchSeating {
   const home = overrides.home_team.id;
   const away = overrides.away_team.id;
+  const { home_team, away_team, ...rest } = overrides;
   return {
     round: 1,
     datetime: "2026-01-01T10:00:00Z",
@@ -51,7 +52,19 @@ function readyMatch(
       seat(home, "closed", "E", `${home}-e`),
       seat(home, "closed", "W", `${home}-w`),
     ],
-    ...overrides,
+    ...rest,
+    home_team: {
+      id: home_team.id,
+      name: home_team.name,
+      captain: null,
+      players: [],
+    },
+    away_team: {
+      id: away_team.id,
+      name: away_team.name,
+      captain: null,
+      players: [],
+    },
   };
 }
 

@@ -28,6 +28,18 @@ export type HonorLockStatus =
   | "home_only"
   | "both";
 
+export type HonorSeatingTeamPlayer = {
+  id: string;
+  name: string;
+};
+
+export type HonorSeatingTeam = {
+  id: string;
+  name: string;
+  captain: HonorSeatingTeamPlayer | null;
+  players: HonorSeatingTeamPlayer[];
+};
+
 export type HonorSeatedPlayer = {
   player_id: string;
   name: string;
@@ -43,8 +55,8 @@ export type HonorRoundMatchSeating = {
   datetime: string;
   board_count: number;
   phase: HonorLineupPhase;
-  home_team: { id: string; name: string };
-  away_team: { id: string; name: string };
+  home_team: HonorSeatingTeam;
+  away_team: HonorSeatingTeam;
   home_slot: number | null;
   away_slot: number | null;
   home_lineup_locked_at: string | null;
@@ -55,6 +67,28 @@ export type HonorRoundMatchSeating = {
   venue_tables: HonorVenueTables | null;
   seats: HonorSeatedPlayer[];
 };
+
+/** Sides that still need to lock their line-up (who the arbiter should chase). */
+export function waitingLineupSides(match: {
+  phase: HonorLineupPhase;
+  home_lineup_locked_at: string | null;
+  away_lineup_locked_at: string | null;
+}): Array<"home" | "away"> {
+  const homeLocked = match.home_lineup_locked_at != null;
+  const awayLocked = match.away_lineup_locked_at != null;
+  if (homeLocked && awayLocked) return [];
+
+  if (match.phase === "sequential") {
+    if (!awayLocked) return ["away"];
+    if (!homeLocked) return ["home"];
+    return [];
+  }
+
+  const sides: Array<"home" | "away"> = [];
+  if (!awayLocked) sides.push("away");
+  if (!homeLocked) sides.push("home");
+  return sides;
+}
 
 export type HonorVenueTableSeat = {
   direction: HonorDirection;
@@ -325,6 +359,90 @@ function firstPlayer(
   return Array.isArray(value) ? (value[0] ?? null) : value;
 }
 
+type TeamCaptainRef =
+  | { id: string; name: string }
+  | { id: string; name: string }[]
+  | null;
+
+type TeamDetailRow = {
+  id: string;
+  captain_id: string | null;
+  captain: TeamCaptainRef;
+};
+
+type RosterRow = {
+  team_id: string;
+  player:
+    | { id: string; name: string }
+    | { id: string; name: string }[]
+    | null;
+};
+
+function firstCaptain(value: TeamCaptainRef): HonorSeatingTeamPlayer | null {
+  if (value == null) return null;
+  const c = Array.isArray(value) ? value[0] : value;
+  if (!c?.id) return null;
+  return { id: c.id, name: c.name };
+}
+
+async function loadHonorSeatingTeams(
+  supabase: SupabaseClient,
+  teamIds: string[],
+): Promise<Map<string, Pick<HonorSeatingTeam, "captain" | "players">>> {
+  const byTeam = new Map<string, Pick<HonorSeatingTeam, "captain" | "players">>();
+  if (teamIds.length === 0) return byTeam;
+
+  for (const id of teamIds) {
+    byTeam.set(id, { captain: null, players: [] });
+  }
+
+  const [{ data: teams, error: teamsError }, { data: roster, error: rosterError }] =
+    await Promise.all([
+      supabase
+        .from("teams")
+        .select("id, captain_id, captain:players(id, name)")
+        .in("id", teamIds),
+      supabase
+        .from("team_players")
+        .select("team_id, player:players(id, name)")
+        .in("team_id", teamIds),
+    ]);
+  if (teamsError) throw teamsError;
+  if (rosterError) throw rosterError;
+
+  for (const row of (teams ?? []) as TeamDetailRow[]) {
+    const entry = byTeam.get(row.id) ?? { captain: null, players: [] };
+    entry.captain = firstCaptain(row.captain);
+    byTeam.set(row.id, entry);
+  }
+
+  for (const row of (roster ?? []) as RosterRow[]) {
+    const player = firstPlayer(row.player);
+    if (!player) continue;
+    const entry = byTeam.get(row.team_id) ?? { captain: null, players: [] };
+    entry.players.push({ id: player.id, name: player.name });
+    byTeam.set(row.team_id, entry);
+  }
+
+  for (const entry of byTeam.values()) {
+    entry.players.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  return byTeam;
+}
+
+function toHonorSeatingTeam(
+  base: { id: string; name: string },
+  detail: Pick<HonorSeatingTeam, "captain" | "players"> | undefined,
+): HonorSeatingTeam {
+  return {
+    id: base.id,
+    name: base.name,
+    captain: detail?.captain ?? null,
+    players: detail?.players ?? [],
+  };
+}
+
 export async function loadHonorRoundSeating(
   supabase: SupabaseClient,
   group: ActiveHonorGroup,
@@ -394,15 +512,22 @@ export async function loadHonorRoundSeating(
     }
   }
 
+  const teamIds = [
+    ...new Set(matches.flatMap((m) => [m.home_team_id, m.away_team_id])),
+  ];
+  const seatingTeams = await loadHonorSeatingTeams(supabase, teamIds);
+
   const seatingMatches: HonorRoundMatchSeating[] = matches.map((match) => {
-    const home = firstTeam(match.home_team) ?? {
+    const homeBase = firstTeam(match.home_team) ?? {
       id: match.home_team_id,
       name: "?",
     };
-    const away = firstTeam(match.away_team) ?? {
+    const awayBase = firstTeam(match.away_team) ?? {
       id: match.away_team_id,
       name: "?",
     };
+    const home = toHonorSeatingTeam(homeBase, seatingTeams.get(homeBase.id));
+    const away = toHonorSeatingTeam(awayBase, seatingTeams.get(awayBase.id));
     const homeSlot = slotByTeam.get(match.home_team_id) ?? null;
     const awaySlot = slotByTeam.get(match.away_team_id) ?? null;
     const venue_tables = venueTablesForHonorMatch({

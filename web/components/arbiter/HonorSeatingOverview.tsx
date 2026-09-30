@@ -6,8 +6,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   HonorLockStatus,
   HonorRoundMatchSeating,
+  HonorSeatingTeam,
   HonorVenueTableRow,
 } from "@/lib/competition/honor-seating-overview";
+import { waitingLineupSides } from "@/lib/competition/honor-seating-overview";
 import type { Locale } from "@/i18n/config";
 import { toIntlLocale } from "@/i18n/intl-locale";
 import { formatBrussels } from "@/lib/time/brussels";
@@ -56,6 +58,34 @@ function isMatchLineupReady(m: HonorRoundMatchSeating): boolean {
     m.away_seats_complete &&
     m.venue_tables != null
   );
+}
+
+function formatRosterNames(
+  team: HonorSeatingTeam,
+  captainSuffix: string,
+): string {
+  const captainId = team.captain?.id ?? null;
+  const players = [...team.players];
+  if (
+    team.captain &&
+    !players.some((p) => p.id === team.captain!.id)
+  ) {
+    players.unshift(team.captain);
+  }
+  if (players.length === 0) return "";
+
+  // Captain first so the arbiter can spot who to ask.
+  players.sort((a, b) => {
+    if (a.id === captainId) return -1;
+    if (b.id === captainId) return 1;
+    return a.name.localeCompare(b.name);
+  });
+
+  return players
+    .map((p) =>
+      captainId === p.id ? `${p.name} ${captainSuffix}` : p.name,
+    )
+    .join(", ");
 }
 
 function LoadingSpinner({ className = "h-3.5 w-3.5" }: { className?: string }) {
@@ -477,6 +507,9 @@ export function HonorSeatingOverview() {
                   const homeUnlockKey = `${match.match_id}:home`;
                   const awayUnlockKey = `${match.match_id}:away`;
                   const inOrder = match.lock_status === "both";
+                  const waitingSides = !isMatchLineupReady(match)
+                    ? waitingLineupSides(match)
+                    : [];
                   return (
                     <article
                       key={match.match_id}
@@ -532,6 +565,37 @@ export function HonorSeatingOverview() {
                           })}
                         </li>
                       </ul>
+
+                      {waitingSides.length > 0 ? (
+                        <div className="mt-3 space-y-2 rounded border border-amber-200 bg-amber-50/80 px-3 py-2 text-sm text-amber-950">
+                          {waitingSides.map((side) => {
+                            const team =
+                              side === "home"
+                                ? match.home_team
+                                : match.away_team;
+                            const names = formatRosterNames(
+                              team,
+                              t("captainSuffix"),
+                            );
+                            return (
+                              <div key={side}>
+                                <p className="font-medium">
+                                  {t("waitingOnTeam", { team: team.name })}
+                                </p>
+                                {names ? (
+                                  <p className="mt-0.5 text-amber-900/90">
+                                    {names}
+                                  </p>
+                                ) : (
+                                  <p className="mt-0.5 text-amber-900/90">
+                                    {t("rosterEmpty")}
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : null}
 
                       <div className="mt-3 flex flex-wrap gap-2">
                         <Link

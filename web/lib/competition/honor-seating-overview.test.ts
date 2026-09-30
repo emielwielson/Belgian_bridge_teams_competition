@@ -6,8 +6,14 @@ import {
   honorRoundOptions,
   matchDayForHonorRound,
   roomForVenueTable,
+  waitingLineupSides,
   type HonorRoundMatchSeating,
+  type HonorSeatingTeam,
 } from "./honor-seating-overview";
+
+function team(id: string, name: string): HonorSeatingTeam {
+  return { id, name, captain: null, players: [] };
+}
 
 describe("honorLockStatus", () => {
   it("derives waiting / side / both", () => {
@@ -15,6 +21,63 @@ describe("honorLockStatus", () => {
     expect(honorLockStatus(false, true)).toBe("away_only");
     expect(honorLockStatus(true, false)).toBe("home_only");
     expect(honorLockStatus(true, true)).toBe("both");
+  });
+});
+
+describe("waitingLineupSides", () => {
+  it("sequential: away first, then home", () => {
+    expect(
+      waitingLineupSides({
+        phase: "sequential",
+        home_lineup_locked_at: null,
+        away_lineup_locked_at: null,
+      }),
+    ).toEqual(["away"]);
+    expect(
+      waitingLineupSides({
+        phase: "sequential",
+        home_lineup_locked_at: null,
+        away_lineup_locked_at: "2026-01-01T09:00:00Z",
+      }),
+    ).toEqual(["home"]);
+    expect(
+      waitingLineupSides({
+        phase: "sequential",
+        home_lineup_locked_at: "2026-01-01T09:00:00Z",
+        away_lineup_locked_at: "2026-01-01T09:00:00Z",
+      }),
+    ).toEqual([]);
+  });
+
+  it("blind: each unlocked side independently", () => {
+    expect(
+      waitingLineupSides({
+        phase: "blind",
+        home_lineup_locked_at: null,
+        away_lineup_locked_at: null,
+      }),
+    ).toEqual(["away", "home"]);
+    expect(
+      waitingLineupSides({
+        phase: "blind",
+        home_lineup_locked_at: null,
+        away_lineup_locked_at: "2026-01-01T09:00:00Z",
+      }),
+    ).toEqual(["home"]);
+    expect(
+      waitingLineupSides({
+        phase: "blind",
+        home_lineup_locked_at: "2026-01-01T09:00:00Z",
+        away_lineup_locked_at: null,
+      }),
+    ).toEqual(["away"]);
+    expect(
+      waitingLineupSides({
+        phase: "blind",
+        home_lineup_locked_at: "2026-01-01T09:00:00Z",
+        away_lineup_locked_at: "2026-01-01T09:00:00Z",
+      }),
+    ).toEqual([]);
   });
 });
 
@@ -85,8 +148,8 @@ describe("buildHonorVenueTableGrid", () => {
       datetime: "2026-01-01T10:00:00Z",
       board_count: 16,
       phase: "sequential",
-      home_team: { id: "h", name: "Home" },
-      away_team: { id: "a", name: "Away" },
+      home_team: team("h", "Home"),
+      away_team: team("a", "Away"),
       home_slot: 1,
       away_slot: 8,
       home_lineup_locked_at: "2026-01-01T09:00:00Z",
