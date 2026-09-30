@@ -79,11 +79,6 @@ function attachmentKind(storagePath: string): AttachmentKind {
   return "file";
 }
 
-function attachmentBasename(storagePath: string): string {
-  const segment = storagePath.split("/").pop() ?? storagePath;
-  return segment || storagePath;
-}
-
 function emptyDraft(match: InboxMatchContext | null): ResolveDraft {
   const homeTeamId = match?.home_team?.id ?? "";
   return {
@@ -504,7 +499,6 @@ export function ArbiterInbox({
                       <ul className="grid gap-3 sm:grid-cols-2">
                         {signedAttachments.map((att, index) => {
                           const fileKind = attachmentKind(att.storage_path);
-                          const name = attachmentBasename(att.storage_path);
                           return (
                             <li
                               key={`${att.storage_path}-${att.sort_order}`}
@@ -522,17 +516,6 @@ export function ArbiterInbox({
                                   {attachmentKindLabel(fileKind)}
                                 </div>
                               )}
-                              <div className="min-w-0">
-                                <p className="text-sm font-medium text-zinc-900">
-                                  {t("viewAttachmentN", { n: index + 1 })}
-                                </p>
-                                <p
-                                  className="truncate text-xs text-zinc-500"
-                                  title={name}
-                                >
-                                  {name}
-                                </p>
-                              </div>
                               <a
                                 href={att.signed_url!}
                                 target="_blank"
