@@ -71,7 +71,7 @@
     "noDivisions": "No divisions in this league yet.",
     "breadcrumb": "{leagueName} · {divisionName}",
     "fullStandings": "Full standings",
-    "viewArbiterRequests": "View arbiter requests",
+    "viewArbiterRequests": "Arbitrages",
     "disciplineLoading": {
       "message": "Loading penalties, warnings, and rulings…"
     },

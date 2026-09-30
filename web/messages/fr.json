@@ -71,7 +71,7 @@
     "noDivisions": "Aucune division dans cette ligue pour l'instant.",
     "breadcrumb": "{leagueName} · {divisionName}",
     "fullStandings": "Classement complet",
-    "viewArbiterRequests": "Voir les demandes d'arbitre",
+    "viewArbiterRequests": "Arbitrages",
     "disciplineLoading": {
       "message": "Chargement des pénalités, avertissements et décisions…"
     },

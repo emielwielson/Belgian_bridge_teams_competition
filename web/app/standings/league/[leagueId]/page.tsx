@@ -36,16 +36,16 @@ export default async function LeagueStandingsPage({ params }: Props) {
         <Link href="/" className="link-back">
           {t("backToStandings")}
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold">{leagueName}</h1>
-        <p className="mt-1 text-sm text-zinc-600">{t("divisionStandings")}</p>
-        <p className="mt-2">
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          <h1 className="text-2xl font-semibold">{leagueName}</h1>
           <Link
             href={`/standings/league/${leagueId}/requests`}
-            className="text-sm font-medium text-emerald-800 underline"
+            className="btn-secondary shrink-0 px-3 py-1.5 text-sm"
           >
             {t("viewArbiterRequests")}
           </Link>
-        </p>
+        </div>
+        <p className="mt-1 text-sm text-zinc-600">{t("divisionStandings")}</p>
       </header>
       {divisions.length === 0 ? (
         <p className="text-sm text-zinc-500">{t("noDivisions")}</p>

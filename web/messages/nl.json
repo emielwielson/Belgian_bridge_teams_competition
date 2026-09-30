@@ -71,7 +71,7 @@
     "noDivisions": "Nog geen afdelingen in deze competitie.",
     "breadcrumb": "{leagueName} · {divisionName}",
     "fullStandings": "Volledig klassement",
-    "viewArbiterRequests": "Scheidsrechterverzoeken bekijken",
+    "viewArbiterRequests": "Arbitrages",
     "disciplineLoading": {
       "message": "Straffen, waarschuwingen en uitspraken laden…"
     },
@@ -503,7 +503,7 @@
     "pageTitle": "Scheidsrechter",
     "pageDescription": "Open verzoeken. Competitiebeheerders en de hoofdscheidsrechter wijzen een scheidsrechter toe, die daarna met een uitspraak afrondt. Gebruik de filters om afgehandelde of geannuleerde verzoeken te bekijken.",
     "loading": "Verzoeken laden…",
-    "none": "Geen scheidsrechterverzoeken voor dit filter.",
+    "none": "Geen scheidsrechterverzoeken voor deze filter.",
     "loadFailed": "Inbox laden mislukt",
     "filterLabel": "Filter verzoekstatus",
     "filterOpen": "Open",
