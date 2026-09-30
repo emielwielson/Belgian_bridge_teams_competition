@@ -56,6 +56,9 @@ describe("revalidateStandingsForGroup", () => {
     );
     expect(revalidatePath).toHaveBeenCalledWith(`/standings/group/${groupId}`);
     expect(revalidatePath).toHaveBeenCalledWith(`/standings/league/${leagueId}`);
+    expect(revalidatePath).toHaveBeenCalledWith(
+      `/standings/league/${leagueId}/requests`,
+    );
   });
 });
 

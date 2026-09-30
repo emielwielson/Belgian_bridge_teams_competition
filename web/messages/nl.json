@@ -71,8 +71,9 @@
     "noDivisions": "Nog geen afdelingen in deze competitie.",
     "breadcrumb": "{leagueName} · {divisionName}",
     "fullStandings": "Volledig klassement",
+    "viewArbiterRequests": "Scheidsrechterverzoeken bekijken",
     "disciplineLoading": {
-      "message": "Straffen en uitspraken laden…"
+      "message": "Straffen, waarschuwingen en uitspraken laden…"
     },
     "table": {
       "rank": "#",
@@ -83,7 +84,8 @@
       "noTeamsInGroup": "Nog geen teams in deze groep.",
       "roundColumnsPending": "Rondekolommen verschijnen nadat het wedstrijdschema is gegenereerd.",
       "viewMatchAria": "Wedstrijd bekijken",
-      "homeAria": "Thuis"
+      "homeAria": "Thuis",
+      "arbiterRequestAria": "Wedstrijd heeft een scheidsrechterverzoek"
     },
     "penalties": {
       "title": "Straffen",
@@ -92,6 +94,11 @@
       "viewDocument": "Document bekijken",
       "entry": "{teamName} · −{vpDeduction} VP"
     },
+    "warnings": {
+      "title": "Waarschuwingen",
+      "description": "Formele waarschuwingen aan teams in deze groep.",
+      "teamFallback": "Team"
+    },
     "rulings": {
       "title": "Uitspraken",
       "description": "Officiële scheidsrechterlijke uitspraken voor wedstrijden in deze groep.",
@@ -99,6 +106,19 @@
       "matchFallback": "Wedstrijd",
       "fromArbiterRequest": " · Via scheidsrechterverzoek",
       "board": " · Bord {board}",
+      "viewRuling": "Uitspraak bekijken"
+    },
+    "leagueRequests": {
+      "title": "Scheidsrechterverzoeken",
+      "description": "Open en afgehandelde scheidsrechterverzoeken voor deze competitie (geannuleerde verzoeken staan niet in de lijst).",
+      "backToLeague": "← Klassement {leagueName}",
+      "empty": "Geen open of afgehandelde scheidsrechterverzoeken.",
+      "matchLine": "{groupName} · Ronde {round}: {homeTeam} vs {awayTeam}",
+      "statusOpen": "Open",
+      "statusResolved": "Afgehandeld",
+      "submitted": "Ingediend {datetime}",
+      "resolved": "Afgehandeld {datetime}",
+      "openMatch": "Wedstrijd openen",
       "viewRuling": "Uitspraak bekijken"
     }
   },
@@ -481,10 +501,18 @@
       "honor": "Eredivisie"
     },
     "pageTitle": "Scheidsrechter",
-    "pageDescription": "Open verzoeken. Competitiebeheerders en de hoofdscheidsrechter wijzen een scheidsrechter toe, die daarna met een uitspraak afrondt.",
-    "loading": "Open verzoeken laden…",
-    "none": "Geen open scheidsrechterverzoeken.",
+    "pageDescription": "Open verzoeken. Competitiebeheerders en de hoofdscheidsrechter wijzen een scheidsrechter toe, die daarna met een uitspraak afrondt. Gebruik de filters om afgehandelde of geannuleerde verzoeken te bekijken.",
+    "loading": "Verzoeken laden…",
+    "none": "Geen scheidsrechterverzoeken voor dit filter.",
     "loadFailed": "Inbox laden mislukt",
+    "filterLabel": "Filter verzoekstatus",
+    "filterOpen": "Open",
+    "filterResolved": "Afgehandeld",
+    "filterCancelled": "Geannuleerd",
+    "filterAll": "Alles",
+    "statusOpen": "Open",
+    "statusResolved": "Afgehandeld",
+    "statusCancelled": "Geannuleerd",
     "matchLine": "Ronde {round}: {homeTeam} vs {awayTeam}",
     "matchFallback": "Wedstrijd",
     "submitted": "Ingediend {datetime}",

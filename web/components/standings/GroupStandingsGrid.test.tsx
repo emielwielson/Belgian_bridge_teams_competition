@@ -15,6 +15,7 @@ const labels: GroupStandingsGridLabels = {
   roundColumnsPending: "Round columns appear after the match schedule is generated.",
   viewMatchAria: "View match",
   homeAria: "Home",
+  arbiterRequestAria: "Match has an arbiter request",
 };
 
 const sampleGrid: GroupStandingsGridData = {
@@ -31,8 +32,8 @@ const sampleGrid: GroupStandingsGridData = {
       vpTotal: 20,
       penaltyVp: 0,
       cells: [
-        { vp: 14, isHome: true, pairingClass: "bg-sky-100", matchId: "m1", scheduledDateLabel: null, scheduledTimeLabel: null },
-        { vp: null, isHome: false, pairingClass: "bg-amber-100", matchId: null, scheduledDateLabel: null, scheduledTimeLabel: null },
+        { vp: 14, isHome: true, pairingClass: "bg-sky-100", matchId: "m1", scheduledDateLabel: null, scheduledTimeLabel: null, hasArbiterRequest: true },
+        { vp: null, isHome: false, pairingClass: "bg-amber-100", matchId: null, scheduledDateLabel: null, scheduledTimeLabel: null, hasArbiterRequest: false },
       ],
     },
     {
@@ -42,8 +43,8 @@ const sampleGrid: GroupStandingsGridData = {
       vpTotal: 12,
       penaltyVp: 0,
       cells: [
-        { vp: 6, isHome: false, pairingClass: "bg-sky-100", matchId: null, scheduledDateLabel: null, scheduledTimeLabel: null },
-        { vp: 10, isHome: true, pairingClass: "bg-amber-100", matchId: "m2", scheduledDateLabel: null, scheduledTimeLabel: null },
+        { vp: 6, isHome: false, pairingClass: "bg-sky-100", matchId: null, scheduledDateLabel: null, scheduledTimeLabel: null, hasArbiterRequest: true },
+        { vp: 10, isHome: true, pairingClass: "bg-amber-100", matchId: "m2", scheduledDateLabel: null, scheduledTimeLabel: null, hasArbiterRequest: false },
       ],
     },
   ],
@@ -89,6 +90,16 @@ describe("GroupStandingsGrid", () => {
     );
     expect(container.querySelector(".bg-sky-100")).toBeTruthy();
     expect(container.querySelector(".bg-amber-100")).toBeTruthy();
+  });
+
+  it("highlights cells with an arbiter request", () => {
+    const { container } = render(
+      <GroupStandingsGrid grid={sampleGrid} labels={labels} />,
+    );
+    expect(container.querySelector(".outline-amber-500")).toBeTruthy();
+    expect(
+      screen.getAllByTitle("Match has an arbiter request").length,
+    ).toBeGreaterThanOrEqual(2);
   });
 
   it("shows schedule message when there are no matches", () => {

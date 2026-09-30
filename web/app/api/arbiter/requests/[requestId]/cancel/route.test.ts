@@ -17,17 +17,37 @@ vi.mock("@/lib/competition/arbiter-request", () => ({
   cancelArbiterRequest: vi.fn(),
 }));
 
+vi.mock("@/lib/competition/revalidate-standings", () => ({
+  revalidateStandingsForGroup: vi.fn(),
+}));
+
 import { assertArbiterInboxApiAccess } from "@/lib/auth/arbiter-scope";
 import { requireRoles } from "@/lib/auth/route-auth";
 import { cancelArbiterRequest } from "@/lib/competition/arbiter-request";
+import { revalidateStandingsForGroup } from "@/lib/competition/revalidate-standings";
+
+const mockFrom = vi.fn();
 
 describe("/api/arbiter/requests/[requestId]/cancel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockFrom.mockImplementation(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: {
+              id: "req-1",
+              match: { group_id: "group-1" },
+            },
+            error: null,
+          }),
+        })),
+      })),
+    }));
     vi.mocked(requireRoles).mockResolvedValue({
       user: { id: "manager-1" },
       roles: ["competition_manager"],
-      supabase: {} as never,
+      supabase: { from: mockFrom } as never,
     });
     vi.mocked(assertArbiterInboxApiAccess).mockResolvedValue(undefined);
     vi.mocked(cancelArbiterRequest).mockResolvedValue(undefined);
@@ -41,6 +61,10 @@ describe("/api/arbiter/requests/[requestId]/cancel", () => {
     expect(res.status).toBe(200);
     expect(assertArbiterInboxApiAccess).toHaveBeenCalled();
     expect(cancelArbiterRequest).toHaveBeenCalledWith(expect.anything(), "req-1");
+    expect(revalidateStandingsForGroup).toHaveBeenCalledWith(
+      expect.anything(),
+      "group-1",
+    );
     await expect(res.json()).resolves.toEqual({ cancelled: true });
   });
 

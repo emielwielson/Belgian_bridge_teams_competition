@@ -107,7 +107,7 @@ export async function POST(request: Request, { params }: Params) {
         home_team_id: matchRow.home_team_id,
         away_team_id: matchRow.away_team_id,
       });
-    } else if (result.penaltyIds.length > 0) {
+    } else {
       await revalidateStandingsForGroup(supabase, matchRow.group_id);
     }
 

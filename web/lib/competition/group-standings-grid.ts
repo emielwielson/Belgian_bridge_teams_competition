@@ -43,6 +43,8 @@ export type GridCell = {
   scheduledDateLabel: string | null;
   /** Postponed fixture time when unscored and different from the round column. */
   scheduledTimeLabel: string | null;
+  /** Open or resolved arbiter request on this match (not cancelled). */
+  hasArbiterRequest: boolean;
 };
 
 export type RoundColumn = {
@@ -122,6 +124,7 @@ export function buildGroupStandingsGrid(
   matches: GroupMatchRow[],
   byeRounds: GroupByeRoundRow[] = [],
   intlLocale = "en-GB",
+  arbiterRequestMatchIds: ReadonlySet<string> = new Set(),
 ): GroupStandingsGridData {
   const byeByTeamRound = new Map<string, GroupByeRoundRow>();
   for (const bye of byeRounds) {
@@ -179,6 +182,8 @@ export function buildGroupStandingsGrid(
       const scheduledTimeLabel =
         postponed && (dateDiffers || timeDiffers) ? matchHeader.time : null;
 
+      const hasArbiterRequest = arbiterRequestMatchIds.has(match.id);
+
       const setCell = (
         teamId: string,
         vp: number | null,
@@ -197,6 +202,7 @@ export function buildGroupStandingsGrid(
           matchId,
           scheduledDateLabel,
           scheduledTimeLabel,
+          hasArbiterRequest,
         });
       };
 
@@ -222,6 +228,7 @@ export function buildGroupStandingsGrid(
     matchId: null,
     scheduledDateLabel: null,
     scheduledTimeLabel: null,
+    hasArbiterRequest: false,
   };
 
   for (const bye of byeRounds) {
@@ -238,6 +245,7 @@ export function buildGroupStandingsGrid(
       matchId: null,
       scheduledDateLabel: null,
       scheduledTimeLabel: null,
+      hasArbiterRequest: false,
     });
   }
 
@@ -253,6 +261,7 @@ export function buildGroupStandingsGrid(
           matchId: null,
           scheduledDateLabel: null,
           scheduledTimeLabel: null,
+          hasArbiterRequest: false,
         };
       }
       return teamCells?.get(round) ?? emptyCell;

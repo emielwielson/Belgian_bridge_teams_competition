@@ -94,7 +94,7 @@ describe("/api/arbiter/requests/[requestId]/resolve", () => {
 
     vi.mocked(requireRoles).mockResolvedValue({
       user: { id: "arbiter-1" },
-      roles: ["arbiter"],
+      roles: ["competition_manager"],
       supabase: { from: mockFrom } as never,
     });
     vi.mocked(buildResolveActionsPayload).mockResolvedValue({});
@@ -147,6 +147,10 @@ describe("/api/arbiter/requests/[requestId]/resolve", () => {
         rulingSignedUrl: "https://signed/r.pdf",
       },
       "en",
+    );
+    expect(revalidateStandingsForGroup).toHaveBeenCalledWith(
+      expect.anything(),
+      "group-1",
     );
   });
 

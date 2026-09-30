@@ -43,10 +43,13 @@ export type GroupStandingsContext = {
 export type GroupStandingsGridData = GroupStandingsContext & {
   matches: GroupMatchRow[];
   byeRounds: GroupByeRoundRow[];
+  /** Match IDs with open or resolved arbiter requests (not cancelled). */
+  arbiterRequestMatchIds: string[];
 };
 
 export type GroupStandingsFullContext = GroupStandingsGridData & {
   penalties: GroupPenaltyRow[];
+  warnings: GroupWarningRow[];
   rulings: GroupRulingRow[];
 };
 
@@ -57,6 +60,14 @@ export type GroupPenaltyRow = {
   reason: string;
   vp_deduction: number;
   file_path: string | null;
+  team: { id: string; name: string } | null;
+};
+
+export type GroupWarningRow = {
+  id: string;
+  team_id: string;
+  warning_date: string;
+  reason: string;
   team: { id: string; name: string } | null;
 };
 
@@ -73,6 +84,21 @@ export type GroupRulingRow = {
     home_team: { name: string } | null;
     away_team: { name: string } | null;
   } | null;
+};
+
+export type LeagueArbiterRequestSummary = {
+  id: string;
+  status: "open" | "resolved";
+  created_at: string;
+  resolved_at: string | null;
+  group_id: string;
+  group_name: string;
+  match_id: string;
+  round: number;
+  home_team_name: string;
+  away_team_name: string;
+  ruling_file_path: string | null;
+  ruling_signed_url: string | null;
 };
 
 type StandingsRpcRow = {
@@ -405,6 +431,53 @@ export async function fetchGroupRulings(
   })) as unknown as GroupRulingRow[];
 }
 
+export async function fetchGroupWarnings(
+  supabase: SupabaseClient,
+  groupId: string,
+): Promise<GroupWarningRow[]> {
+  const { data: warningRows, error: warningError } = await supabase
+    .from("warnings")
+    .select(
+      `
+        id,
+        team_id,
+        warning_date,
+        reason,
+        team:teams!inner (id, name, group_id)
+      `,
+    )
+    .eq("team.group_id", groupId)
+    .order("warning_date", { ascending: false });
+
+  if (warningError) throw warningError;
+  return (warningRows ?? []) as unknown as GroupWarningRow[];
+}
+
+/** Match IDs with open or resolved arbiter requests. Requires a client that can read arbiter_requests (service role). */
+export async function fetchGroupMatchIdsWithArbiterRequests(
+  supabase: SupabaseClient,
+  groupId: string,
+): Promise<Set<string>> {
+  const { data, error } = await supabase
+    .from("arbiter_requests")
+    .select(
+      `
+      match_id,
+      match:matches!inner (group_id)
+    `,
+    )
+    .eq("match.group_id", groupId)
+    .in("status", ["open", "resolved"]);
+
+  if (error) throw error;
+
+  const ids = new Set<string>();
+  for (const row of data ?? []) {
+    if (row.match_id) ids.add(row.match_id);
+  }
+  return ids;
+}
+
 export async function loadGroupStandings(
   supabase: SupabaseClient,
   groupId: string,
@@ -419,6 +492,7 @@ export async function loadGroupStandings(
 export async function loadGroupStandingsGridData(
   supabase: SupabaseClient,
   groupId: string,
+  options?: { arbiterRequestMatchIds?: ReadonlySet<string> },
 ): Promise<GroupStandingsGridData | null> {
   const context = await loadGroupContext(supabase, groupId);
   if (!context) return null;
@@ -429,19 +503,30 @@ export async function loadGroupStandingsGridData(
     fetchGroupByeRounds(supabase, groupId),
   ]);
 
-  return { ...context, standings, matches, byeRounds };
+  return {
+    ...context,
+    standings,
+    matches,
+    byeRounds,
+    arbiterRequestMatchIds: [...(options?.arbiterRequestMatchIds ?? [])],
+  };
 }
 
 export async function loadGroupDisciplineData(
   supabase: SupabaseClient,
   groupId: string,
-): Promise<{ penalties: GroupPenaltyRow[]; rulings: GroupRulingRow[] }> {
-  const [penalties, rulings] = await Promise.all([
+): Promise<{
+  penalties: GroupPenaltyRow[];
+  warnings: GroupWarningRow[];
+  rulings: GroupRulingRow[];
+}> {
+  const [penalties, warnings, rulings] = await Promise.all([
     fetchGroupPenalties(supabase, groupId),
+    fetchGroupWarnings(supabase, groupId),
     fetchGroupRulings(supabase, groupId),
   ]);
 
-  return { penalties, rulings };
+  return { penalties, warnings, rulings };
 }
 
 export async function loadGroupStandingsFull(
@@ -451,10 +536,134 @@ export async function loadGroupStandingsFull(
   const gridData = await loadGroupStandingsGridData(supabase, groupId);
   if (!gridData) return null;
 
-  const { penalties, rulings } = await loadGroupDisciplineData(
+  const { penalties, warnings, rulings } = await loadGroupDisciplineData(
     supabase,
     groupId,
   );
 
-  return { ...gridData, penalties, rulings };
+  return { ...gridData, penalties, warnings, rulings };
+}
+
+type LeagueRequestQueryRow = {
+  id: string;
+  status: string;
+  created_at: string;
+  resolved_at: string | null;
+  match_id: string;
+  match: {
+    round: number;
+    group_id: string;
+    home_team: { name: string } | { name: string }[] | null;
+    away_team: { name: string } | { name: string }[] | null;
+  } | {
+    round: number;
+    group_id: string;
+    home_team: { name: string } | { name: string }[] | null;
+    away_team: { name: string } | { name: string }[] | null;
+  }[] | null;
+  rulings:
+    | { file_path: string }[]
+    | { file_path: string }
+    | null;
+};
+
+function firstRelation<T>(value: T | T[] | null | undefined): T | null {
+  if (value == null) return null;
+  return Array.isArray(value) ? (value[0] ?? null) : value;
+}
+
+function teamName(
+  team: { name: string } | { name: string }[] | null | undefined,
+): string {
+  const row = firstRelation(team);
+  return row?.name ?? "?";
+}
+
+/** Open/resolved requests for a league. Requires service-role client for arbiter_requests. */
+export async function loadLeagueArbiterRequestSummaries(
+  supabase: SupabaseClient,
+  leagueId: string,
+): Promise<LeagueArbiterRequestSummary[] | null> {
+  const seasonId = await getActiveSeasonId(supabase);
+  if (!seasonId) return null;
+
+  const { data: league, error: leagueError } = await supabase
+    .from("leagues")
+    .select("id")
+    .eq("id", leagueId)
+    .eq("season_id", seasonId)
+    .maybeSingle();
+
+  if (leagueError) throw leagueError;
+  if (!league) return null;
+
+  const { data: divisions, error: divisionsError } = await supabase
+    .from("divisions")
+    .select("id")
+    .eq("league_id", leagueId);
+
+  if (divisionsError) throw divisionsError;
+  const divisionIds = (divisions ?? []).map((d) => d.id);
+  if (divisionIds.length === 0) return [];
+
+  const { data: groups, error: groupsError } = await supabase
+    .from("groups")
+    .select("id, name")
+    .in("division_id", divisionIds);
+
+  if (groupsError) throw groupsError;
+  const groupById = new Map((groups ?? []).map((g) => [g.id, g.name]));
+  const groupIds = [...groupById.keys()];
+  if (groupIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from("arbiter_requests")
+    .select(
+      `
+      id,
+      status,
+      created_at,
+      resolved_at,
+      match_id,
+      match:matches!inner (
+        round,
+        group_id,
+        home_team:teams!matches_home_team_id_fkey (name),
+        away_team:teams!matches_away_team_id_fkey (name)
+      ),
+      rulings (file_path)
+    `,
+    )
+    .in("status", ["open", "resolved"])
+    .in("match.group_id", groupIds)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+
+  const summaries: LeagueArbiterRequestSummary[] = [];
+  for (const row of (data ?? []) as LeagueRequestQueryRow[]) {
+    const match = firstRelation(row.match);
+    if (!match) continue;
+    const groupName = groupById.get(match.group_id);
+    if (!groupName) continue;
+
+    const ruling = firstRelation(row.rulings);
+
+    summaries.push({
+      id: row.id,
+      status: row.status === "resolved" ? "resolved" : "open",
+      created_at: row.created_at,
+      resolved_at: row.resolved_at,
+      group_id: match.group_id,
+      group_name: groupName,
+      match_id: row.match_id,
+      round: match.round,
+      home_team_name: teamName(match.home_team),
+      away_team_name: teamName(match.away_team),
+      ruling_file_path: ruling?.file_path ?? null,
+      ruling_signed_url: null,
+    });
+  }
+
+  return summaries;
 }

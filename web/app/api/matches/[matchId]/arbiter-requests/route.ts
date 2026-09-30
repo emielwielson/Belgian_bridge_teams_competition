@@ -6,6 +6,7 @@ import {
   loadMatchArbiterRequestsForUser,
   normalizeArbiterRequestImagePaths,
 } from "@/lib/competition/arbiter-request";
+import { revalidateStandingsForGroup } from "@/lib/competition/revalidate-standings";
 import { jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
 import { ErrorCodes } from "@/lib/http/error-codes";
 import { sendArbiterRequestCreatedEmail } from "@/lib/notifications/arbiter-request-email";
@@ -55,6 +56,15 @@ export async function POST(request: Request, { params }: Params) {
     await createArbiterRequest(supabase, matchId, imagePaths);
 
     const { state } = await loadMatchArbiterRequestsForUser(supabase, matchId);
+
+    const { data: match } = await supabase
+      .from("matches")
+      .select("group_id")
+      .eq("id", matchId)
+      .maybeSingle();
+    if (match?.group_id) {
+      await revalidateStandingsForGroup(supabase, match.group_id);
+    }
 
     const locale = await getLocale();
     await sendArbiterRequestCreatedEmail({ matchId }, locale);

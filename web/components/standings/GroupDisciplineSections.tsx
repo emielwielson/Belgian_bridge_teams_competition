@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { GroupPenaltiesSection } from "@/components/standings/GroupPenaltiesSection";
 import { GroupRulingsSection } from "@/components/standings/GroupRulingsSection";
+import { GroupWarningsSection } from "@/components/standings/GroupWarningsSection";
 import { getCachedGroupDisciplineData } from "@/lib/competition/standings-cache";
 import { createServiceClient } from "@/lib/supabase/server-client";
 import { createOperationalSignedUrl } from "@/lib/files/operational-file-storage";
@@ -10,9 +11,14 @@ type Props = {
 };
 
 export async function GroupDisciplineSections({ groupId }: Props) {
-  const { penalties, rulings } = await getCachedGroupDisciplineData(groupId);
+  const { penalties, warnings, rulings } =
+    await getCachedGroupDisciplineData(groupId);
 
-  if (penalties.length === 0 && rulings.length === 0) {
+  if (
+    penalties.length === 0 &&
+    warnings.length === 0 &&
+    rulings.length === 0
+  ) {
     return null;
   }
 
@@ -50,6 +56,7 @@ export async function GroupDisciplineSections({ groupId }: Props) {
   return (
     <>
       <GroupPenaltiesSection penalties={penaltiesWithUrls} />
+      <GroupWarningsSection warnings={warnings} />
       <GroupRulingsSection rulings={rulingsWithUrls} />
     </>
   );

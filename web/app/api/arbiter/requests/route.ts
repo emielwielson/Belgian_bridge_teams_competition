@@ -213,6 +213,7 @@ export async function GET(request: Request) {
           storage_path,
           sort_order
         ),
+        rulings (file_path),
         match:matches (
           round,
           datetime,
@@ -284,6 +285,25 @@ export async function GET(request: Request) {
           }
         }
 
+        const rulingsRaw = row.rulings as
+          | { file_path: string }[]
+          | { file_path: string }
+          | null;
+        const rulingRow = Array.isArray(rulingsRaw)
+          ? rulingsRaw[0]
+          : rulingsRaw;
+        let ruling_signed_url: string | null = null;
+        if (rulingRow?.file_path) {
+          try {
+            ruling_signed_url = await createOperationalSignedUrl(
+              service,
+              rulingRow.file_path,
+            );
+          } catch {
+            ruling_signed_url = null;
+          }
+        }
+
         return {
           id: row.id,
           match_id: row.match_id,
@@ -295,6 +315,7 @@ export async function GET(request: Request) {
           assigned_arbiter_id: assignedArbiterId,
           assigned_at: (row.assigned_at as string | null) ?? null,
           assigned_arbiter_email: assignedArbiterEmail,
+          ruling_signed_url,
           match,
         };
       }),

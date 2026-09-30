@@ -38,6 +38,14 @@ export default async function LeagueStandingsPage({ params }: Props) {
         </Link>
         <h1 className="mt-2 text-2xl font-semibold">{leagueName}</h1>
         <p className="mt-1 text-sm text-zinc-600">{t("divisionStandings")}</p>
+        <p className="mt-2">
+          <Link
+            href={`/standings/league/${leagueId}/requests`}
+            className="text-sm font-medium text-emerald-800 underline"
+          >
+            {t("viewArbiterRequests")}
+          </Link>
+        </p>
       </header>
       {divisions.length === 0 ? (
         <p className="text-sm text-zinc-500">{t("noDivisions")}</p>

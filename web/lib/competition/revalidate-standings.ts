@@ -46,6 +46,7 @@ export async function revalidateStandingsForGroup(
   if (leagueId) {
     revalidateTag(standingsLeagueTag(leagueId), STANDINGS_TAG_REVALIDATE);
     revalidatePath(`/standings/league/${leagueId}`);
+    revalidatePath(`/standings/league/${leagueId}/requests`);
   }
 }
 

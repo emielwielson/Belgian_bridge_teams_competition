@@ -216,6 +216,30 @@ describe("buildGroupStandingsGrid", () => {
     expect(alpha.cells[0].pairingClass).toBe(PAIRING_BG_CLASSES[0]);
   });
 
+  it("flags both sides of a match with an arbiter request", () => {
+    const matches = [match({ round: 1, id: "m-req" })];
+    const grid = buildGroupStandingsGrid(
+      teams,
+      matches,
+      [],
+      "en-GB",
+      new Set(["m-req"]),
+    );
+    const alpha = grid.rows.find((r) => r.teamId === "t1")!;
+    const bravo = grid.rows.find((r) => r.teamId === "t2")!;
+    expect(alpha.cells[0].hasArbiterRequest).toBe(true);
+    expect(bravo.cells[0].hasArbiterRequest).toBe(true);
+    expect(grid.rows.find((r) => r.teamId === "t3")!.cells[0].hasArbiterRequest).toBe(
+      false,
+    );
+  });
+
+  it("leaves hasArbiterRequest false when match has no request", () => {
+    const matches = [match({ round: 1 })];
+    const grid = buildGroupStandingsGrid(teams, matches);
+    expect(grid.rows[0].cells[0].hasArbiterRequest).toBe(false);
+  });
+
   it("uses different pairing colors for separate fixtures in the same round", () => {
     const matches = [
       match({ round: 1, id: "m1", home_team_id: "t1", away_team_id: "t2" }),

@@ -52,8 +52,11 @@ type InboxRequest = {
   attachments: InboxAttachment[];
   assigned_arbiter_id: string | null;
   assigned_arbiter_email: string | null;
+  ruling_signed_url?: string | null;
   match: InboxMatchContext | null;
 };
+
+type StatusFilter = "open" | "resolved" | "cancelled" | "all";
 
 type ResolveDraft = {
   file: File | null;
@@ -124,6 +127,7 @@ export function ArbiterInbox({
   const locale = useLocale() as Locale;
   const intlLocale = toIntlLocale(locale);
   const [requests, setRequests] = useState<InboxRequest[]>([]);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("open");
   const [canAssign, setCanAssign] = useState(false);
   const [assignableArbiters, setAssignableArbiters] = useState<
     AssignableArbiter[]
@@ -142,7 +146,7 @@ export function ArbiterInbox({
     setLoading(true);
     setMessage(null);
     const res = await fetch(
-      `/api/arbiter/requests?status=open&kind=${encodeURIComponent(kind)}`,
+      `/api/arbiter/requests?status=${encodeURIComponent(statusFilter)}&kind=${encodeURIComponent(kind)}`,
     );
     const body = await res.json();
     if (!res.ok) {
@@ -154,16 +158,25 @@ export function ArbiterInbox({
     setAssignableArbiters(
       Array.isArray(body.assignableArbiters) ? body.assignableArbiters : [],
     );
-    setRequests(
-      (body.requests ?? []).map((r: InboxRequest) => ({
-        ...r,
-        attachments: Array.isArray(r.attachments) ? r.attachments : [],
-        assigned_arbiter_id: r.assigned_arbiter_id ?? null,
-        assigned_arbiter_email: r.assigned_arbiter_email ?? null,
-      })),
-    );
+    const nextRequests = (body.requests ?? []).map((r: InboxRequest) => ({
+      ...r,
+      attachments: Array.isArray(r.attachments) ? r.attachments : [],
+      assigned_arbiter_id: r.assigned_arbiter_id ?? null,
+      assigned_arbiter_email: r.assigned_arbiter_email ?? null,
+      ruling_signed_url: r.ruling_signed_url ?? null,
+    }));
+    setRequests(nextRequests);
+    setRulingLinks((prev) => {
+      const next = { ...prev };
+      for (const r of nextRequests) {
+        if (r.ruling_signed_url) {
+          next[r.id] = r.ruling_signed_url;
+        }
+      }
+      return next;
+    });
     setLoading(false);
-  }, [kind, t]);
+  }, [kind, statusFilter, t]);
 
   useEffect(() => {
     void load();
@@ -171,7 +184,7 @@ export function ArbiterInbox({
 
   useEffect(() => {
     setExpandedId(null);
-  }, [kind]);
+  }, [kind, statusFilter]);
 
   function getDraft(request: InboxRequest): ResolveDraft {
     return resolveDrafts[request.id] ?? emptyDraft(request.match);
@@ -392,8 +405,48 @@ export function ArbiterInbox({
     return t("attachmentFile");
   }
 
+  function statusLabel(status: string): string {
+    if (status === "resolved") return t("statusResolved");
+    if (status === "cancelled") return t("statusCancelled");
+    return t("statusOpen");
+  }
+
+  function statusClass(status: string): string {
+    if (status === "resolved") return "font-medium text-emerald-800";
+    if (status === "cancelled") return "font-medium text-zinc-600";
+    return "font-medium text-amber-700";
+  }
+
+  const filterOptions: { value: StatusFilter; label: string }[] = [
+    { value: "open", label: t("filterOpen") },
+    { value: "resolved", label: t("filterResolved") },
+    { value: "cancelled", label: t("filterCancelled") },
+    { value: "all", label: t("filterAll") },
+  ];
+
   return (
     <div>
+      <div
+        className="mb-4 flex flex-wrap gap-2"
+        role="group"
+        aria-label={t("filterLabel")}
+      >
+        {filterOptions.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            className={
+              statusFilter === opt.value
+                ? "rounded-md border border-zinc-900 bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white"
+                : "rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+            }
+            aria-pressed={statusFilter === opt.value}
+            onClick={() => setStatusFilter(opt.value)}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
       {message ? <p className="mb-4 text-sm text-zinc-700">{message}</p> : null}
       {loading ? (
         <p className="text-sm text-zinc-600">{t("loading")}</p>
@@ -411,9 +464,11 @@ export function ArbiterInbox({
                 })
               : t("matchFallback");
             const draft = getDraft(r);
-            const rulingLink = rulingLinks[r.id];
+            const rulingLink = rulingLinks[r.id] ?? r.ruling_signed_url;
             const teams = m ? teamOptions(m) : null;
+            const isOpen = r.status === "open";
             const canResolve =
+              isOpen &&
               Boolean(draft.uploadedPath) &&
               !draft.uploading &&
               busyId !== r.id;
@@ -448,6 +503,9 @@ export function ArbiterInbox({
                       {label}
                     </span>
                     <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500">
+                      <span className={statusClass(r.status)}>
+                        {statusLabel(r.status)}
+                      </span>
                       <span>
                         {t("submitted", {
                           datetime: formatBrussels(r.created_at, intlLocale),
@@ -534,16 +592,26 @@ export function ArbiterInbox({
                       </p>
                     )}
 
-                    <div>
+                    <div className="flex flex-wrap items-center gap-3">
                       <Link
                         href={`/matches/${r.match_id}`}
                         className="btn-secondary inline-flex px-3 py-1.5 text-sm"
                       >
                         {t("openMatch")}
                       </Link>
+                      {rulingLink ? (
+                        <a
+                          href={rulingLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn-secondary inline-flex px-3 py-1.5 text-sm"
+                        >
+                          {t("viewPublishedRuling")}
+                        </a>
+                      ) : null}
                     </div>
 
-                    {canAssign ? (
+                    {isOpen && canAssign ? (
                       <div className="rounded-lg border border-zinc-200 bg-white p-3">
                         <p className="text-sm font-medium text-zinc-900">
                           {t("assignTitle")}
@@ -599,6 +667,7 @@ export function ArbiterInbox({
                       </div>
                     ) : null}
 
+                    {isOpen ? (
                     <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
                       <p className="text-sm font-medium text-zinc-900">
                         {t("resolveTitle")}
@@ -747,19 +816,8 @@ export function ArbiterInbox({
                           {t("cancelButton")}
                         </button>
                       ) : null}
-                      {rulingLink ? (
-                        <p className="mt-2 text-sm">
-                          <a
-                            href={rulingLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn-secondary inline-flex px-3 py-1.5 text-sm"
-                          >
-                            {t("viewPublishedRuling")}
-                          </a>
-                        </p>
-                      ) : null}
                     </div>
+                    ) : null}
                   </div>
                 ) : null}
               </li>

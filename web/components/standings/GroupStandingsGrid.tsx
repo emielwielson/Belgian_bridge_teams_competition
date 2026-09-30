@@ -10,6 +10,7 @@ export type GroupStandingsGridLabels = {
   roundColumnsPending: string;
   viewMatchAria: string;
   homeAria: string;
+  arbiterRequestAria: string;
 };
 
 type Props = {
@@ -141,9 +142,22 @@ export function GroupStandingsGrid({ grid, labels }: Props) {
                     className={[
                       "px-1 py-1.5 text-right tabular-nums",
                       cell.pairingClass ?? "",
+                      cell.hasArbiterRequest
+                        ? "outline outline-2 outline-offset-[-2px] outline-amber-500"
+                        : "",
                     ]
                       .filter(Boolean)
                       .join(" ")}
+                    title={
+                      cell.hasArbiterRequest
+                        ? labels.arbiterRequestAria
+                        : undefined
+                    }
+                    aria-label={
+                      cell.hasArbiterRequest
+                        ? labels.arbiterRequestAria
+                        : undefined
+                    }
                   >
                     <div className="flex items-center justify-end gap-1">
                       {cell.isHome && cell.matchId ? (

@@ -71,8 +71,9 @@
     "noDivisions": "Aucune division dans cette ligue pour l'instant.",
     "breadcrumb": "{leagueName} · {divisionName}",
     "fullStandings": "Classement complet",
+    "viewArbiterRequests": "Voir les demandes d'arbitre",
     "disciplineLoading": {
-      "message": "Chargement des pénalités et décisions…"
+      "message": "Chargement des pénalités, avertissements et décisions…"
     },
     "table": {
       "rank": "#",
@@ -83,7 +84,8 @@
       "noTeamsInGroup": "Aucune équipe dans ce groupe pour l'instant.",
       "roundColumnsPending": "Les colonnes de journée apparaissent après la génération du calendrier.",
       "viewMatchAria": "Voir la rencontre",
-      "homeAria": "Home team"
+      "homeAria": "Home team",
+      "arbiterRequestAria": "La rencontre a une demande d'arbitre"
     },
     "penalties": {
       "title": "Pénalités",
@@ -92,6 +94,11 @@
       "viewDocument": "Voir le document",
       "entry": "{teamName} · −{vpDeduction} VP"
     },
+    "warnings": {
+      "title": "Avertissements",
+      "description": "Avertissements formels donnés aux équipes de ce groupe.",
+      "teamFallback": "Équipe"
+    },
     "rulings": {
       "title": "Décisions",
       "description": "Décisions officielles d'arbitre pour les rencontres de ce groupe.",
@@ -99,6 +106,19 @@
       "matchFallback": "Rencontre",
       "fromArbiterRequest": " · Depuis une demande d'arbitre",
       "board": " · Donne {board}",
+      "viewRuling": "Voir la décision"
+    },
+    "leagueRequests": {
+      "title": "Demandes d'arbitre",
+      "description": "Demandes d'arbitre ouvertes et résolues pour cette ligue (les demandes annulées ne sont pas listées).",
+      "backToLeague": "← Classement {leagueName}",
+      "empty": "Aucune demande d'arbitre ouverte ou résolue.",
+      "matchLine": "{groupName} · Journée {round} : {homeTeam} vs {awayTeam}",
+      "statusOpen": "Ouverte",
+      "statusResolved": "Résolue",
+      "submitted": "Soumise {datetime}",
+      "resolved": "Résolue {datetime}",
+      "openMatch": "Ouvrir la rencontre",
       "viewRuling": "Voir la décision"
     }
   },
@@ -481,10 +501,18 @@
       "honor": "Division d'Honneur"
     },
     "pageTitle": "Boîte arbitre",
-    "pageDescription": "Demandes ouvertes. Les gestionnaires et l'arbitre en chef assignent un arbitre, qui traite ensuite avec une décision.",
-    "loading": "Chargement des demandes ouvertes…",
-    "none": "Aucune demande d'arbitre ouverte.",
+    "pageDescription": "Demandes ouvertes. Les gestionnaires et l'arbitre en chef assignent un arbitre, qui traite ensuite avec une décision. Utilisez les filtres pour voir les demandes résolues ou annulées.",
+    "loading": "Chargement des demandes…",
+    "none": "Aucune demande d'arbitre pour ce filtre.",
     "loadFailed": "Échec du chargement de la boîte",
+    "filterLabel": "Filtre de statut des demandes",
+    "filterOpen": "Ouvertes",
+    "filterResolved": "Résolues",
+    "filterCancelled": "Annulées",
+    "filterAll": "Toutes",
+    "statusOpen": "Ouverte",
+    "statusResolved": "Résolue",
+    "statusCancelled": "Annulée",
     "matchLine": "Journée {round} : {homeTeam} vs {awayTeam}",
     "matchFallback": "Rencontre",
     "submitted": "Soumise le {datetime}",

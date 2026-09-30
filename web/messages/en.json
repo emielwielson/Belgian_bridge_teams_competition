@@ -71,8 +71,9 @@
     "noDivisions": "No divisions in this league yet.",
     "breadcrumb": "{leagueName} · {divisionName}",
     "fullStandings": "Full standings",
+    "viewArbiterRequests": "View arbiter requests",
     "disciplineLoading": {
-      "message": "Loading penalties and rulings…"
+      "message": "Loading penalties, warnings, and rulings…"
     },
     "table": {
       "rank": "#",
@@ -83,7 +84,8 @@
       "noTeamsInGroup": "No teams in this group yet.",
       "roundColumnsPending": "Round columns appear after the match schedule is generated.",
       "viewMatchAria": "View match",
-      "homeAria": "Home"
+      "homeAria": "Home",
+      "arbiterRequestAria": "Match has an arbiter request"
     },
     "penalties": {
       "title": "Penalties",
@@ -92,6 +94,11 @@
       "viewDocument": "View document",
       "entry": "{teamName} · −{vpDeduction} VP"
     },
+    "warnings": {
+      "title": "Warnings",
+      "description": "Formal warnings issued to teams in this group.",
+      "teamFallback": "Team"
+    },
     "rulings": {
       "title": "Rulings",
       "description": "Official arbiter rulings for matches in this group.",
@@ -99,6 +106,19 @@
       "matchFallback": "Match",
       "fromArbiterRequest": " · From arbiter request",
       "board": " · Board {board}",
+      "viewRuling": "View ruling"
+    },
+    "leagueRequests": {
+      "title": "Arbiter requests",
+      "description": "Open and resolved arbiter requests for this league (cancelled requests are not listed).",
+      "backToLeague": "← {leagueName} standings",
+      "empty": "No open or resolved arbiter requests.",
+      "matchLine": "{groupName} · Round {round}: {homeTeam} vs {awayTeam}",
+      "statusOpen": "Open",
+      "statusResolved": "Resolved",
+      "submitted": "Submitted {datetime}",
+      "resolved": "Resolved {datetime}",
+      "openMatch": "Open match",
       "viewRuling": "View ruling"
     }
   },
@@ -481,10 +501,18 @@
       "honor": "Honor"
     },
     "pageTitle": "Arbiter inbox",
-    "pageDescription": "Open requests. Competition managers and the chief arbiter assign an arbiter, then resolve with a ruling.",
-    "loading": "Loading open requests…",
-    "none": "No open arbiter requests.",
+    "pageDescription": "Open requests. Competition managers and the chief arbiter assign an arbiter, then resolve with a ruling. Use the filters to view resolved or cancelled requests.",
+    "loading": "Loading requests…",
+    "none": "No arbiter requests for this filter.",
     "loadFailed": "Failed to load inbox",
+    "filterLabel": "Request status filter",
+    "filterOpen": "Open",
+    "filterResolved": "Resolved",
+    "filterCancelled": "Cancelled",
+    "filterAll": "All",
+    "statusOpen": "Open",
+    "statusResolved": "Resolved",
+    "statusCancelled": "Cancelled",
     "matchLine": "Round {round}: {homeTeam} vs {awayTeam}",
     "matchFallback": "Match",
     "submitted": "Submitted {datetime}",

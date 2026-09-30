@@ -28,6 +28,10 @@ vi.mock("@/lib/notifications/arbiter-request-email", () => ({
   sendArbiterRequestCreatedEmail: vi.fn(),
 }));
 
+vi.mock("@/lib/competition/revalidate-standings", () => ({
+  revalidateStandingsForGroup: vi.fn(),
+}));
+
 import { requireAuth } from "@/lib/auth/route-auth";
 import {
   canAccessArbiterRequestWorkflow,
@@ -35,6 +39,7 @@ import {
   loadMatchArbiterRequestsForUser,
 } from "@/lib/competition/arbiter-request";
 import { sendArbiterRequestCreatedEmail } from "@/lib/notifications/arbiter-request-email";
+import { revalidateStandingsForGroup } from "@/lib/competition/revalidate-standings";
 
 const baseState = {
   match_id: "match-1",
@@ -42,13 +47,28 @@ const baseState = {
   requests: [],
 };
 
+function mockSupabase() {
+  return {
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: { group_id: "group-1" },
+            error: null,
+          }),
+        })),
+      })),
+    })),
+  };
+}
+
 describe("/api/matches/[matchId]/arbiter-requests", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(requireAuth).mockResolvedValue({
       user: { id: "user-1" },
       roles: ["player"],
-      supabase: {} as never,
+      supabase: mockSupabase() as never,
     });
     vi.mocked(canAccessArbiterRequestWorkflow).mockReturnValue(true);
   });
@@ -111,6 +131,10 @@ describe("/api/matches/[matchId]/arbiter-requests", () => {
     expect(sendArbiterRequestCreatedEmail).toHaveBeenCalledWith(
       { matchId: "match-1" },
       "en",
+    );
+    expect(revalidateStandingsForGroup).toHaveBeenCalledWith(
+      expect.anything(),
+      "group-1",
     );
   });
 

@@ -30,13 +30,15 @@ export default async function GroupStandingsPage({ params }: Props) {
     notFound();
   }
 
-  const { group, division, league, standings, matches, byeRounds } = data;
+  const { group, division, league, standings, matches, byeRounds, arbiterRequestMatchIds } =
+    data;
   const leagueName = translateLeagueName(league.name, tRegions);
   const grid = buildGroupStandingsGrid(
     standings,
     matches,
     byeRounds,
     intlLocale,
+    new Set(arbiterRequestMatchIds),
   );
 
   const tableLabels = {
@@ -48,6 +50,7 @@ export default async function GroupStandingsPage({ params }: Props) {
     roundColumnsPending: tTable("roundColumnsPending"),
     viewMatchAria: tTable("viewMatchAria"),
     homeAria: tTable("homeAria"),
+    arbiterRequestAria: tTable("arbiterRequestAria"),
   };
 
   return (
