@@ -405,7 +405,7 @@ export function ArbiterInbox({
       ) : requests.length === 0 ? (
         <p className="text-sm text-zinc-600">{t("none")}</p>
       ) : (
-        <ul className="divide-y divide-zinc-200 border-y border-zinc-200">
+        <ul className="space-y-3">
           {requests.map((r) => {
             const m = r.match;
             const label = m
@@ -429,10 +429,13 @@ export function ArbiterInbox({
             const panelId = `arbiter-request-${r.id}`;
 
             return (
-              <li key={r.id} className="bg-white">
+              <li
+                key={r.id}
+                className="overflow-hidden rounded-lg border border-zinc-200 bg-white"
+              >
                 <button
                   type="button"
-                  className="flex w-full items-start gap-3 px-1 py-4 text-left hover:bg-zinc-50"
+                  className="flex w-full items-start gap-3 px-4 py-4 text-left hover:bg-zinc-50"
                   aria-expanded={isExpanded}
                   aria-controls={panelId}
                   onClick={() => toggleExpanded(r.id)}
@@ -484,7 +487,7 @@ export function ArbiterInbox({
                 {isExpanded ? (
                   <div
                     id={panelId}
-                    className="flex flex-col gap-4 border-t border-zinc-100 px-1 pb-4 pt-3"
+                    className="flex flex-col gap-4 border-t border-zinc-200 px-4 pb-4 pt-3"
                   >
                     <div>
                       <p className="text-sm font-medium text-zinc-900">
