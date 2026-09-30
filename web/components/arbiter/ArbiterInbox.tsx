@@ -68,6 +68,22 @@ type ResolveDraft = {
   warning: WarningFieldsValue | null;
 };
 
+type AttachmentKind = "pdf" | "image" | "file";
+
+function attachmentKind(storagePath: string): AttachmentKind {
+  const ext = storagePath.split(".").pop()?.toLowerCase() ?? "";
+  if (ext === "pdf") return "pdf";
+  if (["jpg", "jpeg", "png", "gif", "webp", "heic", "heif"].includes(ext)) {
+    return "image";
+  }
+  return "file";
+}
+
+function attachmentBasename(storagePath: string): string {
+  const segment = storagePath.split("/").pop() ?? storagePath;
+  return segment || storagePath;
+}
+
 function emptyDraft(match: InboxMatchContext | null): ResolveDraft {
   const homeTeamId = match?.home_team?.id ?? "";
   return {
@@ -121,6 +137,7 @@ export function ArbiterInbox({
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [resolveDrafts, setResolveDrafts] = useState<
     Record<string, ResolveDraft>
   >({});
@@ -157,6 +174,10 @@ export function ArbiterInbox({
     void load();
   }, [load]);
 
+  useEffect(() => {
+    setExpandedId(null);
+  }, [kind]);
+
   function getDraft(request: InboxRequest): ResolveDraft {
     return resolveDrafts[request.id] ?? emptyDraft(request.match);
   }
@@ -166,6 +187,10 @@ export function ArbiterInbox({
       ...prev,
       [request.id]: { ...getDraft(request), ...patch },
     }));
+  }
+
+  function toggleExpanded(requestId: string) {
+    setExpandedId((prev) => (prev === requestId ? null : requestId));
   }
 
   async function handleRulingFileChange(
@@ -366,6 +391,12 @@ export function ArbiterInbox({
     }
   }
 
+  function attachmentKindLabel(fileKind: AttachmentKind): string {
+    if (fileKind === "pdf") return t("attachmentPdf");
+    if (fileKind === "image") return t("attachmentImage");
+    return t("attachmentFile");
+  }
+
   return (
     <div>
       {message ? <p className="mb-4 text-sm text-zinc-700">{message}</p> : null}
@@ -374,7 +405,7 @@ export function ArbiterInbox({
       ) : requests.length === 0 ? (
         <p className="text-sm text-zinc-600">{t("none")}</p>
       ) : (
-        <ul className="divide-y divide-zinc-200">
+        <ul className="divide-y divide-zinc-200 border-y border-zinc-200">
           {requests.map((r) => {
             const m = r.match;
             const label = m
@@ -391,262 +422,360 @@ export function ArbiterInbox({
               Boolean(draft.uploadedPath) &&
               !draft.uploading &&
               busyId !== r.id;
+            const isExpanded = expandedId === r.id;
+            const signedAttachments = r.attachments.filter(
+              (att) => att.signed_url,
+            );
+            const panelId = `arbiter-request-${r.id}`;
+
             return (
-              <li key={r.id} className="py-4">
-                <div className="flex flex-col gap-4">
-                  <div>
-                    <p className="font-medium text-zinc-900">{label}</p>
-                    <p className="mt-1 text-xs text-zinc-500">
-                      {t("submitted", {
-                        datetime: formatBrussels(r.created_at, intlLocale),
-                      })}
-                      {m?.datetime
-                        ? t("matchDatetime", {
+              <li key={r.id} className="bg-white">
+                <button
+                  type="button"
+                  className="flex w-full items-start gap-3 px-1 py-4 text-left hover:bg-zinc-50"
+                  aria-expanded={isExpanded}
+                  aria-controls={panelId}
+                  onClick={() => toggleExpanded(r.id)}
+                >
+                  <span
+                    className={`mt-1 shrink-0 text-zinc-500 transition-transform ${
+                      isExpanded ? "rotate-90" : ""
+                    }`}
+                    aria-hidden
+                  >
+                    ▸
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-medium text-zinc-900">
+                      {label}
+                    </span>
+                    <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500">
+                      <span>
+                        {t("submitted", {
+                          datetime: formatBrussels(r.created_at, intlLocale),
+                        })}
+                      </span>
+                      {m?.datetime ? (
+                        <span>
+                          {t("matchDatetime", {
                             datetime: formatBrussels(m.datetime, intlLocale),
-                          })
-                        : ""}
-                    </p>
-                    {r.attachments.some((att) => att.signed_url) ? (
-                      <ul className="mt-2 space-y-1">
-                        {r.attachments
-                          .filter((att) => att.signed_url)
-                          .map((att, index) => (
-                            <li key={`${att.storage_path}-${att.sort_order}`}>
+                          })}
+                        </span>
+                      ) : null}
+                      {r.attachments.length > 0 ? (
+                        <span>
+                          {t("attachmentCount", {
+                            count: r.attachments.length,
+                          })}
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="mt-1 block text-sm text-zinc-700">
+                      {r.assigned_arbiter_email
+                        ? t("assignedTo", { email: r.assigned_arbiter_email })
+                        : t("unassigned")}
+                    </span>
+                  </span>
+                  <span className="sr-only">
+                    {isExpanded ? t("collapseRequest") : t("expandRequest")}
+                  </span>
+                </button>
+
+                {isExpanded ? (
+                  <div
+                    id={panelId}
+                    className="flex flex-col gap-4 border-t border-zinc-100 px-1 pb-4 pt-3"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-zinc-900">
+                        {t("descriptionLabel")}
+                      </p>
+                      <p className="mt-1 whitespace-pre-wrap text-sm text-zinc-700">
+                        {r.description?.trim()
+                          ? r.description
+                          : t("noDescription")}
+                      </p>
+                    </div>
+
+                    {signedAttachments.length > 0 ? (
+                      <ul className="grid gap-3 sm:grid-cols-2">
+                        {signedAttachments.map((att, index) => {
+                          const fileKind = attachmentKind(att.storage_path);
+                          const name = attachmentBasename(att.storage_path);
+                          return (
+                            <li
+                              key={`${att.storage_path}-${att.sort_order}`}
+                              className="flex flex-col gap-2 rounded-lg border border-zinc-200 bg-zinc-50 p-3"
+                            >
+                              {fileKind === "image" ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={att.signed_url!}
+                                  alt={t("viewAttachmentN", { n: index + 1 })}
+                                  className="h-36 w-full rounded object-contain bg-white"
+                                />
+                              ) : (
+                                <div className="flex h-20 items-center justify-center rounded bg-white text-sm font-medium text-zinc-600">
+                                  {attachmentKindLabel(fileKind)}
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium text-zinc-900">
+                                  {t("viewAttachmentN", { n: index + 1 })}
+                                </p>
+                                <p
+                                  className="truncate text-xs text-zinc-500"
+                                  title={name}
+                                >
+                                  {name}
+                                </p>
+                              </div>
                               <a
                                 href={att.signed_url!}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-sm font-medium text-emerald-800 underline"
+                                className="btn-secondary w-fit px-3 py-1.5 text-sm"
                               >
-                                {t("viewAttachmentN", { n: index + 1 })}
+                                {t("openAttachment")}
                               </a>
                             </li>
-                          ))}
+                          );
+                        })}
                       </ul>
                     ) : (
-                      <p className="mt-2 text-sm text-zinc-600">
+                      <p className="text-sm text-zinc-600">
                         {t("noAttachment")}
                       </p>
                     )}
-                    <p className="mt-2 text-sm text-zinc-700">
-                      {r.assigned_arbiter_email
-                        ? t("assignedTo", { email: r.assigned_arbiter_email })
-                        : t("unassigned")}
-                    </p>
-                    <p className="mt-2">
+
+                    <div>
                       <Link
                         href={`/matches/${r.match_id}`}
-                        className="text-sm text-zinc-600 underline hover:text-zinc-900"
+                        className="btn-secondary inline-flex px-3 py-1.5 text-sm"
                       >
                         {t("openMatch")}
                       </Link>
-                    </p>
-                  </div>
+                    </div>
 
-                  {canAssign ? (
-                    <div className="rounded-lg border border-zinc-200 bg-white p-3">
+                    {canAssign ? (
+                      <div className="rounded-lg border border-zinc-200 bg-white p-3">
+                        <p className="text-sm font-medium text-zinc-900">
+                          {t("assignTitle")}
+                        </p>
+                        <p className="mt-1 text-xs text-zinc-600">
+                          {t("assignHint")}
+                        </p>
+                        <div className="mt-3 flex flex-wrap items-end gap-2">
+                          <label className="flex min-w-[14rem] flex-1 flex-col gap-1 text-sm">
+                            <span className="text-zinc-600">
+                              {t("assignSelect")}
+                            </span>
+                            <select
+                              className="rounded border border-zinc-300 px-3 py-2"
+                              value={
+                                assignDrafts[r.id] ??
+                                r.assigned_arbiter_id ??
+                                ""
+                              }
+                              onChange={(e) =>
+                                setAssignDrafts((prev) => ({
+                                  ...prev,
+                                  [r.id]: e.target.value,
+                                }))
+                              }
+                              disabled={busyId === r.id}
+                            >
+                              <option value="">{t("assignSelect")}</option>
+                              {assignableArbiters.map((arb) => (
+                                <option key={arb.userId} value={arb.userId}>
+                                  {arb.email ?? arb.userId}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <button
+                            type="button"
+                            className="btn-secondary text-sm"
+                            disabled={
+                              busyId === r.id ||
+                              !(
+                                assignDrafts[r.id] ||
+                                r.assigned_arbiter_id
+                              )
+                            }
+                            onClick={() => void assign(r)}
+                          >
+                            {busyId === r.id
+                              ? t("assigning")
+                              : t("assignButton")}
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
                       <p className="text-sm font-medium text-zinc-900">
-                        {t("assignTitle")}
+                        {t("resolveTitle")}
                       </p>
                       <p className="mt-1 text-xs text-zinc-600">
-                        {t("assignHint")}
+                        {t("resolveHint")}
                       </p>
-                      <div className="mt-3 flex flex-wrap items-end gap-2">
-                        <label className="flex min-w-[14rem] flex-1 flex-col gap-1 text-sm">
-                          <span className="text-zinc-600">
-                            {t("assignSelect")}
-                          </span>
-                          <select
-                            className="rounded border border-zinc-300 px-3 py-2"
-                            value={
-                              assignDrafts[r.id] ??
-                              r.assigned_arbiter_id ??
-                              ""
-                            }
-                            onChange={(e) =>
-                              setAssignDrafts((prev) => ({
-                                ...prev,
-                                [r.id]: e.target.value,
-                              }))
-                            }
-                            disabled={busyId === r.id}
-                          >
-                            <option value="">{t("assignSelect")}</option>
-                            {assignableArbiters.map((arb) => (
-                              <option key={arb.userId} value={arb.userId}>
-                                {arb.email ?? arb.userId}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
+                      <div className="mt-3">
+                        <FilePickerField
+                          key={draft.fileInputKey}
+                          id={`ruling-file-${r.id}`}
+                          file={draft.file}
+                          onFileChange={(next) =>
+                            void handleRulingFileChange(r, next)
+                          }
+                          hint={t("rulingFileHint")}
+                          accept={FILE_PICKER_ACCEPT}
+                          disabled={busyId === r.id || draft.uploading}
+                        />
+                        {draft.uploading ? (
+                          <p className="mt-1 text-xs text-zinc-600">
+                            {t("uploadingRuling")}
+                          </p>
+                        ) : draft.uploadedPath ? (
+                          <p className="mt-1 text-xs text-emerald-800">
+                            {t("rulingUploaded")}
+                          </p>
+                        ) : null}
+                      </div>
+
+                      {m?.played_at && draft.score && teams ? (
+                        <div className="mt-4 rounded-md border border-zinc-200 bg-white p-3">
+                          <label className="flex items-center gap-2 text-sm font-medium text-zinc-900">
+                            <input
+                              type="checkbox"
+                              checked={draft.adjustScore}
+                              onChange={(e) =>
+                                updateDraft(r, {
+                                  adjustScore: e.target.checked,
+                                })
+                              }
+                              disabled={busyId === r.id}
+                            />
+                            {t("adjustScore")}
+                          </label>
+                          {draft.adjustScore ? (
+                            <div className="mt-3">
+                              <ArbiterResolveScoreFields
+                                scheduledBoardCount={m.board_count}
+                                allowsBoardChoice={m.allows_board_choice}
+                                initialVpHome={m.vp_home}
+                                initialVpAway={m.vp_away}
+                                value={draft.score}
+                                onChange={(score) =>
+                                  updateDraft(r, { score })
+                                }
+                                disabled={busyId === r.id}
+                                idPrefix={`score-${r.id}`}
+                              />
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : null}
+
+                      {teams ? (
+                        <>
+                          <div className="mt-4 rounded-md border border-zinc-200 bg-white p-3">
+                            <label className="flex items-center gap-2 text-sm font-medium text-zinc-900">
+                              <input
+                                type="checkbox"
+                                checked={draft.addPenalty}
+                                onChange={(e) =>
+                                  updateDraft(r, {
+                                    addPenalty: e.target.checked,
+                                  })
+                                }
+                                disabled={busyId === r.id}
+                              />
+                              {t("addPenalty")}
+                            </label>
+                            {draft.addPenalty && draft.penalty ? (
+                              <div className="mt-3">
+                                <DisciplinePenaltyFields
+                                  homeTeam={teams.homeTeam}
+                                  awayTeam={teams.awayTeam}
+                                  value={draft.penalty}
+                                  onChange={(penalty) =>
+                                    updateDraft(r, { penalty })
+                                  }
+                                  disabled={busyId === r.id}
+                                  idPrefix={`penalty-${r.id}`}
+                                />
+                              </div>
+                            ) : null}
+                          </div>
+
+                          <div className="mt-4 rounded-md border border-zinc-200 bg-white p-3">
+                            <label className="flex items-center gap-2 text-sm font-medium text-zinc-900">
+                              <input
+                                type="checkbox"
+                                checked={draft.addWarning}
+                                onChange={(e) =>
+                                  updateDraft(r, {
+                                    addWarning: e.target.checked,
+                                  })
+                                }
+                                disabled={busyId === r.id}
+                              />
+                              {t("addWarning")}
+                            </label>
+                            {draft.addWarning && draft.warning ? (
+                              <div className="mt-3">
+                                <DisciplineWarningFields
+                                  homeTeam={teams.homeTeam}
+                                  awayTeam={teams.awayTeam}
+                                  value={draft.warning}
+                                  onChange={(warning) =>
+                                    updateDraft(r, { warning })
+                                  }
+                                  disabled={busyId === r.id}
+                                  idPrefix={`warning-${r.id}`}
+                                />
+                              </div>
+                            ) : null}
+                          </div>
+                        </>
+                      ) : null}
+
+                      <button
+                        type="button"
+                        disabled={!canResolve}
+                        onClick={() => resolve(r)}
+                        className="btn-primary mt-3 text-sm disabled:cursor-not-allowed disabled:bg-zinc-400 disabled:opacity-100 hover:disabled:bg-zinc-400"
+                      >
+                        {busyId === r.id
+                          ? t("resolving")
+                          : t("resolveButton")}
+                      </button>
+                      {canCancelRequests ? (
                         <button
                           type="button"
-                          className="btn-secondary text-sm"
-                          disabled={
-                            busyId === r.id ||
-                            !(
-                              assignDrafts[r.id] ||
-                              r.assigned_arbiter_id
-                            )
-                          }
-                          onClick={() => void assign(r)}
+                          disabled={busyId === r.id}
+                          onClick={() => void cancel(r)}
+                          className="mt-3 ml-3 text-sm text-zinc-600 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          {busyId === r.id ? t("assigning") : t("assignButton")}
+                          {t("cancelButton")}
                         </button>
-                      </div>
-                    </div>
-                  ) : null}
-
-                  <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
-                    <p className="text-sm font-medium text-zinc-900">
-                      {t("resolveTitle")}
-                    </p>
-                    <p className="mt-1 text-xs text-zinc-600">{t("resolveHint")}</p>
-                    <div className="mt-3">
-                      <FilePickerField
-                        key={draft.fileInputKey}
-                        id={`ruling-file-${r.id}`}
-                        file={draft.file}
-                        onFileChange={(next) =>
-                          void handleRulingFileChange(r, next)
-                        }
-                        hint={t("rulingFileHint")}
-                        accept={FILE_PICKER_ACCEPT}
-                        disabled={busyId === r.id || draft.uploading}
-                      />
-                      {draft.uploading ? (
-                        <p className="mt-1 text-xs text-zinc-600">
-                          {t("uploadingRuling")}
-                        </p>
-                      ) : draft.uploadedPath ? (
-                        <p className="mt-1 text-xs text-emerald-800">
-                          {t("rulingUploaded")}
+                      ) : null}
+                      {rulingLink ? (
+                        <p className="mt-2 text-sm">
+                          <a
+                            href={rulingLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn-secondary inline-flex px-3 py-1.5 text-sm"
+                          >
+                            {t("viewPublishedRuling")}
+                          </a>
                         </p>
                       ) : null}
                     </div>
-
-                    {m?.played_at && draft.score && teams ? (
-                      <div className="mt-4 rounded-md border border-zinc-200 bg-white p-3">
-                        <label className="flex items-center gap-2 text-sm font-medium text-zinc-900">
-                          <input
-                            type="checkbox"
-                            checked={draft.adjustScore}
-                            onChange={(e) =>
-                              updateDraft(r, { adjustScore: e.target.checked })
-                            }
-                            disabled={busyId === r.id}
-                          />
-                          {t("adjustScore")}
-                        </label>
-                        {draft.adjustScore ? (
-                          <div className="mt-3">
-                            <ArbiterResolveScoreFields
-                              scheduledBoardCount={m.board_count}
-                              allowsBoardChoice={m.allows_board_choice}
-                              initialVpHome={m.vp_home}
-                              initialVpAway={m.vp_away}
-                              value={draft.score}
-                              onChange={(score) => updateDraft(r, { score })}
-                              disabled={busyId === r.id}
-                              idPrefix={`score-${r.id}`}
-                            />
-                          </div>
-                        ) : null}
-                      </div>
-                    ) : null}
-
-                    {teams ? (
-                      <>
-                        <div className="mt-4 rounded-md border border-zinc-200 bg-white p-3">
-                          <label className="flex items-center gap-2 text-sm font-medium text-zinc-900">
-                            <input
-                              type="checkbox"
-                              checked={draft.addPenalty}
-                              onChange={(e) =>
-                                updateDraft(r, { addPenalty: e.target.checked })
-                              }
-                              disabled={busyId === r.id}
-                            />
-                            {t("addPenalty")}
-                          </label>
-                          {draft.addPenalty && draft.penalty ? (
-                            <div className="mt-3">
-                              <DisciplinePenaltyFields
-                                homeTeam={teams.homeTeam}
-                                awayTeam={teams.awayTeam}
-                                value={draft.penalty}
-                                onChange={(penalty) =>
-                                  updateDraft(r, { penalty })
-                                }
-                                disabled={busyId === r.id}
-                                idPrefix={`penalty-${r.id}`}
-                              />
-                            </div>
-                          ) : null}
-                        </div>
-
-                        <div className="mt-4 rounded-md border border-zinc-200 bg-white p-3">
-                          <label className="flex items-center gap-2 text-sm font-medium text-zinc-900">
-                            <input
-                              type="checkbox"
-                              checked={draft.addWarning}
-                              onChange={(e) =>
-                                updateDraft(r, { addWarning: e.target.checked })
-                              }
-                              disabled={busyId === r.id}
-                            />
-                            {t("addWarning")}
-                          </label>
-                          {draft.addWarning && draft.warning ? (
-                            <div className="mt-3">
-                              <DisciplineWarningFields
-                                homeTeam={teams.homeTeam}
-                                awayTeam={teams.awayTeam}
-                                value={draft.warning}
-                                onChange={(warning) =>
-                                  updateDraft(r, { warning })
-                                }
-                                disabled={busyId === r.id}
-                                idPrefix={`warning-${r.id}`}
-                              />
-                            </div>
-                          ) : null}
-                        </div>
-                      </>
-                    ) : null}
-
-                    <button
-                      type="button"
-                      disabled={!canResolve}
-                      onClick={() => resolve(r)}
-                      className="btn-primary mt-3 text-sm disabled:cursor-not-allowed disabled:bg-zinc-400 disabled:opacity-100 hover:disabled:bg-zinc-400"
-                    >
-                      {busyId === r.id ? t("resolving") : t("resolveButton")}
-                    </button>
-                    {canCancelRequests ? (
-                      <button
-                        type="button"
-                        disabled={busyId === r.id}
-                        onClick={() => void cancel(r)}
-                        className="mt-3 ml-3 text-sm text-zinc-600 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {t("cancelButton")}
-                      </button>
-                    ) : null}
-                    {rulingLink ? (
-                      <p className="mt-2 text-sm">
-                        <a
-                          href={rulingLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="font-medium text-emerald-800 underline"
-                        >
-                          {t("viewPublishedRuling")}
-                        </a>
-                      </p>
-                    ) : null}
                   </div>
-                </div>
+                ) : null}
               </li>
             );
           })}
