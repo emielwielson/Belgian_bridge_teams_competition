@@ -264,7 +264,10 @@
       "locked": "Locked {teamName} line-up",
       "unlocked": "Unlocked {teamName} line-up",
       "lockFailed": "Failed to lock line-up",
-      "unlockFailed": "Failed to unlock line-up"
+      "unlockFailed": "Failed to unlock line-up",
+      "deadlineHint": "Lock the line-up by {time} (before kick-off).",
+      "lockedAtOnTime": "Locked at {lockedAt} — on time (deadline {deadline}).",
+      "lockedAtLate": "Locked at {lockedAt} — late (deadline {deadline})."
     },
     "addSub": {
       "title": "Add substitute",
@@ -566,6 +569,10 @@
       "locked": "locked",
       "draftComplete": "seats filled (not locked)",
       "notReady": "not locked yet",
+      "deadlinePending": "not locked yet · deadline {deadline}",
+      "draftCompleteWithDeadline": "seats filled (not locked) · deadline {deadline}",
+      "lockedOnTime": "locked at {lockedAt} · on time (deadline {deadline})",
+      "lockedLate": "locked at {lockedAt} · late (deadline {deadline})",
       "waitingOnTeam": "Waiting on {team}",
       "captainSuffix": "(captain)",
       "rosterEmpty": "No roster players listed.",

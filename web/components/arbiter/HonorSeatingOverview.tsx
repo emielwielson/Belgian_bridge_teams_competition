@@ -10,9 +10,14 @@ import type {
   HonorVenueTableRow,
 } from "@/lib/competition/honor-seating-overview";
 import { waitingLineupSides } from "@/lib/competition/honor-seating-overview";
+import {
+  honorLineupDeadline,
+  honorLineupLateness,
+  type HonorSide,
+} from "@/lib/competition/honor-lineup";
 import type { Locale } from "@/i18n/config";
 import { toIntlLocale } from "@/i18n/intl-locale";
-import { formatBrussels } from "@/lib/time/brussels";
+import { formatBrussels, formatBrusselsRoundHeader } from "@/lib/time/brussels";
 import { HonorBoardResultsEditor } from "@/components/arbiter/HonorBoardResultsEditor";
 import {
   HonorButlerWorkflow,
@@ -108,6 +113,45 @@ function LoadingLine({ label }: { label: string }) {
       <span>{label}</span>
     </p>
   );
+}
+
+function sideLockTimingStatus(
+  match: HonorRoundMatchSeating,
+  side: HonorSide,
+  t: ReturnType<typeof useTranslations>,
+  intlLocale: string,
+): string {
+  const lockedAt =
+    side === "home"
+      ? match.home_lineup_locked_at
+      : match.away_lineup_locked_at;
+  const seatsComplete =
+    side === "home" ? match.home_seats_complete : match.away_seats_complete;
+  const deadline = honorLineupDeadline(match.datetime, side);
+  const deadlineLabel = formatBrusselsRoundHeader(
+    deadline.toISOString(),
+    intlLocale,
+  ).time;
+  const lateness = honorLineupLateness(lockedAt, deadline);
+
+  if (lateness.status === "pending") {
+    if (seatsComplete) {
+      return t("draftCompleteWithDeadline", { deadline: deadlineLabel });
+    }
+    return t("deadlinePending", { deadline: deadlineLabel });
+  }
+
+  const lockedAtLabel = formatBrusselsRoundHeader(lockedAt!, intlLocale).time;
+  if (lateness.status === "late") {
+    return t("lockedLate", {
+      lockedAt: lockedAtLabel,
+      deadline: deadlineLabel,
+    });
+  }
+  return t("lockedOnTime", {
+    lockedAt: lockedAtLabel,
+    deadline: deadlineLabel,
+  });
 }
 
 export function HonorSeatingOverview() {
@@ -547,21 +591,23 @@ export function HonorSeatingOverview() {
                         <li>
                           {t("sideStatus", {
                             side: t("home"),
-                            status: match.home_lineup_locked_at
-                              ? t("locked")
-                              : match.home_seats_complete
-                                ? t("draftComplete")
-                                : t("notReady"),
+                            status: sideLockTimingStatus(
+                              match,
+                              "home",
+                              t,
+                              intlLocale,
+                            ),
                           })}
                         </li>
                         <li>
                           {t("sideStatus", {
                             side: t("away"),
-                            status: match.away_lineup_locked_at
-                              ? t("locked")
-                              : match.away_seats_complete
-                                ? t("draftComplete")
-                                : t("notReady"),
+                            status: sideLockTimingStatus(
+                              match,
+                              "away",
+                              t,
+                              intlLocale,
+                            ),
                           })}
                         </li>
                       </ul>

@@ -264,7 +264,10 @@
       "locked": "Line-up {teamName} vastgelegd",
       "unlocked": "Line-up {teamName} ontgrendeld",
       "lockFailed": "Line-up vastleggen mislukt",
-      "unlockFailed": "Ontgrendelen mislukt"
+      "unlockFailed": "Ontgrendelen mislukt",
+      "deadlineHint": "Leg de line-up uiterlijk om {time} vast (vóór de start).",
+      "lockedAtOnTime": "Vastgelegd om {lockedAt} — op tijd (deadline {deadline}).",
+      "lockedAtLate": "Vastgelegd om {lockedAt} — te laat (deadline {deadline})."
     },
     "addSub": {
       "title": "Invaller toevoegen",
@@ -566,6 +569,10 @@
       "locked": "vastgelegd",
       "draftComplete": "plaatsen gevuld (nog niet vastgelegd)",
       "notReady": "nog niet vastgelegd",
+      "deadlinePending": "nog niet vastgelegd · deadline {deadline}",
+      "draftCompleteWithDeadline": "plaatsen gevuld (nog niet vastgelegd) · deadline {deadline}",
+      "lockedOnTime": "vastgelegd om {lockedAt} · op tijd (deadline {deadline})",
+      "lockedLate": "vastgelegd om {lockedAt} · te laat (deadline {deadline})",
       "waitingOnTeam": "Wachten op {team}",
       "captainSuffix": "(kapitein)",
       "rosterEmpty": "Geen spelers op de roster.",

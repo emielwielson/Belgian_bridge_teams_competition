@@ -74,6 +74,47 @@ export type HonorLockState = {
   awayLocked: boolean;
 };
 
+/** Minutes before match start when each side must lock the line-up. */
+export const HONOR_LINEUP_DEADLINE_MINUTES_BEFORE: Record<HonorSide, number> = {
+  away: 10,
+  home: 5,
+};
+
+export function honorLineupDeadline(
+  matchDatetime: string,
+  side: HonorSide,
+): Date {
+  const start = new Date(matchDatetime);
+  const minutes = HONOR_LINEUP_DEADLINE_MINUTES_BEFORE[side];
+  return new Date(start.getTime() - minutes * 60_000);
+}
+
+export type HonorLineupLatenessStatus = "pending" | "on_time" | "late";
+
+export type HonorLineupLateness = {
+  status: HonorLineupLatenessStatus;
+  lockedAt: string | null;
+  deadline: Date;
+  lateByMs?: number;
+};
+
+/** Compare lock time to deadline. Exactly on the deadline counts as on time. */
+export function honorLineupLateness(
+  lockedAt: string | null,
+  deadline: Date,
+): HonorLineupLateness {
+  if (lockedAt == null) {
+    return { status: "pending", lockedAt: null, deadline };
+  }
+  const lockedMs = new Date(lockedAt).getTime();
+  const deadlineMs = deadline.getTime();
+  const lateByMs = lockedMs - deadlineMs;
+  if (lateByMs > 0) {
+    return { status: "late", lockedAt, deadline, lateByMs };
+  }
+  return { status: "on_time", lockedAt, deadline };
+}
+
 export function canEditHonorSide(options: {
   side: HonorSide;
   phase: HonorLineupPhase;

@@ -3,6 +3,8 @@ import {
   canEditHonorSide,
   canLockHonorSide,
   canViewOpponentLineup,
+  honorLineupDeadline,
+  honorLineupLateness,
   honorLineupPhase,
   honorSeatSlots,
   isAllowedHonorSeat,
@@ -234,5 +236,54 @@ describe("venueTablesForHonorMatch", () => {
         awaySlot: 4,
       }),
     ).toEqual({ openTable: 3, closedTable: 4 });
+  });
+});
+
+describe("honorLineupDeadline / honorLineupLateness", () => {
+  const matchStart = "2026-03-15T10:00:00.000Z";
+
+  it("sets away deadline 10 minutes before start", () => {
+    expect(honorLineupDeadline(matchStart, "away").toISOString()).toBe(
+      "2026-03-15T09:50:00.000Z",
+    );
+  });
+
+  it("sets home deadline 5 minutes before start", () => {
+    expect(honorLineupDeadline(matchStart, "home").toISOString()).toBe(
+      "2026-03-15T09:55:00.000Z",
+    );
+  });
+
+  it("is pending when not locked", () => {
+    const deadline = honorLineupDeadline(matchStart, "away");
+    expect(honorLineupLateness(null, deadline)).toEqual({
+      status: "pending",
+      lockedAt: null,
+      deadline,
+    });
+  });
+
+  it("is on_time when locked exactly at the deadline", () => {
+    const deadline = honorLineupDeadline(matchStart, "away");
+    const lockedAt = deadline.toISOString();
+    expect(honorLineupLateness(lockedAt, deadline)).toEqual({
+      status: "on_time",
+      lockedAt,
+      deadline,
+    });
+  });
+
+  it("is on_time when locked before the deadline", () => {
+    const deadline = honorLineupDeadline(matchStart, "home");
+    const lockedAt = "2026-03-15T09:54:00.000Z";
+    expect(honorLineupLateness(lockedAt, deadline).status).toBe("on_time");
+  });
+
+  it("is late when locked after the deadline", () => {
+    const deadline = honorLineupDeadline(matchStart, "away");
+    const lockedAt = "2026-03-15T09:51:00.000Z";
+    const result = honorLineupLateness(lockedAt, deadline);
+    expect(result.status).toBe("late");
+    expect(result.lateByMs).toBe(60_000);
   });
 });

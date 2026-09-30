@@ -385,6 +385,8 @@ export async function MatchDetailView({
                   canUnlock={honorPerms.canUnlock}
                   canViewSeats={honorPerms.canViewHome}
                   locked={honorCtx.homeLocked}
+                  lockedAt={match.home_lineup_locked_at}
+                  matchDatetime={match.datetime}
                   opponentLocked={honorCtx.awayLocked}
                   phase={honorCtx.phase}
                   venueTables={honorCtx.venueTables}
@@ -402,6 +404,8 @@ export async function MatchDetailView({
                   canUnlock={honorPerms.canUnlock}
                   canViewSeats={honorPerms.canViewAway}
                   locked={honorCtx.awayLocked}
+                  lockedAt={match.away_lineup_locked_at}
+                  matchDatetime={match.datetime}
                   opponentLocked={honorCtx.homeLocked}
                   phase={honorCtx.phase}
                   venueTables={honorCtx.venueTables}

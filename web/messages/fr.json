@@ -264,7 +264,10 @@
       "locked": "Line-up {teamName} verrouillé",
       "unlocked": "Line-up {teamName} déverrouillé",
       "lockFailed": "Échec du verrouillage du line-up",
-      "unlockFailed": "Échec du déverrouillage"
+      "unlockFailed": "Échec du déverrouillage",
+      "deadlineHint": "Verrouillez le line-up au plus tard à {time} (avant le début).",
+      "lockedAtOnTime": "Verrouillé à {lockedAt} — à l'heure (échéance {deadline}).",
+      "lockedAtLate": "Verrouillé à {lockedAt} — en retard (échéance {deadline})."
     },
     "addSub": {
       "title": "Ajouter un remplaçant",
@@ -566,6 +569,10 @@
       "locked": "verrouillé",
       "draftComplete": "places remplies (non verrouillé)",
       "notReady": "pas encore verrouillé",
+      "deadlinePending": "pas encore verrouillé · échéance {deadline}",
+      "draftCompleteWithDeadline": "places remplies (pas encore verrouillé) · échéance {deadline}",
+      "lockedOnTime": "verrouillé à {lockedAt} · à l'heure (échéance {deadline})",
+      "lockedLate": "verrouillé à {lockedAt} · en retard (échéance {deadline})",
       "waitingOnTeam": "En attente de {team}",
       "captainSuffix": "(capitaine)",
       "rosterEmpty": "Aucun joueur dans l'effectif.",

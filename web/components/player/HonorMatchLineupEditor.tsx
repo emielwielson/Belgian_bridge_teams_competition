@@ -1,13 +1,17 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { AddSubPicker } from "@/components/player/AddSubPicker";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
+import type { Locale } from "@/i18n/config";
+import { toIntlLocale } from "@/i18n/intl-locale";
 import type { ClubSubCandidate } from "@/lib/competition/player-matches";
 import {
+  honorLineupDeadline,
+  honorLineupLateness,
   honorSeatSlots,
   seatKey,
   type HonorDirection,
@@ -17,6 +21,7 @@ import {
   type HonorSide,
   type HonorVenueTables,
 } from "@/lib/competition/honor-lineup";
+import { formatBrusselsRoundHeader } from "@/lib/time/brussels";
 
 type RosterPlayer = {
   id: string;
@@ -47,6 +52,8 @@ type Props = {
   canUnlock: boolean;
   canViewSeats: boolean;
   locked: boolean;
+  lockedAt: string | null;
+  matchDatetime: string;
   opponentLocked: boolean;
   phase: HonorLineupPhase;
   venueTables: HonorVenueTables | null;
@@ -114,12 +121,16 @@ export function HonorMatchLineupEditor({
   canUnlock,
   canViewSeats,
   locked,
+  lockedAt,
+  matchDatetime,
   opponentLocked,
   phase,
   venueTables,
 }: Props) {
   const t = useTranslations("match.honorLineup");
   const tLineup = useTranslations("match.lineup");
+  const locale = useLocale() as Locale;
+  const intlLocale = toIntlLocale(locale);
   const router = useRouter();
   const [seats, setSeats] = useState<SeatAssignment>(() =>
     initialSeats(initialLineup, side),
@@ -149,6 +160,16 @@ export function HonorMatchLineupEditor({
   const waitingForAwayFirst =
     phase === "sequential" && side === "home" && !opponentLocked && !locked;
   const yourTurnToEnter = !locked && canEdit;
+
+  const deadline = honorLineupDeadline(matchDatetime, side);
+  const deadlineIso = deadline.toISOString();
+  const deadlineTime = formatBrusselsRoundHeader(deadlineIso, intlLocale).time;
+  const lateness = honorLineupLateness(lockedAt, deadline);
+  const lockedAtLabel =
+    lockedAt != null
+      ? formatBrusselsRoundHeader(lockedAt, intlLocale).time
+      : null;
+  const deadlineLabel = formatBrusselsRoundHeader(deadlineIso, intlLocale).time;
 
   const playerOptions = useMemo(() => {
     const byId = new Map<string, RosterPlayer>();
@@ -353,6 +374,31 @@ export function HonorMatchLineupEditor({
           role="status"
         >
           {guidance}
+        </p>
+      ) : null}
+
+      {locked && lockedAtLabel && lateness.status !== "pending" ? (
+        <p
+          className={`mt-3 rounded-md px-3 py-2 text-sm ${
+            lateness.status === "late"
+              ? "bg-rose-50 text-rose-950"
+              : "bg-emerald-50 text-emerald-950"
+          }`}
+          role="status"
+        >
+          {lateness.status === "late"
+            ? t("lockedAtLate", {
+                lockedAt: lockedAtLabel,
+                deadline: deadlineLabel,
+              })
+            : t("lockedAtOnTime", {
+                lockedAt: lockedAtLabel,
+                deadline: deadlineLabel,
+              })}
+        </p>
+      ) : !locked ? (
+        <p className="mt-3 text-sm text-zinc-600" role="status">
+          {t("deadlineHint", { time: deadlineTime })}
         </p>
       ) : null}
 
