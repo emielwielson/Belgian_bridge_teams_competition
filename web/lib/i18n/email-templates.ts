@@ -476,3 +476,45 @@ export function buildArbiterRequestResolvedEmail(
 
   return { subject, bodyText, bodyHtml };
 }
+
+export type ArbiterRequestAssignedEmailBuildContext = {
+  round: number;
+  homeTeamName: string;
+  awayTeamName: string;
+  matchUrl: string;
+  loginUrl: string;
+  inboxUrl: string;
+};
+
+export function buildArbiterRequestAssignedEmail(
+  ctx: ArbiterRequestAssignedEmailBuildContext,
+  { t }: Pick<EmailTemplateContext, "t">,
+): EmailContent {
+  const matchLine = t("arbiterRequestCreated.matchLine", {
+    round: ctx.round,
+    homeTeam: ctx.homeTeamName,
+    awayTeam: ctx.awayTeamName,
+  });
+
+  const subject = t("arbiterRequestAssigned.subject", { matchLine });
+
+  const bodyText = [
+    t("arbiterRequestAssigned.bodyIntro"),
+    "",
+    matchLine,
+    "",
+    t("arbiterRequestAssigned.arbiterInbox", { url: ctx.inboxUrl }),
+    t("arbiterRequestAssigned.match", { url: ctx.matchUrl }),
+    t("arbiterRequestAssigned.loginFirst", { url: ctx.loginUrl }),
+  ].join("\n");
+
+  const bodyHtml = [
+    `<p>${t("arbiterRequestAssigned.bodyIntro")}</p>`,
+    `<p><strong>${matchLine}</strong></p>`,
+    `<p><a href="${ctx.inboxUrl}">${t("arbiterRequestAssigned.openInbox")}</a> · `,
+    `<a href="${ctx.matchUrl}">${t("arbiterRequestAssigned.viewMatch")}</a><br>`,
+    `<a href="${ctx.loginUrl}">${t("arbiterRequestAssigned.loginFirstLink")}</a></p>`,
+  ].join("");
+
+  return { subject, bodyText, bodyHtml };
+}

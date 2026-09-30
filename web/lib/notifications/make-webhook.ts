@@ -1,5 +1,6 @@
 export const MAKE_WEBHOOK_EVENT_TYPES = [
   "arbiter_request_created",
+  "arbiter_request_assigned",
   "arbiter_request_resolved",
   "home_away_switch_proposed",
   "home_away_switch_approved",

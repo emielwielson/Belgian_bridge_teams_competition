@@ -55,6 +55,7 @@ export async function GET() {
     managedKinds,
     arbiterAccess: {
       kinds: arbiterAccess.kinds,
+      chiefKinds: arbiterAccess.chiefKinds,
       honor: arbiterAccess.honor,
       inbox: arbiterAccess.inbox,
     },

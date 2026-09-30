@@ -23,12 +23,16 @@ export async function PATCH(request: Request, { params }: Params) {
     const body = (await request.json()) as Record<string, unknown>;
     const kinds = parseKindCodes(body.kinds);
     const honor = Boolean(body.honor);
+    const chiefKinds = Array.isArray(body.chiefKinds)
+      ? parseKindCodes(body.chiefKinds)
+      : undefined;
     const service = createServiceClient();
     const arbiter = await updateArbiterScopes({
       service,
       managed,
       userId,
       kinds,
+      chiefKinds,
       honor,
     });
     return jsonOk({ arbiter });

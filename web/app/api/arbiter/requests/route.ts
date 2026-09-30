@@ -1,10 +1,17 @@
-import { ARBITER_ACCESS_ROLES } from "@/lib/auth/roles";
+import { ARBITER_ACCESS_ROLES, ROLES } from "@/lib/auth/roles";
 import {
   assertArbiterInboxApiAccess,
   assertArbiterKindAccess,
+  getArbiterAccess,
   groupIdsForCompetitionKind,
   isCompetitionKindCode,
 } from "@/lib/auth/arbiter-scope";
+import {
+  getManagedCompetitionKinds,
+  managesKindCode,
+  resolveCompetitionKindId,
+  type CompetitionKindCode,
+} from "@/lib/auth/competition-scope";
 import { requireRoles } from "@/lib/auth/route-auth";
 import type { InboxMatchContext } from "@/lib/competition/arbiter-request";
 import { loadGroupScoringContext } from "@/lib/competition/match-scoring-context";
@@ -35,6 +42,11 @@ type MatchRow = {
 type AttachmentRow = {
   storage_path: string;
   sort_order: number;
+};
+
+type AssignableArbiter = {
+  userId: string;
+  email: string | null;
 };
 
 function first<T>(value: T | T[] | null | undefined): T | null {
@@ -94,6 +106,57 @@ async function signAttachmentPaths(
   );
 }
 
+async function callerCanAssignForKind(
+  supabase: Awaited<ReturnType<typeof requireRoles>>["supabase"],
+  userId: string,
+  roles: string[],
+  kind: CompetitionKindCode,
+): Promise<boolean> {
+  if (roles.includes(ROLES.SYSTEM_ADMIN)) return true;
+  if (roles.includes(ROLES.COMPETITION_MANAGER)) {
+    const managed = await getManagedCompetitionKinds(supabase, userId, roles);
+    return managesKindCode(managed, kind);
+  }
+  const access = await getArbiterAccess(supabase, userId, roles);
+  return access.chiefKinds.includes(kind);
+}
+
+async function loadAssignableArbiters(
+  service: ReturnType<typeof createServiceClient>,
+  kind: CompetitionKindCode,
+): Promise<AssignableArbiter[]> {
+  const kindId = await resolveCompetitionKindId(service, kind);
+  const { data: scopeRows, error: scopeError } = await service
+    .from("arbiter_competition_scopes")
+    .select("user_id")
+    .eq("competition_kind_id", kindId);
+  if (scopeError) throw scopeError;
+
+  const userIds = [...new Set((scopeRows ?? []).map((r) => r.user_id))];
+  if (userIds.length === 0) return [];
+
+  const { data: roleRows, error: roleError } = await service
+    .from("user_roles")
+    .select("user_id")
+    .eq("role", ROLES.ARBITER)
+    .in("user_id", userIds);
+  if (roleError) throw roleError;
+
+  const arbiters: AssignableArbiter[] = [];
+  for (const row of roleRows ?? []) {
+    const { data } = await service.auth.admin.getUserById(row.user_id);
+    arbiters.push({
+      userId: row.user_id,
+      email: data.user?.email ?? null,
+    });
+  }
+
+  arbiters.sort((a, b) =>
+    (a.email ?? a.userId).localeCompare(b.email ?? b.userId),
+  );
+  return arbiters;
+}
+
 export async function GET(request: Request) {
   try {
     const { user, roles, supabase } = await requireRoles([
@@ -105,15 +168,33 @@ export async function GET(request: Request) {
     const status = url.searchParams.get("status") ?? "open";
     const kindParam = url.searchParams.get("kind");
     if (!kindParam || !isCompetitionKindCode(kindParam)) {
-      return jsonError("kind must be national, flanders, or wallonia", 400);
+      return jsonError(
+        "kind must be national, flanders, wallonia, or zweiffel",
+        400,
+      );
     }
     await assertArbiterKindAccess(supabase, user.id, roles, kindParam);
 
     const groupIds = new Set(
       await groupIdsForCompetitionKind(supabase, kindParam),
     );
+    const canAssign = await callerCanAssignForKind(
+      supabase,
+      user.id,
+      roles,
+      kindParam,
+    );
+    const service = createServiceClient();
+    const assignableArbiters = canAssign
+      ? await loadAssignableArbiters(service, kindParam)
+      : [];
+
     if (groupIds.size === 0) {
-      return jsonOk({ requests: [] });
+      return jsonOk({
+        requests: [],
+        canAssign,
+        assignableArbiters,
+      });
     }
 
     let query = supabase
@@ -126,6 +207,8 @@ export async function GET(request: Request) {
         image_path,
         status,
         created_at,
+        assigned_arbiter_id,
+        assigned_at,
         attachments:arbiter_request_attachments (
           storage_path,
           sort_order
@@ -159,12 +242,14 @@ export async function GET(request: Request) {
     const { data, error } = await query;
     if (error) return jsonError(error.message, 500);
 
-    const service = createServiceClient();
-
     const scopedRows = (data ?? []).filter((row) => {
       const match = first(row.match as MatchRow | MatchRow[] | null);
       return match != null && groupIds.has(match.group_id);
     });
+
+    const emailByUserId = new Map(
+      assignableArbiters.map((a) => [a.userId, a.email] as const),
+    );
 
     const requests = await Promise.all(
       scopedRows.map(async (row) => {
@@ -185,6 +270,20 @@ export async function GET(request: Request) {
           supabase,
           first(row.match as MatchRow | MatchRow[] | null),
         );
+
+        const assignedArbiterId =
+          (row.assigned_arbiter_id as string | null) ?? null;
+        let assignedArbiterEmail: string | null = null;
+        if (assignedArbiterId) {
+          if (emailByUserId.has(assignedArbiterId)) {
+            assignedArbiterEmail = emailByUserId.get(assignedArbiterId) ?? null;
+          } else {
+            const { data: authData } =
+              await service.auth.admin.getUserById(assignedArbiterId);
+            assignedArbiterEmail = authData.user?.email ?? null;
+          }
+        }
+
         return {
           id: row.id,
           match_id: row.match_id,
@@ -193,12 +292,19 @@ export async function GET(request: Request) {
           attachments,
           status: row.status,
           created_at: row.created_at,
+          assigned_arbiter_id: assignedArbiterId,
+          assigned_at: (row.assigned_at as string | null) ?? null,
+          assigned_arbiter_email: assignedArbiterEmail,
           match,
         };
       }),
     );
 
-    return jsonOk({ requests });
+    return jsonOk({
+      requests,
+      canAssign,
+      assignableArbiters,
+    });
   } catch (err) {
     return jsonFromError(err);
   }

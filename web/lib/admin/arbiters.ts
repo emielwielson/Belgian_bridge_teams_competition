@@ -26,6 +26,7 @@ export type ArbiterListItem = {
   email: string | null;
   playerName: string | null;
   kinds: CompetitionKindCode[];
+  chiefKinds: CompetitionKindCode[];
   honor: boolean;
 };
 
@@ -46,6 +47,62 @@ export function parseKindCodes(raw: unknown): CompetitionKindCode[] {
     }
   }
   return [...new Set(out)];
+}
+
+/**
+ * Chief kinds must be a subset of the arbiter's scoped kinds.
+ */
+export function parseChiefKindCodes(
+  raw: unknown,
+  scopedKinds: CompetitionKindCode[],
+): CompetitionKindCode[] {
+  const scoped = new Set(scopedKinds);
+  return parseKindCodes(raw).filter((code) => scoped.has(code));
+}
+
+async function clearChiefForKind(
+  service: SupabaseClient,
+  kindId: string,
+): Promise<void> {
+  const { error } = await service
+    .from("arbiter_competition_scopes")
+    .update({ is_chief: false })
+    .eq("competition_kind_id", kindId)
+    .eq("is_chief", true);
+  if (error) throw error;
+}
+
+async function setChiefForUserKinds(
+  service: SupabaseClient,
+  userId: string,
+  managed: ManagedCompetitionKinds,
+  desiredChief: CompetitionKindCode[],
+  currentKinds: CompetitionKindCode[],
+): Promise<void> {
+  for (const code of ALL_KIND_CODES) {
+    if (!managesKindCode(managed, code)) continue;
+    if (!currentKinds.includes(code)) continue;
+
+    const kindId = await resolveCompetitionKindId(service, code);
+    const shouldBeChief = desiredChief.includes(code);
+
+    if (shouldBeChief) {
+      await clearChiefForKind(service, kindId);
+      const { error } = await service
+        .from("arbiter_competition_scopes")
+        .update({ is_chief: true })
+        .eq("user_id", userId)
+        .eq("competition_kind_id", kindId);
+      if (error) throw error;
+    } else {
+      const { error } = await service
+        .from("arbiter_competition_scopes")
+        .update({ is_chief: false })
+        .eq("user_id", userId)
+        .eq("competition_kind_id", kindId);
+      if (error) throw error;
+    }
+  }
 }
 
 async function findAuthUserIdByEmail(
@@ -121,6 +178,7 @@ export async function listArbitersForManager(
       email: authData.user?.email ?? null,
       playerName,
       kinds: access.kinds,
+      chiefKinds: access.chiefKinds,
       honor: access.honor,
     });
   }
@@ -136,6 +194,7 @@ export async function createOrEnsureArbiter(options: {
   managed: ManagedCompetitionKinds;
   email: string;
   kinds: CompetitionKindCode[];
+  chiefKinds?: CompetitionKindCode[];
   honor: boolean;
   locale?: Locale;
 }): Promise<ArbiterListItem> {
@@ -156,6 +215,11 @@ export async function createOrEnsureArbiter(options: {
     );
   }
 
+  const desiredChief = parseChiefKindCodes(
+    options.chiefKinds ?? [],
+    grantedKinds,
+  );
+
   await ensureAuthUserForLogin(service, email, options.locale ?? defaultLocale);
   const userId = await findAuthUserIdByEmail(service, email);
   if (!userId) {
@@ -171,7 +235,7 @@ export async function createOrEnsureArbiter(options: {
   for (const code of grantedKinds) {
     const kindId = await resolveCompetitionKindId(service, code);
     const { error } = await service.from("arbiter_competition_scopes").upsert(
-      { user_id: userId, competition_kind_id: kindId },
+      { user_id: userId, competition_kind_id: kindId, is_chief: false },
       { onConflict: "user_id,competition_kind_id" },
     );
     if (error) throw error;
@@ -184,6 +248,14 @@ export async function createOrEnsureArbiter(options: {
     if (error) throw error;
   }
 
+  await setChiefForUserKinds(
+    service,
+    userId,
+    managed,
+    desiredChief,
+    grantedKinds,
+  );
+
   const access = await getArbiterAccess(service, userId, [ROLES.ARBITER]);
   const playerName = await linkedPlayerName(service, userId);
   return {
@@ -191,6 +263,7 @@ export async function createOrEnsureArbiter(options: {
     email,
     playerName,
     kinds: access.kinds,
+    chiefKinds: access.chiefKinds,
     honor: access.honor,
   };
 }
@@ -200,6 +273,7 @@ export async function updateArbiterScopes(options: {
   managed: ManagedCompetitionKinds;
   userId: string;
   kinds: CompetitionKindCode[];
+  chiefKinds?: CompetitionKindCode[];
   honor: boolean;
 }): Promise<ArbiterListItem> {
   const { service, managed, userId } = options;
@@ -218,6 +292,13 @@ export async function updateArbiterScopes(options: {
   const desiredManaged = filterKindCodesToManaged(managed, options.kinds);
   const desiredHonor =
     managerCanGrantHonor(managed) ? options.honor : current.honor;
+  const desiredChief = parseChiefKindCodes(
+    options.chiefKinds ?? current.chiefKinds,
+    [
+      ...desiredManaged,
+      ...current.kinds.filter((k) => !managesKindCode(managed, k)),
+    ],
+  );
 
   // Kinds the manager controls: sync to desiredManaged
   for (const code of ALL_KIND_CODES) {
@@ -227,7 +308,7 @@ export async function updateArbiterScopes(options: {
     const has = current.kinds.includes(code);
     if (shouldHave && !has) {
       const { error } = await service.from("arbiter_competition_scopes").upsert(
-        { user_id: userId, competition_kind_id: kindId },
+        { user_id: userId, competition_kind_id: kindId, is_chief: false },
         { onConflict: "user_id,competition_kind_id" },
       );
       if (error) throw error;
@@ -256,6 +337,17 @@ export async function updateArbiterScopes(options: {
     }
   }
 
+  const accessAfterScopes = await getArbiterAccess(service, userId, [
+    ROLES.ARBITER,
+  ]);
+  await setChiefForUserKinds(
+    service,
+    userId,
+    managed,
+    desiredChief.filter((c) => accessAfterScopes.kinds.includes(c)),
+    accessAfterScopes.kinds,
+  );
+
   const access = await getArbiterAccess(service, userId, [ROLES.ARBITER]);
   if (access.kinds.length === 0 && !access.honor) {
     // Keep role only if they still have something; otherwise revoke role
@@ -274,6 +366,7 @@ export async function updateArbiterScopes(options: {
     email: authData.user?.email ?? null,
     playerName,
     kinds: access.kinds,
+    chiefKinds: access.chiefKinds,
     honor: access.honor,
   };
 }

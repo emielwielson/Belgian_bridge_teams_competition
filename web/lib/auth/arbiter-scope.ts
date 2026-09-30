@@ -12,6 +12,7 @@ import { ROLES } from "@/lib/auth/roles";
 export type ArbiterAccess = {
   kinds: CompetitionKindCode[];
   kindIds: string[];
+  chiefKinds: CompetitionKindCode[];
   honor: boolean;
   inbox: boolean;
 };
@@ -68,7 +69,13 @@ export async function getArbiterAccess(
   roles: string[],
 ): Promise<ArbiterAccess> {
   if (!roles.includes(ROLES.ARBITER)) {
-    return { kinds: [], kindIds: [], honor: false, inbox: false };
+    return {
+      kinds: [],
+      kindIds: [],
+      chiefKinds: [],
+      honor: false,
+      inbox: false,
+    };
   }
 
   const [{ data: kinds }, { data: scopes }, { data: honorRow }] =
@@ -76,7 +83,7 @@ export async function getArbiterAccess(
       supabase.from("competition_kinds").select("id, code").order("code"),
       supabase
         .from("arbiter_competition_scopes")
-        .select("competition_kind_id")
+        .select("competition_kind_id, is_chief")
         .eq("user_id", userId),
       supabase
         .from("arbiter_honor_access")
@@ -94,10 +101,15 @@ export async function getArbiterAccess(
   const kindCodes = kindIds
     .map((id) => kindById.get(id))
     .filter((c): c is CompetitionKindCode => Boolean(c));
+  const chiefCodes = (scopes ?? [])
+    .filter((s) => Boolean(s.is_chief))
+    .map((s) => kindById.get(s.competition_kind_id))
+    .filter((c): c is CompetitionKindCode => Boolean(c));
 
   return {
     kinds: orderArbiterInboxKinds(kindCodes),
     kindIds,
+    chiefKinds: orderArbiterInboxKinds(chiefCodes),
     honor: honorRow != null,
     inbox: kindCodes.length > 0,
   };

@@ -16,6 +16,7 @@ function access(
 ): ArbiterAccess {
   return {
     kindIds: [],
+    chiefKinds: [],
     inbox: partial.kinds.length > 0,
     ...partial,
   };

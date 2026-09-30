@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   canAccessArbiterRequestWorkflow,
+  assignArbiterRequest,
   cancelArbiterRequest,
   loadMatchArbiterRequestsForUser,
   normalizeArbiterRequestImagePaths,
@@ -224,6 +225,15 @@ describe("cancelArbiterRequest", () => {
     await cancelArbiterRequest({ rpc } as never, "req-1");
     expect(rpc).toHaveBeenCalledWith("arbiter_request_cancel", {
       p_request_id: "req-1",
+    });
+  });
+
+  it("calls arbiter_request_assign RPC", async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: null, error: null });
+    await assignArbiterRequest({ rpc } as never, "req-1", "arbiter-9");
+    expect(rpc).toHaveBeenCalledWith("arbiter_request_assign", {
+      p_request_id: "req-1",
+      p_arbiter_user_id: "arbiter-9",
     });
   });
 });

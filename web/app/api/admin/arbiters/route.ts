@@ -40,6 +40,7 @@ export async function POST(request: Request) {
       return jsonErrorCode(ErrorCodes.api.invalidRequestBody, 400);
     }
     const kinds = parseKindCodes(body.kinds);
+    const chiefKinds = parseKindCodes(body.chiefKinds);
     const honor = Boolean(body.honor);
     const service = createServiceClient();
     const arbiter = await createOrEnsureArbiter({
@@ -47,6 +48,7 @@ export async function POST(request: Request) {
       managed,
       email,
       kinds,
+      chiefKinds,
       honor,
     });
     return jsonOk({ arbiter });

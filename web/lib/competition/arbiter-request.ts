@@ -409,6 +409,18 @@ export async function cancelArbiterRequest(
   if (error) throw error;
 }
 
+export async function assignArbiterRequest(
+  supabase: SupabaseClient,
+  requestId: string,
+  arbiterUserId: string,
+): Promise<void> {
+  const { error } = await supabase.rpc("arbiter_request_assign", {
+    p_request_id: requestId,
+    p_arbiter_user_id: arbiterUserId,
+  });
+  if (error) throw error;
+}
+
 export type InboxMatchContext = {
   round: number;
   datetime: string;

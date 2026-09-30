@@ -1,4 +1,5 @@
 import {
+  buildArbiterRequestAssignedEmail,
   buildArbiterRequestCreatedEmail,
   buildArbiterRequestResolvedEmail,
   loadEmailTemplateContext,
@@ -11,10 +12,27 @@ export type ArbiterRequestCreatedEmailContext = {
   matchId: string;
 };
 
+export type ArbiterRequestAssignedEmailContext = {
+  requestId: string;
+  assignedArbiterId: string;
+};
+
 export type ArbiterRequestResolvedEmailContext = {
   requestId: string;
   rulingSignedUrl?: string | null;
 };
+
+async function emailsForUserIds(userIds: string[]): Promise<string[]> {
+  const supabase = createServiceClient();
+  const emails: string[] = [];
+  for (const userId of [...new Set(userIds)]) {
+    const { data, error } = await supabase.auth.admin.getUserById(userId);
+    if (!error && data.user?.email) {
+      emails.push(data.user.email);
+    }
+  }
+  return emails;
+}
 
 async function loadCaptainEmailsForMatch(matchId: string): Promise<string[]> {
   const supabase = createServiceClient();
@@ -60,18 +78,13 @@ async function loadCaptainEmailsForMatch(matchId: string): Promise<string[]> {
     if (playerEmail) emails.push(playerEmail);
   }
 
-  const seen = new Set<string>();
-  return emails.filter((e) => {
-    const key = e.trim().toLowerCase();
-    if (!key || seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+  return uniqueEmails(emails);
 }
 
-async function loadCompetitionManagerEmails(matchId: string): Promise<string[]> {
+async function loadMatchCompetitionKindId(
+  matchId: string,
+): Promise<string | null> {
   const supabase = createServiceClient();
-
   const { data: matchRow, error: matchError } = await supabase
     .from("matches")
     .select(
@@ -87,7 +100,12 @@ async function loadCompetitionManagerEmails(matchId: string): Promise<string[]> 
     | null
     | undefined;
   const group = Array.isArray(groups) ? groups[0] : groups;
-  const kindId = group?.divisions?.leagues?.competition_kind_id;
+  return group?.divisions?.leagues?.competition_kind_id ?? null;
+}
+
+async function loadCompetitionManagerEmails(matchId: string): Promise<string[]> {
+  const supabase = createServiceClient();
+  const kindId = await loadMatchCompetitionKindId(matchId);
   if (!kindId) return [];
 
   const { data: roleRows, error: roleError } = await supabase
@@ -120,15 +138,41 @@ async function loadCompetitionManagerEmails(matchId: string): Promise<string[]> 
     }
   }
 
-  const emails: string[] = [];
-  for (const userId of recipientIds) {
-    const { data, error } = await supabase.auth.admin.getUserById(userId);
-    if (!error && data.user?.email) {
-      emails.push(data.user.email);
-    }
-  }
+  return uniqueEmails(await emailsForUserIds(recipientIds));
+}
 
-  return emails;
+async function loadChiefArbiterEmails(matchId: string): Promise<string[]> {
+  const supabase = createServiceClient();
+  const kindId = await loadMatchCompetitionKindId(matchId);
+  if (!kindId) return [];
+
+  const { data: scopeRows, error: scopeError } = await supabase
+    .from("arbiter_competition_scopes")
+    .select("user_id")
+    .eq("competition_kind_id", kindId)
+    .eq("is_chief", true);
+  if (scopeError) throw scopeError;
+
+  const userIds = (scopeRows ?? []).map((r) => r.user_id);
+  if (userIds.length === 0) return [];
+
+  const { data: roleRows, error: roleError } = await supabase
+    .from("user_roles")
+    .select("user_id")
+    .eq("role", "arbiter")
+    .in("user_id", userIds);
+  if (roleError) throw roleError;
+
+  return uniqueEmails(
+    await emailsForUserIds((roleRows ?? []).map((r) => r.user_id)),
+  );
+}
+
+async function loadAssignedArbiterEmail(
+  assignedArbiterId: string | null | undefined,
+): Promise<string[]> {
+  if (!assignedArbiterId) return [];
+  return uniqueEmails(await emailsForUserIds([assignedArbiterId]));
 }
 
 function uniqueEmails(addresses: string[]): string[] {
@@ -143,63 +187,33 @@ function uniqueEmails(addresses: string[]): string[] {
   return out;
 }
 
-async function loadArbiterRequestCc(matchId: string): Promise<string[]> {
-  const [arbiterEmails, captainEmails, managerEmails] = await Promise.all([
-    loadArbiterEmails(matchId),
-    loadCaptainEmailsForMatch(matchId),
+/** Create: managers + chief only. */
+async function loadCreatedCc(matchId: string): Promise<string[]> {
+  const [managerEmails, chiefEmails] = await Promise.all([
     loadCompetitionManagerEmails(matchId),
+    loadChiefArbiterEmails(matchId),
   ]);
-  return uniqueEmails([...arbiterEmails, ...captainEmails, ...managerEmails]);
+  return uniqueEmails([...managerEmails, ...chiefEmails]);
 }
 
-async function loadArbiterEmails(matchId: string): Promise<string[]> {
-  const supabase = createServiceClient();
-
-  const { data: matchRow, error: matchError } = await supabase
-    .from("matches")
-    .select(
-      "id, groups!inner(divisions!inner(leagues!inner(competition_kind_id)))",
-    )
-    .eq("id", matchId)
-    .maybeSingle();
-  if (matchError) throw matchError;
-
-  const groups = matchRow?.groups as
-    | { divisions: { leagues: { competition_kind_id: string } } }
-    | { divisions: { leagues: { competition_kind_id: string } } }[]
-    | null
-    | undefined;
-  const group = Array.isArray(groups) ? groups[0] : groups;
-  const kindId = group?.divisions?.leagues?.competition_kind_id;
-  if (!kindId) return [];
-
-  const { data: roleRows, error: roleError } = await supabase
-    .from("user_roles")
-    .select("user_id")
-    .eq("role", "arbiter");
-  if (roleError) throw roleError;
-
-  const arbiterIds = (roleRows ?? []).map((r) => r.user_id);
-  if (arbiterIds.length === 0) return [];
-
-  const { data: scopeRows, error: scopeError } = await supabase
-    .from("arbiter_competition_scopes")
-    .select("user_id")
-    .eq("competition_kind_id", kindId)
-    .in("user_id", arbiterIds);
-  if (scopeError) throw scopeError;
-
-  const recipientIds = [...new Set((scopeRows ?? []).map((r) => r.user_id))];
-
-  const emails: string[] = [];
-  for (const userId of recipientIds) {
-    const { data, error } = await supabase.auth.admin.getUserById(userId);
-    if (!error && data.user?.email) {
-      emails.push(data.user.email);
-    }
-  }
-
-  return uniqueEmails(emails);
+/** Resolve: managers + chief + assigned + captains. */
+async function loadResolvedCc(
+  matchId: string,
+  assignedArbiterId: string | null,
+): Promise<string[]> {
+  const [managerEmails, chiefEmails, assignedEmails, captainEmails] =
+    await Promise.all([
+      loadCompetitionManagerEmails(matchId),
+      loadChiefArbiterEmails(matchId),
+      loadAssignedArbiterEmail(assignedArbiterId),
+      loadCaptainEmailsForMatch(matchId),
+    ]);
+  return uniqueEmails([
+    ...managerEmails,
+    ...chiefEmails,
+    ...assignedEmails,
+    ...captainEmails,
+  ]);
 }
 
 async function loadMatchSummary(
@@ -245,7 +259,7 @@ export async function sendArbiterRequestCreatedEmail(
   ctx: ArbiterRequestCreatedEmailContext,
   locale?: string | null,
 ): Promise<void> {
-  const cc = await loadArbiterRequestCc(ctx.matchId);
+  const cc = await loadCreatedCc(ctx.matchId);
   if (cc.length === 0) return;
 
   const emailContext = await loadEmailTemplateContext(locale);
@@ -292,11 +306,12 @@ async function loadArbiterRequestSummary(
   homeTeamName: string;
   awayTeamName: string;
   description: string | null;
+  assignedArbiterId: string | null;
 } | null> {
   const supabase = createServiceClient();
   const { data: row, error } = await supabase
     .from("arbiter_requests")
-    .select("match_id, description")
+    .select("match_id, description, assigned_arbiter_id")
     .eq("id", requestId)
     .maybeSingle();
   if (error || !row) return null;
@@ -310,7 +325,53 @@ async function loadArbiterRequestSummary(
     homeTeamName: match.homeTeamName,
     awayTeamName: match.awayTeamName,
     description: row.description?.trim() ? row.description : null,
+    assignedArbiterId: row.assigned_arbiter_id ?? null,
   };
+}
+
+export async function sendArbiterRequestAssignedEmail(
+  ctx: ArbiterRequestAssignedEmailContext,
+  locale?: string | null,
+): Promise<void> {
+  const summary = await loadArbiterRequestSummary(ctx.requestId, locale);
+  if (!summary) return;
+
+  const cc = await loadAssignedArbiterEmail(ctx.assignedArbiterId);
+  if (cc.length === 0) return;
+
+  const emailContext = await loadEmailTemplateContext(locale);
+  const baseUrl = getAppBaseUrl();
+  const matchUrl = `${baseUrl}/matches/${summary.matchId}`;
+  const loginUrl = loginThenMatchUrl(summary.matchId);
+  const inboxUrl = `${baseUrl}/arbiter`;
+
+  const { subject, bodyText, bodyHtml } = buildArbiterRequestAssignedEmail(
+    {
+      round: summary.round,
+      homeTeamName: summary.homeTeamName,
+      awayTeamName: summary.awayTeamName,
+      matchUrl,
+      loginUrl,
+      inboxUrl,
+    },
+    emailContext,
+  );
+
+  await sendMakeWebhook(
+    {
+      subject,
+      body_text: bodyText,
+      body_html: bodyHtml,
+      cc,
+      match_id: summary.matchId,
+      match_url: matchUrl,
+      login_url: loginUrl,
+      arbiter_inbox_url: inboxUrl,
+      request_id: ctx.requestId,
+      assigned_arbiter_id: ctx.assignedArbiterId,
+    },
+    { eventType: "arbiter_request_assigned" },
+  );
 }
 
 export async function sendArbiterRequestResolvedEmail(
@@ -321,7 +382,7 @@ export async function sendArbiterRequestResolvedEmail(
   if (!summary) return;
 
   const [cc, emailContext] = await Promise.all([
-    loadArbiterRequestCc(summary.matchId),
+    loadResolvedCc(summary.matchId, summary.assignedArbiterId),
     loadEmailTemplateContext(locale),
   ]);
   if (cc.length === 0) return;

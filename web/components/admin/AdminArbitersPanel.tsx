@@ -9,6 +9,7 @@ type ArbiterRow = {
   email: string | null;
   playerName: string | null;
   kinds: CompetitionKindCode[];
+  chiefKinds: CompetitionKindCode[];
   honor: boolean;
 };
 
@@ -28,6 +29,9 @@ export function AdminArbitersPanel() {
   const [message, setMessage] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [createKinds, setCreateKinds] = useState<CompetitionKindCode[]>([]);
+  const [createChiefKinds, setCreateChiefKinds] = useState<
+    CompetitionKindCode[]
+  >([]);
   const [createHonor, setCreateHonor] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -36,7 +40,14 @@ export function AdminArbitersPanel() {
     const res = await fetch("/api/admin/arbiters");
     if (res.ok) {
       const body = await res.json();
-      setArbiters(body.arbiters ?? []);
+      setArbiters(
+        (body.arbiters ?? []).map(
+          (row: ArbiterRow): ArbiterRow => ({
+            ...row,
+            chiefKinds: Array.isArray(row.chiefKinds) ? row.chiefKinds : [],
+          }),
+        ),
+      );
       setManagedKinds(body.managedKinds ?? []);
       setCanGrantHonor(Boolean(body.canGrantHonor));
       setCreateKinds((prev) =>
@@ -63,6 +74,17 @@ export function AdminArbitersPanel() {
       : [...list, code];
   }
 
+  function toggleChief(
+    list: CompetitionKindCode[],
+    code: CompetitionKindCode,
+    scoped: CompetitionKindCode[],
+  ): CompetitionKindCode[] {
+    if (!scoped.includes(code)) return list.filter((k) => k !== code);
+    return list.includes(code)
+      ? list.filter((k) => k !== code)
+      : [...list, code];
+  }
+
   async function createArbiter() {
     setSaving(true);
     setMessage(null);
@@ -72,6 +94,7 @@ export function AdminArbitersPanel() {
       body: JSON.stringify({
         email,
         kinds: createKinds,
+        chiefKinds: createChiefKinds.filter((c) => createKinds.includes(c)),
         honor: createHonor,
       }),
     });
@@ -83,6 +106,7 @@ export function AdminArbitersPanel() {
     }
     setEmail("");
     setCreateHonor(false);
+    setCreateChiefKinds([]);
     setMessage(t("arbitersPage.created"));
     setSaving(false);
     await load();
@@ -94,7 +118,11 @@ export function AdminArbitersPanel() {
     const res = await fetch(`/api/admin/arbiters/${row.userId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ kinds: row.kinds, honor: row.honor }),
+      body: JSON.stringify({
+        kinds: row.kinds,
+        chiefKinds: row.chiefKinds.filter((c) => row.kinds.includes(c)),
+        honor: row.honor,
+      }),
     });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) {
@@ -127,10 +155,19 @@ export function AdminArbitersPanel() {
 
   function updateLocal(
     userId: string,
-    patch: Partial<Pick<ArbiterRow, "kinds" | "honor">>,
+    patch: Partial<Pick<ArbiterRow, "kinds" | "chiefKinds" | "honor">>,
   ) {
     setArbiters((rows) =>
-      rows.map((r) => (r.userId === userId ? { ...r, ...patch } : r)),
+      rows.map((r) => {
+        if (r.userId !== userId) return r;
+        const next = { ...r, ...patch };
+        if (patch.kinds) {
+          next.chiefKinds = next.chiefKinds.filter((c) =>
+            next.kinds.includes(c),
+          );
+        }
+        return next;
+      }),
     );
   }
 
@@ -168,9 +205,15 @@ export function AdminArbitersPanel() {
               <input
                 type="checkbox"
                 checked={createKinds.includes(code)}
-                onChange={() =>
-                  setCreateKinds((prev) => toggleKind(prev, code))
-                }
+                onChange={() => {
+                  setCreateKinds((prev) => {
+                    const next = toggleKind(prev, code);
+                    setCreateChiefKinds((chiefs) =>
+                      chiefs.filter((c) => next.includes(c)),
+                    );
+                    return next;
+                  });
+                }}
               />
               {kindLabel(code)}
             </label>
@@ -185,6 +228,34 @@ export function AdminArbitersPanel() {
               {t("arbitersPage.honor")}
             </label>
           ) : null}
+        </fieldset>
+        <fieldset className="flex flex-wrap gap-4 text-sm">
+          <legend className="mb-1 w-full text-zinc-600">
+            {t("arbitersPage.chiefScopes")}
+          </legend>
+          <p className="w-full text-xs text-zinc-500">
+            {t("arbitersPage.chiefHint")}
+          </p>
+          {KIND_OPTIONS.filter((k) => managedKinds.includes(k)).map((code) => (
+            <label
+              key={`chief-create-${code}`}
+              className={`flex items-center gap-2 ${
+                createKinds.includes(code) ? "" : "opacity-50"
+              }`}
+            >
+              <input
+                type="checkbox"
+                disabled={!createKinds.includes(code) || saving}
+                checked={createChiefKinds.includes(code)}
+                onChange={() =>
+                  setCreateChiefKinds((prev) =>
+                    toggleChief(prev, code, createKinds),
+                  )
+                }
+              />
+              {kindLabel(code)}
+            </label>
+          ))}
         </fieldset>
         <button
           type="button"
@@ -218,8 +289,18 @@ export function AdminArbitersPanel() {
                       {t("arbitersPage.linkedPlayer", { name: row.playerName })}
                     </p>
                   ) : null}
+                  {row.chiefKinds.length > 0 ? (
+                    <p className="text-sm text-zinc-600">
+                      {t("arbitersPage.chiefBadge", {
+                        kinds: row.chiefKinds.map(kindLabel).join(", "),
+                      })}
+                    </p>
+                  ) : null}
                 </div>
                 <fieldset className="flex flex-wrap gap-4 text-sm">
+                  <legend className="mb-1 w-full text-zinc-600">
+                    {t("arbitersPage.scopes")}
+                  </legend>
                   {KIND_OPTIONS.map((code) => {
                     const editable = managedKinds.includes(code);
                     return (
@@ -258,6 +339,39 @@ export function AdminArbitersPanel() {
                     />
                     {t("arbitersPage.honor")}
                   </label>
+                </fieldset>
+                <fieldset className="flex flex-wrap gap-4 text-sm">
+                  <legend className="mb-1 w-full text-zinc-600">
+                    {t("arbitersPage.chiefScopes")}
+                  </legend>
+                  {KIND_OPTIONS.map((code) => {
+                    const editable =
+                      managedKinds.includes(code) && row.kinds.includes(code);
+                    return (
+                      <label
+                        key={`chief-${row.userId}-${code}`}
+                        className={`flex items-center gap-2 ${
+                          editable ? "" : "opacity-50"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          disabled={!editable || saving}
+                          checked={row.chiefKinds.includes(code)}
+                          onChange={() =>
+                            updateLocal(row.userId, {
+                              chiefKinds: toggleChief(
+                                row.chiefKinds,
+                                code,
+                                row.kinds,
+                              ),
+                            })
+                          }
+                        />
+                        {kindLabel(code)}
+                      </label>
+                    );
+                  })}
                 </fieldset>
                 <div className="flex flex-wrap gap-2">
                   <button

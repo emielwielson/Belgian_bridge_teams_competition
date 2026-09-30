@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseKindCodes } from "@/lib/admin/arbiters";
+import { parseChiefKindCodes, parseKindCodes } from "@/lib/admin/arbiters";
 import {
   filterKindCodesToManaged,
   managerCanGrantHonor,
@@ -40,5 +40,16 @@ describe("parseKindCodes", () => {
       parseKindCodes(["flanders", "nope", "national", "zweiffel", "flanders"]),
     ).toEqual(["flanders", "national", "zweiffel"]);
     expect(parseKindCodes(null)).toEqual([]);
+  });
+});
+
+describe("parseChiefKindCodes", () => {
+  it("keeps only chief kinds that are also scoped", () => {
+    expect(
+      parseChiefKindCodes(["national", "flanders", "wallonia"], ["flanders"]),
+    ).toEqual(["flanders"]);
+    expect(parseChiefKindCodes(["national"], ["flanders", "wallonia"])).toEqual(
+      [],
+    );
   });
 });

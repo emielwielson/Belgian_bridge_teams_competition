@@ -17,7 +17,10 @@ describe("sendMakeWebhook", () => {
 
   it("returns false when webhook URL is unset", async () => {
     delete process.env.MAKE_WEBHOOK_URL;
-    const ok = await sendMakeWebhook({ foo: "bar" }, { eventType: "test" });
+    const ok = await sendMakeWebhook(
+      { foo: "bar" },
+      { eventType: "arbiter_request_created" },
+    );
     expect(ok).toBe(false);
   });
 
@@ -30,7 +33,7 @@ describe("sendMakeWebhook", () => {
 
     const promise = sendMakeWebhook(
       { subject: "Hi" },
-      { eventType: "test_event", baseDelayMs: 10 },
+      { eventType: "arbiter_request_assigned", baseDelayMs: 10 },
     );
 
     await vi.runAllTimersAsync();
@@ -39,7 +42,7 @@ describe("sendMakeWebhook", () => {
     expect(ok).toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(2);
     const body = JSON.parse(String(fetchMock.mock.calls[1][1]?.body));
-    expect(body.type).toBe("test_event");
+    expect(body.type).toBe("arbiter_request_assigned");
     expect(body.subject).toBe("Hi");
   });
 });

@@ -38,6 +38,11 @@ type InboxAttachment = {
   sort_order: number;
 };
 
+type AssignableArbiter = {
+  userId: string;
+  email: string | null;
+};
+
 type InboxRequest = {
   id: string;
   match_id: string;
@@ -45,6 +50,8 @@ type InboxRequest = {
   status: string;
   created_at: string;
   attachments: InboxAttachment[];
+  assigned_arbiter_id: string | null;
+  assigned_arbiter_email: string | null;
   match: InboxMatchContext | null;
 };
 
@@ -106,6 +113,11 @@ export function ArbiterInbox({
   const locale = useLocale() as Locale;
   const intlLocale = toIntlLocale(locale);
   const [requests, setRequests] = useState<InboxRequest[]>([]);
+  const [canAssign, setCanAssign] = useState(false);
+  const [assignableArbiters, setAssignableArbiters] = useState<
+    AssignableArbiter[]
+  >([]);
+  const [assignDrafts, setAssignDrafts] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -126,13 +138,17 @@ export function ArbiterInbox({
       setLoading(false);
       return;
     }
+    setCanAssign(Boolean(body.canAssign));
+    setAssignableArbiters(
+      Array.isArray(body.assignableArbiters) ? body.assignableArbiters : [],
+    );
     setRequests(
-      (body.requests ?? []).map(
-        (r: InboxRequest) => ({
-          ...r,
-          attachments: Array.isArray(r.attachments) ? r.attachments : [],
-        }),
-      ),
+      (body.requests ?? []).map((r: InboxRequest) => ({
+        ...r,
+        attachments: Array.isArray(r.attachments) ? r.attachments : [],
+        assigned_arbiter_id: r.assigned_arbiter_id ?? null,
+        assigned_arbiter_email: r.assigned_arbiter_email ?? null,
+      })),
     );
     setLoading(false);
   }, [kind, t]);
@@ -320,6 +336,36 @@ export function ArbiterInbox({
     }
   }
 
+  async function assign(request: InboxRequest) {
+    const arbiterUserId =
+      assignDrafts[request.id] || request.assigned_arbiter_id || "";
+    if (!arbiterUserId) {
+      setMessage(t("assignFailed"));
+      return;
+    }
+
+    setBusyId(request.id);
+    setMessage(null);
+
+    try {
+      const res = await fetch(`/api/arbiter/requests/${request.id}/assign`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ arbiter_user_id: arbiterUserId }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        throw new Error(body.error ?? t("assignFailed"));
+      }
+      await load();
+      setMessage(t("assignedSuccess"));
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : t("assignFailed"));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   return (
     <div>
       {message ? <p className="mb-4 text-sm text-zinc-700">{message}</p> : null}
@@ -382,6 +428,11 @@ export function ArbiterInbox({
                         {t("noAttachment")}
                       </p>
                     )}
+                    <p className="mt-2 text-sm text-zinc-700">
+                      {r.assigned_arbiter_email
+                        ? t("assignedTo", { email: r.assigned_arbiter_email })
+                        : t("unassigned")}
+                    </p>
                     <p className="mt-2">
                       <Link
                         href={`/matches/${r.match_id}`}
@@ -391,6 +442,60 @@ export function ArbiterInbox({
                       </Link>
                     </p>
                   </div>
+
+                  {canAssign ? (
+                    <div className="rounded-lg border border-zinc-200 bg-white p-3">
+                      <p className="text-sm font-medium text-zinc-900">
+                        {t("assignTitle")}
+                      </p>
+                      <p className="mt-1 text-xs text-zinc-600">
+                        {t("assignHint")}
+                      </p>
+                      <div className="mt-3 flex flex-wrap items-end gap-2">
+                        <label className="flex min-w-[14rem] flex-1 flex-col gap-1 text-sm">
+                          <span className="text-zinc-600">
+                            {t("assignSelect")}
+                          </span>
+                          <select
+                            className="rounded border border-zinc-300 px-3 py-2"
+                            value={
+                              assignDrafts[r.id] ??
+                              r.assigned_arbiter_id ??
+                              ""
+                            }
+                            onChange={(e) =>
+                              setAssignDrafts((prev) => ({
+                                ...prev,
+                                [r.id]: e.target.value,
+                              }))
+                            }
+                            disabled={busyId === r.id}
+                          >
+                            <option value="">{t("assignSelect")}</option>
+                            {assignableArbiters.map((arb) => (
+                              <option key={arb.userId} value={arb.userId}>
+                                {arb.email ?? arb.userId}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <button
+                          type="button"
+                          className="btn-secondary text-sm"
+                          disabled={
+                            busyId === r.id ||
+                            !(
+                              assignDrafts[r.id] ||
+                              r.assigned_arbiter_id
+                            )
+                          }
+                          onClick={() => void assign(r)}
+                        >
+                          {busyId === r.id ? t("assigning") : t("assignButton")}
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
 
                   <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
                     <p className="text-sm font-medium text-zinc-900">

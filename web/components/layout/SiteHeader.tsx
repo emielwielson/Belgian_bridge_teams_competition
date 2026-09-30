@@ -17,6 +17,7 @@ type MeResponse = {
   linkedPlayers?: LinkedPlayer[];
   arbiterAccess?: {
     kinds: string[];
+    chiefKinds?: string[];
     honor: boolean;
     inbox: boolean;
   };
@@ -73,6 +74,12 @@ export function SiteHeader() {
                 | "zweiffel"
               )[],
               kindIds: [],
+              chiefKinds: (me.arbiterAccess.chiefKinds ?? []) as (
+                | "national"
+                | "flanders"
+                | "wallonia"
+                | "zweiffel"
+              )[],
               honor: me.arbiterAccess.honor,
               inbox: me.arbiterAccess.inbox,
             }
