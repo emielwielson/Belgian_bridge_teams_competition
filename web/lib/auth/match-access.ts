@@ -1,16 +1,32 @@
 import {
   filterMatchIdsByManagedKinds,
   userManagesMatch,
+  userManagesTeam,
 } from "@/lib/auth/competition-scope";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getActivePlayerId } from "@/lib/auth/active-player";
-import { userIsArbiterForMatch } from "@/lib/auth/arbiter-scope";
+import {
+  userIsArbiterForMatch,
+  userIsArbiterForTeam,
+} from "@/lib/auth/arbiter-scope";
 import { AuthError } from "./auth-error";
 import { COMPETITION_ADMIN_ROLES } from "./roles";
-import { FINISHED_SCORE_EDIT_ROLES, hasAnyRole, ROLES } from "./roles";
+import {
+  ARBITER_ACCESS_ROLES,
+  FINISHED_SCORE_EDIT_ROLES,
+  hasAnyRole,
+  ROLES,
+} from "./roles";
 import { loadGroupScoringContext } from "@/lib/competition/match-scoring-context";
 import { isHonorDivision } from "@/lib/scoring/board-count-rules";
 import { resolveUserTeamIds } from "@/lib/competition/player-matches";
+
+function isPureArbiter(roles: string[]): boolean {
+  return (
+    roles.includes(ROLES.ARBITER) &&
+    !hasAnyRole(roles, [...COMPETITION_ADMIN_ROLES])
+  );
+}
 
 export type MatchTeamPair = {
   id: string;
@@ -213,7 +229,7 @@ export async function assertCanEditFinishedScoreForMatch(
   matchId: string,
 ): Promise<void> {
   assertCanEditFinishedScore(roles);
-  if (roles.includes(ROLES.ARBITER) && !hasAnyRole(roles, [...COMPETITION_ADMIN_ROLES])) {
+  if (isPureArbiter(roles)) {
     if (!(await userIsArbiterForMatch(supabase, matchId))) {
       throw new AuthError(
         "Forbidden: only arbiters or competition managers can edit official scores",
@@ -225,6 +241,60 @@ export async function assertCanEditFinishedScoreForMatch(
   if (!(await userManagesMatch(supabase, matchId))) {
     throw new AuthError(
       "Forbidden: only arbiters or competition managers can edit official scores",
+      403,
+    );
+  }
+}
+
+/** UI gate: whether the viewer may edit a finished score on this match. */
+export async function canEditFinishedScoreForMatch(
+  supabase: SupabaseClient,
+  roles: string[],
+  matchId: string,
+): Promise<boolean> {
+  if (!hasAnyRole(roles, [...FINISHED_SCORE_EDIT_ROLES])) return false;
+  if (isPureArbiter(roles)) {
+    return userIsArbiterForMatch(supabase, matchId);
+  }
+  return userManagesMatch(supabase, matchId);
+}
+
+/** UI gate: whether the viewer may add a penalty on this match. */
+export async function canAddPenaltyForMatch(
+  supabase: SupabaseClient,
+  roles: string[],
+  matchId: string,
+): Promise<boolean> {
+  if (!hasAnyRole(roles, [...ARBITER_ACCESS_ROLES])) return false;
+  if (isPureArbiter(roles)) {
+    return userIsArbiterForMatch(supabase, matchId);
+  }
+  return userManagesMatch(supabase, matchId);
+}
+
+export async function assertCanDisciplineTeam(
+  supabase: SupabaseClient,
+  roles: string[],
+  teamId: string,
+): Promise<void> {
+  if (!hasAnyRole(roles, [...ARBITER_ACCESS_ROLES])) {
+    throw new AuthError(
+      "Forbidden: only arbiters or competition managers can manage discipline",
+      403,
+    );
+  }
+  if (isPureArbiter(roles)) {
+    if (!(await userIsArbiterForTeam(supabase, teamId))) {
+      throw new AuthError(
+        "Forbidden: only arbiters or competition managers can manage discipline",
+        403,
+      );
+    }
+    return;
+  }
+  if (!(await userManagesTeam(supabase, teamId))) {
+    throw new AuthError(
+      "Forbidden: only arbiters or competition managers can manage discipline",
       403,
     );
   }

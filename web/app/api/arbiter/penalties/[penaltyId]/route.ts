@@ -1,5 +1,6 @@
 import { ARBITER_ACCESS_ROLES } from "@/lib/auth/roles";
 import { requireRoles } from "@/lib/auth/route-auth";
+import { assertCanDisciplineTeam } from "@/lib/auth/match-access";
 import { revalidateStandingsForTeam } from "@/lib/competition/revalidate-standings";
 import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
 import { ErrorCodes } from "@/lib/http/error-codes";
@@ -9,8 +10,19 @@ type Params = { params: Promise<{ penaltyId: string }> };
 export async function PATCH(request: Request, { params }: Params) {
   try {
     const { penaltyId } = await params;
-    const { user, supabase } = await requireRoles([...ARBITER_ACCESS_ROLES]);
+    const { user, roles, supabase } = await requireRoles([...ARBITER_ACCESS_ROLES]);
     const body = await request.json();
+
+    const { data: existing, error: loadError } = await supabase
+      .from("penalties")
+      .select("team_id")
+      .eq("id", penaltyId)
+      .maybeSingle();
+
+    if (loadError) return jsonError(loadError.message, 500);
+    if (!existing) return jsonErrorCode(ErrorCodes.api.penaltyNotFound, 404);
+
+    await assertCanDisciplineTeam(supabase, roles, existing.team_id);
 
     const updates: Record<string, unknown> = {
       updated_by: user.id,
@@ -26,7 +38,13 @@ export async function PATCH(request: Request, { params }: Params) {
       }
       updates.vp_deduction = vp;
     }
-    if (body.team_id != null) updates.team_id = body.team_id;
+    if (body.team_id != null) {
+      const newTeamId = String(body.team_id);
+      if (newTeamId !== existing.team_id) {
+        await assertCanDisciplineTeam(supabase, roles, newTeamId);
+      }
+      updates.team_id = newTeamId;
+    }
     if (body.file_path != null || body.filePath != null) {
       const raw = body.file_path ?? body.filePath;
       updates.file_path =
@@ -56,7 +74,7 @@ export async function PATCH(request: Request, { params }: Params) {
 export async function DELETE(_request: Request, { params }: Params) {
   try {
     const { penaltyId } = await params;
-    const { supabase } = await requireRoles([...ARBITER_ACCESS_ROLES]);
+    const { roles, supabase } = await requireRoles([...ARBITER_ACCESS_ROLES]);
 
     const { data: existing, error: loadError } = await supabase
       .from("penalties")
@@ -66,6 +84,8 @@ export async function DELETE(_request: Request, { params }: Params) {
 
     if (loadError) return jsonError(loadError.message, 500);
     if (!existing) return jsonErrorCode(ErrorCodes.api.penaltyNotFound, 404);
+
+    await assertCanDisciplineTeam(supabase, roles, existing.team_id);
 
     const { error } = await supabase
       .from("penalties")

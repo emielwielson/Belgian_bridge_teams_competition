@@ -304,3 +304,15 @@ export async function userIsArbiterForMatch(
   if (error) throw error;
   return Boolean(data);
 }
+
+export async function userIsArbiterForTeam(
+  supabase: SupabaseClient,
+  teamId: string,
+): Promise<boolean> {
+  const { data, error } = await supabase.rpc(
+    "current_user_is_arbiter_for_team",
+    { p_team_id: teamId },
+  );
+  if (error) throw error;
+  return Boolean(data);
+}

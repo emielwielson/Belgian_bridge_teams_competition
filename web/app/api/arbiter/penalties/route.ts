@@ -1,5 +1,6 @@
 import { ARBITER_ACCESS_ROLES } from "@/lib/auth/roles";
 import { requireRoles } from "@/lib/auth/route-auth";
+import { assertCanDisciplineTeam } from "@/lib/auth/match-access";
 import {
   activeSeasonTeamIds,
   parsePenaltyInput,
@@ -70,10 +71,12 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const { user, supabase } = await requireRoles([...ARBITER_ACCESS_ROLES]);
+    const { user, roles, supabase } = await requireRoles([...ARBITER_ACCESS_ROLES]);
     const body = await request.json();
     const parsed = parsePenaltyInput(body);
     if ("error" in parsed) return jsonErrorCode(parsed.error, 400);
+
+    await assertCanDisciplineTeam(supabase, roles, parsed.teamId);
 
     const { data, error } = await supabase
       .from("penalties")

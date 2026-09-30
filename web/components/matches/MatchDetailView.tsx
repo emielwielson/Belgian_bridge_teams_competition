@@ -7,6 +7,8 @@ import { HonorMatchLineupEditor } from "@/components/player/HonorMatchLineupEdit
 import { MatchLineupEditor } from "@/components/player/MatchLineupEditor";
 import { MatchScoreForm } from "@/components/player/MatchScoreForm";
 import {
+  canAddPenaltyForMatch,
+  canEditFinishedScoreForMatch,
   canEditLineupForTeam,
   canSubmitScore,
   canViewMatchOps,
@@ -14,7 +16,7 @@ import {
 } from "@/lib/auth/match-access";
 import { getArbiterAccess, hasArbiterHonorAccess } from "@/lib/auth/arbiter-scope";
 import { COMPETITION_ADMIN_ROLES } from "@/lib/auth/roles";
-import { ARBITER_ACCESS_ROLES, FINISHED_SCORE_EDIT_ROLES, hasAnyRole } from "@/lib/auth/roles";
+import { hasAnyRole } from "@/lib/auth/roles";
 import {
   canAccessPostponementWorkflow,
   getMatchPostponementState,
@@ -103,12 +105,12 @@ export async function MatchDetailView({
   const isAdmin = userId
     ? hasAnyRole(roles, [...COMPETITION_ADMIN_ROLES])
     : false;
-  const canEditFinishedScore = userId
-    ? hasAnyRole(roles, [...FINISHED_SCORE_EDIT_ROLES])
-    : false;
-  const canAddPenalty = userId
-    ? hasAnyRole(roles, [...ARBITER_ACCESS_ROLES])
-    : false;
+  const [canEditFinishedScore, canAddPenalty] = userId
+    ? await Promise.all([
+        canEditFinishedScoreForMatch(supabase, roles, matchId),
+        canAddPenaltyForMatch(supabase, roles, matchId),
+      ])
+    : [false, false];
   const [canEditHome, canEditAway] =
     userId && canOps
       ? await Promise.all([

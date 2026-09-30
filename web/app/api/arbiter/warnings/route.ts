@@ -1,5 +1,6 @@
 import { ARBITER_ACCESS_ROLES } from "@/lib/auth/roles";
 import { requireRoles } from "@/lib/auth/route-auth";
+import { assertCanDisciplineTeam } from "@/lib/auth/match-access";
 import {
   activeSeasonTeamIds,
   teamIdsForGroupFilter,
@@ -47,7 +48,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const { user, supabase } = await requireRoles([...ARBITER_ACCESS_ROLES]);
+    const { user, roles, supabase } = await requireRoles([...ARBITER_ACCESS_ROLES]);
     const body = await request.json();
     const parsed = parseWarningInput(body);
     if ("error" in parsed) return jsonErrorCode(parsed.error, 400);
@@ -56,6 +57,8 @@ export async function POST(request: Request) {
     if (!seasonTeams.has(parsed.teamId)) {
       return jsonErrorCode(ErrorCodes.api.teamNotActiveSeason, 400);
     }
+
+    await assertCanDisciplineTeam(supabase, roles, parsed.teamId);
 
     const { data, error } = await supabase
       .from("warnings")

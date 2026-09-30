@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { requireAuth } from "@/lib/auth/route-auth";
+import { assertCanDisciplineTeam } from "@/lib/auth/match-access";
 import { ARBITER_ACCESS_ROLES, hasAnyRole } from "@/lib/auth/roles";
 import {
   buildOperationalStoragePath,
@@ -28,9 +29,6 @@ async function assertCanUploadForPurpose(
   }
 
   if (purpose === "penalty") {
-    if (!hasAnyRole(roles, [...ARBITER_ACCESS_ROLES])) {
-      throw new Error("Forbidden");
-    }
     const teamId = matchId;
     const { data: team, error: teamError } = await supabase
       .from("teams")
@@ -39,6 +37,7 @@ async function assertCanUploadForPurpose(
       .maybeSingle();
     if (teamError) throw teamError;
     if (!team) throw new Error("Team not found");
+    await assertCanDisciplineTeam(supabase, roles, teamId);
     return;
   }
 
