@@ -16,6 +16,13 @@ export type TeamRosterPlayer = {
   matches_played: number;
 };
 
+export type TeamSubstituteAppearance = {
+  id: string;
+  name: string;
+  member_number: string | null;
+  matches_played: number;
+};
+
 export type TeamCaptain = TeamRosterPlayer & {
   email?: string | null;
   phone?: string | null;
@@ -52,6 +59,7 @@ export type TeamDetail = {
   division: { id: string; name: string };
   league: { id: string; name: string };
   roster: TeamRosterPlayer[];
+  substitutes: TeamSubstituteAppearance[];
   matches: TeamMatchRow[];
 };
 
@@ -107,6 +115,63 @@ export async function loadTeamPlayerMatchesPlayed(
     counts.set(row.player_id, (counts.get(row.player_id) ?? 0) + 1);
   }
   return counts;
+}
+
+/** Substitute appearances in played matches for this team. */
+export async function loadTeamSubstituteAppearances(
+  supabase: SupabaseClient,
+  teamId: string,
+  playedMatchIds: readonly string[],
+): Promise<TeamSubstituteAppearance[]> {
+  if (playedMatchIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from("match_players")
+    .select("player_id, player:players(id, name, member_number)")
+    .eq("team_id", teamId)
+    .eq("is_substitute", true)
+    .in("match_id", [...playedMatchIds]);
+
+  if (error) throw error;
+
+  const byPlayer = new Map<
+    string,
+    { name: string; member_number: string | null; matches_played: number }
+  >();
+
+  for (const row of data ?? []) {
+    const player = unwrapOne<{
+      id: string;
+      name: string;
+      member_number: string | null;
+    }>(row.player);
+    if (!player) continue;
+
+    const existing = byPlayer.get(player.id);
+    if (existing) {
+      existing.matches_played += 1;
+    } else {
+      byPlayer.set(player.id, {
+        name: player.name,
+        member_number: player.member_number,
+        matches_played: 1,
+      });
+    }
+  }
+
+  return [...byPlayer.entries()]
+    .map(([id, entry]) => ({
+      id,
+      name: entry.name,
+      member_number: entry.member_number,
+      matches_played: entry.matches_played,
+    }))
+    .sort((a, b) => {
+      if (b.matches_played !== a.matches_played) {
+        return b.matches_played - a.matches_played;
+      }
+      return a.name.localeCompare(b.name);
+    });
 }
 
 export function withMatchesPlayed(
@@ -292,11 +357,10 @@ export async function loadTeamDetail(
   const playedMatchIds = rawMatches
     .filter((m) => m.played_at != null)
     .map((m) => m.id);
-  const matchesPlayedByPlayer = await loadTeamPlayerMatchesPlayed(
-    supabase,
-    teamId,
-    playedMatchIds,
-  );
+  const [matchesPlayedByPlayer, substitutes] = await Promise.all([
+    loadTeamPlayerMatchesPlayed(supabase, teamId, playedMatchIds),
+    loadTeamSubstituteAppearances(supabase, teamId, playedMatchIds),
+  ]);
   const roster = withMatchesPlayed(rosterPlayers, matchesPlayedByPlayer);
 
   const locationOverride =
@@ -340,6 +404,7 @@ export async function loadTeamDetail(
     division: { id: division.id, name: division.name },
     league,
     roster,
+    substitutes,
     matches,
   };
 }

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
-import type { TeamRosterPlayer } from "@/lib/competition/team-queries";
+import type { TeamRosterPlayer, TeamSubstituteAppearance } from "@/lib/competition/team-queries";
 import type { RosterPlayer, TeamRosterState } from "@/lib/competition/team-roster";
 import { useTranslateApiError } from "@/lib/i18n/translate-api-error";
 
@@ -12,6 +12,7 @@ type Props = {
   teamId: string;
   captainId: string | null;
   initialRoster: TeamRosterPlayer[];
+  substitutes: TeamSubstituteAppearance[];
   initialAvailablePlayers?: RosterPlayer[];
   canManageRoster: boolean;
   canLinkToPlayers: boolean;
@@ -30,6 +31,7 @@ export function TeamRosterSection({
   teamId,
   captainId,
   initialRoster,
+  substitutes,
   initialAvailablePlayers,
   canManageRoster,
   canLinkToPlayers,
@@ -201,6 +203,45 @@ export function TeamRosterSection({
           ))}
         </ul>
       )}
+
+      <div className="mt-4 border-t border-zinc-100 pt-4">
+        <h3 className="text-sm font-medium text-zinc-900">
+          {t("substitutesTitle")}
+        </h3>
+        {substitutes.length === 0 ? (
+          <p className="mt-2 text-sm text-zinc-500">{t("noSubstitutesPlayed")}</p>
+        ) : (
+          <ul className="mt-3 flex flex-col gap-2">
+            {substitutes.map((player) => (
+              <li
+                key={player.id}
+                className="flex flex-wrap items-baseline justify-between gap-2 rounded-md border border-zinc-100 px-3 py-2 text-sm"
+              >
+                <span className="font-medium text-zinc-900">
+                  {canLinkToPlayers ? (
+                    <Link
+                      href={`/players/${player.id}?from=/teams/${teamId}`}
+                      className="hover:text-emerald-800 hover:underline"
+                    >
+                      {player.name}
+                    </Link>
+                  ) : (
+                    player.name
+                  )}
+                  <span className="ml-2 font-normal text-zinc-500">
+                    {t("matchesPlayed", { count: player.matches_played })}
+                  </span>
+                </span>
+                {player.member_number ? (
+                  <span className="text-zinc-600 tabular-nums">
+                    {player.member_number}
+                  </span>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       {showEditor ? (
         <div className="mt-4 flex flex-col gap-4 border-t border-zinc-100 pt-4">

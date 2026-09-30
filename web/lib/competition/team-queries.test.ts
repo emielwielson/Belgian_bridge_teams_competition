@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   loadTeamDetail,
   loadTeamPlayerMatchesPlayed,
+  loadTeamSubstituteAppearances,
   loadTeamsForUser,
   mapRawMatchToTeamMatchRow,
   withMatchesPlayed,
@@ -103,6 +104,9 @@ function createLoadTeamDetailSupabase(options: {
         return {
           select: () => ({
             eq: () => ({
+              eq: () => ({
+                in: () => Promise.resolve({ data: [], error: null }),
+              }),
               in: () => Promise.resolve({ data: [], error: null }),
             }),
           }),
@@ -151,6 +155,7 @@ describe("loadTeamDetail", () => {
     expect(detail?.team.locationOverride).toBeNull();
     expect(detail?.clubLocation).toBe("Brussels");
     expect(detail?.hasCentralizedVenue).toBe(false);
+    expect(detail?.substitutes).toEqual([]);
   });
 
   it("includes captain contact fields when includeCaptainContacts is true", async () => {
@@ -295,6 +300,101 @@ describe("loadTeamPlayerMatchesPlayed", () => {
     expect(counts.get("p1")).toBe(2);
     expect(counts.get("p2")).toBe(1);
     expect(counts.get("p3")).toBeUndefined();
+  });
+});
+
+describe("loadTeamSubstituteAppearances", () => {
+  it("returns empty array when there are no played matches", async () => {
+    const supabase = {
+      from: () => {
+        throw new Error("should not query");
+      },
+    } as never;
+
+    await expect(
+      loadTeamSubstituteAppearances(supabase, "team-1", []),
+    ).resolves.toEqual([]);
+  });
+
+  it("aggregates substitute appearances and sorts by count then name", async () => {
+    const supabase = {
+      from: (table: string) => {
+        if (table !== "match_players") throw new Error(`unexpected ${table}`);
+        return {
+          select: () => ({
+            eq: () => ({
+              eq: () => ({
+                in: () =>
+                  Promise.resolve({
+                    data: [
+                      {
+                        player_id: "p2",
+                        player: {
+                          id: "p2",
+                          name: "Bob",
+                          member_number: "2",
+                        },
+                      },
+                      {
+                        player_id: "p1",
+                        player: {
+                          id: "p1",
+                          name: "Alice",
+                          member_number: "1",
+                        },
+                      },
+                      {
+                        player_id: "p1",
+                        player: {
+                          id: "p1",
+                          name: "Alice",
+                          member_number: "1",
+                        },
+                      },
+                      {
+                        player_id: "p3",
+                        player: {
+                          id: "p3",
+                          name: "Aaron",
+                          member_number: null,
+                        },
+                      },
+                    ],
+                    error: null,
+                  }),
+              }),
+            }),
+          }),
+        };
+      },
+    } as never;
+
+    const appearances = await loadTeamSubstituteAppearances(
+      supabase,
+      "team-1",
+      ["m1", "m2", "m3"],
+    );
+
+    expect(appearances).toEqual([
+      {
+        id: "p1",
+        name: "Alice",
+        member_number: "1",
+        matches_played: 2,
+      },
+      {
+        id: "p3",
+        name: "Aaron",
+        member_number: null,
+        matches_played: 1,
+      },
+      {
+        id: "p2",
+        name: "Bob",
+        member_number: "2",
+        matches_played: 1,
+      },
+    ]);
   });
 });
 

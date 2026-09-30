@@ -105,6 +105,7 @@ export default async function TeamPage({ params }: Props) {
         teamId={team.id}
         captainId={team.captain_id}
         initialRoster={roster}
+        substitutes={detail.substitutes}
         initialAvailablePlayers={rosterState?.available_players}
         canManageRoster={canManageRoster}
         canLinkToPlayers={canLinkToPlayers}
