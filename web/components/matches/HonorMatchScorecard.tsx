@@ -24,6 +24,8 @@ const SECTION = "border-l-[3px] border-l-zinc-500";
 const INNER = "border-l border-l-zinc-200";
 const ROW_BOTTOM = "border-b border-b-zinc-100";
 const HEAD_BOTTOM = "border-b border-b-zinc-300";
+const CELL = "px-1.5 py-1.5";
+const HEAD_CELL = "px-1.5 py-1.5";
 
 function ContractCell({ contract }: { contract: ScorecardContract | null }) {
   if (!contract) return <span className="text-zinc-300">—</span>;
@@ -99,17 +101,31 @@ export async function HonorMatchScorecardView({ scorecard }: Props) {
   };
 
   return (
-    <section className="overflow-hidden rounded-lg border border-zinc-200 bg-white">
+    <section className="relative left-1/2 w-[min(100vw-2rem,56rem)] -translate-x-1/2 overflow-hidden rounded-lg border border-zinc-200 bg-white">
       <div className="overflow-x-auto">
-        <table className="min-w-full border-separate border-spacing-0 text-sm">
+        <table className="w-full min-w-[48rem] table-fixed border-separate border-spacing-0 text-sm">
+          <colgroup>
+            <col className="w-[3.5%]" />
+            <col className="w-[3.5%]" />
+            <col className="w-[4%]" />
+            <col className="w-[11%]" />
+            <col className="w-[11%]" />
+            <col className="w-[7%]" />
+            <col className="w-[11%]" />
+            <col className="w-[11%]" />
+            <col className="w-[7%]" />
+            <col className="w-[7%]" />
+            <col className="w-[6%]" />
+            <col className="w-[6%]" />
+          </colgroup>
           <thead>
             <tr className="bg-zinc-100 text-xs text-zinc-700">
-              <th colSpan={3} className={`${HEAD_BOTTOM} px-2 py-2`} />
+              <th colSpan={3} className={`${HEAD_BOTTOM} ${HEAD_CELL}`} />
               <th
                 colSpan={3}
-                className={`${INNER} ${HEAD_BOTTOM} px-2 py-2 text-left font-semibold align-top`}
+                className={`${INNER} ${HEAD_BOTTOM} ${HEAD_CELL} text-left font-semibold align-top`}
               >
-                <div className="space-y-0.5">
+                <div className="space-y-0.5 break-words">
                   <p>{roomTitle("open", openTable)}</p>
                   <p className="font-normal text-zinc-600">
                     <span className="font-medium text-zinc-800">{t("ns")}:</span>{" "}
@@ -123,9 +139,9 @@ export async function HonorMatchScorecardView({ scorecard }: Props) {
               </th>
               <th
                 colSpan={3}
-                className={`${INNER} ${HEAD_BOTTOM} px-2 py-2 text-left font-semibold align-top`}
+                className={`${INNER} ${HEAD_BOTTOM} ${HEAD_CELL} text-left font-semibold align-top`}
               >
-                <div className="space-y-0.5">
+                <div className="space-y-0.5 break-words">
                   <p>{roomTitle("closed", closedTable)}</p>
                   <p className="font-normal text-zinc-600">
                     <span className="font-medium text-zinc-800">{t("ns")}:</span>{" "}
@@ -139,67 +155,67 @@ export async function HonorMatchScorecardView({ scorecard }: Props) {
               </th>
               <th
                 colSpan={3}
-                className={`${INNER} ${HEAD_BOTTOM} px-2 py-2 text-center font-semibold align-bottom`}
+                className={`${INNER} ${HEAD_BOTTOM} ${HEAD_CELL} text-center font-semibold align-bottom`}
               >
                 {t("result")}
               </th>
             </tr>
-            <tr className="bg-zinc-50 text-[11px] uppercase tracking-wide text-zinc-500">
-              <th className={`${HEAD_BOTTOM} px-2 py-1.5 text-left font-medium`}>
+            <tr className="bg-zinc-50 text-[11px] uppercase text-zinc-500">
+              <th className={`${HEAD_BOTTOM} ${HEAD_CELL} text-left font-medium`}>
                 {t("board")}
               </th>
               <th
-                className={`${INNER} ${HEAD_BOTTOM} px-2 py-1.5 text-left font-medium`}
+                className={`${INNER} ${HEAD_BOTTOM} ${HEAD_CELL} text-left font-medium`}
               >
                 {t("dealerCol")}
               </th>
               <th
-                className={`${INNER} ${HEAD_BOTTOM} px-2 py-1.5 text-left font-medium`}
+                className={`${INNER} ${HEAD_BOTTOM} ${HEAD_CELL} text-left font-medium`}
               >
                 {t("vulCol")}
               </th>
               <th
-                className={`${INNER} ${HEAD_BOTTOM} px-2 py-1.5 text-left font-medium`}
+                className={`${INNER} ${HEAD_BOTTOM} ${HEAD_CELL} text-left font-medium leading-tight`}
               >
                 {t("homeNs")}
               </th>
               <th
-                className={`${INNER} ${HEAD_BOTTOM} px-2 py-1.5 text-left font-medium`}
+                className={`${INNER} ${HEAD_BOTTOM} ${HEAD_CELL} text-left font-medium leading-tight`}
               >
                 {t("awayEw")}
               </th>
               <th
-                className={`${INNER} ${HEAD_BOTTOM} px-2 py-1.5 text-right font-medium`}
+                className={`${INNER} ${HEAD_BOTTOM} ${HEAD_CELL} text-right font-medium leading-tight`}
               >
                 {t("scoreHome")}
               </th>
               <th
-                className={`${INNER} ${HEAD_BOTTOM} px-2 py-1.5 text-left font-medium`}
+                className={`${INNER} ${HEAD_BOTTOM} ${HEAD_CELL} text-left font-medium leading-tight`}
               >
                 {t("homeEw")}
               </th>
               <th
-                className={`${INNER} ${HEAD_BOTTOM} px-2 py-1.5 text-left font-medium`}
+                className={`${INNER} ${HEAD_BOTTOM} ${HEAD_CELL} text-left font-medium leading-tight`}
               >
                 {t("awayNs")}
               </th>
               <th
-                className={`${INNER} ${HEAD_BOTTOM} px-2 py-1.5 text-right font-medium`}
+                className={`${INNER} ${HEAD_BOTTOM} ${HEAD_CELL} text-right font-medium leading-tight`}
               >
                 {t("scoreHome")}
               </th>
               <th
-                className={`${INNER} ${HEAD_BOTTOM} px-2 py-1.5 text-right font-medium`}
+                className={`${INNER} ${HEAD_BOTTOM} ${HEAD_CELL} text-right font-medium`}
               >
                 {t("deltaMp")}
               </th>
               <th
-                className={`${INNER} ${HEAD_BOTTOM} px-2 py-1.5 text-right font-medium`}
+                className={`${INNER} ${HEAD_BOTTOM} ${HEAD_CELL} text-right font-medium leading-tight`}
               >
                 {t("impsHome")}
               </th>
               <th
-                className={`${INNER} ${HEAD_BOTTOM} px-2 py-1.5 text-right font-medium`}
+                className={`${INNER} ${HEAD_BOTTOM} ${HEAD_CELL} text-right font-medium leading-tight`}
               >
                 {t("impsAway")}
               </th>
@@ -211,17 +227,17 @@ export async function HonorMatchScorecardView({ scorecard }: Props) {
               return (
                 <tr key={board.boardId}>
                   <td
-                    className={`${ROW_BOTTOM} px-2 py-1.5 tabular-nums font-medium text-zinc-900 ${stripe}`}
+                    className={`${ROW_BOTTOM} ${CELL} tabular-nums font-medium text-zinc-900 ${stripe}`}
                   >
                     {board.boardNumber}
                   </td>
                   <td
-                    className={`${INNER} ${ROW_BOTTOM} px-2 py-1.5 text-zinc-700 ${stripe}`}
+                    className={`${INNER} ${ROW_BOTTOM} ${CELL} text-zinc-700 ${stripe}`}
                   >
                     {dealerLabel(board.dealer)}
                   </td>
                   <td
-                    className={`${INNER} ${ROW_BOTTOM} px-2 py-1.5 text-zinc-700 ${stripe}`}
+                    className={`${INNER} ${ROW_BOTTOM} ${CELL} text-zinc-700 ${stripe}`}
                   >
                     {vulLabel(board.vulnerability)}
                   </td>
@@ -238,7 +254,7 @@ export async function HonorMatchScorecardView({ scorecard }: Props) {
                     awardLabels={awardLabels}
                   />
                   <td
-                    className={`${SECTION} ${ROW_BOTTOM} px-2 py-1.5 text-right tabular-nums text-zinc-800 ${stripe}`}
+                    className={`${SECTION} ${ROW_BOTTOM} ${CELL} text-right tabular-nums text-zinc-800 ${stripe}`}
                   >
                     {board.deltaMp == null ? (
                       <span className="text-zinc-300">—</span>
@@ -247,12 +263,12 @@ export async function HonorMatchScorecardView({ scorecard }: Props) {
                     )}
                   </td>
                   <td
-                    className={`${INNER} ${ROW_BOTTOM} px-2 py-1.5 text-right text-zinc-900 ${stripe}`}
+                    className={`${INNER} ${ROW_BOTTOM} ${CELL} text-right text-zinc-900 ${stripe}`}
                   >
                     <ImpCell value={board.impsHome} />
                   </td>
                   <td
-                    className={`${INNER} ${ROW_BOTTOM} px-2 py-1.5 text-right text-zinc-900 ${stripe}`}
+                    className={`${INNER} ${ROW_BOTTOM} ${CELL} text-right text-zinc-900 ${stripe}`}
                   >
                     <ImpCell value={board.impsAway} />
                   </td>
@@ -264,17 +280,17 @@ export async function HonorMatchScorecardView({ scorecard }: Props) {
             <tr className="bg-zinc-100">
               <td
                 colSpan={10}
-                className="px-2 py-2 text-right text-xs font-semibold uppercase tracking-wide text-zinc-600"
+                className={`${CELL} text-right text-xs font-semibold uppercase text-zinc-600`}
               >
                 {t("totalImps")}
               </td>
               <td
-                className={`${INNER} px-2 py-2 text-right tabular-nums font-semibold text-zinc-900`}
+                className={`${INNER} ${CELL} text-right tabular-nums font-semibold text-zinc-900`}
               >
                 {scorecard.totals.impsHome}
               </td>
               <td
-                className={`${INNER} px-2 py-2 text-right tabular-nums font-semibold text-zinc-900`}
+                className={`${INNER} ${CELL} text-right tabular-nums font-semibold text-zinc-900`}
               >
                 {scorecard.totals.impsAway}
               </td>
@@ -284,17 +300,17 @@ export async function HonorMatchScorecardView({ scorecard }: Props) {
               <tr className="bg-zinc-100">
                 <td
                   colSpan={10}
-                  className="px-2 pb-2.5 text-right text-xs font-semibold uppercase tracking-wide text-zinc-600"
+                  className="px-1.5 pb-2.5 text-right text-xs font-semibold uppercase text-zinc-600"
                 >
                   {t("resultVp")}
                 </td>
                 <td
-                  className={`${INNER} px-2 pb-2.5 text-right tabular-nums font-semibold text-zinc-900`}
+                  className={`${INNER} px-1.5 pb-2.5 text-right tabular-nums font-semibold text-zinc-900`}
                 >
                   {vpFmt.format(scorecard.totals.vpHome)}
                 </td>
                 <td
-                  className={`${INNER} px-2 pb-2.5 text-right tabular-nums font-semibold text-zinc-900`}
+                  className={`${INNER} px-1.5 pb-2.5 text-right tabular-nums font-semibold text-zinc-900`}
                 >
                   {vpFmt.format(scorecard.totals.vpAway)}
                 </td>
@@ -321,7 +337,7 @@ function RoomCells({
   return (
     <>
       <td
-        className={`${sectionBorder ? SECTION : ""} ${ROW_BOTTOM} px-2 py-1.5 ${stripe}`}
+        className={`${sectionBorder ? SECTION : ""} ${ROW_BOTTOM} ${CELL} ${stripe}`}
       >
         {cell.isAveragePm ? (
           <AwardCell award={cell.averageHome} labels={awardLabels} />
@@ -329,7 +345,7 @@ function RoomCells({
           <ContractCell contract={cell.homeContract} />
         )}
       </td>
-      <td className={`${INNER} ${ROW_BOTTOM} px-2 py-1.5 ${stripe}`}>
+      <td className={`${INNER} ${ROW_BOTTOM} ${CELL} ${stripe}`}>
         {cell.isAveragePm ? (
           <AwardCell award={cell.averageAway} labels={awardLabels} />
         ) : (
@@ -337,7 +353,7 @@ function RoomCells({
         )}
       </td>
       <td
-        className={`${INNER} ${ROW_BOTTOM} px-2 py-1.5 text-right text-zinc-800 ${stripe}`}
+        className={`${INNER} ${ROW_BOTTOM} ${CELL} text-right text-zinc-800 ${stripe}`}
       >
         <ScoreCell value={cell.scoreHome} />
       </td>
