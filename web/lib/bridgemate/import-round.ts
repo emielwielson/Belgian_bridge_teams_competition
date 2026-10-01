@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { adaptReceivedDataToNormalized } from "@/lib/bridgemate/adapter";
+import { dedupeReceivedData } from "@/lib/bridgemate/dedupe-received";
 import { buildHonorMappingContext } from "@/lib/bridgemate/honor-import-mapping";
 import { parseBwsBuffer } from "@/lib/bridgemate/parse-bws";
 import { parseReceivedDataJson } from "@/lib/bridgemate/parse-received";
@@ -78,6 +79,8 @@ export async function importHonorBwsForRound(params: {
     };
   }
 
+  const deduped = dedupeReceivedData(rows);
+
   const { data: rawImport, error: rawErr } = await params.service
     .from("honor_raw_imports")
     .insert({
@@ -87,7 +90,12 @@ export async function importHonorBwsForRound(params: {
       filename: params.filename ?? null,
       status: "processing",
       uploaded_by: params.uploadedBy ?? null,
-      payload: { rowCount: rows.length },
+      payload: {
+        rowCount: rows.length,
+        dedupedRowCount: deduped.rows.length,
+        droppedDuplicateCount: deduped.droppedCount,
+        bridgemateCorrectionCount: deduped.correctionsByKey.size,
+      },
     })
     .select("id")
     .single();
@@ -96,7 +104,9 @@ export async function importHonorBwsForRound(params: {
     return { ok: false, error: rawErr?.message ?? "Raw import opslaan mislukt." };
   }
 
-  const adapted = adaptReceivedDataToNormalized(rows, mapping.ctx);
+  const adapted = adaptReceivedDataToNormalized(deduped.rows, mapping.ctx, {
+    correctionsByKey: deduped.correctionsByKey,
+  });
   const mappingErrors = adapted.outcomes
     .filter((o): o is Extract<typeof o, { ok: false }> => !o.ok)
     .flatMap((o) => o.errors);

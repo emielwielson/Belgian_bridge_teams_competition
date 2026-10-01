@@ -1,4 +1,8 @@
 import { decodeReceivedDataContract } from "@/lib/bridgemate/contract";
+import {
+  receivedDataGroupKey,
+  type BridgemateCorrectionInfo,
+} from "@/lib/bridgemate/dedupe-received";
 import { mapReceivedDataRow } from "@/lib/bridgemate/mapping";
 import type {
   BridgemateMappingContext,
@@ -53,9 +57,13 @@ export function extractLeadCard(row: ReceivedDataRow): string | null {
 export function adaptReceivedDataToNormalized(
   rows: ReceivedDataRow[],
   ctx: BridgemateMappingContext,
+  options?: {
+    correctionsByKey?: Map<string, BridgemateCorrectionInfo>;
+  },
 ): AdaptResult {
   const outcomes: Array<AdaptRowOk | AdaptRowErr> = [];
   const normalized: NormalizedBoardResultInput[] = [];
+  const correctionsByKey = options?.correctionsByKey;
 
   for (let index = 0; index < rows.length; index++) {
     const raw = rows[index];
@@ -72,6 +80,7 @@ export function adaptReceivedDataToNormalized(
     }
 
     const decoded = decodeReceivedDataContract(raw);
+    const correction = correctionsByKey?.get(receivedDataGroupKey(raw)) ?? null;
     const input: NormalizedBoardResultInput = {
       matchId: mapped.mapped.matchId,
       tableId: mapped.mapped.tableId,
@@ -91,6 +100,7 @@ export function adaptReceivedDataToNormalized(
       resolvedAdjustment: decoded.resolvedAdjustment,
       sourceIdentifier: sourceId(raw, index),
       originalPayload,
+      bridgemateCorrection: correction,
     };
     normalized.push(input);
     outcomes.push({ ok: true, index, row: input });

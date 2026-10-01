@@ -36,6 +36,14 @@ export type NormalizedBoardResultInput = {
   sourceIdentifier?: string | null;
   /** Frozen snapshot of the source row */
   originalPayload: Record<string, unknown>;
+  /**
+   * Present when BCS score-correction rows were collapsed to this result
+   * (latest non-erased supersedes an earlier score in the same .bws).
+   */
+  bridgemateCorrection?: {
+    previousPayload: Record<string, unknown>;
+    supersededCount: number;
+  } | null;
 };
 
 export type ResultValidationIssue = {

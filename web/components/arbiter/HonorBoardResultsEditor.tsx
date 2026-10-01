@@ -11,6 +11,7 @@ import {
   weightedMatchImpsFromLegs,
 } from "@/lib/scoring/weighted-match-imps";
 import { effectiveNsScoreForDatum } from "@/lib/butler/special-results";
+import { useHonorButlerResultsEpoch } from "@/components/arbiter/HonorButlerImportPanel";
 
 export type HonorResultRow = {
   id: string;
@@ -43,6 +44,7 @@ export type HonorResultRow = {
   admin_ew_butler_imps: number | null;
   adjustment_mode: string | null;
   adjustment_meta: Record<string, unknown> | null;
+  import_source: string | null;
 };
 
 type Mode = "cancelled" | "weighted" | "average_pm" | "correct";
@@ -113,6 +115,7 @@ export function HonorBoardResultsEditor({
   refreshKey?: number;
 }) {
   const t = useTranslations("arbiter.honorResults");
+  const resultsEpoch = useHonorButlerResultsEpoch();
   const [rows, setRows] = useState<HonorResultRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [pickBy, setPickBy] = useState<PickBy>("match");
@@ -256,7 +259,7 @@ export function HonorBoardResultsEditor({
 
   useEffect(() => {
     void load();
-  }, [load, refreshKey]);
+  }, [load, refreshKey, resultsEpoch]);
 
   useEffect(() => {
     setRows([]);
@@ -300,6 +303,17 @@ export function HonorBoardResultsEditor({
       default:
         return t("adjustedGeneric");
     }
+  }
+
+  function adjustmentSourceLabel(row: HonorResultRow): string {
+    const metaSource =
+      row.adjustment_meta && typeof row.adjustment_meta.source === "string"
+        ? row.adjustment_meta.source
+        : null;
+    if (metaSource === "platform" || row.import_source === "correction") {
+      return t("sourcePlatform");
+    }
+    return t("sourceBridgemate");
   }
 
   useEffect(() => {
@@ -862,6 +876,7 @@ export function HonorBoardResultsEditor({
                         room:
                           row.room === "open" ? t("roomOpen") : t("roomClosed"),
                         mode: adjustmentModeLabel(row),
+                        source: adjustmentSourceLabel(row),
                       })}
                     </button>
                   </li>

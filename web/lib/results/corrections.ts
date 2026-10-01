@@ -116,6 +116,7 @@ export async function applyHonorBoardCorrection(params: {
       adjustment_mode: "correction",
       adjustment_meta: {
         reason: params.correction.reason ?? null,
+        source: "platform",
         previous: {
           contract_level: existing.contract_level,
           contract_denomination: existing.contract_denomination,

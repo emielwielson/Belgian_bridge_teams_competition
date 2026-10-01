@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Vulnerability } from "@/lib/boards/types";
 import { buildCombinationUpsert } from "@/lib/butler/combinations";
 import type { HonorMappedTable } from "@/lib/bridgemate/honor-import-mapping";
+import { previousFieldsFromReceivedPayload } from "@/lib/bridgemate/dedupe-received";
 import { validateNormalizedResult } from "@/lib/results/validation";
 import type { NormalizedBoardResultInput } from "@/lib/results/types";
 
@@ -202,6 +203,30 @@ export async function ingestHonorBoardResults(params: {
       }
 
       const adj = row.resolvedAdjustment ?? null;
+      const bmCorr = row.bridgemateCorrection ?? null;
+      const isCorrected = adj != null || bmCorr != null;
+
+      let adjustmentMode = adj?.adjustmentMode ?? null;
+      let adjustmentMeta: Record<string, unknown> | null = adj?.adjustmentMeta
+        ? { ...adj.adjustmentMeta, source: "bridgemate" }
+        : null;
+
+      if (!adj && bmCorr) {
+        adjustmentMode = "correction";
+        adjustmentMeta = {
+          source: "bridgemate",
+          previous: previousFieldsFromReceivedPayload(bmCorr.previousPayload),
+          superseded_count: bmCorr.supersededCount,
+        };
+      } else if (adj && bmCorr) {
+        adjustmentMeta = {
+          ...(adjustmentMeta ?? {}),
+          source: "bridgemate",
+          previous: previousFieldsFromReceivedPayload(bmCorr.previousPayload),
+          superseded_count: bmCorr.supersededCount,
+        };
+      }
+
       const insertRow = {
         group_id: params.groupId,
         match_id: row.matchId,
@@ -224,7 +249,7 @@ export async function ingestHonorBoardResults(params: {
         processing_status:
           validated.validationStatus === "VALID" ? "validated" : "imported",
         validation_status: validationToDb(validated.validationStatus),
-        correction_status: adj ? "corrected" : "original",
+        correction_status: isCorrected ? "corrected" : "original",
         special_result_kind: specialToDb(
           adj?.specialResultKind ?? validated.specialResultKind,
         ),
@@ -237,12 +262,12 @@ export async function ingestHonorBoardResults(params: {
         admin_adjusted_ew_score: adj?.adminAdjustedEwScore ?? null,
         admin_ns_butler_imps: adj?.adminNsButlerImps ?? null,
         admin_ew_butler_imps: adj?.adminEwButlerImps ?? null,
-        adjustment_mode: adj?.adjustmentMode ?? null,
-        adjustment_meta: adj?.adjustmentMeta ?? null,
+        adjustment_mode: adjustmentMode,
+        adjustment_meta: adjustmentMeta,
         original_payload: row.originalPayload,
         validation_errors: validated.issues.map((i) => i.message),
         imported_at: new Date().toISOString(),
-        ...(adj
+        ...(isCorrected
           ? {
               corrected_at: new Date().toISOString(),
             }

@@ -142,6 +142,7 @@ export async function resolveHonorSpecialResult(params: {
       adjustment_mode: params.input.adjustmentMode ?? null,
       adjustment_meta: {
         ...(params.input.adjustmentMeta ?? {}),
+        source: "platform",
         reason: params.input.reason ?? null,
         previous: {
           special_result_kind: existing.special_result_kind,

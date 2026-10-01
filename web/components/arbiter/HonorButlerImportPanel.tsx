@@ -45,6 +45,8 @@ type HonorButlerContextValue = {
   boardCount: number;
   boardsReady: boolean;
   published: boolean;
+  /** Bumps after PBN/BWS/recalc/publish so result editors reload. */
+  resultsEpoch: number;
   uploadPbn: (file: File) => Promise<void>;
   uploadBws: (file: File) => Promise<void>;
   recalculate: () => Promise<void>;
@@ -63,6 +65,11 @@ function useHonorButler(): HonorButlerContextValue {
     throw new Error("Honor butler components require HonorButlerWorkflow");
   }
   return ctx;
+}
+
+/** Optional access for sibling editors that may sit inside the workflow. */
+export function useHonorButlerResultsEpoch(): number {
+  return useContext(HonorButlerContext)?.resultsEpoch ?? 0;
 }
 
 function ActionFeedback({
@@ -152,6 +159,7 @@ export function HonorButlerWorkflow({
   const [bwsFile, setBwsFile] = useState<File | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [resultsEpoch, setResultsEpoch] = useState(0);
   const loadGeneration = useRef(0);
   const publishedRef = useRef(false);
   const onBoardCountChangeRef = useRef(onBoardCountChange);
@@ -198,6 +206,7 @@ export function HonorButlerWorkflow({
     setMessage(null);
     setError(null);
     setLastAction(null);
+    setResultsEpoch(0);
     onBoardCountChangeRef.current?.(0);
   }, [round]);
 
@@ -218,6 +227,10 @@ export function HonorButlerWorkflow({
     setBusyFile(null);
   }
 
+  function bumpResults() {
+    setResultsEpoch((n) => n + 1);
+  }
+
   const uploadPbn = useCallback(
     async (file: File) => {
       if (round == null) return;
@@ -235,6 +248,7 @@ export function HonorButlerWorkflow({
         } | null;
         if (!res.ok) throw new Error(body?.error ?? t("pbnFailed"));
         setMessage(t("pbnSuccess", { count: body?.boardCount ?? 0 }));
+        bumpResults();
         await load();
       } catch (err) {
         setError(err instanceof Error ? err.message : t("pbnFailed"));
@@ -292,6 +306,7 @@ export function HonorButlerWorkflow({
                 butler: body?.butlerUpdated ?? 0,
               }),
         );
+        bumpResults();
         await load();
       } catch (err) {
         setError(err instanceof Error ? err.message : t("bwsFailed"));
@@ -316,6 +331,7 @@ export function HonorButlerWorkflow({
       } | null;
       if (!res.ok) throw new Error(body?.error ?? t("recalcFailed"));
       setMessage(t("recalcSuccess", { count: body?.updatedCount ?? 0 }));
+      bumpResults();
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("recalcFailed"));
@@ -337,6 +353,7 @@ export function HonorButlerWorkflow({
       } | null;
       if (!res.ok) throw new Error(body?.error ?? t("publishFailed"));
       setMessage(wasPublished ? t("republishSuccess") : t("publishSuccess"));
+      bumpResults();
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("publishFailed"));
@@ -362,6 +379,7 @@ export function HonorButlerWorkflow({
       boardCount,
       boardsReady: boardCount > 0,
       published,
+      resultsEpoch,
       uploadPbn,
       uploadBws,
       recalculate,
@@ -383,6 +401,7 @@ export function HonorButlerWorkflow({
     error,
     boardCount,
     published,
+    resultsEpoch,
     uploadPbn,
     uploadBws,
     recalculate,
