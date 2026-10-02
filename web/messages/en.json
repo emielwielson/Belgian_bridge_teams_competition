@@ -131,6 +131,7 @@
     "backGroupOnly": "← {groupName}",
     "backAdminDashboard": "← Admin dashboard",
     "backPlayerDashboard": "← Player dashboard",
+    "location": "Competition location: {location}",
     "status": {
       "played": "Played",
       "scheduled": "Scheduled",

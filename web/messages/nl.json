@@ -131,6 +131,7 @@
     "backGroupOnly": "← {groupName}",
     "backAdminDashboard": "← Beheerdersdashboard",
     "backPlayerDashboard": "← Spelersdashboard",
+    "location": "Competitielocatie: {location}",
     "status": {
       "played": "Gespeeld",
       "scheduled": "Gepland",

@@ -37,6 +37,7 @@ import {
 import { loadHonorMatchScorecard } from "@/lib/competition/honor-match-scorecard";
 import type { MatchPageBackLink } from "@/lib/competition/match-page-context";
 import { loadGroupScoringContext } from "@/lib/competition/match-scoring-context";
+import { loadMatchVenueLocation } from "@/lib/competition/match-venue-location";
 import { loadTeamRoster } from "@/lib/competition/player-matches";
 import { translateLeagueName } from "@/lib/i18n/labels";
 import { allowsBoardChoice } from "@/lib/scoring/board-count-rules";
@@ -132,6 +133,9 @@ export async function MatchDetailView({
       : [false, false];
 
   const honorCtx = await loadHonorMatchLineupContext(supabase, match);
+  const venueLocation = honorCtx.isHonor
+    ? null
+    : await loadMatchVenueLocation(supabase, match);
   let honorPerms = null;
   if (honorCtx.isHonor) {
     const viewerSide =
@@ -268,6 +272,11 @@ export async function MatchDetailView({
         <p className="mt-1 text-sm text-zinc-600">
           {formatBrussels(match.datetime, intlLocale)}
         </p>
+        {venueLocation ? (
+          <p className="mt-1 text-sm text-zinc-600">
+            {t("location", { location: venueLocation })}
+          </p>
+        ) : null}
         <p className="mt-2 flex flex-wrap items-center gap-2">
           <span
             className={
