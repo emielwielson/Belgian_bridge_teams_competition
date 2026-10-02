@@ -91,7 +91,10 @@ function mockServiceClient() {
                         id: "m1",
                         groups: {
                           divisions: {
-                            leagues: { competition_kind_id: "kind-wallonia" },
+                            leagues: {
+                              competition_kind_id: "kind-wallonia",
+                              competition_kinds: { code: "wallonia" },
+                            },
                           },
                         },
                       }
@@ -195,6 +198,7 @@ describe("arbiter-request-email", () => {
           "chief@example.com",
           "manager@example.com",
         ]),
+        competitionKind: "wallonia",
         logLabel: "arbiter_request_created",
       }),
     );
@@ -213,6 +217,7 @@ describe("arbiter-request-email", () => {
     expect(sendResendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
         to: ["assigned@example.com"],
+        competitionKind: "wallonia",
         logLabel: "arbiter_request_assigned",
       }),
     );
@@ -230,6 +235,7 @@ describe("arbiter-request-email", () => {
           "home-captain@example.com",
           "away-captain@example.com",
         ]),
+        competitionKind: "wallonia",
         logLabel: "arbiter_request_resolved",
       }),
     );

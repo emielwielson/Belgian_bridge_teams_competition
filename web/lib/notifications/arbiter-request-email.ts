@@ -5,6 +5,7 @@ import {
   loadEmailTemplateContext,
 } from "@/lib/i18n/email-templates";
 import { createServiceClient } from "@/lib/supabase/server-client";
+import { loadMatchCompetitionKind } from "./match-competition-kind";
 import { getAppBaseUrl, loginThenMatchUrl } from "./postponement-email";
 import { sendResendEmail } from "./resend-email";
 
@@ -81,31 +82,10 @@ async function loadCaptainEmailsForMatch(matchId: string): Promise<string[]> {
   return uniqueEmails(emails);
 }
 
-async function loadMatchCompetitionKindId(
-  matchId: string,
-): Promise<string | null> {
-  const supabase = createServiceClient();
-  const { data: matchRow, error: matchError } = await supabase
-    .from("matches")
-    .select(
-      "id, groups!inner(divisions!inner(leagues!inner(competition_kind_id)))",
-    )
-    .eq("id", matchId)
-    .maybeSingle();
-  if (matchError) throw matchError;
-
-  const groups = matchRow?.groups as
-    | { divisions: { leagues: { competition_kind_id: string } } }
-    | { divisions: { leagues: { competition_kind_id: string } } }[]
-    | null
-    | undefined;
-  const group = Array.isArray(groups) ? groups[0] : groups;
-  return group?.divisions?.leagues?.competition_kind_id ?? null;
-}
-
 async function loadCompetitionManagerEmails(matchId: string): Promise<string[]> {
   const supabase = createServiceClient();
-  const kindId = await loadMatchCompetitionKindId(matchId);
+  const kind = await loadMatchCompetitionKind(matchId);
+  const kindId = kind?.id ?? null;
   if (!kindId) return [];
 
   const { data: roleRows, error: roleError } = await supabase
@@ -143,7 +123,8 @@ async function loadCompetitionManagerEmails(matchId: string): Promise<string[]> 
 
 async function loadChiefArbiterEmails(matchId: string): Promise<string[]> {
   const supabase = createServiceClient();
-  const kindId = await loadMatchCompetitionKindId(matchId);
+  const kind = await loadMatchCompetitionKind(matchId);
+  const kindId = kind?.id ?? null;
   if (!kindId) return [];
 
   const { data: scopeRows, error: scopeError } = await supabase
@@ -262,8 +243,11 @@ export async function sendArbiterRequestCreatedEmail(
   const to = await loadCreatedRecipients(ctx.matchId);
   if (to.length === 0) return;
 
-  const emailContext = await loadEmailTemplateContext(locale);
-  const summary = await loadMatchSummary(ctx.matchId, locale);
+  const [emailContext, summary, competitionKind] = await Promise.all([
+    loadEmailTemplateContext(locale),
+    loadMatchSummary(ctx.matchId, locale),
+    loadMatchCompetitionKind(ctx.matchId),
+  ]);
   const baseUrl = getAppBaseUrl();
   const matchUrl = `${baseUrl}/matches/${ctx.matchId}`;
   const loginUrl = loginThenMatchUrl(ctx.matchId);
@@ -287,6 +271,7 @@ export async function sendArbiterRequestCreatedEmail(
     subject,
     html: bodyHtml,
     text: bodyText,
+    competitionKind: competitionKind?.code,
     logLabel: "arbiter_request_created",
   });
 }
@@ -330,10 +315,13 @@ export async function sendArbiterRequestAssignedEmail(
   const summary = await loadArbiterRequestSummary(ctx.requestId, locale);
   if (!summary) return;
 
-  const to = await loadAssignedArbiterEmail(ctx.assignedArbiterId);
+  const [to, emailContext, competitionKind] = await Promise.all([
+    loadAssignedArbiterEmail(ctx.assignedArbiterId),
+    loadEmailTemplateContext(locale),
+    loadMatchCompetitionKind(summary.matchId),
+  ]);
   if (to.length === 0) return;
 
-  const emailContext = await loadEmailTemplateContext(locale);
   const baseUrl = getAppBaseUrl();
   const matchUrl = `${baseUrl}/matches/${summary.matchId}`;
   const loginUrl = loginThenMatchUrl(summary.matchId);
@@ -356,6 +344,7 @@ export async function sendArbiterRequestAssignedEmail(
     subject,
     html: bodyHtml,
     text: bodyText,
+    competitionKind: competitionKind?.code,
     logLabel: "arbiter_request_assigned",
   });
 }
@@ -367,9 +356,10 @@ export async function sendArbiterRequestResolvedEmail(
   const summary = await loadArbiterRequestSummary(ctx.requestId, locale);
   if (!summary) return;
 
-  const [to, emailContext] = await Promise.all([
+  const [to, emailContext, competitionKind] = await Promise.all([
     loadResolvedRecipients(summary.matchId, summary.assignedArbiterId),
     loadEmailTemplateContext(locale),
+    loadMatchCompetitionKind(summary.matchId),
   ]);
   if (to.length === 0) return;
 
@@ -397,6 +387,7 @@ export async function sendArbiterRequestResolvedEmail(
     subject,
     html: bodyHtml,
     text: bodyText,
+    competitionKind: competitionKind?.code,
     logLabel: "arbiter_request_resolved",
   });
 }

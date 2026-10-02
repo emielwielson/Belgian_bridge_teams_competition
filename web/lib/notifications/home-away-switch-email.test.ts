@@ -8,6 +8,10 @@ vi.mock("./resend-email", () => ({
   sendResendEmail: vi.fn().mockResolvedValue({ sent: true }),
 }));
 
+vi.mock("./match-competition-kind", () => ({
+  loadMatchCompetitionKindCode: vi.fn().mockResolvedValue("national"),
+}));
+
 import { createServiceClient } from "@/lib/supabase/server-client";
 import { sendResendEmail } from "./resend-email";
 import {
@@ -96,6 +100,7 @@ describe("home-away-switch-email", () => {
         ),
         html: expect.any(String),
         subject: expect.any(String),
+        competitionKind: "national",
         logLabel: "home_away_switch_proposed",
       }),
     );
@@ -120,6 +125,7 @@ describe("home-away-switch-email", () => {
     expect(sendResendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
         logLabel: "home_away_switch_approved",
+        competitionKind: "national",
         text: expect.stringContaining("Away Captain"),
       }),
     );

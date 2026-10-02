@@ -10,6 +10,7 @@ import {
   splitRequestingAndReceivingCaptains,
   toCaptainContactFields,
 } from "./captain-contacts";
+import { loadMatchCompetitionKindCode } from "./match-competition-kind";
 import { sendResendEmail } from "./resend-email";
 
 export type PostponementProposedEmailContext = {
@@ -110,13 +111,11 @@ export async function sendPostponementProposedEmail(
   const to = await loadWorkflowRecipients(homeTeamId, awayTeamId);
   if (to.length === 0) return;
 
-  const captainFields = await loadCaptainContactFields(
-    homeTeamId,
-    awayTeamId,
-    ctx.requestingTeamId,
-  );
-
-  const emailContext = await loadEmailTemplateContext(locale);
+  const [captainFields, emailContext, competitionKind] = await Promise.all([
+    loadCaptainContactFields(homeTeamId, awayTeamId, ctx.requestingTeamId),
+    loadEmailTemplateContext(locale),
+    loadMatchCompetitionKindCode(ctx.matchId),
+  ]);
   const matchUrl = matchPostponementUrl(ctx.matchId);
   const { subject, bodyText, bodyHtml } = buildPostponementProposedEmail(
     { ...ctx, ...captainFields },
@@ -129,6 +128,7 @@ export async function sendPostponementProposedEmail(
     subject,
     html: bodyHtml,
     text: bodyText,
+    competitionKind: competitionKind ?? undefined,
     logLabel: "postponement_proposed",
   });
 }
@@ -143,13 +143,11 @@ export async function sendPostponementDecisionEmail(
   const to = await loadWorkflowRecipients(homeTeamId, awayTeamId);
   if (to.length === 0) return;
 
-  const captainFields = await loadCaptainContactFields(
-    homeTeamId,
-    awayTeamId,
-    ctx.requestingTeamId,
-  );
-
-  const emailContext = await loadEmailTemplateContext(locale);
+  const [captainFields, emailContext, competitionKind] = await Promise.all([
+    loadCaptainContactFields(homeTeamId, awayTeamId, ctx.requestingTeamId),
+    loadEmailTemplateContext(locale),
+    loadMatchCompetitionKindCode(ctx.matchId),
+  ]);
   const matchUrl = matchPostponementUrl(ctx.matchId);
   const loginUrl = loginThenMatchUrl(ctx.matchId);
   const { subject, bodyText, bodyHtml } = buildPostponementDecisionEmail(
@@ -170,6 +168,7 @@ export async function sendPostponementDecisionEmail(
     subject,
     html: bodyHtml,
     text: bodyText,
+    competitionKind: competitionKind ?? undefined,
     logLabel: logLabelByAction[ctx.action],
   });
 }

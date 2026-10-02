@@ -1,8 +1,22 @@
+import {
+  COMPETITION_KIND_CODES,
+  type CompetitionKindCode,
+} from "@/lib/auth/competition-scope";
+
+const KIND_EMAIL_FROM_ENV: Record<CompetitionKindCode, string> = {
+  [COMPETITION_KIND_CODES.NATIONAL]: "NATIONAL_EMAIL_FROM",
+  [COMPETITION_KIND_CODES.FLANDERS]: "FLANDERS_EMAIL_FROM",
+  [COMPETITION_KIND_CODES.WALLONIA]: "WALLONIA_EMAIL_FROM",
+  [COMPETITION_KIND_CODES.ZWEIFFEL]: "ZWEIFFEL_EMAIL_FROM",
+};
+
 export type SendResendEmailParams = {
   to: string[];
   subject: string;
   html: string;
   text?: string;
+  /** Selects kind-specific EMAIL_FROM; falls back to EMAIL_FROM. */
+  competitionKind?: CompetitionKindCode;
   /** Prefix for log lines. */
   logLabel?: string;
   maxAttempts?: number;
@@ -15,13 +29,24 @@ export type SendResendEmailResult = {
   error?: string;
 };
 
+/** Kind-specific from address, else EMAIL_FROM. */
+export function getEmailFrom(
+  competitionKind?: CompetitionKindCode,
+): string | undefined {
+  if (competitionKind) {
+    const kindFrom = process.env[KIND_EMAIL_FROM_ENV[competitionKind]]?.trim();
+    if (kindFrom) return kindFrom;
+  }
+  return process.env.EMAIL_FROM?.trim() || undefined;
+}
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
  * POST to Resend with retries and exponential backoff.
- * Skips (no throw) when RESEND_API_KEY / EMAIL_FROM unset or recipients empty.
+ * Skips (no throw) when RESEND_API_KEY / from address unset or recipients empty.
  */
 export async function sendResendEmail(
   params: SendResendEmailParams,
@@ -32,13 +57,17 @@ export async function sendResendEmail(
   }
 
   const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.EMAIL_FROM;
+  const from = getEmailFrom(params.competitionKind);
   const logLabel = params.logLabel ?? "resend-email";
 
   if (!apiKey || !from) {
     console.log(
       `[${logLabel}] Skipping send (RESEND_API_KEY or EMAIL_FROM unset)`,
-      { to, subject: params.subject },
+      {
+        to,
+        subject: params.subject,
+        competitionKind: params.competitionKind ?? null,
+      },
     );
     return { sent: false, skipped: true };
   }

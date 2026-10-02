@@ -10,6 +10,7 @@ import {
   splitRequestingAndReceivingCaptains,
   toCaptainContactFields,
 } from "./captain-contacts";
+import { loadMatchCompetitionKindCode } from "./match-competition-kind";
 import { loginThenMatchUrl, matchPostponementUrl } from "./postponement-email";
 import { sendResendEmail } from "./resend-email";
 
@@ -93,13 +94,11 @@ async function sendHomeAwaySwitchMail(
   logLabel: string,
   locale?: string | null,
 ): Promise<void> {
-  const captainFields = await loadCaptainContactFields(
-    homeTeamId,
-    awayTeamId,
-    ctx.requestingTeamId,
-  );
-
-  const emailContext = await loadEmailTemplateContext(locale);
+  const [captainFields, emailContext, competitionKind] = await Promise.all([
+    loadCaptainContactFields(homeTeamId, awayTeamId, ctx.requestingTeamId),
+    loadEmailTemplateContext(locale),
+    loadMatchCompetitionKindCode(ctx.matchId),
+  ]);
   const matchUrl = matchPostponementUrl(ctx.matchId);
   const loginUrl = loginThenMatchUrl(ctx.matchId);
 
@@ -130,6 +129,7 @@ async function sendHomeAwaySwitchMail(
     subject,
     html: bodyHtml,
     text: bodyText,
+    competitionKind: competitionKind ?? undefined,
     logLabel,
   });
 }

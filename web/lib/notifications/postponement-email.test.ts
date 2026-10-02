@@ -8,6 +8,10 @@ vi.mock("./resend-email", () => ({
   sendResendEmail: vi.fn().mockResolvedValue({ sent: true }),
 }));
 
+vi.mock("./match-competition-kind", () => ({
+  loadMatchCompetitionKindCode: vi.fn().mockResolvedValue("flanders"),
+}));
+
 import { createServiceClient } from "@/lib/supabase/server-client";
 import { sendResendEmail } from "./resend-email";
 import {
@@ -121,6 +125,7 @@ describe("postponement-email send", () => {
         subject: expect.any(String),
         html: expect.any(String),
         text: expect.any(String),
+        competitionKind: "flanders",
         logLabel: "postponement_proposed",
       }),
     );

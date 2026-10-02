@@ -115,7 +115,11 @@ VP template rows in the seed use sample IMP bands — verify against your compet
 | `SUPABASE_PROJECT_REF` | Optional reference / docs | General → Reference ID |
 | `DATABASE_URL` | Optional (external SQL tools) | Database → Connection string |
 | `RESEND_API_KEY` | Email notifications (task 5.6) | Resend API key |
-| `EMAIL_FROM` | Email notifications (task 5.6) | Verified Resend from address (e.g. `Interclub <noreply@domain>`) |
+| `EMAIL_FROM` | Email notifications (task 5.6) | Default verified Resend from address (e.g. `Interclub <noreply@domain>`) |
+| `NATIONAL_EMAIL_FROM` | Email notifications (optional) | From address for national competition |
+| `FLANDERS_EMAIL_FROM` | Email notifications (optional) | From address for Flanders competition |
+| `WALLONIA_EMAIL_FROM` | Email notifications (optional) | From address for Wallonia competition |
+| `ZWEIFFEL_EMAIL_FROM` | Email notifications (optional) | From address for Zweiffel competition |
 
 Never commit `.env` / `.env.local` or expose `SUPABASE_SECRET_KEY` in the browser. See [Understanding API keys](https://supabase.com/docs/guides/getting-started/api-keys).
 
