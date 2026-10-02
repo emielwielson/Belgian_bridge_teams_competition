@@ -23,7 +23,7 @@ Based on: `internal-docs/prd-belgian-bridge-competition-platform.md`
 - `supabase/functions/match-operations/index.ts` - Edge function for score submission and authorized edits.
 - `supabase/functions/operational-workflows/index.ts` - Edge function for postponement, home/away switch, arbiter requests.
 - `supabase/functions/file-upload-guard/index.ts` - Edge function validating file type and size on upload.
-- `supabase/functions/make-webhook-email/index.ts` - Webhook handler for Make.com email delivery.
+- `web/lib/notifications/resend-email.ts` - Resend sender for transactional email delivery.
 - `web/package.json` - Next.js app dependencies and scripts.
 - `web/next.config.ts` - Next.js configuration.
 - `web/app/layout.tsx` - Root layout, metadata, PWA hooks.
@@ -152,7 +152,7 @@ Based on: `internal-docs/prd-belgian-bridge-competition-platform.md`
   - [x] 5.3 Implement arbiter request API and Arbiter UI: board reference, image attachment, notify arbiters/admins/captains (FR 52–53).
   - [x] 5.4 Implement warnings and rulings (PDF attachment) CRUD with role checks (FR 45–46).
   - [x] 5.5 Implement file upload (`api/files/upload`, storage bucket): PDF and images only, max 10 MB (FR 47–49; edge guard deferred).
-  - [x] 5.6 Integrate Make.com email webhooks with retry for postponements and arbiter requests (FR 54–56).
+  - [x] 5.6 Integrate Resend email delivery with retry for postponements and arbiter requests (FR 54–56).
   - [x] 5.7 Build admin match log viewer API queryable by Competition Manager and System Admin (FR 57–59).
   - [x] 5.8 Write `supabase/tests/task5_operational_smoke_test.sql` covering postpone, switch, arbiter, and file validation paths.
 

@@ -4,12 +4,12 @@ vi.mock("@/lib/supabase/server-client", () => ({
   createServiceClient: vi.fn(),
 }));
 
-vi.mock("./make-webhook", () => ({
-  sendMakeWebhook: vi.fn().mockResolvedValue(true),
+vi.mock("./resend-email", () => ({
+  sendResendEmail: vi.fn().mockResolvedValue({ sent: true }),
 }));
 
 import { createServiceClient } from "@/lib/supabase/server-client";
-import { sendMakeWebhook } from "./make-webhook";
+import { sendResendEmail } from "./resend-email";
 import {
   sendHomeAwaySwitchDecisionEmail,
   sendHomeAwaySwitchProposedEmail,
@@ -73,7 +73,7 @@ describe("home-away-switch-email", () => {
     process.env = env;
   });
 
-  it("sends proposed event payload via make webhook", async () => {
+  it("sends proposed email via Resend", async () => {
     await sendHomeAwaySwitchProposedEmail(
       {
         matchId: "m1",
@@ -88,25 +88,20 @@ describe("home-away-switch-email", () => {
       "en",
     );
 
-    expect(sendMakeWebhook).toHaveBeenCalledWith(
+    expect(sendResendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
-        match_id: "m1",
-        match_url: "https://app.example.com/matches/m1",
-        login_url: "https://app.example.com/login?next=%2Fmatches%2Fm1",
-        cc: ["captain-home@example.com", "captain-away@example.com"],
-        requesting_captain_name: "Home Captain",
-        requesting_captain_email: "captain-home@example.com",
-        receiving_captain_name: "Away Captain",
-        receiving_captain_email: "captain-away@example.com",
-        body_text: expect.stringMatching(
+        to: ["captain-home@example.com", "captain-away@example.com"],
+        text: expect.stringMatching(
           /Please do not reply to this email[\s\S]*Home Captain/,
         ),
+        html: expect.any(String),
+        subject: expect.any(String),
+        logLabel: "home_away_switch_proposed",
       }),
-      expect.objectContaining({ eventType: "home_away_switch_proposed" }),
     );
   });
 
-  it("maps decision action to approved event", async () => {
+  it("maps decision action to approved log label", async () => {
     await sendHomeAwaySwitchDecisionEmail(
       {
         matchId: "m1",
@@ -122,12 +117,11 @@ describe("home-away-switch-email", () => {
       "en",
     );
 
-    expect(sendMakeWebhook).toHaveBeenCalledWith(
+    expect(sendResendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
-        action: "approved",
-        receiving_captain_name: "Away Captain",
+        logLabel: "home_away_switch_approved",
+        text: expect.stringContaining("Away Captain"),
       }),
-      expect.objectContaining({ eventType: "home_away_switch_approved" }),
     );
   });
 });

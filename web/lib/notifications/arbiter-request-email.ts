@@ -6,7 +6,7 @@ import {
 } from "@/lib/i18n/email-templates";
 import { createServiceClient } from "@/lib/supabase/server-client";
 import { getAppBaseUrl, loginThenMatchUrl } from "./postponement-email";
-import { sendMakeWebhook } from "./make-webhook";
+import { sendResendEmail } from "./resend-email";
 
 export type ArbiterRequestCreatedEmailContext = {
   matchId: string;
@@ -188,7 +188,7 @@ function uniqueEmails(addresses: string[]): string[] {
 }
 
 /** Create: managers + chief only. */
-async function loadCreatedCc(matchId: string): Promise<string[]> {
+async function loadCreatedRecipients(matchId: string): Promise<string[]> {
   const [managerEmails, chiefEmails] = await Promise.all([
     loadCompetitionManagerEmails(matchId),
     loadChiefArbiterEmails(matchId),
@@ -197,7 +197,7 @@ async function loadCreatedCc(matchId: string): Promise<string[]> {
 }
 
 /** Resolve: managers + chief + assigned + captains. */
-async function loadResolvedCc(
+async function loadResolvedRecipients(
   matchId: string,
   assignedArbiterId: string | null,
 ): Promise<string[]> {
@@ -259,8 +259,8 @@ export async function sendArbiterRequestCreatedEmail(
   ctx: ArbiterRequestCreatedEmailContext,
   locale?: string | null,
 ): Promise<void> {
-  const cc = await loadCreatedCc(ctx.matchId);
-  if (cc.length === 0) return;
+  const to = await loadCreatedRecipients(ctx.matchId);
+  if (to.length === 0) return;
 
   const emailContext = await loadEmailTemplateContext(locale);
   const summary = await loadMatchSummary(ctx.matchId, locale);
@@ -282,19 +282,13 @@ export async function sendArbiterRequestCreatedEmail(
     emailContext,
   );
 
-  await sendMakeWebhook(
-    {
-      subject,
-      body_text: bodyText,
-      body_html: bodyHtml,
-      cc,
-      match_id: ctx.matchId,
-      match_url: matchUrl,
-      login_url: loginUrl,
-      arbiter_inbox_url: inboxUrl,
-    },
-    { eventType: "arbiter_request_created" },
-  );
+  await sendResendEmail({
+    to,
+    subject,
+    html: bodyHtml,
+    text: bodyText,
+    logLabel: "arbiter_request_created",
+  });
 }
 
 async function loadArbiterRequestSummary(
@@ -336,8 +330,8 @@ export async function sendArbiterRequestAssignedEmail(
   const summary = await loadArbiterRequestSummary(ctx.requestId, locale);
   if (!summary) return;
 
-  const cc = await loadAssignedArbiterEmail(ctx.assignedArbiterId);
-  if (cc.length === 0) return;
+  const to = await loadAssignedArbiterEmail(ctx.assignedArbiterId);
+  if (to.length === 0) return;
 
   const emailContext = await loadEmailTemplateContext(locale);
   const baseUrl = getAppBaseUrl();
@@ -357,21 +351,13 @@ export async function sendArbiterRequestAssignedEmail(
     emailContext,
   );
 
-  await sendMakeWebhook(
-    {
-      subject,
-      body_text: bodyText,
-      body_html: bodyHtml,
-      cc,
-      match_id: summary.matchId,
-      match_url: matchUrl,
-      login_url: loginUrl,
-      arbiter_inbox_url: inboxUrl,
-      request_id: ctx.requestId,
-      assigned_arbiter_id: ctx.assignedArbiterId,
-    },
-    { eventType: "arbiter_request_assigned" },
-  );
+  await sendResendEmail({
+    to,
+    subject,
+    html: bodyHtml,
+    text: bodyText,
+    logLabel: "arbiter_request_assigned",
+  });
 }
 
 export async function sendArbiterRequestResolvedEmail(
@@ -381,11 +367,11 @@ export async function sendArbiterRequestResolvedEmail(
   const summary = await loadArbiterRequestSummary(ctx.requestId, locale);
   if (!summary) return;
 
-  const [cc, emailContext] = await Promise.all([
-    loadResolvedCc(summary.matchId, summary.assignedArbiterId),
+  const [to, emailContext] = await Promise.all([
+    loadResolvedRecipients(summary.matchId, summary.assignedArbiterId),
     loadEmailTemplateContext(locale),
   ]);
-  if (cc.length === 0) return;
+  if (to.length === 0) return;
 
   const baseUrl = getAppBaseUrl();
   const matchUrl = `${baseUrl}/matches/${summary.matchId}`;
@@ -406,20 +392,11 @@ export async function sendArbiterRequestResolvedEmail(
     emailContext,
   );
 
-  await sendMakeWebhook(
-    {
-      subject,
-      body_text: bodyText,
-      body_html: bodyHtml,
-      cc,
-      match_id: summary.matchId,
-      match_url: matchUrl,
-      login_url: loginUrl,
-      arbiter_inbox_url: inboxUrl,
-      request_id: ctx.requestId,
-      description: summary.description,
-      ruling_url: ctx.rulingSignedUrl ?? null,
-    },
-    { eventType: "arbiter_request_resolved" },
-  );
+  await sendResendEmail({
+    to,
+    subject,
+    html: bodyHtml,
+    text: bodyText,
+    logLabel: "arbiter_request_resolved",
+  });
 }

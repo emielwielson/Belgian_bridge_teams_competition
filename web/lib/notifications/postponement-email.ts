@@ -5,13 +5,12 @@ import {
 } from "@/lib/i18n/email-templates";
 import { createServiceClient } from "@/lib/supabase/server-client";
 import {
-  captainContactWebhookFields,
   captainEmailsFromContacts,
   loadCaptainContactsForTeams,
   splitRequestingAndReceivingCaptains,
   toCaptainContactFields,
 } from "./captain-contacts";
-import { sendMakeWebhook } from "./make-webhook";
+import { sendResendEmail } from "./resend-email";
 
 export type PostponementProposedEmailContext = {
   matchId: string;
@@ -70,7 +69,7 @@ function uniqueEmails(addresses: string[]): string[] {
   return out;
 }
 
-async function loadWorkflowCc(
+async function loadWorkflowRecipients(
   homeTeamId: string,
   awayTeamId: string,
 ): Promise<string[]> {
@@ -98,23 +97,20 @@ async function loadCaptainContactFields(
     awayTeamId,
     requestingTeamId,
   );
-  return {
-    captainFields: toCaptainContactFields(requesting, receiving),
-    webhookFields: captainContactWebhookFields(requesting, receiving),
-  };
+  return toCaptainContactFields(requesting, receiving);
 }
 
-/** Sends postponement-proposed email via Make.com (CC: both captains). */
+/** Sends postponement-proposed email via Resend (both captains). */
 export async function sendPostponementProposedEmail(
   ctx: PostponementProposedEmailContext,
   homeTeamId: string,
   awayTeamId: string,
   locale?: string | null,
 ): Promise<void> {
-  const cc = await loadWorkflowCc(homeTeamId, awayTeamId);
-  if (cc.length === 0) return;
+  const to = await loadWorkflowRecipients(homeTeamId, awayTeamId);
+  if (to.length === 0) return;
 
-  const { captainFields, webhookFields } = await loadCaptainContactFields(
+  const captainFields = await loadCaptainContactFields(
     homeTeamId,
     awayTeamId,
     ctx.requestingTeamId,
@@ -128,37 +124,26 @@ export async function sendPostponementProposedEmail(
     emailContext,
   );
 
-  await sendMakeWebhook(
-    {
-      subject,
-      body_text: bodyText,
-      body_html: bodyHtml,
-      cc,
-      match_id: ctx.matchId,
-      match_url: matchUrl,
-      round: ctx.round,
-      home_team_name: ctx.homeTeamName,
-      away_team_name: ctx.awayTeamName,
-      proposing_team_name: ctx.proposingTeamName,
-      previous_datetime: ctx.previousDatetime,
-      proposed_datetime: ctx.proposedDatetime,
-      ...webhookFields,
-    },
-    { eventType: "postponement_proposed" },
-  );
+  await sendResendEmail({
+    to,
+    subject,
+    html: bodyHtml,
+    text: bodyText,
+    logLabel: "postponement_proposed",
+  });
 }
 
-/** Sends postponement decision email via Make.com (CC: both captains). */
+/** Sends postponement decision email via Resend (both captains). */
 export async function sendPostponementDecisionEmail(
   ctx: PostponementDecisionEmailContext,
   homeTeamId: string,
   awayTeamId: string,
   locale?: string | null,
 ): Promise<void> {
-  const cc = await loadWorkflowCc(homeTeamId, awayTeamId);
-  if (cc.length === 0) return;
+  const to = await loadWorkflowRecipients(homeTeamId, awayTeamId);
+  if (to.length === 0) return;
 
-  const { captainFields, webhookFields } = await loadCaptainContactFields(
+  const captainFields = await loadCaptainContactFields(
     homeTeamId,
     awayTeamId,
     ctx.requestingTeamId,
@@ -174,38 +159,17 @@ export async function sendPostponementDecisionEmail(
     emailContext,
   );
 
-  const actionLabelByAction: Record<PostponementDecision, string> = {
-    approve: emailContext.t("postponementDecision.approved"),
-    reject: emailContext.t("postponementDecision.rejected"),
-    cancel: emailContext.t("postponementDecision.cancelled"),
-  };
-  const eventTypeByAction: Record<
-    PostponementDecision,
-    "postponement_approved" | "postponement_rejected" | "postponement_cancelled"
-  > = {
+  const logLabelByAction: Record<PostponementDecision, string> = {
     approve: "postponement_approved",
     reject: "postponement_rejected",
     cancel: "postponement_cancelled",
   };
 
-  await sendMakeWebhook(
-    {
-      subject,
-      body_text: bodyText,
-      body_html: bodyHtml,
-      cc,
-      match_id: ctx.matchId,
-      match_url: matchUrl,
-      login_url: loginUrl,
-      round: ctx.round,
-      home_team_name: ctx.homeTeamName,
-      away_team_name: ctx.awayTeamName,
-      proposing_team_name: ctx.proposingTeamName,
-      previous_datetime: ctx.previousDatetime,
-      proposed_datetime: ctx.proposedDatetime,
-      action: actionLabelByAction[ctx.action],
-      ...webhookFields,
-    },
-    { eventType: eventTypeByAction[ctx.action] },
-  );
+  await sendResendEmail({
+    to,
+    subject,
+    html: bodyHtml,
+    text: bodyText,
+    logLabel: logLabelByAction[ctx.action],
+  });
 }

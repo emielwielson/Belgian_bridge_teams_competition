@@ -114,7 +114,8 @@ VP template rows in the seed use sample IMP bands — verify against your compet
 | `SUPABASE_SECRET_KEY` | Server only (API routes, admin scripts) | API Keys → **Secret key** |
 | `SUPABASE_PROJECT_REF` | Optional reference / docs | General → Reference ID |
 | `DATABASE_URL` | Optional (external SQL tools) | Database → Connection string |
-| `MAKE_WEBHOOK_URL` | Email notifications (task 5.6) | Make.com scenario webhook |
+| `RESEND_API_KEY` | Email notifications (task 5.6) | Resend API key |
+| `EMAIL_FROM` | Email notifications (task 5.6) | Verified Resend from address (e.g. `Interclub <noreply@domain>`) |
 
 Never commit `.env` / `.env.local` or expose `SUPABASE_SECRET_KEY` in the browser. See [Understanding API keys](https://supabase.com/docs/guides/getting-started/api-keys).
 

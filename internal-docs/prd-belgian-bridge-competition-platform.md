@@ -196,7 +196,7 @@ At this stage, the system assumes **one active season only**. Historical and mul
 - Enforce constraints in database and/or backend service layer (not frontend-only).
 - Use optimistic but safe concurrency handling for score edits (last write wins for authorized admin edits only, with audit trail).
 - File storage must validate mime type and size on upload.
-- Email delivery must be implemented via Make.com scenarios/webhooks, with retry handling for delivery failures.
+- Email delivery must be implemented via Resend, with retry handling for delivery failures.
 - API versioning at launch should use URL path versioning (`/v1`) for clarity and future client compatibility.
 - API should be documented (e.g., OpenAPI or equivalent) and treated as a stable product contract.
 - Keep data model season-aware internally, while exposing only active season behavior in MVP UX.
@@ -221,7 +221,7 @@ At this stage, the system assumes **one active season only**. Historical and mul
 No open questions currently. Latest decisions captured in this PRD:
 
 1. Competition Manager and System Admin are distinct roles; System Admin has full access.
-2. Email notifications are implemented via Make.com.
+2. Email notifications are implemented via Resend.
 3. No additional legal/compliance constraints are currently required for indefinite storage.
 4. No full score edit history is required for player edits; only score submission events and admin-initiated changes are logged.
 5. Double round-robin references the fixed 14-round mirrored 8-team RBBF schedule template.

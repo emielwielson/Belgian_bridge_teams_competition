@@ -117,15 +117,3 @@ export function toCaptainContactFields(
     receivingCaptainEmail: receiving.email,
   };
 }
-
-export function captainContactWebhookFields(
-  requesting: CaptainContact,
-  receiving: CaptainContact,
-): Record<string, string | null> {
-  return {
-    requesting_captain_name: requesting.name,
-    requesting_captain_email: requesting.email,
-    receiving_captain_name: receiving.name,
-    receiving_captain_email: receiving.email,
-  };
-}

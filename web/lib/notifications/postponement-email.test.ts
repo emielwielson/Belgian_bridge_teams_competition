@@ -4,12 +4,12 @@ vi.mock("@/lib/supabase/server-client", () => ({
   createServiceClient: vi.fn(),
 }));
 
-vi.mock("./make-webhook", () => ({
-  sendMakeWebhook: vi.fn().mockResolvedValue(true),
+vi.mock("./resend-email", () => ({
+  sendResendEmail: vi.fn().mockResolvedValue({ sent: true }),
 }));
 
 import { createServiceClient } from "@/lib/supabase/server-client";
-import { sendMakeWebhook } from "./make-webhook";
+import { sendResendEmail } from "./resend-email";
 import {
   getAppBaseUrl,
   matchPostponementUrl,
@@ -98,7 +98,7 @@ describe("postponement-email send", () => {
     process.env = env;
   });
 
-  it("sends proposed event with captain-only cc", async () => {
+  it("sends proposed email to both captains", async () => {
     await sendPostponementProposedEmail(
       {
         matchId: "m1",
@@ -115,13 +115,14 @@ describe("postponement-email send", () => {
       "en",
     );
 
-    expect(sendMakeWebhook).toHaveBeenCalledWith(
+    expect(sendResendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
-        match_id: "m1",
-        match_url: "https://app.example.com/matches/m1",
-        cc: ["captain-home@example.com", "captain-away@example.com"],
+        to: ["captain-home@example.com", "captain-away@example.com"],
+        subject: expect.any(String),
+        html: expect.any(String),
+        text: expect.any(String),
+        logLabel: "postponement_proposed",
       }),
-      expect.objectContaining({ eventType: "postponement_proposed" }),
     );
   });
 });

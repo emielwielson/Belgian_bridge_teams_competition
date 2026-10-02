@@ -5,14 +5,13 @@ import {
 } from "@/lib/i18n/email-templates";
 import { createServiceClient } from "@/lib/supabase/server-client";
 import {
-  captainContactWebhookFields,
   captainEmailsFromContacts,
   loadCaptainContactsForTeams,
   splitRequestingAndReceivingCaptains,
   toCaptainContactFields,
 } from "./captain-contacts";
 import { loginThenMatchUrl, matchPostponementUrl } from "./postponement-email";
-import { sendMakeWebhook, type MakeWebhookEventType } from "./make-webhook";
+import { sendResendEmail } from "./resend-email";
 
 export type HomeAwaySwitchProposedEmailContext = {
   matchId: string;
@@ -47,7 +46,7 @@ function uniqueEmails(addresses: string[]): string[] {
   return out;
 }
 
-async function loadHomeAwaySwitchCc(
+async function loadHomeAwaySwitchRecipients(
   homeTeamId: string,
   awayTeamId: string,
 ): Promise<string[]> {
@@ -75,14 +74,10 @@ async function loadCaptainContactFields(
     awayTeamId,
     requestingTeamId,
   );
-  return {
-    captainFields: toCaptainContactFields(requesting, receiving),
-    webhookFields: captainContactWebhookFields(requesting, receiving),
-  };
+  return toCaptainContactFields(requesting, receiving);
 }
 
-async function sendPayload(
-  eventType: MakeWebhookEventType,
+async function sendHomeAwaySwitchMail(
   ctx: {
     matchId: string;
     round: number;
@@ -94,10 +89,11 @@ async function sendPayload(
   },
   homeTeamId: string,
   awayTeamId: string,
-  cc: string[],
+  to: string[],
+  logLabel: string,
   locale?: string | null,
-): Promise<boolean> {
-  const { captainFields, webhookFields } = await loadCaptainContactFields(
+): Promise<void> {
+  const captainFields = await loadCaptainContactFields(
     homeTeamId,
     awayTeamId,
     ctx.requestingTeamId,
@@ -106,8 +102,6 @@ async function sendPayload(
   const emailContext = await loadEmailTemplateContext(locale);
   const matchUrl = matchPostponementUrl(ctx.matchId);
   const loginUrl = loginThenMatchUrl(ctx.matchId);
-
-  const buildCtx = { ...ctx, ...captainFields };
 
   const { subject, bodyText, bodyHtml } = ctx.action
     ? buildHomeAwaySwitchDecisionEmail(
@@ -125,74 +119,62 @@ async function sendPayload(
         emailContext,
       )
     : buildHomeAwaySwitchProposedEmail(
-        buildCtx,
+        { ...ctx, ...captainFields },
         matchUrl,
         loginUrl,
         emailContext,
       );
 
-  const actionLabel = ctx.action
-    ? {
-        approve: emailContext.t("homeAwaySwitchDecision.approved"),
-        reject: emailContext.t("homeAwaySwitchDecision.rejected"),
-        cancel: emailContext.t("homeAwaySwitchDecision.cancelled"),
-      }[ctx.action]
-    : "proposed";
-
-  return sendMakeWebhook(
-    {
-      subject,
-      body_text: bodyText,
-      body_html: bodyHtml,
-      cc,
-      match_id: ctx.matchId,
-      match_url: matchUrl,
-      login_url: loginUrl,
-      round: ctx.round,
-      home_team_name: ctx.homeTeamName,
-      away_team_name: ctx.awayTeamName,
-      requesting_team_name: ctx.requestingTeamName,
-      action: actionLabel,
-      ...webhookFields,
-    },
-    { eventType },
-  );
+  await sendResendEmail({
+    to,
+    subject,
+    html: bodyHtml,
+    text: bodyText,
+    logLabel,
+  });
 }
 
-/** Send Make notification when a home/away switch request is proposed. */
+/** Send Resend notification when a home/away switch request is proposed. */
 export async function sendHomeAwaySwitchProposedEmail(
   ctx: HomeAwaySwitchProposedEmailContext,
   homeTeamId: string,
   awayTeamId: string,
   locale?: string | null,
 ): Promise<void> {
-  const cc = await loadHomeAwaySwitchCc(homeTeamId, awayTeamId);
-  if (cc.length === 0) return;
-  await sendPayload("home_away_switch_proposed", ctx, homeTeamId, awayTeamId, cc, locale);
+  const to = await loadHomeAwaySwitchRecipients(homeTeamId, awayTeamId);
+  if (to.length === 0) return;
+  await sendHomeAwaySwitchMail(
+    ctx,
+    homeTeamId,
+    awayTeamId,
+    to,
+    "home_away_switch_proposed",
+    locale,
+  );
 }
 
-/** Send Make notification when a home/away switch request is approved/rejected/cancelled. */
+/** Send Resend notification when a home/away switch request is approved/rejected/cancelled. */
 export async function sendHomeAwaySwitchDecisionEmail(
   ctx: HomeAwaySwitchDecisionEmailContext,
   homeTeamId: string,
   awayTeamId: string,
   locale?: string | null,
 ): Promise<void> {
-  const cc = await loadHomeAwaySwitchCc(homeTeamId, awayTeamId);
-  if (cc.length === 0) return;
+  const to = await loadHomeAwaySwitchRecipients(homeTeamId, awayTeamId);
+  if (to.length === 0) return;
 
-  const eventTypeByAction: Record<HomeAwaySwitchDecision, MakeWebhookEventType> = {
+  const logLabelByAction: Record<HomeAwaySwitchDecision, string> = {
     approve: "home_away_switch_approved",
     reject: "home_away_switch_rejected",
     cancel: "home_away_switch_cancelled",
   };
 
-  await sendPayload(
-    eventTypeByAction[ctx.action],
+  await sendHomeAwaySwitchMail(
     { ...ctx, action: ctx.action },
     homeTeamId,
     awayTeamId,
-    cc,
+    to,
+    logLabelByAction[ctx.action],
     locale,
   );
 }

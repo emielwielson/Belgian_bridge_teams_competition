@@ -4,12 +4,12 @@ vi.mock("@/lib/supabase/server-client", () => ({
   createServiceClient: vi.fn(),
 }));
 
-vi.mock("./make-webhook", () => ({
-  sendMakeWebhook: vi.fn().mockResolvedValue(true),
+vi.mock("./resend-email", () => ({
+  sendResendEmail: vi.fn().mockResolvedValue({ sent: true }),
 }));
 
 import { createServiceClient } from "@/lib/supabase/server-client";
-import { sendMakeWebhook } from "./make-webhook";
+import { sendResendEmail } from "./resend-email";
 import {
   sendArbiterRequestAssignedEmail,
   sendArbiterRequestCreatedEmail,
@@ -185,63 +185,53 @@ describe("arbiter-request-email", () => {
     process.env = env;
   });
 
-  it("sends created event to managers and chief only", async () => {
+  it("sends created email to managers and chief only", async () => {
     await sendArbiterRequestCreatedEmail({ matchId: "m1" }, "en");
 
-    expect(sendMakeWebhook).toHaveBeenCalledWith(
+    expect(sendResendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
-        match_id: "m1",
-        match_url: "https://app.example.com/matches/m1",
-        login_url: "https://app.example.com/login?next=%2Fmatches%2Fm1",
         subject: expect.stringContaining("Arbiter request:"),
-        cc: expect.arrayContaining([
+        to: expect.arrayContaining([
           "chief@example.com",
           "manager@example.com",
         ]),
+        logLabel: "arbiter_request_created",
       }),
-      expect.objectContaining({ eventType: "arbiter_request_created" }),
     );
-    const payload = vi.mocked(sendMakeWebhook).mock.calls[0][0] as {
-      cc: string[];
-    };
-    expect(payload.cc).not.toContain("home-captain@example.com");
-    expect(payload.cc).not.toContain("away-captain@example.com");
-    expect(payload.cc).not.toContain("assigned@example.com");
+    const params = vi.mocked(sendResendEmail).mock.calls[0][0];
+    expect(params.to).not.toContain("home-captain@example.com");
+    expect(params.to).not.toContain("away-captain@example.com");
+    expect(params.to).not.toContain("assigned@example.com");
   });
 
-  it("sends assigned event to the assigned arbiter only", async () => {
+  it("sends assigned email to the assigned arbiter only", async () => {
     await sendArbiterRequestAssignedEmail(
       { requestId: "req-1", assignedArbiterId: "assigned-1" },
       "en",
     );
 
-    expect(sendMakeWebhook).toHaveBeenCalledWith(
+    expect(sendResendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
-        request_id: "req-1",
-        assigned_arbiter_id: "assigned-1",
-        cc: ["assigned@example.com"],
+        to: ["assigned@example.com"],
+        logLabel: "arbiter_request_assigned",
       }),
-      expect.objectContaining({ eventType: "arbiter_request_assigned" }),
     );
   });
 
-  it("sends resolved event to managers, chief, assigned, and captains", async () => {
+  it("sends resolved email to managers, chief, assigned, and captains", async () => {
     await sendArbiterRequestResolvedEmail({ requestId: "req-1" }, "en");
 
-    expect(sendMakeWebhook).toHaveBeenCalledWith(
+    expect(sendResendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
-        request_id: "req-1",
-        match_id: "m1",
-        match_url: "https://app.example.com/matches/m1",
-        cc: expect.arrayContaining([
+        to: expect.arrayContaining([
           "chief@example.com",
           "manager@example.com",
           "assigned@example.com",
           "home-captain@example.com",
           "away-captain@example.com",
         ]),
+        logLabel: "arbiter_request_resolved",
       }),
-      expect.objectContaining({ eventType: "arbiter_request_resolved" }),
     );
   });
 });
