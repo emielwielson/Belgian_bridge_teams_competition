@@ -195,7 +195,10 @@ export function lineupIsCompleteFromData(
     | "home_lineup_locked_at"
     | "away_lineup_locked_at"
   >,
-  lineup: readonly Pick<MatchLineupEntry, "team_id" | "room" | "direction">[],
+  lineup: readonly Pick<
+    MatchLineupEntry,
+    "team_id" | "player_id" | "room" | "direction"
+  >[],
   isHonor: boolean,
 ): boolean {
   if (!isHonor) {
@@ -217,8 +220,8 @@ export function lineupIsCompleteFromData(
   const homeRows = lineup.filter((r) => r.team_id === match.home_team_id);
   const awayRows = lineup.filter((r) => r.team_id === match.away_team_id);
   return (
-    isHonorSeatedLineupComplete(homeRows, "home") &&
-    isHonorSeatedLineupComplete(awayRows, "away")
+    isHonorSeatedLineupComplete([...homeRows], "home") &&
+    isHonorSeatedLineupComplete([...awayRows], "away")
   );
 }
 

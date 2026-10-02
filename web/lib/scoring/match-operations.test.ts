@@ -66,16 +66,36 @@ describe("lineupIsCompleteFromData", () => {
 
   it("is true when both non-honor teams have at least 4 players", () => {
     const lineup = [
-      ...Array.from({ length: 4 }, () => ({ team_id: "home-1" })),
-      ...Array.from({ length: 4 }, () => ({ team_id: "away-1" })),
+      ...Array.from({ length: 4 }, (_, i) => ({
+        team_id: "home-1",
+        player_id: `h${i}`,
+        room: null,
+        direction: null,
+      })),
+      ...Array.from({ length: 4 }, (_, i) => ({
+        team_id: "away-1",
+        player_id: `a${i}`,
+        room: null,
+        direction: null,
+      })),
     ];
     expect(lineupIsCompleteFromData(match, lineup, false)).toBe(true);
   });
 
   it("is false when a non-honor side has fewer than 4 players", () => {
     const lineup = [
-      ...Array.from({ length: 4 }, () => ({ team_id: "home-1" })),
-      ...Array.from({ length: 3 }, () => ({ team_id: "away-1" })),
+      ...Array.from({ length: 4 }, (_, i) => ({
+        team_id: "home-1",
+        player_id: `h${i}`,
+        room: null,
+        direction: null,
+      })),
+      ...Array.from({ length: 3 }, (_, i) => ({
+        team_id: "away-1",
+        player_id: `a${i}`,
+        room: null,
+        direction: null,
+      })),
     ];
     expect(lineupIsCompleteFromData(match, lineup, false)).toBe(false);
   });
