@@ -28,7 +28,9 @@
     "tagline": "MVP du flux de ligue — authentification et classement public sont en ligne.",
     "standings": "Classement",
     "signIn": "Se connecter",
-    "apiHealth": "État de l'API"
+    "apiHealth": "État de l'API",
+    "nextMatch": "Ma prochaine rencontre",
+    "nextMatchVs": "{homeTeam} vs {awayTeam}"
   },
   "auth": {
     "title": "Se connecter",

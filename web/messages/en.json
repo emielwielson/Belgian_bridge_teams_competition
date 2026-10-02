@@ -28,7 +28,9 @@
     "tagline": "Core league flow MVP — authentication and public standings are live.",
     "standings": "Standings",
     "signIn": "Sign in",
-    "apiHealth": "API health"
+    "apiHealth": "API health",
+    "nextMatch": "My next match",
+    "nextMatchVs": "{homeTeam} vs {awayTeam}"
   },
   "auth": {
     "title": "Sign in",

@@ -150,6 +150,42 @@ async function loadUnplayedMatchRows(
   return [...byId.values()];
 }
 
+export async function loadNextUnplayedMatchForTeam(
+  supabase: SupabaseClient,
+  teamId: string,
+): Promise<PlayerMatchSummary | null> {
+  const unplayed = await loadUnplayedMatchRows(supabase, [teamId]);
+  if (unplayed.length === 0) return null;
+
+  unplayed.sort(
+    (a, b) =>
+      new Date(a.datetime).getTime() - new Date(b.datetime).getTime(),
+  );
+  const next = unplayed[0]!;
+
+  const { data: teams } = await supabase
+    .from("teams")
+    .select("id, name")
+    .in("id", [next.home_team_id, next.away_team_id]);
+
+  const teamMap = new Map(teams?.map((t) => [t.id, t.name]) ?? []);
+
+  return {
+    id: next.id,
+    round: next.round,
+    datetime: next.datetime,
+    played_at: next.played_at,
+    home_team: {
+      id: next.home_team_id,
+      name: teamMap.get(next.home_team_id) ?? "Home",
+    },
+    away_team: {
+      id: next.away_team_id,
+      name: teamMap.get(next.away_team_id) ?? "Away",
+    },
+  };
+}
+
 export async function loadScorableMatchesForUser(
   supabase: SupabaseClient,
   userId: string,

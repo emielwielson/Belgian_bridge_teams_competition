@@ -28,7 +28,9 @@
     "tagline": "Kerncompetitie MVP — authenticatie en openbaar klassement zijn live.",
     "standings": "Klassement",
     "signIn": "Aanmelden",
-    "apiHealth": "API-status"
+    "apiHealth": "API-status",
+    "nextMatch": "Mijn volgende wedstrijd",
+    "nextMatchVs": "{homeTeam} vs {awayTeam}"
   },
   "auth": {
     "title": "Aanmelden",
