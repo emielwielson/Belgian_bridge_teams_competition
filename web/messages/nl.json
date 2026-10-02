@@ -456,6 +456,8 @@
     "addPlayerFailed": "Speler toevoegen mislukt",
     "removePlayerFailed": "Speler verwijderen mislukt",
     "matchesTitle": "Wedstrijden",
+    "nextMatch": "Volgende wedstrijd",
+    "nextMatchVs": "{homeTeam} vs {awayTeam}",
     "noMatches": "Nog geen wedstrijden gepland voor {teamName}.",
     "round": "Ronde {round}",
     "played": "Gespeeld",

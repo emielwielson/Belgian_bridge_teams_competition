@@ -456,6 +456,8 @@
     "addPlayerFailed": "Échec de l'ajout du joueur",
     "removePlayerFailed": "Échec du retrait du joueur",
     "matchesTitle": "Rencontres",
+    "nextMatch": "Prochaine rencontre",
+    "nextMatchVs": "{homeTeam} vs {awayTeam}",
     "noMatches": "Aucune rencontre programmée pour {teamName} pour l'instant.",
     "round": "Journée {round}",
     "played": "Jouée",

@@ -456,6 +456,8 @@
     "addPlayerFailed": "Failed to add player",
     "removePlayerFailed": "Failed to remove player",
     "matchesTitle": "Matches",
+    "nextMatch": "Next match",
+    "nextMatchVs": "{homeTeam} vs {awayTeam}",
     "noMatches": "No matches scheduled for {teamName} yet.",
     "round": "Round {round}",
     "played": "Played",

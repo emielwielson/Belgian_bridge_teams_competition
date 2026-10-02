@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { TeamConventionCardsSection } from "@/components/teams/TeamConventionCardsSection";
 import { TeamInfoSection } from "@/components/teams/TeamInfoSection";
 import { TeamMatchesList } from "@/components/teams/TeamMatchesList";
+import { TeamNextMatchLink } from "@/components/teams/TeamNextMatchLink";
 import { TeamRosterSection } from "@/components/teams/TeamRosterSection";
 import { COMPETITION_ADMIN_ROLES } from "@/lib/auth/roles";
 import { hasAnyRole } from "@/lib/auth/roles";
@@ -101,7 +102,9 @@ export default async function TeamPage({ params }: Props) {
         canLinkToPlayers={canLinkToPlayers}
         showCaptainContacts={Boolean(user)}
         canManageLocation={canManageLocation}
-        nextMatch={nextMatch}
+        nextMatchLink={
+          nextMatch ? <TeamNextMatchLink match={nextMatch} /> : null
+        }
       />
 
       <TeamRosterSection
