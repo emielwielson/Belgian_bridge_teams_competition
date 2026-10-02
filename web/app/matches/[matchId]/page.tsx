@@ -14,20 +14,19 @@ type Props = { params: Promise<{ matchId: string }> };
 
 export default async function MatchPage({ params }: Props) {
   const { matchId } = await params;
-  const match = await loadMatchForPage(createPublicClient(), matchId);
+  const publicClient = createPublicClient();
+  const match = await loadMatchForPage(publicClient, matchId);
   if (!match) {
     notFound();
   }
 
   const sessionSupabase = await createSessionClient();
-  const {
-    data: { user },
-  } = await sessionSupabase.auth.getUser();
+  const [{ data: auth }, backLink] = await Promise.all([
+    sessionSupabase.auth.getUser(),
+    loadMatchStandingsBackLink(publicClient, match.group_id),
+  ]);
+  const user = auth.user;
   const roles = user ? await getUserRoles(sessionSupabase, user.id) : [];
-  const backLink = await loadMatchStandingsBackLink(
-    createPublicClient(),
-    match.group_id,
-  );
 
   return (
     <MatchDetailView

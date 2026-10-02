@@ -186,6 +186,42 @@ export async function isHonorMatch(
   return isHonorDivision(ctx);
 }
 
+/** Sync completeness check when lineup + honor flag are already loaded. */
+export function lineupIsCompleteFromData(
+  match: Pick<
+    MatchContext,
+    | "home_team_id"
+    | "away_team_id"
+    | "home_lineup_locked_at"
+    | "away_lineup_locked_at"
+  >,
+  lineup: readonly Pick<MatchLineupEntry, "team_id" | "room" | "direction">[],
+  isHonor: boolean,
+): boolean {
+  if (!isHonor) {
+    let homeCount = 0;
+    let awayCount = 0;
+    for (const row of lineup) {
+      if (row.team_id === match.home_team_id) homeCount += 1;
+      else if (row.team_id === match.away_team_id) awayCount += 1;
+    }
+    return (
+      homeCount >= MIN_PLAYERS_PER_TEAM && awayCount >= MIN_PLAYERS_PER_TEAM
+    );
+  }
+
+  if (!match.home_lineup_locked_at || !match.away_lineup_locked_at) {
+    return false;
+  }
+
+  const homeRows = lineup.filter((r) => r.team_id === match.home_team_id);
+  const awayRows = lineup.filter((r) => r.team_id === match.away_team_id);
+  return (
+    isHonorSeatedLineupComplete(homeRows, "home") &&
+    isHonorSeatedLineupComplete(awayRows, "away")
+  );
+}
+
 export async function isLineupComplete(
   supabase: SupabaseClient,
   match: Pick<
@@ -199,25 +235,8 @@ export async function isLineupComplete(
   >,
 ): Promise<boolean> {
   const honor = await isHonorMatch(supabase, match.group_id);
-  if (!honor) {
-    const counts = await countLineupByTeam(supabase, match.id);
-    return (
-      (counts.get(match.home_team_id) ?? 0) >= MIN_PLAYERS_PER_TEAM &&
-      (counts.get(match.away_team_id) ?? 0) >= MIN_PLAYERS_PER_TEAM
-    );
-  }
-
-  if (!match.home_lineup_locked_at || !match.away_lineup_locked_at) {
-    return false;
-  }
-
   const lineup = await getMatchLineup(supabase, match.id);
-  const homeRows = lineup.filter((r) => r.team_id === match.home_team_id);
-  const awayRows = lineup.filter((r) => r.team_id === match.away_team_id);
-  return (
-    isHonorSeatedLineupComplete(homeRows, "home") &&
-    isHonorSeatedLineupComplete(awayRows, "away")
-  );
+  return lineupIsCompleteFromData(match, lineup, honor);
 }
 
 export async function assertLineupComplete(

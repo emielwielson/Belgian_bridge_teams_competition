@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   loadMatchVenueLocation,
+  locationFromVenueTeamRow,
   venueTeamIdForMatch,
 } from "./match-venue-location";
 
@@ -23,6 +24,27 @@ describe("venueTeamIdForMatch", () => {
   });
 });
 
+describe("locationFromVenueTeamRow", () => {
+  it("resolves team override and club address", () => {
+    expect(
+      locationFromVenueTeamRow({
+        location: "  Team hall  ",
+        club: {
+          address: "Street 1",
+          postal_code: "1000",
+          location: "Brussels",
+          competition_location: null,
+        },
+        group: { division: { centralized_location: null } },
+      }),
+    ).toBe("Team hall");
+  });
+
+  it("returns null for missing team", () => {
+    expect(locationFromVenueTeamRow(null)).toBeNull();
+  });
+});
+
 function matchChain(data: unknown, error: unknown = null) {
   const api = {
     eq: vi.fn(),
@@ -32,41 +54,29 @@ function matchChain(data: unknown, error: unknown = null) {
   return api;
 }
 
-function teamChain(data: unknown, error: unknown = null) {
-  const api = {
-    eq: vi.fn(),
-    maybeSingle: vi.fn().mockResolvedValue({ data, error }),
-  };
-  api.eq.mockReturnValue(api);
-  return api;
-}
-
 describe("loadMatchVenueLocation", () => {
-  it("resolves the hosting team's location when hosting differs from home", async () => {
-    const matchSelect = matchChain({
+  it("resolves hosting away team from a single match query", async () => {
+    const select = matchChain({
       home_team_id: "home-1",
       hosting_team_id: "away-1",
-    });
-    const teamSelect = teamChain({
-      id: "away-1",
-      location: "  Away club hall  ",
-      club: {
-        address: "Street 1",
-        postal_code: "1000",
-        location: "Brussels",
-        competition_location: null,
+      home_team: {
+        location: "Home hall",
+        club: { competition_location: "Home club" },
+        group: { division: { centralized_location: null } },
       },
-      group: {
-        division: { centralized_location: null },
+      away_team: {
+        location: "  Away club hall  ",
+        club: {
+          address: "Street 1",
+          postal_code: "1000",
+          location: "Brussels",
+          competition_location: null,
+        },
+        group: { division: { centralized_location: null } },
       },
     });
 
-    const from = vi.fn((table: string) => {
-      if (table === "matches") {
-        return { select: vi.fn(() => matchSelect) };
-      }
-      return { select: vi.fn(() => teamSelect) };
-    });
+    const from = vi.fn(() => ({ select: vi.fn(() => select) }));
 
     const location = await loadMatchVenueLocation(
       { from } as unknown as SupabaseClient,
@@ -74,34 +84,36 @@ describe("loadMatchVenueLocation", () => {
     );
 
     expect(location).toBe("Away club hall");
-    expect(teamSelect.eq).toHaveBeenCalledWith("id", "away-1");
+    expect(from).toHaveBeenCalledTimes(1);
+    expect(from).toHaveBeenCalledWith("matches");
   });
 
   it("falls back to home team when hosting_team_id column is missing", async () => {
-    const matchSelect = matchChain(null, {
+    const first = matchChain(null, {
       code: "42703",
-      message: 'column matches.hosting_team_id does not exist',
+      message: "column matches.hosting_team_id does not exist",
     });
-    const teamSelect = teamChain({
-      id: "home-1",
-      location: null,
-      club: {
-        address: "Rue 2",
-        postal_code: "4000",
-        location: "Liège",
-        competition_location: null,
-      },
-      group: {
-        division: { centralized_location: null },
+    const second = matchChain({
+      home_team_id: "home-1",
+      home_team: {
+        location: null,
+        club: {
+          address: "Rue 2",
+          postal_code: "4000",
+          location: "Liège",
+          competition_location: null,
+        },
+        group: { division: { centralized_location: null } },
       },
     });
 
-    const from = vi.fn((table: string) => {
-      if (table === "matches") {
-        return { select: vi.fn(() => matchSelect) };
-      }
-      return { select: vi.fn(() => teamSelect) };
-    });
+    let call = 0;
+    const from = vi.fn(() => ({
+      select: vi.fn(() => {
+        call += 1;
+        return call === 1 ? first : second;
+      }),
+    }));
 
     const location = await loadMatchVenueLocation(
       { from } as unknown as SupabaseClient,
@@ -109,32 +121,31 @@ describe("loadMatchVenueLocation", () => {
     );
 
     expect(location).toBe("Rue 2 - 4000 - Liège");
-    expect(teamSelect.eq).toHaveBeenCalledWith("id", "home-1");
+    expect(from).toHaveBeenCalledTimes(2);
   });
 
   it("uses division centralized venue when present", async () => {
-    const matchSelect = matchChain({
+    const select = matchChain({
       home_team_id: "home-1",
       hosting_team_id: "home-1",
-    });
-    const teamSelect = teamChain({
-      id: "home-1",
-      location: "Team override",
-      club: {
-        competition_location: "Club override",
-        location: "City",
+      home_team: {
+        location: "Team override",
+        club: {
+          competition_location: "Club override",
+          location: "City",
+        },
+        group: {
+          division: { centralized_location: "  Central hall  " },
+        },
       },
-      group: {
-        division: { centralized_location: "  Central hall  " },
+      away_team: {
+        location: null,
+        club: null,
+        group: null,
       },
     });
 
-    const from = vi.fn((table: string) => {
-      if (table === "matches") {
-        return { select: vi.fn(() => matchSelect) };
-      }
-      return { select: vi.fn(() => teamSelect) };
-    });
+    const from = vi.fn(() => ({ select: vi.fn(() => select) }));
 
     const location = await loadMatchVenueLocation(
       { from } as unknown as SupabaseClient,
@@ -144,19 +155,9 @@ describe("loadMatchVenueLocation", () => {
     expect(location).toBe("Central hall");
   });
 
-  it("returns null when the hosting team cannot be loaded", async () => {
-    const matchSelect = matchChain({
-      home_team_id: "home-1",
-      hosting_team_id: null,
-    });
-    const teamSelect = teamChain(null);
-
-    const from = vi.fn((table: string) => {
-      if (table === "matches") {
-        return { select: vi.fn(() => matchSelect) };
-      }
-      return { select: vi.fn(() => teamSelect) };
-    });
+  it("returns null when the match cannot be loaded", async () => {
+    const select = matchChain(null);
+    const from = vi.fn(() => ({ select: vi.fn(() => select) }));
 
     const location = await loadMatchVenueLocation(
       { from } as unknown as SupabaseClient,

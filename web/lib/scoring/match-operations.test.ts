@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   LineupValidationError,
   isLineupComplete,
+  lineupIsCompleteFromData,
   validateLineupPayload,
 } from "./match-operations";
 
@@ -54,6 +55,41 @@ function mockSupabase(options: {
   });
   return { from } as never;
 }
+
+describe("lineupIsCompleteFromData", () => {
+  const match = {
+    home_team_id: "home-1",
+    away_team_id: "away-1",
+    home_lineup_locked_at: null as string | null,
+    away_lineup_locked_at: null as string | null,
+  };
+
+  it("is true when both non-honor teams have at least 4 players", () => {
+    const lineup = [
+      ...Array.from({ length: 4 }, () => ({ team_id: "home-1" })),
+      ...Array.from({ length: 4 }, () => ({ team_id: "away-1" })),
+    ];
+    expect(lineupIsCompleteFromData(match, lineup, false)).toBe(true);
+  });
+
+  it("is false when a non-honor side has fewer than 4 players", () => {
+    const lineup = [
+      ...Array.from({ length: 4 }, () => ({ team_id: "home-1" })),
+      ...Array.from({ length: 3 }, () => ({ team_id: "away-1" })),
+    ];
+    expect(lineupIsCompleteFromData(match, lineup, false)).toBe(false);
+  });
+
+  it("requires both honor sides locked", () => {
+    expect(
+      lineupIsCompleteFromData(
+        { ...match, home_lineup_locked_at: "t", away_lineup_locked_at: null },
+        [],
+        true,
+      ),
+    ).toBe(false);
+  });
+});
 
 describe("isLineupComplete", () => {
   it("is true when both teams have at least 4 players", async () => {

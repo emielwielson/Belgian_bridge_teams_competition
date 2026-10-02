@@ -41,7 +41,7 @@ import { loadMatchVenueLocation } from "@/lib/competition/match-venue-location";
 import { loadTeamRoster } from "@/lib/competition/player-matches";
 import { translateLeagueName } from "@/lib/i18n/labels";
 import { allowsBoardChoice } from "@/lib/scoring/board-count-rules";
-import { getMatchLineup, isLineupComplete } from "@/lib/scoring/match-operations";
+import { getMatchLineup, lineupIsCompleteFromData } from "@/lib/scoring/match-operations";
 import { matchStatus } from "@/lib/scoring/match-state";
 import { toIntlLocale } from "@/i18n/intl-locale";
 import type { Locale } from "@/i18n/config";
@@ -82,70 +82,82 @@ export async function MatchDetailView({
   userId,
   roles,
 }: Props) {
-  const [t, tStatus, tRegions] = await Promise.all([
+  const [t, tStatus, tRegions, locale] = await Promise.all([
     getTranslations("match"),
     getTranslations("match.status"),
     getTranslations("regions"),
+    getLocale(),
   ]);
-  const locale = (await getLocale()) as Locale;
-  const intlLocale = toIntlLocale(locale);
-
-  const canOps = userId
-    ? await canViewMatchOps(supabase, matchId)
-    : false;
-  const canSubmitScoreForMatch = userId
-    ? await canSubmitScore(supabase, matchId)
-    : false;
-
-  const lineup = await getMatchLineup(supabase, matchId);
-  const [homeRoster, awayRoster] = await Promise.all([
-    loadTeamRoster(supabase, match.home_team_id),
-    loadTeamRoster(supabase, match.away_team_id),
-  ]);
-
+  const intlLocale = toIntlLocale(locale as Locale);
   const isAdmin = userId
     ? hasAnyRole(roles, [...COMPETITION_ADMIN_ROLES])
     : false;
-  const [canEditFinishedScore, canAddPenalty] = userId
-    ? await Promise.all([
-        canEditFinishedScoreForMatch(supabase, roles, matchId),
-        canAddPenaltyForMatch(supabase, roles, matchId),
-      ])
-    : [false, false];
-  const [canEditHome, canEditAway] =
-    userId && canOps
-      ? await Promise.all([
-          canEditLineupForTeam(
-            supabase,
-            userId,
-            roles,
-            match,
-            match.home_team_id,
-          ),
-          canEditLineupForTeam(
-            supabase,
-            userId,
-            roles,
-            match,
-            match.away_team_id,
-          ),
-        ])
-      : [false, false];
 
-  const honorCtx = await loadHonorMatchLineupContext(supabase, match);
-  const venueLocation = honorCtx.isHonor
-    ? null
-    : await loadMatchVenueLocation(supabase, match);
+  const [
+    canOps,
+    canSubmitScoreForMatch,
+    lineup,
+    homeRoster,
+    awayRoster,
+    scoringContext,
+    venueLocationRaw,
+    canEditFinishedScore,
+    canAddPenalty,
+  ] = await Promise.all([
+    userId ? canViewMatchOps(supabase, matchId) : false,
+    userId ? canSubmitScore(supabase, matchId) : false,
+    getMatchLineup(supabase, matchId),
+    loadTeamRoster(supabase, match.home_team_id),
+    loadTeamRoster(supabase, match.away_team_id),
+    loadGroupScoringContext(supabase, match.group_id),
+    loadMatchVenueLocation(supabase, match),
+    userId
+      ? canEditFinishedScoreForMatch(supabase, roles, matchId)
+      : false,
+    userId ? canAddPenaltyForMatch(supabase, roles, matchId) : false,
+  ]);
+
+  const [honorCtx, canEditHome, canEditAway] = await Promise.all([
+    loadHonorMatchLineupContext(supabase, match, scoringContext),
+    userId && canOps
+      ? canEditLineupForTeam(
+          supabase,
+          userId,
+          roles,
+          match,
+          match.home_team_id,
+        )
+      : false,
+    userId && canOps
+      ? canEditLineupForTeam(
+          supabase,
+          userId,
+          roles,
+          match,
+          match.away_team_id,
+        )
+      : false,
+  ]);
+
+  const venueLocation = honorCtx.isHonor ? null : venueLocationRaw;
+  const lineupsComplete = lineupIsCompleteFromData(
+    match,
+    lineup,
+    honorCtx.isHonor,
+  );
+  const showBoardChoice = allowsBoardChoice(scoringContext);
+  const status = matchStatus(match.played_at);
+
   let honorPerms = null;
   if (honorCtx.isHonor) {
-    const viewerSide =
+    const [viewerSide, arbiterAccess] = await Promise.all([
       userId != null
-        ? await resolveHonorViewerSide(supabase, userId, roles, match)
-        : "other";
-    const arbiterAccess =
+        ? resolveHonorViewerSide(supabase, userId, roles, match)
+        : Promise.resolve("other" as const),
       userId != null
-        ? await getArbiterAccess(supabase, userId, roles)
-        : null;
+        ? getArbiterAccess(supabase, userId, roles)
+        : Promise.resolve(null),
+    ]);
     honorPerms = honorPermissionsForViewer({
       viewerSide,
       phase: honorCtx.phase,
@@ -159,44 +171,29 @@ export async function MatchDetailView({
     });
   }
 
-  const lineupsComplete = await isLineupComplete(supabase, match);
-  const scoringContext = await loadGroupScoringContext(supabase, match.group_id);
-  const showBoardChoice = allowsBoardChoice(scoringContext);
-  const status = matchStatus(match.played_at);
-
-  const honorScorecard =
-    honorCtx.isHonor
-      ? await loadHonorMatchScorecard(
-          supabase,
-          match,
-          lineup,
-          honorCtx.venueTables,
-        )
-      : null;
-
-  let postponementState = null;
-  let homeAwaySwitchState = null;
-  let arbiterRequestsState = null;
   // Honor: dates/venues are fixed and an arbiter is on site — no reschedule or remote arbiter request.
-  if (userId) {
-    if (!honorCtx.isHonor) {
-      postponementState = await getMatchPostponementState(supabase, matchId);
-      try {
-        const loaded = await loadMatchArbiterRequestsForUser(supabase, matchId);
-        arbiterRequestsState = loaded.state;
-      } catch {
-        // Migration 0026 not applied yet.
-      }
-    }
-    try {
-      homeAwaySwitchState = await getMatchHomeAwaySwitchState(
-        supabase,
-        matchId,
-      );
-    } catch {
-      // Migration 0022 not applied yet.
-    }
-  }
+  const [honorScorecard, postponementState, arbiterRequestsState, homeAwaySwitchState] =
+    await Promise.all([
+      honorCtx.isHonor
+        ? loadHonorMatchScorecard(
+            supabase,
+            match,
+            lineup,
+            honorCtx.venueTables,
+          )
+        : Promise.resolve(null),
+      userId && !honorCtx.isHonor
+        ? getMatchPostponementState(supabase, matchId)
+        : Promise.resolve(null),
+      userId && !honorCtx.isHonor
+        ? loadMatchArbiterRequestsForUser(supabase, matchId)
+            .then((loaded) => loaded.state)
+            .catch(() => null)
+        : Promise.resolve(null),
+      userId
+        ? getMatchHomeAwaySwitchState(supabase, matchId).catch(() => null)
+        : Promise.resolve(null),
+    ]);
 
   const showPostpone =
     !honorCtx.isHonor &&

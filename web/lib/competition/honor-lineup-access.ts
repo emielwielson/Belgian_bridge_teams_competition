@@ -18,7 +18,10 @@ import {
   type HonorSide,
   type HonorVenueTables,
 } from "@/lib/competition/honor-lineup";
-import { loadGroupScoringContext } from "@/lib/competition/match-scoring-context";
+import {
+  loadGroupScoringContext,
+  type GroupScoringContext,
+} from "@/lib/competition/match-scoring-context";
 import { isHonorDivision } from "@/lib/scoring/board-count-rules";
 
 export type HonorMatchLineupContext = {
@@ -34,9 +37,26 @@ export type HonorMatchLineupContext = {
 export async function loadHonorMatchLineupContext(
   supabase: SupabaseClient,
   match: MatchContext,
+  scoring?: GroupScoringContext,
 ): Promise<HonorMatchLineupContext> {
-  const scoring = await loadGroupScoringContext(supabase, match.group_id);
-  const isHonor = isHonorDivision(scoring);
+  const scoringCtx =
+    scoring ?? (await loadGroupScoringContext(supabase, match.group_id));
+  const isHonor = isHonorDivision(scoringCtx);
+  const homeLocked = match.home_lineup_locked_at != null;
+  const awayLocked = match.away_lineup_locked_at != null;
+
+  // Non-Honor: skip round_count / schedule-slot queries — only isHonor is used.
+  if (!isHonor) {
+    return {
+      isHonor: false,
+      phase: "sequential",
+      roundsPerRr: 0,
+      roundCount: 0,
+      homeLocked,
+      awayLocked,
+      venueTables: null,
+    };
+  }
 
   const { data: group, error } = await supabase
     .from("groups")
@@ -50,34 +70,31 @@ export async function loadHonorMatchLineupContext(
   const roundsPerRr = roundsPerRoundRobin(roundCount, roundRobinCount);
   const phase = honorLineupPhase(match.round, roundsPerRr);
 
-  let venueTables: HonorVenueTables | null = null;
-  if (isHonor) {
-    const { data: slots, error: slotsError } = await supabase
-      .from("group_schedule_slots")
-      .select("slot, team_id")
-      .eq("group_id", match.group_id)
-      .not("team_id", "is", null);
-    if (slotsError) throw slotsError;
+  const { data: slots, error: slotsError } = await supabase
+    .from("group_schedule_slots")
+    .select("slot, team_id")
+    .eq("group_id", match.group_id)
+    .not("team_id", "is", null);
+  if (slotsError) throw slotsError;
 
-    const homeSlot =
-      slots?.find((s) => s.team_id === match.home_team_id)?.slot ?? null;
-    const awaySlot =
-      slots?.find((s) => s.team_id === match.away_team_id)?.slot ?? null;
-    venueTables = venueTablesForHonorMatch({
-      round: match.round,
-      roundCount,
-      homeSlot,
-      awaySlot,
-    });
-  }
+  const homeSlot =
+    slots?.find((s) => s.team_id === match.home_team_id)?.slot ?? null;
+  const awaySlot =
+    slots?.find((s) => s.team_id === match.away_team_id)?.slot ?? null;
+  const venueTables = venueTablesForHonorMatch({
+    round: match.round,
+    roundCount,
+    homeSlot,
+    awaySlot,
+  });
 
   return {
-    isHonor,
+    isHonor: true,
     phase,
     roundsPerRr,
     roundCount,
-    homeLocked: match.home_lineup_locked_at != null,
-    awayLocked: match.away_lineup_locked_at != null,
+    homeLocked,
+    awayLocked,
     venueTables,
   };
 }
