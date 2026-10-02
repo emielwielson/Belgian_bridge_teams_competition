@@ -10,6 +10,7 @@ import { hasAnyRole } from "@/lib/auth/roles";
 import { canManageTeamConventionCards, canManageTeamRoster } from "@/lib/auth/team-access";
 import { getUserRoles } from "@/lib/auth/session";
 import { listConventionCards } from "@/lib/competition/convention-card-queries";
+import { loadNextUnplayedMatchForTeam } from "@/lib/competition/player-matches";
 import { loadTeamRosterState } from "@/lib/competition/team-roster";
 import { loadTeamDetail } from "@/lib/competition/team-queries";
 import { translateLeagueName } from "@/lib/i18n/labels";
@@ -56,11 +57,12 @@ export default async function TeamPage({ params }: Props) {
 
   const canManageLocation = canManageRoster;
 
-  const [conventionCards, rosterState] = await Promise.all([
+  const [conventionCards, rosterState, nextMatch] = await Promise.all([
     listConventionCards(supabase, teamId),
     canManageRoster
       ? loadTeamRosterState(supabase, teamId, detail.club.id)
       : Promise.resolve(null),
+    loadNextUnplayedMatchForTeam(supabase, teamId),
   ]);
 
   const { team, captain, club, group, division, league, roster, matches, clubLocation, hasCentralizedVenue } =
@@ -99,6 +101,7 @@ export default async function TeamPage({ params }: Props) {
         canLinkToPlayers={canLinkToPlayers}
         showCaptainContacts={Boolean(user)}
         canManageLocation={canManageLocation}
+        nextMatch={nextMatch}
       />
 
       <TeamRosterSection

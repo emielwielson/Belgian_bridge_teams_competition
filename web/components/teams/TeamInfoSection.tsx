@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { NextMatchLink } from "@/components/standings/NextMatchButton";
+import type { PlayerMatchSummary } from "@/lib/competition/player-matches";
 import type { TeamDetail } from "@/lib/competition/team-queries";
 import { translateLeagueName } from "@/lib/i18n/labels";
 import { TeamLocationModal } from "./TeamLocationModal";
@@ -14,6 +16,7 @@ type Props = Pick<
   canLinkToPlayers: boolean;
   showCaptainContacts: boolean;
   canManageLocation: boolean;
+  nextMatch?: PlayerMatchSummary | null;
 };
 
 function trimmed(value: string | null | undefined): string | null {
@@ -33,6 +36,7 @@ export function TeamInfoSection({
   canLinkToPlayers,
   showCaptainContacts,
   canManageLocation,
+  nextMatch = null,
 }: Props) {
   const t = useTranslations("team");
   const tRegions = useTranslations("regions");
@@ -55,11 +59,18 @@ export function TeamInfoSection({
 
   return (
     <section className="rounded-lg border border-zinc-200 bg-white p-4">
-      <p className="text-sm text-zinc-600">
-        {[leagueName, division.name, group.name].join(" · ")}
-      </p>
-      <h1 className="mt-1 text-2xl font-semibold text-zinc-900">{team.name}</h1>
-      <p className="mt-1 text-sm text-zinc-600">{club.name}</p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="text-sm text-zinc-600">
+            {[leagueName, division.name, group.name].join(" · ")}
+          </p>
+          <h1 className="mt-1 text-2xl font-semibold text-zinc-900">
+            {team.name}
+          </h1>
+          <p className="mt-1 text-sm text-zinc-600">{club.name}</p>
+        </div>
+        {nextMatch ? <NextMatchLink match={nextMatch} /> : null}
+      </div>
       <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
         <div>
           <dt className="font-medium text-zinc-500">{t("captain")}</dt>
