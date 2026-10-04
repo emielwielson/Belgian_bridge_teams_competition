@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  isMatchRescheduled,
   loadTeamDetail,
   loadTeamPlayerMatchesPlayed,
   loadTeamSubstituteAppearances,
@@ -20,6 +21,7 @@ function createLoadTeamDetailSupabase(options: {
   };
 }) {
   return {
+    rpc: () => Promise.resolve({ data: "div-1", error: null }),
     from: (table: string) => {
       if (table === "teams") {
         return {
@@ -50,7 +52,13 @@ function createLoadTeamDetailSupabase(options: {
                           id: "div-1",
                           name: "Division 1",
                           centralized_location: null,
-                          league: { id: "league-1", name: "League" },
+                          league: {
+                            id: "league-1",
+                            name: "League",
+                            season_id: "season-1",
+                            scope: "national",
+                            region_id: null,
+                          },
                         },
                       },
                     },
@@ -99,6 +107,18 @@ function createLoadTeamDetailSupabase(options: {
             }),
           }),
         };
+      }
+      if (table === "competition_match_dates") {
+        const result = Promise.resolve({ data: [], error: null });
+        const chain = {
+          select: () => chain,
+          eq: () => chain,
+          is: () => chain,
+          order: () => chain,
+          then: result.then.bind(result),
+          catch: result.catch.bind(result),
+        };
+        return chain;
       }
       if (table === "match_players") {
         return {
@@ -511,6 +531,44 @@ describe("withMatchesPlayed", () => {
   });
 });
 
+describe("isMatchRescheduled", () => {
+  it("is false when datetime matches the official slot", () => {
+    expect(
+      isMatchRescheduled(
+        "2025-01-15T13:00:00.000Z",
+        "2025-01-15T13:00:00.000Z",
+        null,
+      ),
+    ).toBe(false);
+  });
+
+  it("is true when an unscored match left the official slot", () => {
+    expect(
+      isMatchRescheduled(
+        "2025-02-01T13:00:00.000Z",
+        "2025-01-15T13:00:00.000Z",
+        null,
+      ),
+    ).toBe(true);
+  });
+
+  it("is false for played matches even if datetime differs", () => {
+    expect(
+      isMatchRescheduled(
+        "2025-02-01T13:00:00.000Z",
+        "2025-01-15T13:00:00.000Z",
+        "2025-02-01T18:00:00.000Z",
+      ),
+    ).toBe(false);
+  });
+
+  it("is false when no official datetime is known", () => {
+    expect(isMatchRescheduled("2025-02-01T13:00:00.000Z", undefined, null)).toBe(
+      false,
+    );
+  });
+});
+
 describe("mapRawMatchToTeamMatchRow", () => {
   const teamNames = new Map([
     ["home-1", "Home FC"],
@@ -539,6 +597,7 @@ describe("mapRawMatchToTeamMatchRow", () => {
     expect(row.status).toBe("played");
     expect(row.teamVp).toBe(14);
     expect(row.opponentVp).toBe(10);
+    expect(row.isRescheduled).toBe(false);
   });
 
   it("maps away match VP to team and opponent sides", () => {
@@ -563,6 +622,7 @@ describe("mapRawMatchToTeamMatchRow", () => {
     expect(row.status).toBe("scheduled");
     expect(row.teamVp).toBe(16);
     expect(row.opponentVp).toBe(8);
+    expect(row.isRescheduled).toBe(false);
   });
 
   it("uses hosting_team_id for home indicator without changing VP side mapping", () => {
@@ -585,5 +645,26 @@ describe("mapRawMatchToTeamMatchRow", () => {
     expect(row.isHome).toBe(true);
     expect(row.teamVp).toBe(9);
     expect(row.opponentVp).toBe(11);
+  });
+
+  it("marks unscored matches rescheduled when datetime differs from official", () => {
+    const row = mapRawMatchToTeamMatchRow(
+      {
+        id: "m4",
+        round: 1,
+        datetime: "2025-02-01T13:00:00Z",
+        home_team_id: "home-1",
+        away_team_id: "away-1",
+        hosting_team_id: "home-1",
+        vp_home: null,
+        vp_away: null,
+        played_at: null,
+      },
+      "home-1",
+      teamNames,
+      new Map([[1, "2025-01-15T13:00:00Z"]]),
+    );
+
+    expect(row.isRescheduled).toBe(true);
   });
 });

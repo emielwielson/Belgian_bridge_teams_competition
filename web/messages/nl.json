@@ -463,6 +463,7 @@
     "round": "Ronde {round}",
     "played": "Gespeeld",
     "scheduled": "Gepland",
+    "rescheduled": "Verzet",
     "homeVs": "Thuis tegen {opponent}",
     "awayVs": "Uit tegen {opponent}",
     "vpLine": "VP {teamVp} – {opponentVp}",

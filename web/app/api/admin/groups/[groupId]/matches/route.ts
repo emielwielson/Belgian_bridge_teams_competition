@@ -22,8 +22,8 @@ export async function GET(_request: Request, { params }: Params) {
       `,
       )
       .eq("group_id", groupId)
-      .order("round", { ascending: true })
-      .order("datetime", { ascending: true });
+      .order("datetime", { ascending: true })
+      .order("round", { ascending: true });
 
     if (error) return jsonError(error.message, 500);
 

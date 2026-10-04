@@ -30,7 +30,7 @@ function match(overrides: Partial<GroupMatchRow> & Pick<GroupMatchRow, "round">)
 }
 
 describe("buildGroupStandingsGrid", () => {
-  it("orders round columns ascending", () => {
+  it("orders round columns by majority datetime then round", () => {
     const matches = [
       match({ round: 2, id: "m2", home_team_id: "t1", away_team_id: "t3" }),
       match({ round: 1, id: "m1" }),
@@ -39,6 +39,69 @@ describe("buildGroupStandingsGrid", () => {
     expect(grid.rounds.map((r) => r.round)).toEqual([1, 2]);
     expect(grid.rounds[0].dateLabel).toBeTruthy();
     expect(grid.rounds[0].timeLabel).toBeTruthy();
+  });
+
+  it("interleaves stacked first-division rounds by play order", () => {
+    const day1am = "2024-09-27T11:00:00.000Z";
+    const day1pm = "2024-09-27T14:00:00.000Z";
+    const day2am = "2024-10-04T11:00:00.000Z";
+    const day2pm = "2024-10-04T14:00:00.000Z";
+    const matches = [
+      match({ round: 1, id: "r1", datetime: day1am, played_at: null }),
+      match({ round: 8, id: "r8", datetime: day1pm, played_at: null }),
+      match({ round: 2, id: "r2", datetime: day2am, played_at: null }),
+      match({ round: 9, id: "r9", datetime: day2pm, played_at: null }),
+    ];
+    const grid = buildGroupStandingsGrid(teams, matches);
+    expect(grid.rounds.map((r) => r.round)).toEqual([1, 8, 2, 9]);
+  });
+
+  it("keeps interleaved column order when one stacked fixture is postponed", () => {
+    const day1am = "2024-09-27T11:00:00.000Z";
+    const day1pm = "2024-09-27T14:00:00.000Z";
+    const day2am = "2024-10-04T11:00:00.000Z";
+    const day2pm = "2024-10-04T14:00:00.000Z";
+    const postponed = "2024-11-01T12:00:00.000Z";
+    const matches = [
+      match({
+        round: 1,
+        id: "r1a",
+        datetime: day1am,
+        played_at: null,
+        home_team_id: "t1",
+        away_team_id: "t2",
+      }),
+      match({
+        round: 1,
+        id: "r1b",
+        datetime: day1am,
+        played_at: null,
+        home_team_id: "t3",
+        away_team_id: "t4",
+      }),
+      match({
+        round: 1,
+        id: "r1-postponed",
+        datetime: postponed,
+        played_at: null,
+        home_team_id: "t5",
+        away_team_id: "t6",
+      }),
+      match({ round: 8, id: "r8", datetime: day1pm, played_at: null }),
+      match({ round: 2, id: "r2", datetime: day2am, played_at: null }),
+      match({ round: 9, id: "r9", datetime: day2pm, played_at: null }),
+    ];
+    const roundTeams: StandingsTeamRow[] = [
+      ...teams,
+      { team_id: "t4", team_name: "Delta", vp_total: 0 },
+      { team_id: "t5", team_name: "Echo", vp_total: 0 },
+      { team_id: "t6", team_name: "Foxtrot", vp_total: 0 },
+    ];
+    const grid = buildGroupStandingsGrid(roundTeams, matches);
+    expect(grid.rounds.map((r) => r.round)).toEqual([1, 8, 2, 9]);
+    const postponedHome = grid.rows.find((r) => r.teamId === "t5")!.cells[0];
+    expect(postponedHome.scheduledDateLabel).toBeTruthy();
+    expect(postponedHome.scheduledTimeLabel).toBeTruthy();
   });
 
   it("maps VP and home flag for scored matches", () => {

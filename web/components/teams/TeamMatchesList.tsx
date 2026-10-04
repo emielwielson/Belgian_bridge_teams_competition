@@ -34,8 +34,13 @@ export function TeamMatchesList({ teamName, matches }: Props) {
                 className="block rounded-md border border-zinc-100 px-3 py-3 text-sm transition-colors hover:border-zinc-300 hover:bg-zinc-50"
               >
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="font-medium text-zinc-900">
+                <span className="flex flex-wrap items-center gap-2 font-medium text-zinc-900">
                   {t("round", { round: match.round })}
+                  {match.isRescheduled ? (
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
+                      {t("rescheduled")}
+                    </span>
+                  ) : null}
                 </span>
                 <span
                   className={

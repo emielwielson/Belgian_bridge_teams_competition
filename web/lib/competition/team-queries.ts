@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getActivePlayerId } from "@/lib/auth/active-player";
 import { leagueNameForCompetitionKind } from "@/lib/competition/league-names";
+import { applyMatchDatesDivisionFilter } from "@/lib/competition/match-dates-query";
 import { getActiveSeason } from "@/lib/competition/season";
 import {
   resolveClubMatchLocation,
@@ -38,6 +39,8 @@ export type TeamMatchRow = {
   status: MatchStatus;
   teamVp: number | null;
   opponentVp: number | null;
+  /** Unscored fixture moved off the official round datetime. */
+  isRescheduled: boolean;
 };
 
 export type TeamDetail = {
@@ -184,10 +187,62 @@ export function withMatchesPlayed(
   }));
 }
 
+export function datetimesEqual(a: string, b: string): boolean {
+  const aMs = new Date(a).getTime();
+  const bMs = new Date(b).getTime();
+  if (Number.isNaN(aMs) || Number.isNaN(bMs)) return a === b;
+  return aMs === bMs;
+}
+
+/** True when an unscored match left its official competition_match_dates slot. */
+export function isMatchRescheduled(
+  matchDatetime: string,
+  officialDatetime: string | undefined,
+  playedAt: string | null,
+): boolean {
+  if (playedAt != null) return false;
+  if (!officialDatetime) return false;
+  return !datetimesEqual(matchDatetime, officialDatetime);
+}
+
+async function loadOfficialRoundDatetimes(
+  supabase: SupabaseClient,
+  groupId: string,
+  league: { season_id: string; scope: string; region_id: string | null },
+): Promise<Map<number, string>> {
+  const { data: datesDivisionId, error: resolveError } = await supabase.rpc(
+    "resolve_group_match_dates_division_id",
+    { p_group_id: groupId },
+  );
+  if (resolveError) throw new Error(resolveError.message);
+
+  let datesQuery = supabase
+    .from("competition_match_dates")
+    .select("round, datetime")
+    .eq("season_id", league.season_id)
+    .eq("scope", league.scope)
+    .order("round");
+
+  datesQuery =
+    league.scope === "national"
+      ? datesQuery.is("region_id", null)
+      : datesQuery.eq("region_id", league.region_id!);
+
+  datesQuery = applyMatchDatesDivisionFilter(datesQuery, datesDivisionId);
+
+  const { data: dates, error: datesError } = await datesQuery;
+  if (datesError) throw new Error(datesError.message);
+
+  return new Map(
+    (dates ?? []).map((d) => [d.round as number, d.datetime as string]),
+  );
+}
+
 export function mapRawMatchToTeamMatchRow(
   match: RawMatch,
   teamId: string,
   teamNames: Map<string, string>,
+  officialDatetimeByRound: ReadonlyMap<number, string> = new Map(),
 ): TeamMatchRow {
   const isScoringHome = match.home_team_id === teamId;
   const isHome = (match.hosting_team_id ?? match.home_team_id) === teamId;
@@ -204,6 +259,11 @@ export function mapRawMatchToTeamMatchRow(
     status: matchStatus(match.played_at),
     teamVp: isScoringHome ? match.vp_home : match.vp_away,
     opponentVp: isScoringHome ? match.vp_away : match.vp_home,
+    isRescheduled: isMatchRescheduled(
+      match.datetime,
+      officialDatetimeByRound.get(match.round),
+      match.played_at,
+    ),
   };
 }
 
@@ -236,7 +296,10 @@ export async function loadTeamDetail(
           centralized_location,
           league:leagues (
             id,
-            name
+            name,
+            season_id,
+            scope,
+            region_id
           )
         )
       )
@@ -261,7 +324,13 @@ export async function loadTeamDetail(
   }>(group.division);
   if (!division) return null;
 
-  const league = unwrapOne<{ id: string; name: string }>(division.league);
+  const league = unwrapOne<{
+    id: string;
+    name: string;
+    season_id: string;
+    scope: string;
+    region_id: string | null;
+  }>(division.league);
   if (!league) return null;
 
   const captainRaw = unwrapOne<{
@@ -312,16 +381,16 @@ export async function loadTeamDetail(
       "id, round, datetime, home_team_id, away_team_id, hosting_team_id, vp_home, vp_away, played_at",
     )
     .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
-    .order("round")
-    .order("datetime");
+    .order("datetime")
+    .order("round");
 
   if (isMissingHostingTeamIdColumn(matchesError)) {
     const fallback = await supabase
       .from("matches")
       .select("id, round, datetime, home_team_id, away_team_id, vp_home, vp_away, played_at")
       .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
-      .order("round")
-      .order("datetime");
+      .order("datetime")
+      .order("round");
     matchRows =
       fallback.data?.map((m) => ({ ...m, hosting_team_id: null })) ?? null;
     matchesError = fallback.error;
@@ -338,20 +407,20 @@ export async function loadTeamDetail(
   }
 
   const teamNames = new Map<string, string>([[teamId, teamRow.name]]);
-  if (opponentIds.size > 0) {
-    const { data: opponents, error: opponentsError } = await supabase
-      .from("teams")
-      .select("id, name")
-      .in("id", [...opponentIds]);
+  const [opponentsResult, officialDatetimeByRound] = await Promise.all([
+    opponentIds.size > 0
+      ? supabase.from("teams").select("id, name").in("id", [...opponentIds])
+      : Promise.resolve({ data: [] as { id: string; name: string }[], error: null }),
+    loadOfficialRoundDatetimes(supabase, group.id, league),
+  ]);
 
-    if (opponentsError) throw opponentsError;
-    for (const t of opponents ?? []) {
-      teamNames.set(t.id, t.name);
-    }
+  if (opponentsResult.error) throw opponentsResult.error;
+  for (const t of opponentsResult.data ?? []) {
+    teamNames.set(t.id, t.name);
   }
 
   const matches = rawMatches.map((m) =>
-    mapRawMatchToTeamMatchRow(m, teamId, teamNames),
+    mapRawMatchToTeamMatchRow(m, teamId, teamNames, officialDatetimeByRound),
   );
 
   const playedMatchIds = rawMatches
@@ -402,7 +471,7 @@ export async function loadTeamDetail(
     hasCentralizedVenue,
     group: { id: group.id, name: group.name },
     division: { id: division.id, name: division.name },
-    league,
+    league: { id: league.id, name: league.name },
     roster,
     substitutes,
     matches,

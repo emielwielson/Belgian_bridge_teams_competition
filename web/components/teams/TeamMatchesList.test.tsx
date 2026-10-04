@@ -13,6 +13,7 @@ const played: TeamMatchRow = {
   status: "played",
   teamVp: 14,
   opponentVp: 10,
+  isRescheduled: false,
 };
 
 const scheduled: TeamMatchRow = {
@@ -24,6 +25,19 @@ const scheduled: TeamMatchRow = {
   status: "scheduled",
   teamVp: null,
   opponentVp: null,
+  isRescheduled: false,
+};
+
+const rescheduled: TeamMatchRow = {
+  id: "m3",
+  round: 3,
+  datetime: "2025-11-01T12:00:00Z",
+  isHome: true,
+  opponent: { id: "t4", name: "Delta" },
+  status: "scheduled",
+  teamVp: null,
+  opponentVp: null,
+  isRescheduled: true,
 };
 
 describe("TeamMatchesList", () => {
@@ -48,5 +62,13 @@ describe("TeamMatchesList", () => {
       "href",
       "/matches/m2",
     );
+  });
+
+  it("shows a rescheduled badge when the fixture left its official slot", () => {
+    renderWithIntl(
+      <TeamMatchesList teamName="Alpha" matches={[rescheduled]} />,
+    );
+    expect(screen.getByText("Rescheduled")).toBeInTheDocument();
+    expect(screen.getByText(/Round 3/)).toBeInTheDocument();
   });
 });

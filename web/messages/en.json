@@ -463,6 +463,7 @@
     "round": "Round {round}",
     "played": "Played",
     "scheduled": "Scheduled",
+    "rescheduled": "Rescheduled",
     "homeVs": "Home vs {opponent}",
     "awayVs": "Away vs {opponent}",
     "vpLine": "VP {teamVp} – {opponentVp}",

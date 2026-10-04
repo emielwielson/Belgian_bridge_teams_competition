@@ -109,11 +109,17 @@ function buildRoundColumns(
   }
 
   return [...roundNumbers]
-    .sort((a, b) => a - b)
     .map((round) => {
       const anchor =
         roundColumnDatetime(byRound.get(round) ?? []) ??
         new Date(0).toISOString();
+      return { round, anchor };
+    })
+    .sort((a, b) => {
+      const byTime = a.anchor.localeCompare(b.anchor);
+      return byTime !== 0 ? byTime : a.round - b.round;
+    })
+    .map(({ round, anchor }) => {
       const { date, time } = formatBrusselsRoundHeader(anchor, intlLocale);
       return { round, dateLabel: date, timeLabel: time };
     });

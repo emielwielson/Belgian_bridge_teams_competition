@@ -463,6 +463,7 @@
     "round": "Journée {round}",
     "played": "Jouée",
     "scheduled": "Programmée",
+    "rescheduled": "Reportée",
     "homeVs": "Home team contre {opponent}",
     "awayVs": "Visiting team contre {opponent}",
     "vpLine": "VP {teamVp} – {opponentVp}",
