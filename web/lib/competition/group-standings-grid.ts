@@ -1,10 +1,11 @@
 import { formatBrusselsRoundHeader } from "@/lib/time/brussels";
 
+/** Rotating match-pairing cell fills — stronger tints so pairings stay readable. */
 export const PAIRING_BG_CLASSES = [
-  "bg-sky-100",
-  "bg-amber-100",
-  "bg-emerald-100",
-  "bg-violet-100",
+  "bg-sky-200 text-sky-950",
+  "bg-amber-200 text-amber-950",
+  "bg-teal-200 text-teal-950",
+  "bg-rose-200 text-rose-950",
 ] as const;
 
 export type StandingsTeamRow = {
