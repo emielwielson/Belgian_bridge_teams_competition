@@ -19,7 +19,7 @@ export function DivisionStandingsBlock({
 
   return (
     <section className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center gap-3">
         <h2 className="text-lg font-semibold text-zinc-900">{division.name}</h2>
         {fullStandingsGroup ? (
           <Link
@@ -36,7 +36,7 @@ export function DivisionStandingsBlock({
         division.groups.map((group) => (
           <div key={group.id} className="flex flex-col gap-2">
             {showGroupNames ? (
-              <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-3">
                 <h3 className="text-sm font-medium text-zinc-600">{group.name}</h3>
                 <Link
                   href={`/standings/group/${group.id}`}
