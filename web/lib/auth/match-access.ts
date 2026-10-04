@@ -315,7 +315,16 @@ export async function isUserOnTeam(
     .eq("team_id", teamId)
     .maybeSingle();
 
-  return roster != null;
+  if (roster != null) return true;
+
+  const { data: team, error } = await supabase
+    .from("teams")
+    .select("captain_id")
+    .eq("id", teamId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return team?.captain_id === playerId;
 }
 
 export async function isUserOnMatchTeam(

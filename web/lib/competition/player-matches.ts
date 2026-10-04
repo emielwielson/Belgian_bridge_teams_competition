@@ -4,6 +4,7 @@ import {
   loadCompetitionKindCodeForTeam,
   loadEligibleClubMembers,
 } from "@/lib/competition/active-primary-membership";
+import { getActiveSeason } from "@/lib/competition/season";
 
 export type PlayerMatchSummary = {
   id: string;
@@ -18,17 +19,7 @@ export async function loadUpcomingMatchesForUser(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<PlayerMatchSummary[]> {
-  const playerId = await getActivePlayerId(supabase, userId);
-  if (!playerId) return [];
-
-  const { data: teamRows, error: teamError } = await supabase
-    .from("team_players")
-    .select("team_id")
-    .eq("player_id", playerId);
-
-  if (teamError) throw teamError;
-
-  const teamIds = teamRows?.map((r) => r.team_id) ?? [];
+  const teamIds = [...(await resolveUserTeamIds(supabase, userId))];
   if (teamIds.length === 0) return [];
 
   const [homeRes, awayRes] = await Promise.all([
@@ -90,6 +81,7 @@ export type ScorableMatchSummary = PlayerMatchSummary & {
   status: "scheduled";
 };
 
+/** Roster teams plus teams the active player captains in the active season. */
 export async function resolveUserTeamIds(
   supabase: SupabaseClient,
   userId: string,
@@ -97,14 +89,37 @@ export async function resolveUserTeamIds(
   const teamIdSet = new Set<string>();
 
   const playerId = await getActivePlayerId(supabase, userId);
+  if (!playerId) return teamIdSet;
 
-  if (playerId) {
-    const { data: teamRows, error: teamError } = await supabase
-      .from("team_players")
-      .select("team_id")
-      .eq("player_id", playerId);
-    if (teamError) throw teamError;
-    for (const r of teamRows ?? []) teamIdSet.add(r.team_id);
+  const season = await getActiveSeason(supabase);
+
+  const rosterQuery = supabase
+    .from("team_players")
+    .select("team_id")
+    .eq("player_id", playerId);
+
+  const captainQuery =
+    season != null
+      ? supabase
+          .from("teams")
+          .select(
+            "id, group:groups!inner(division:divisions!inner(league:leagues!inner(season_id)))",
+          )
+          .eq("captain_id", playerId)
+          .eq("group.division.league.season_id", season.id)
+      : null;
+
+  const [rosterResult, captainResult] = await Promise.all([
+    rosterQuery,
+    captainQuery ?? Promise.resolve({ data: [] as { id: string }[], error: null }),
+  ]);
+
+  if (rosterResult.error) throw rosterResult.error;
+  if (captainResult.error) throw captainResult.error;
+
+  for (const r of rosterResult.data ?? []) teamIdSet.add(r.team_id);
+  for (const row of captainResult.data ?? []) {
+    if (typeof row.id === "string") teamIdSet.add(row.id);
   }
 
   return teamIdSet;

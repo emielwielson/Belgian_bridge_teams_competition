@@ -1,5 +1,17 @@
-import { describe, expect, it } from "vitest";
-import { loadNextUnplayedMatchForTeam } from "./player-matches";
+import { describe, expect, it, vi } from "vitest";
+import {
+  loadNextUnplayedMatchForTeam,
+  resolveUserTeamIds,
+} from "./player-matches";
+
+vi.mock("@/lib/competition/season", () => ({
+  getActiveSeason: vi.fn().mockResolvedValue({
+    id: "season-1",
+    name: "2025-26",
+    status: "active",
+    is_active: true,
+  }),
+}));
 
 type MatchRow = {
   id: string;
@@ -47,6 +59,102 @@ function createSupabase(options: {
     },
   } as never;
 }
+
+function resolveUserTeamIdsSupabase(options: {
+  playerId?: string | null;
+  rosterTeamIds?: string[];
+  captainTeamIds?: string[];
+}) {
+  const playerId = options.playerId ?? "player-1";
+  const rosterTeamIds = options.rosterTeamIds ?? [];
+  const captainTeamIds = options.captainTeamIds ?? [];
+
+  return {
+    from: (table: string) => {
+      if (table === "user_profiles") {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: () =>
+                Promise.resolve({
+                  data: { active_player_id: playerId },
+                  error: null,
+                }),
+            }),
+          }),
+        };
+      }
+      if (table === "player_auth_links") {
+        return {
+          select: () => ({
+            eq: () => ({
+              eq: () => ({
+                maybeSingle: () =>
+                  Promise.resolve({ data: { player_id: playerId }, error: null }),
+              }),
+            }),
+          }),
+        };
+      }
+      if (table === "team_players") {
+        return {
+          select: () => ({
+            eq: () =>
+              Promise.resolve({
+                data: rosterTeamIds.map((team_id) => ({ team_id })),
+                error: null,
+              }),
+          }),
+        };
+      }
+      if (table === "teams") {
+        return {
+          select: () => ({
+            eq: () => ({
+              eq: () =>
+                Promise.resolve({
+                  data: captainTeamIds.map((id) => ({ id })),
+                  error: null,
+                }),
+            }),
+          }),
+        };
+      }
+      throw new Error(`unexpected table ${table}`);
+    },
+  } as never;
+}
+
+describe("resolveUserTeamIds", () => {
+  it("returns roster teams", async () => {
+    const supabase = resolveUserTeamIdsSupabase({
+      rosterTeamIds: ["team-a"],
+    });
+    await expect(resolveUserTeamIds(supabase, "user-1")).resolves.toEqual(
+      new Set(["team-a"]),
+    );
+  });
+
+  it("includes captained teams that are not on the roster", async () => {
+    const supabase = resolveUserTeamIdsSupabase({
+      rosterTeamIds: [],
+      captainTeamIds: ["team-b"],
+    });
+    await expect(resolveUserTeamIds(supabase, "user-1")).resolves.toEqual(
+      new Set(["team-b"]),
+    );
+  });
+
+  it("unions roster and captained teams without duplicates", async () => {
+    const supabase = resolveUserTeamIdsSupabase({
+      rosterTeamIds: ["team-a", "team-b"],
+      captainTeamIds: ["team-a", "team-c"],
+    });
+    await expect(resolveUserTeamIds(supabase, "user-1")).resolves.toEqual(
+      new Set(["team-a", "team-b", "team-c"]),
+    );
+  });
+});
 
 describe("loadNextUnplayedMatchForTeam", () => {
   it("returns null when there are no unplayed matches", async () => {

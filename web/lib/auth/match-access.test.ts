@@ -4,6 +4,7 @@ import {
   canAddPenaltyForMatch,
   canEditFinishedScoreForMatch,
   canEditLineupForTeam,
+  isUserOnTeam,
   type MatchContext,
 } from "./match-access";
 import { AuthError } from "./auth-error";
@@ -60,7 +61,9 @@ function mockSupabase(options: {
   canEditLineup?: boolean;
   playerId?: string | null;
   rosterTeamIds?: string[];
+  captainTeamIds?: string[];
 }) {
+  const captainTeams = new Set(options.captainTeamIds ?? []);
   return {
     rpc: vi.fn().mockResolvedValue({
       data: options.canEditLineup ?? true,
@@ -113,10 +116,59 @@ function mockSupabase(options: {
           }),
         };
       }
+      if (table === "teams") {
+        return {
+          select: () => ({
+            eq: (_col: string, teamId: string) => ({
+              maybeSingle: () =>
+                Promise.resolve({
+                  data: captainTeams.has(teamId)
+                    ? { captain_id: options.playerId }
+                    : { captain_id: null },
+                  error: null,
+                }),
+            }),
+          }),
+        };
+      }
       throw new Error(`Unexpected table: ${table}`);
     },
   } as never;
 }
+
+describe("isUserOnTeam", () => {
+  it("is true when the player is on the roster", async () => {
+    const supabase = mockSupabase({
+      playerId: "player-1",
+      rosterTeamIds: ["home-1"],
+    });
+    await expect(isUserOnTeam(supabase, "user-1", "home-1")).resolves.toBe(
+      true,
+    );
+  });
+
+  it("is true when the player captains the team but is not on the roster", async () => {
+    const supabase = mockSupabase({
+      playerId: "player-1",
+      rosterTeamIds: [],
+      captainTeamIds: ["home-1"],
+    });
+    await expect(isUserOnTeam(supabase, "user-1", "home-1")).resolves.toBe(
+      true,
+    );
+  });
+
+  it("is false when the player is neither rostered nor captain", async () => {
+    const supabase = mockSupabase({
+      playerId: "player-1",
+      rosterTeamIds: [],
+      captainTeamIds: [],
+    });
+    await expect(isUserOnTeam(supabase, "user-1", "home-1")).resolves.toBe(
+      false,
+    );
+  });
+});
 
 describe("canEditLineupForTeam", () => {
   it("lets a match player edit both home and away lineups", async () => {
@@ -141,6 +193,24 @@ describe("canEditLineupForTeam", () => {
         [ROLES.PLAYER],
         baseMatch,
         baseMatch.away_team_id,
+      ),
+    ).resolves.toBe(true);
+  });
+
+  it("lets a non-playing captain edit lineups for their match", async () => {
+    const supabase = mockSupabase({
+      playerId: "player-1",
+      rosterTeamIds: [],
+      captainTeamIds: [baseMatch.home_team_id],
+    });
+
+    await expect(
+      canEditLineupForTeam(
+        supabase,
+        "user-1",
+        [ROLES.PLAYER],
+        baseMatch,
+        baseMatch.home_team_id,
       ),
     ).resolves.toBe(true);
   });
