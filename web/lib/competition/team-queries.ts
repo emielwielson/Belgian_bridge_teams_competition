@@ -416,7 +416,47 @@ export type PlayerTeamSummary = {
   competitionName: string | null;
 };
 
-/** Teams the linked player belongs to in the active season (linked + Zweiffel pools). */
+const TEAM_SUMMARY_KIND_SELECT =
+  "group:groups(division:divisions(league:leagues(competition_kind:competition_kinds(code))))";
+
+const TEAM_SUMMARY_KIND_SELECT_INNER =
+  "group:groups!inner(division:divisions!inner(league:leagues!inner(season_id, competition_kind:competition_kinds(code))))";
+
+function playerTeamSummaryFromTeamRow(
+  team: { id: string; name: string; group?: unknown } | null,
+): PlayerTeamSummary | null {
+  if (!team) return null;
+
+  const group = unwrapOne(team.group);
+  const division = unwrapOne(
+    group && typeof group === "object"
+      ? (group as { division?: unknown }).division
+      : null,
+  );
+  const league = unwrapOne(
+    division && typeof division === "object"
+      ? (division as { league?: unknown }).league
+      : null,
+  );
+  const kind = unwrapOne(
+    league && typeof league === "object"
+      ? (league as { competition_kind?: unknown }).competition_kind
+      : null,
+  );
+  const competitionKindCode =
+    kind && typeof kind === "object" && typeof (kind as { code?: unknown }).code === "string"
+      ? ((kind as { code: string }).code)
+      : null;
+
+  return {
+    id: team.id,
+    name: team.name,
+    competitionKindCode,
+    competitionName: leagueNameForCompetitionKind(competitionKindCode),
+  };
+}
+
+/** Teams the linked player is on (roster) or captains in the active season. */
 export async function loadTeamsForUser(
   supabase: SupabaseClient,
   userId: string,
@@ -427,53 +467,35 @@ export async function loadTeamsForUser(
   const season = await getActiveSeason(supabase);
   if (!season) return [];
 
-  const { data: rows, error } = await supabase
-    .from("team_players")
-    .select(
-      "team:teams(id, name, group:groups(division:divisions(league:leagues(competition_kind:competition_kinds(code)))))",
-    )
-    .eq("player_id", playerId)
-    .eq("season_id", season.id);
+  const [rosterResult, captainResult] = await Promise.all([
+    supabase
+      .from("team_players")
+      .select(`team:teams(id, name, ${TEAM_SUMMARY_KIND_SELECT})`)
+      .eq("player_id", playerId)
+      .eq("season_id", season.id),
+    supabase
+      .from("teams")
+      .select(`id, name, ${TEAM_SUMMARY_KIND_SELECT_INNER}`)
+      .eq("captain_id", playerId)
+      .eq("group.division.league.season_id", season.id),
+  ]);
 
-  if (error) throw error;
+  if (rosterResult.error) throw rosterResult.error;
+  if (captainResult.error) throw captainResult.error;
 
-  const teams: PlayerTeamSummary[] = [];
-  for (const row of rows ?? []) {
-    const team = unwrapOne<{
-      id: string;
-      name: string;
-      group?: unknown;
-    }>(row.team);
-    if (!team) continue;
+  const byId = new Map<string, PlayerTeamSummary>();
 
-    const group = unwrapOne(team.group);
-    const division = unwrapOne(
-      group && typeof group === "object"
-        ? (group as { division?: unknown }).division
-        : null,
+  for (const row of rosterResult.data ?? []) {
+    const summary = playerTeamSummaryFromTeamRow(
+      unwrapOne<{ id: string; name: string; group?: unknown }>(row.team),
     );
-    const league = unwrapOne(
-      division && typeof division === "object"
-        ? (division as { league?: unknown }).league
-        : null,
-    );
-    const kind = unwrapOne(
-      league && typeof league === "object"
-        ? (league as { competition_kind?: unknown }).competition_kind
-        : null,
-    );
-    const competitionKindCode =
-      kind && typeof kind === "object" && typeof (kind as { code?: unknown }).code === "string"
-        ? ((kind as { code: string }).code)
-        : null;
-
-    teams.push({
-      id: team.id,
-      name: team.name,
-      competitionKindCode,
-      competitionName: leagueNameForCompetitionKind(competitionKindCode),
-    });
+    if (summary) byId.set(summary.id, summary);
   }
 
-  return teams.sort((a, b) => a.name.localeCompare(b.name));
+  for (const row of captainResult.data ?? []) {
+    const summary = playerTeamSummaryFromTeamRow(row);
+    if (summary) byId.set(summary.id, summary);
+  }
+
+  return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name));
 }

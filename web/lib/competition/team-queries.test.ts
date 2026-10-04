@@ -186,78 +186,127 @@ describe("loadTeamDetail", () => {
   });
 });
 
-describe("loadTeamsForUser", () => {
-  it("returns teams for linked player in active season", async () => {
-    const supabase = {
-      from: (table: string) => {
-        if (table === "user_profiles") {
-          return {
-            select: () => ({
-              eq: () => ({
-                maybeSingle: () =>
-                  Promise.resolve({
-                    data: { active_player_id: "player-1" },
-                    error: null,
-                  }),
-              }),
-            }),
-          };
-        }
-        if (table === "player_auth_links") {
-          return {
-            select: () => ({
-              eq: () => ({
-                eq: () => ({
-                  maybeSingle: () =>
-                    Promise.resolve({ data: { player_id: "player-1" }, error: null }),
+function loadTeamsForUserSupabase(options: {
+  rosterTeams?: Array<{
+    id: string;
+    name: string;
+    competitionKindCode: string;
+  }>;
+  captainTeams?: Array<{
+    id: string;
+    name: string;
+    competitionKindCode: string;
+  }>;
+}) {
+  const rosterTeams = options.rosterTeams ?? [];
+  const captainTeams = options.captainTeams ?? [];
+
+  return {
+    from: (table: string) => {
+      if (table === "user_profiles") {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: () =>
+                Promise.resolve({
+                  data: { active_player_id: "player-1" },
+                  error: null,
                 }),
-              }),
             }),
-          };
-        }
-        if (table === "seasons") {
-          return {
-            select: () => ({
+          }),
+        };
+      }
+      if (table === "player_auth_links") {
+        return {
+          select: () => ({
+            eq: () => ({
               eq: () => ({
                 maybeSingle: () =>
-                  Promise.resolve({
-                    data: { id: "season-1", name: "2024-25", status: "active", is_active: true },
-                    error: null,
-                  }),
+                  Promise.resolve({ data: { player_id: "player-1" }, error: null }),
               }),
             }),
-          };
-        }
-        if (table === "team_players") {
-          return {
-            select: () => ({
-              eq: () => ({
-                eq: () =>
-                  Promise.resolve({
-                    data: [
-                      {
-                        team: {
-                          id: "team-1",
-                          name: "Alpha",
-                          group: {
-                            division: {
-                              league: {
-                                competition_kind: { code: "national" },
-                              },
-                            },
+          }),
+        };
+      }
+      if (table === "seasons") {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: () =>
+                Promise.resolve({
+                  data: {
+                    id: "season-1",
+                    name: "2024-25",
+                    status: "active",
+                    is_active: true,
+                  },
+                  error: null,
+                }),
+            }),
+          }),
+        };
+      }
+      if (table === "team_players") {
+        return {
+          select: () => ({
+            eq: () => ({
+              eq: () =>
+                Promise.resolve({
+                  data: rosterTeams.map((team) => ({
+                    team: {
+                      id: team.id,
+                      name: team.name,
+                      group: {
+                        division: {
+                          league: {
+                            competition_kind: { code: team.competitionKindCode },
                           },
                         },
                       },
-                    ],
-                    error: null,
-                  }),
-              }),
+                    },
+                  })),
+                  error: null,
+                }),
             }),
-          };
-        }
-        throw new Error(`unexpected table ${table}`);
-      },
-    } as never;
+          }),
+        };
+      }
+      if (table === "teams") {
+        return {
+          select: () => ({
+            eq: () => ({
+              eq: () =>
+                Promise.resolve({
+                  data: captainTeams.map((team) => ({
+                    id: team.id,
+                    name: team.name,
+                    group: {
+                      division: {
+                        league: {
+                          season_id: "season-1",
+                          competition_kind: { code: team.competitionKindCode },
+                        },
+                      },
+                    },
+                  })),
+                  error: null,
+                }),
+            }),
+          }),
+        };
+      }
+      throw new Error(`unexpected table ${table}`);
+    },
+  } as never;
+}
+
+describe("loadTeamsForUser", () => {
+  it("returns roster teams for linked player in active season", async () => {
+    const supabase = loadTeamsForUserSupabase({
+      rosterTeams: [
+        { id: "team-1", name: "Alpha", competitionKindCode: "national" },
+      ],
+    });
 
     await expect(loadTeamsForUser(supabase, "user-1")).resolves.toEqual([
       {
@@ -265,6 +314,57 @@ describe("loadTeamsForUser", () => {
         name: "Alpha",
         competitionKindCode: "national",
         competitionName: "National",
+      },
+    ]);
+  });
+
+  it("returns captained teams that are not on the roster", async () => {
+    const supabase = loadTeamsForUserSupabase({
+      captainTeams: [
+        { id: "team-2", name: "Bravo", competitionKindCode: "flanders" },
+      ],
+    });
+
+    await expect(loadTeamsForUser(supabase, "user-1")).resolves.toEqual([
+      {
+        id: "team-2",
+        name: "Bravo",
+        competitionKindCode: "flanders",
+        competitionName: "Flanders",
+      },
+    ]);
+  });
+
+  it("unions roster and captained teams without duplicates", async () => {
+    const supabase = loadTeamsForUserSupabase({
+      rosterTeams: [
+        { id: "team-1", name: "Alpha", competitionKindCode: "national" },
+        { id: "team-2", name: "Bravo", competitionKindCode: "zweiffel" },
+      ],
+      captainTeams: [
+        { id: "team-1", name: "Alpha", competitionKindCode: "national" },
+        { id: "team-3", name: "Charlie", competitionKindCode: "flanders" },
+      ],
+    });
+
+    await expect(loadTeamsForUser(supabase, "user-1")).resolves.toEqual([
+      {
+        id: "team-1",
+        name: "Alpha",
+        competitionKindCode: "national",
+        competitionName: "National",
+      },
+      {
+        id: "team-2",
+        name: "Bravo",
+        competitionKindCode: "zweiffel",
+        competitionName: "Zweiffel",
+      },
+      {
+        id: "team-3",
+        name: "Charlie",
+        competitionKindCode: "flanders",
+        competitionName: "Flanders",
       },
     ]);
   });

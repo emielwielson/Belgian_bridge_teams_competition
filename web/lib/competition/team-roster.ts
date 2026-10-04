@@ -42,9 +42,6 @@ const TEAM_KIND_SELECT =
 const ROSTER_POOL_CONFLICT_MESSAGE =
   "Player is already on another team this season in the same competition";
 
-const CAPTAIN_POOL_CONFLICT_MESSAGE =
-  "Captain is already on another team this season; remove them from that roster first";
-
 function unwrapOne<T>(value: unknown): T | null {
   if (value == null) return null;
   if (Array.isArray(value)) return (value[0] ?? null) as T | null;
@@ -219,67 +216,10 @@ export async function addPlayerToTeamRoster(
   if (error) throw error;
 }
 
-/** Captains must be on the team roster (My team, lineup, roster management). */
-export async function ensureCaptainOnTeamRoster(
-  supabase: SupabaseClient,
-  params: { teamId: string; captainId: string; seasonId: string },
-): Promise<void> {
-  const { data: onThisTeam, error: onTeamError } = await supabase
-    .from("team_players")
-    .select("team_id")
-    .eq("team_id", params.teamId)
-    .eq("player_id", params.captainId)
-    .eq("season_id", params.seasonId)
-    .maybeSingle();
-
-  if (onTeamError) throw onTeamError;
-  if (onThisTeam) return;
-
-  const targetKind = await loadCompetitionKindCodeForTeam(
-    supabase,
-    params.teamId,
-  );
-
-  const { data: otherRows, error: elsewhereError } = await supabase
-    .from("team_players")
-    .select(`team_id, team:teams(${TEAM_KIND_SELECT})`)
-    .eq("player_id", params.captainId)
-    .eq("season_id", params.seasonId);
-
-  if (elsewhereError) throw elsewhereError;
-
-  const samePoolConflict = (otherRows ?? []).some((row) => {
-    if (row.team_id === params.teamId) return false;
-    const otherKind = competitionKindCodeFromTeamRow(unwrapOne(row.team));
-    return sameRosterExclusivityPool(targetKind, otherKind);
-  });
-
-  if (samePoolConflict) {
-    throw new TeamValidationError(CAPTAIN_POOL_CONFLICT_MESSAGE);
-  }
-
-  await addPlayerToTeamRoster(supabase, {
-    teamId: params.teamId,
-    playerId: params.captainId,
-    seasonId: params.seasonId,
-  });
-}
-
 export async function removePlayerFromTeamRoster(
   supabase: SupabaseClient,
   params: { teamId: string; playerId: string; seasonId: string },
 ): Promise<void> {
-  const { data: team, error: teamError } = await supabase
-    .from("teams")
-    .select("captain_id")
-    .eq("id", params.teamId)
-    .maybeSingle();
-
-  if (teamError) throw teamError;
-  if (team?.captain_id === params.playerId) {
-    throw new TeamValidationError("Cannot remove the team captain from the roster");
-  }
-
   const { error } = await supabase
     .from("team_players")
     .delete()

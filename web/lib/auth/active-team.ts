@@ -19,7 +19,7 @@ export function writeActiveTeamId(teamId: string): void {
   }
 }
 
-/** Prefer a stored team when it is still in the user's roster; otherwise the first team. */
+/** Prefer a stored team when it is still in the user's teams; otherwise the first team. */
 export function resolveActiveTeamId(
   teams: ReadonlyArray<{ id: string }>,
 ): string | null {

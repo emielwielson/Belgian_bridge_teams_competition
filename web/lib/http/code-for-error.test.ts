@@ -36,14 +36,6 @@ describe("codeForError", () => {
     ).toBe(ErrorCodes.api.captainNotClubMember);
   });
 
-  it("maps captain roster validation errors", () => {
-    expect(
-      codeForError(
-        new TeamValidationError("Cannot remove the team captain from the roster"),
-      ),
-    ).toBe(ErrorCodes.api.cannotRemoveCaptain);
-  });
-
   it("maps player roster exclusivity conflicts", () => {
     expect(
       codeForError(

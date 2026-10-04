@@ -1471,9 +1471,7 @@
       "uploadFailed": "Upload failed",
       "penaltyFieldsRequired": "team_id, penalty_date, and reason are required",
       "captainNotClubMember": "Captain must be a member of the team's club",
-      "captainAlreadyOnAnotherTeam": "Captain is already on another team this season; remove them from that roster first",
       "playerAlreadyOnAnotherTeam": "Player is already on another team this season in the same competition",
-      "cannotRemoveCaptain": "Cannot remove the team captain from the roster",
       "invalidRequestBody": "Invalid request body",
       "clubIdRequired": "club_id is required",
       "captainIdInvalid": "captain_id must be a valid player id",
@@ -1636,7 +1634,7 @@
           },
           "remove-player": {
             "title": "Remove a player (optional)",
-            "body": "Use Remove next to a roster player if needed. The team captain cannot be removed from the roster."
+            "body": "Use Remove next to a roster player if needed. Removing the captain from the roster keeps them as captain with full rights; they just no longer play for the team."
           }
         }
       },
