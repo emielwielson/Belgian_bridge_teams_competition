@@ -25,7 +25,8 @@ export async function POST(request: Request) {
     await requireRoles([ROLES.SYSTEM_ADMIN]);
     const body = (await request.json()) as Record<string, unknown>;
     const email = String(body.email ?? "").trim();
-    if (!email) {
+    const displayName = String(body.displayName ?? body.display_name ?? "").trim();
+    if (!email || !displayName) {
       return jsonErrorCode(ErrorCodes.api.invalidRequestBody, 400);
     }
     const kinds = parseKindCodes(body.kinds);
@@ -34,12 +35,16 @@ export async function POST(request: Request) {
     const manager = await createOrEnsureCompetitionManager({
       service,
       email,
+      displayName,
       kinds,
       isGlobal,
     });
     return jsonOk({ manager });
   } catch (err) {
     if (err instanceof Error && err.message === "Invalid email") {
+      return jsonError(err.message, 400);
+    }
+    if (err instanceof Error && err.message === "Display name is required") {
       return jsonError(err.message, 400);
     }
     if (err instanceof Error && err.message === "Failed to create auth user") {

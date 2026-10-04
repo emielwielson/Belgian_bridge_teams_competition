@@ -56,7 +56,7 @@ export async function PATCH(request: Request, { params }: Params) {
       .update(updates)
       .eq("id", penaltyId)
       .select(
-        "id, team_id, penalty_date, reason, vp_deduction, file_path, updated_at",
+        "id, team_id, penalty_date, reason, vp_deduction, file_path, created_by_name, updated_at, updated_by_name",
       )
       .single();
 

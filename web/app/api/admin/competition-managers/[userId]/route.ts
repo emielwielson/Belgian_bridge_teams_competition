@@ -20,10 +20,17 @@ export async function PATCH(request: Request, { params }: Params) {
     const body = (await request.json()) as Record<string, unknown>;
     const kinds = parseKindCodes(body.kinds);
     const isGlobal = Boolean(body.isGlobal);
+    const displayNameRaw = body.displayName ?? body.display_name;
+    const displayName =
+      displayNameRaw != null ? String(displayNameRaw).trim() : undefined;
+    if (displayName !== undefined && !displayName) {
+      return jsonErrorCode(ErrorCodes.api.invalidRequestBody, 400);
+    }
     const service = createServiceClient();
     const manager = await updateCompetitionManagerScopes({
       service,
       userId,
+      displayName,
       kinds,
       isGlobal,
     });
@@ -31,6 +38,9 @@ export async function PATCH(request: Request, { params }: Params) {
   } catch (err) {
     if (err instanceof Error && err.message === "Competition manager not found") {
       return jsonError(err.message, 404);
+    }
+    if (err instanceof Error && err.message === "Display name is required") {
+      return jsonError(err.message, 400);
     }
     return jsonFromError(err);
   }

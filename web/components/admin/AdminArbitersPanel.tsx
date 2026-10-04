@@ -7,6 +7,7 @@ import type { CompetitionKindCode } from "@/lib/auth/competition-scope";
 type ArbiterRow = {
   userId: string;
   email: string | null;
+  displayName: string | null;
   playerName: string | null;
   kinds: CompetitionKindCode[];
   chiefKinds: CompetitionKindCode[];
@@ -28,6 +29,7 @@ export function AdminArbitersPanel() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [email, setEmail] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [createKinds, setCreateKinds] = useState<CompetitionKindCode[]>([]);
   const [createChiefKinds, setCreateChiefKinds] = useState<
     CompetitionKindCode[]
@@ -44,6 +46,7 @@ export function AdminArbitersPanel() {
         (body.arbiters ?? []).map(
           (row: ArbiterRow): ArbiterRow => ({
             ...row,
+            displayName: row.displayName ?? null,
             chiefKinds: Array.isArray(row.chiefKinds) ? row.chiefKinds : [],
           }),
         ),
@@ -86,6 +89,10 @@ export function AdminArbitersPanel() {
   }
 
   async function createArbiter() {
+    if (!displayName.trim()) {
+      setMessage(t("arbitersPage.nameRequired"));
+      return;
+    }
     setSaving(true);
     setMessage(null);
     const res = await fetch("/api/admin/arbiters", {
@@ -93,6 +100,7 @@ export function AdminArbitersPanel() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         email,
+        displayName: displayName.trim(),
         kinds: createKinds,
         chiefKinds: createChiefKinds.filter((c) => createKinds.includes(c)),
         honor: createHonor,
@@ -105,6 +113,7 @@ export function AdminArbitersPanel() {
       return;
     }
     setEmail("");
+    setDisplayName("");
     setCreateHonor(false);
     setCreateChiefKinds([]);
     setMessage(t("arbitersPage.created"));
@@ -113,12 +122,17 @@ export function AdminArbitersPanel() {
   }
 
   async function saveRow(row: ArbiterRow) {
+    if (!row.displayName?.trim()) {
+      setMessage(t("arbitersPage.nameRequired"));
+      return;
+    }
     setSaving(true);
     setMessage(null);
     const res = await fetch(`/api/admin/arbiters/${row.userId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        displayName: row.displayName.trim(),
         kinds: row.kinds,
         chiefKinds: row.chiefKinds.filter((c) => row.kinds.includes(c)),
         honor: row.honor,
@@ -155,7 +169,9 @@ export function AdminArbitersPanel() {
 
   function updateLocal(
     userId: string,
-    patch: Partial<Pick<ArbiterRow, "kinds" | "chiefKinds" | "honor">>,
+    patch: Partial<
+      Pick<ArbiterRow, "kinds" | "chiefKinds" | "honor" | "displayName">
+    >,
   ) {
     setArbiters((rows) =>
       rows.map((r) => {
@@ -188,6 +204,16 @@ export function AdminArbitersPanel() {
 
       <section className="flex flex-col gap-3 border-b border-zinc-200 pb-8">
         <h2 className="text-lg font-medium text-zinc-900">{t("arbitersPage.addTitle")}</h2>
+        <label className="flex flex-col gap-1 text-sm">
+          <span className="text-zinc-600">{t("arbitersPage.name")}</span>
+          <input
+            type="text"
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            className="rounded border border-zinc-300 px-3 py-2"
+            autoComplete="off"
+          />
+        </label>
         <label className="flex flex-col gap-1 text-sm">
           <span className="text-zinc-600">{t("arbitersPage.email")}</span>
           <input
@@ -260,7 +286,7 @@ export function AdminArbitersPanel() {
         <button
           type="button"
           className="btn-primary w-fit"
-          disabled={saving || !email.trim()}
+          disabled={saving || !email.trim() || !displayName.trim()}
           onClick={() => void createArbiter()}
         >
           {t("arbitersPage.add")}
@@ -280,8 +306,20 @@ export function AdminArbitersPanel() {
                 key={row.userId}
                 className="flex flex-col gap-3 border border-zinc-200 p-4"
               >
+                <label className="flex flex-col gap-1 text-sm">
+                  <span className="text-zinc-600">{t("arbitersPage.name")}</span>
+                  <input
+                    type="text"
+                    value={row.displayName ?? ""}
+                    disabled={saving}
+                    onChange={(e) =>
+                      updateLocal(row.userId, { displayName: e.target.value })
+                    }
+                    className="rounded border border-zinc-300 px-3 py-2 font-medium text-zinc-900"
+                  />
+                </label>
                 <div>
-                  <p className="font-medium text-zinc-900">
+                  <p className="text-sm text-zinc-600">
                     {row.email ?? row.userId}
                   </p>
                   {row.playerName ? (

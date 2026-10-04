@@ -26,11 +26,18 @@ export async function PATCH(request: Request, { params }: Params) {
     const chiefKinds = Array.isArray(body.chiefKinds)
       ? parseKindCodes(body.chiefKinds)
       : undefined;
+    const displayNameRaw = body.displayName ?? body.display_name;
+    const displayName =
+      displayNameRaw != null ? String(displayNameRaw).trim() : undefined;
+    if (displayName !== undefined && !displayName) {
+      return jsonErrorCode(ErrorCodes.api.invalidRequestBody, 400);
+    }
     const service = createServiceClient();
     const arbiter = await updateArbiterScopes({
       service,
       managed,
       userId,
+      displayName,
       kinds,
       chiefKinds,
       honor,
@@ -39,6 +46,9 @@ export async function PATCH(request: Request, { params }: Params) {
   } catch (err) {
     if (err instanceof Error && err.message === "Arbiter not found") {
       return jsonError(err.message, 404);
+    }
+    if (err instanceof Error && err.message === "Display name is required") {
+      return jsonError(err.message, 400);
     }
     return jsonFromError(err);
   }

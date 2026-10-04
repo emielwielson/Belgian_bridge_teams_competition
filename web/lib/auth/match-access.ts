@@ -272,27 +272,25 @@ export async function canAddPenaltyForMatch(
   return userManagesMatch(supabase, matchId);
 }
 
+/** UI gate: whether the viewer may manage discipline for this team. */
+export async function canDisciplineTeam(
+  supabase: SupabaseClient,
+  roles: string[],
+  teamId: string,
+): Promise<boolean> {
+  if (!hasAnyRole(roles, [...ARBITER_ACCESS_ROLES])) return false;
+  if (isPureArbiter(roles)) {
+    return userIsArbiterForTeam(supabase, teamId);
+  }
+  return userManagesTeam(supabase, teamId);
+}
+
 export async function assertCanDisciplineTeam(
   supabase: SupabaseClient,
   roles: string[],
   teamId: string,
 ): Promise<void> {
-  if (!hasAnyRole(roles, [...ARBITER_ACCESS_ROLES])) {
-    throw new AuthError(
-      "Forbidden: only arbiters or competition managers can manage discipline",
-      403,
-    );
-  }
-  if (isPureArbiter(roles)) {
-    if (!(await userIsArbiterForTeam(supabase, teamId))) {
-      throw new AuthError(
-        "Forbidden: only arbiters or competition managers can manage discipline",
-        403,
-      );
-    }
-    return;
-  }
-  if (!(await userManagesTeam(supabase, teamId))) {
+  if (!(await canDisciplineTeam(supabase, roles, teamId))) {
     throw new AuthError(
       "Forbidden: only arbiters or competition managers can manage discipline",
       403,

@@ -60,6 +60,7 @@ export type GroupPenaltyRow = {
   reason: string;
   vp_deduction: number;
   file_path: string | null;
+  created_by_name?: string | null;
   team: { id: string; name: string } | null;
 };
 
@@ -68,6 +69,7 @@ export type GroupWarningRow = {
   team_id: string;
   warning_date: string;
   reason: string;
+  created_by_name?: string | null;
   team: { id: string; name: string } | null;
 };
 
@@ -390,6 +392,7 @@ export async function fetchGroupPenalties(
         reason,
         vp_deduction,
         file_path,
+        created_by_name,
         team:teams!inner (id, name, group_id)
       `,
     )
@@ -443,6 +446,7 @@ export async function fetchGroupWarnings(
         team_id,
         warning_date,
         reason,
+        created_by_name,
         team:teams!inner (id, name, group_id)
       `,
     )

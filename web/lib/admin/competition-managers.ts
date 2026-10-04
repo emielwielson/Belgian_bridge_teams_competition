@@ -12,10 +12,15 @@ import {
   isValidLoginEmailFormat,
 } from "@/lib/auth/login-email";
 import { defaultLocale, type Locale } from "@/i18n/config";
+import {
+  loadUserDisplayName,
+  upsertUserDisplayName,
+} from "@/lib/auth/actor-display-name";
 
 export type CompetitionManagerListItem = {
   userId: string;
   email: string | null;
+  displayName: string | null;
   playerName: string | null;
   kinds: CompetitionKindCode[];
   isGlobal: boolean;
@@ -156,11 +161,15 @@ async function toListItem(
   emailFallback?: string | null,
 ): Promise<CompetitionManagerListItem> {
   const { data: authData } = await service.auth.admin.getUserById(userId);
-  const playerName = await linkedPlayerName(service, userId);
+  const [displayName, playerName] = await Promise.all([
+    loadUserDisplayName(service, userId),
+    linkedPlayerName(service, userId),
+  ]);
   const scopes = await loadManagerScopes(service, userId);
   return {
     userId,
     email: authData.user?.email ?? emailFallback ?? null,
+    displayName,
     playerName,
     kinds: scopes.kinds,
     isGlobal: scopes.isGlobal,
@@ -182,7 +191,9 @@ export async function listCompetitionManagers(
   }
 
   items.sort((a, b) =>
-    (a.email ?? a.userId).localeCompare(b.email ?? b.userId),
+    (a.displayName ?? a.email ?? a.userId).localeCompare(
+      b.displayName ?? b.email ?? b.userId,
+    ),
   );
   return items;
 }
@@ -190,6 +201,7 @@ export async function listCompetitionManagers(
 export async function createOrEnsureCompetitionManager(options: {
   service: SupabaseClient;
   email: string;
+  displayName: string;
   kinds: CompetitionKindCode[];
   isGlobal: boolean;
   locale?: Locale;
@@ -198,6 +210,10 @@ export async function createOrEnsureCompetitionManager(options: {
   const email = normalizeLoginEmail(options.email);
   if (!isValidLoginEmailFormat(email)) {
     throw new Error("Invalid email");
+  }
+  const displayName = options.displayName.trim();
+  if (!displayName) {
+    throw new Error("Display name is required");
   }
 
   const kinds = validateManagerScopeInput(options.isGlobal, options.kinds);
@@ -215,6 +231,7 @@ export async function createOrEnsureCompetitionManager(options: {
   if (roleError) throw roleError;
 
   await replaceManagerScopes(service, userId, kinds);
+  await upsertUserDisplayName(service, userId, displayName);
 
   return toListItem(service, userId, email);
 }
@@ -222,6 +239,7 @@ export async function createOrEnsureCompetitionManager(options: {
 export async function updateCompetitionManagerScopes(options: {
   service: SupabaseClient;
   userId: string;
+  displayName?: string;
   kinds: CompetitionKindCode[];
   isGlobal: boolean;
 }): Promise<CompetitionManagerListItem> {
@@ -239,6 +257,9 @@ export async function updateCompetitionManagerScopes(options: {
 
   const kinds = validateManagerScopeInput(options.isGlobal, options.kinds);
   await replaceManagerScopes(service, userId, kinds);
+  if (options.displayName != null) {
+    await upsertUserDisplayName(service, userId, options.displayName);
+  }
 
   return toListItem(service, userId);
 }

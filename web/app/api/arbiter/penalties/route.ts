@@ -15,13 +15,24 @@ import { createServiceClient } from "@/lib/supabase/server-client";
 export async function GET(request: Request) {
   try {
     const { supabase } = await requireRoles([...ARBITER_ACCESS_ROLES]);
-    const groupId = new URL(request.url).searchParams.get("groupId");
+    const params = new URL(request.url).searchParams;
+    const groupId = params.get("groupId");
+    const teamId = params.get("teamId");
     const seasonTeamIds = await activeSeasonTeamIds(supabase);
-    const teamFilter = await teamIdsForGroupFilter(
-      supabase,
-      groupId,
-      seasonTeamIds,
-    );
+
+    let teamFilter: Set<string>;
+    if (teamId) {
+      if (!seasonTeamIds.has(teamId)) {
+        return jsonOk({ penalties: [] });
+      }
+      teamFilter = new Set([teamId]);
+    } else {
+      teamFilter = await teamIdsForGroupFilter(
+        supabase,
+        groupId,
+        seasonTeamIds,
+      );
+    }
 
     if (teamFilter.size === 0) return jsonOk({ penalties: [] });
 
@@ -35,8 +46,11 @@ export async function GET(request: Request) {
         reason,
         vp_deduction,
         file_path,
+        created_by,
+        created_by_name,
         created_at,
         updated_at,
+        updated_by_name,
         team:teams (id, name, group_id)
       `,
       )
@@ -89,7 +103,7 @@ export async function POST(request: Request) {
         created_by: user.id,
       })
       .select(
-        "id, team_id, penalty_date, reason, vp_deduction, file_path, created_at",
+        "id, team_id, penalty_date, reason, vp_deduction, file_path, created_by, created_by_name, created_at",
       )
       .single();
 

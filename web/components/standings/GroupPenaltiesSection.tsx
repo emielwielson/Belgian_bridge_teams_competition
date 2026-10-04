@@ -29,6 +29,12 @@ export async function GroupPenaltiesSection({ penalties }: Props) {
                 <p className="mt-1 text-xs text-zinc-500">
                   {penalty.penalty_date}
                 </p>
+                <p className="mt-1 text-xs text-zinc-500">
+                  {t("addedBy", {
+                    name:
+                      penalty.created_by_name?.trim() || t("addedByUnknown"),
+                  })}
+                </p>
               </div>
               {penalty.signed_url ? (
                 <a

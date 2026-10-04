@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import {
   assertCanDisciplineTeam,
   canAddPenaltyForMatch,
+  canDisciplineTeam,
   canEditFinishedScoreForMatch,
   canEditLineupForTeam,
   isUserOnTeam,
@@ -277,6 +278,38 @@ describe("match scope gates for arbiter discipline and finished scores", () => {
   it("canAddPenaltyForMatch denies players", async () => {
     await expect(
       canAddPenaltyForMatch(supabase, [ROLES.PLAYER], "match-1"),
+    ).resolves.toBe(false);
+  });
+
+  it("canDisciplineTeam allows pure arbiter only for in-scope team", async () => {
+    vi.mocked(userIsArbiterForTeam).mockResolvedValueOnce(true);
+    await expect(
+      canDisciplineTeam(supabase, [ROLES.ARBITER], "team-1"),
+    ).resolves.toBe(true);
+
+    vi.mocked(userIsArbiterForTeam).mockResolvedValueOnce(false);
+    await expect(
+      canDisciplineTeam(supabase, [ROLES.ARBITER], "team-2"),
+    ).resolves.toBe(false);
+    expect(userManagesTeam).not.toHaveBeenCalled();
+  });
+
+  it("canDisciplineTeam uses manager scope for competition managers", async () => {
+    vi.mocked(userManagesTeam).mockResolvedValueOnce(true);
+    await expect(
+      canDisciplineTeam(supabase, [ROLES.COMPETITION_MANAGER], "team-1"),
+    ).resolves.toBe(true);
+    expect(userIsArbiterForTeam).not.toHaveBeenCalled();
+
+    vi.mocked(userManagesTeam).mockResolvedValueOnce(false);
+    await expect(
+      canDisciplineTeam(supabase, [ROLES.COMPETITION_MANAGER], "team-2"),
+    ).resolves.toBe(false);
+  });
+
+  it("canDisciplineTeam denies players", async () => {
+    await expect(
+      canDisciplineTeam(supabase, [ROLES.PLAYER], "team-1"),
     ).resolves.toBe(false);
   });
 

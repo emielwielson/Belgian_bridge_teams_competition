@@ -7,6 +7,7 @@ import type { CompetitionKindCode } from "@/lib/auth/competition-scope";
 type ManagerRow = {
   userId: string;
   email: string | null;
+  displayName: string | null;
   playerName: string | null;
   kinds: CompetitionKindCode[];
   isGlobal: boolean;
@@ -25,6 +26,7 @@ export function AdminCompetitionManagersPanel() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [email, setEmail] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [createKinds, setCreateKinds] = useState<CompetitionKindCode[]>([
     "zweiffel",
   ]);
@@ -36,7 +38,12 @@ export function AdminCompetitionManagersPanel() {
     const res = await fetch("/api/admin/competition-managers");
     if (res.ok) {
       const body = await res.json();
-      setManagers(body.managers ?? []);
+      setManagers(
+        (body.managers ?? []).map((row: ManagerRow) => ({
+          ...row,
+          displayName: row.displayName ?? null,
+        })),
+      );
     } else {
       setManagers([]);
     }
@@ -57,6 +64,10 @@ export function AdminCompetitionManagersPanel() {
   }
 
   async function createManager() {
+    if (!displayName.trim()) {
+      setMessage(t("competitionManagersPage.nameRequired"));
+      return;
+    }
     setSaving(true);
     setMessage(null);
     const res = await fetch("/api/admin/competition-managers", {
@@ -64,6 +75,7 @@ export function AdminCompetitionManagersPanel() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         email,
+        displayName: displayName.trim(),
         kinds: createGlobal ? [] : createKinds,
         isGlobal: createGlobal,
       }),
@@ -75,6 +87,7 @@ export function AdminCompetitionManagersPanel() {
       return;
     }
     setEmail("");
+    setDisplayName("");
     setCreateGlobal(false);
     setCreateKinds(["zweiffel"]);
     setMessage(t("competitionManagersPage.created"));
@@ -83,12 +96,17 @@ export function AdminCompetitionManagersPanel() {
   }
 
   async function saveRow(row: ManagerRow) {
+    if (!row.displayName?.trim()) {
+      setMessage(t("competitionManagersPage.nameRequired"));
+      return;
+    }
     setSaving(true);
     setMessage(null);
     const res = await fetch(`/api/admin/competition-managers/${row.userId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        displayName: row.displayName.trim(),
         kinds: row.isGlobal ? [] : row.kinds,
         isGlobal: row.isGlobal,
       }),
@@ -124,7 +142,7 @@ export function AdminCompetitionManagersPanel() {
 
   function updateLocal(
     userId: string,
-    patch: Partial<Pick<ManagerRow, "kinds" | "isGlobal">>,
+    patch: Partial<Pick<ManagerRow, "kinds" | "isGlobal" | "displayName">>,
   ) {
     setManagers((rows) =>
       rows.map((r) => (r.userId === userId ? { ...r, ...patch } : r)),
@@ -150,6 +168,16 @@ export function AdminCompetitionManagersPanel() {
         <h2 className="text-lg font-medium text-zinc-900">
           {t("competitionManagersPage.addTitle")}
         </h2>
+        <label className="flex flex-col gap-1 text-sm">
+          <span className="text-zinc-600">{t("competitionManagersPage.name")}</span>
+          <input
+            type="text"
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            className="rounded border border-zinc-300 px-3 py-2"
+            autoComplete="off"
+          />
+        </label>
         <label className="flex flex-col gap-1 text-sm">
           <span className="text-zinc-600">{t("competitionManagersPage.email")}</span>
           <input
@@ -197,6 +225,7 @@ export function AdminCompetitionManagersPanel() {
           disabled={
             saving ||
             !email.trim() ||
+            !displayName.trim() ||
             (!createGlobal && createKinds.length === 0)
           }
           onClick={() => void createManager()}
@@ -224,8 +253,22 @@ export function AdminCompetitionManagersPanel() {
                 key={row.userId}
                 className="flex flex-col gap-3 border border-zinc-200 p-4"
               >
+                <label className="flex flex-col gap-1 text-sm">
+                  <span className="text-zinc-600">
+                    {t("competitionManagersPage.name")}
+                  </span>
+                  <input
+                    type="text"
+                    value={row.displayName ?? ""}
+                    disabled={saving}
+                    onChange={(e) =>
+                      updateLocal(row.userId, { displayName: e.target.value })
+                    }
+                    className="rounded border border-zinc-300 px-3 py-2 font-medium text-zinc-900"
+                  />
+                </label>
                 <div>
-                  <p className="font-medium text-zinc-900">
+                  <p className="text-sm text-zinc-600">
                     {row.email ?? row.userId}
                   </p>
                   {row.playerName ? (

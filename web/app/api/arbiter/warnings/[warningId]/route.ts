@@ -1,4 +1,6 @@
-import { COMPETITION_ADMIN_ROLES, requireRoles } from "@/lib/auth/route-auth";
+import { ARBITER_ACCESS_ROLES } from "@/lib/auth/roles";
+import { requireRoles } from "@/lib/auth/route-auth";
+import { assertCanDisciplineTeam } from "@/lib/auth/match-access";
 import { revalidateStandingsForTeam } from "@/lib/competition/revalidate-standings";
 import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
 import { ErrorCodes } from "@/lib/http/error-codes";
@@ -8,7 +10,7 @@ type Params = { params: Promise<{ warningId: string }> };
 export async function PATCH(request: Request, { params }: Params) {
   try {
     const { warningId } = await params;
-    const { user, supabase } = await requireRoles([...COMPETITION_ADMIN_ROLES]);
+    const { user, roles, supabase } = await requireRoles([...ARBITER_ACCESS_ROLES]);
     const body = await request.json();
 
     const { data: existing, error: loadError } = await supabase
@@ -20,6 +22,8 @@ export async function PATCH(request: Request, { params }: Params) {
     if (loadError) return jsonError(loadError.message, 500);
     if (!existing) return jsonErrorCode(ErrorCodes.api.warningNotFound, 404);
 
+    await assertCanDisciplineTeam(supabase, roles, existing.team_id);
+
     const updates: Record<string, unknown> = {
       updated_by: user.id,
       updated_at: new Date().toISOString(),
@@ -27,13 +31,21 @@ export async function PATCH(request: Request, { params }: Params) {
 
     if (body.warning_date != null) updates.warning_date = body.warning_date;
     if (body.reason != null) updates.reason = String(body.reason).trim();
-    if (body.team_id != null) updates.team_id = body.team_id;
+    if (body.team_id != null) {
+      const newTeamId = String(body.team_id);
+      if (newTeamId !== existing.team_id) {
+        await assertCanDisciplineTeam(supabase, roles, newTeamId);
+      }
+      updates.team_id = newTeamId;
+    }
 
     const { data, error } = await supabase
       .from("warnings")
       .update(updates)
       .eq("id", warningId)
-      .select("id, team_id, warning_date, reason, updated_at")
+      .select(
+        "id, team_id, warning_date, reason, created_by, created_by_name, updated_at, updated_by_name",
+      )
       .single();
 
     if (error) return jsonError(error.message, 400);
@@ -53,7 +65,7 @@ export async function PATCH(request: Request, { params }: Params) {
 export async function DELETE(_request: Request, { params }: Params) {
   try {
     const { warningId } = await params;
-    const { supabase } = await requireRoles([...COMPETITION_ADMIN_ROLES]);
+    const { roles, supabase } = await requireRoles([...ARBITER_ACCESS_ROLES]);
 
     const { data: existing, error: loadError } = await supabase
       .from("warnings")
@@ -64,7 +76,12 @@ export async function DELETE(_request: Request, { params }: Params) {
     if (loadError) return jsonError(loadError.message, 500);
     if (!existing) return jsonErrorCode(ErrorCodes.api.warningNotFound, 404);
 
-    const { error } = await supabase.from("warnings").delete().eq("id", warningId);
+    await assertCanDisciplineTeam(supabase, roles, existing.team_id);
+
+    const { error } = await supabase
+      .from("warnings")
+      .delete()
+      .eq("id", warningId);
 
     if (error) return jsonError(error.message, 400);
 

@@ -1,5 +1,6 @@
 import { COMPETITION_ADMIN_ROLES, requireRoles } from "@/lib/auth/route-auth";
 import { activeSeasonTeamIds } from "@/lib/competition/admin-season-scope";
+import { revalidateStandingsForTeam } from "@/lib/competition/revalidate-standings";
 import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
 import { ErrorCodes } from "@/lib/http/error-codes";
 
@@ -65,6 +66,8 @@ export async function POST(request: Request) {
       .single();
 
     if (error) return jsonError(error.message, 400);
+
+    await revalidateStandingsForTeam(supabase, teamId);
 
     return jsonOk({ warning: data }, { status: 201 });
   } catch (err) {

@@ -20,10 +20,15 @@ import {
   isValidLoginEmailFormat,
 } from "@/lib/auth/login-email";
 import { defaultLocale, type Locale } from "@/i18n/config";
+import {
+  loadUserDisplayName,
+  upsertUserDisplayName,
+} from "@/lib/auth/actor-display-name";
 
 export type ArbiterListItem = {
   userId: string;
   email: string | null;
+  displayName: string | null;
   playerName: string | null;
   kinds: CompetitionKindCode[];
   chiefKinds: CompetitionKindCode[];
@@ -172,10 +177,14 @@ export async function listArbitersForManager(
       continue;
     }
     const { data: authData } = await service.auth.admin.getUserById(row.user_id);
-    const playerName = await linkedPlayerName(service, row.user_id);
+    const [displayName, playerName] = await Promise.all([
+      loadUserDisplayName(service, row.user_id),
+      linkedPlayerName(service, row.user_id),
+    ]);
     items.push({
       userId: row.user_id,
       email: authData.user?.email ?? null,
+      displayName,
       playerName,
       kinds: access.kinds,
       chiefKinds: access.chiefKinds,
@@ -184,7 +193,9 @@ export async function listArbitersForManager(
   }
 
   items.sort((a, b) =>
-    (a.email ?? a.userId).localeCompare(b.email ?? b.userId),
+    (a.displayName ?? a.email ?? a.userId).localeCompare(
+      b.displayName ?? b.email ?? b.userId,
+    ),
   );
   return items;
 }
@@ -193,6 +204,7 @@ export async function createOrEnsureArbiter(options: {
   service: SupabaseClient;
   managed: ManagedCompetitionKinds;
   email: string;
+  displayName: string;
   kinds: CompetitionKindCode[];
   chiefKinds?: CompetitionKindCode[];
   honor: boolean;
@@ -202,6 +214,10 @@ export async function createOrEnsureArbiter(options: {
   const email = normalizeLoginEmail(options.email);
   if (!isValidLoginEmailFormat(email)) {
     throw new Error("Invalid email");
+  }
+  const displayName = options.displayName.trim();
+  if (!displayName) {
+    throw new Error("Display name is required");
   }
 
   const grantedKinds = filterKindCodesToManaged(managed, options.kinds);
@@ -256,11 +272,14 @@ export async function createOrEnsureArbiter(options: {
     grantedKinds,
   );
 
+  await upsertUserDisplayName(service, userId, displayName);
+
   const access = await getArbiterAccess(service, userId, [ROLES.ARBITER]);
   const playerName = await linkedPlayerName(service, userId);
   return {
     userId,
     email,
+    displayName,
     playerName,
     kinds: access.kinds,
     chiefKinds: access.chiefKinds,
@@ -272,6 +291,7 @@ export async function updateArbiterScopes(options: {
   service: SupabaseClient;
   managed: ManagedCompetitionKinds;
   userId: string;
+  displayName?: string;
   kinds: CompetitionKindCode[];
   chiefKinds?: CompetitionKindCode[];
   honor: boolean;
@@ -359,11 +379,19 @@ export async function updateArbiterScopes(options: {
     if (error) throw error;
   }
 
+  if (options.displayName != null) {
+    await upsertUserDisplayName(service, userId, options.displayName);
+  }
+
   const { data: authData } = await service.auth.admin.getUserById(userId);
-  const playerName = await linkedPlayerName(service, userId);
+  const [displayName, playerName] = await Promise.all([
+    loadUserDisplayName(service, userId),
+    linkedPlayerName(service, userId),
+  ]);
   return {
     userId,
     email: authData.user?.email ?? null,
+    displayName,
     playerName,
     kinds: access.kinds,
     chiefKinds: access.chiefKinds,

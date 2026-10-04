@@ -36,7 +36,8 @@ export async function POST(request: Request) {
     const managed = await loadCallerManagedKinds(supabase, user.id, roles);
     const body = (await request.json()) as Record<string, unknown>;
     const email = String(body.email ?? "").trim();
-    if (!email) {
+    const displayName = String(body.displayName ?? body.display_name ?? "").trim();
+    if (!email || !displayName) {
       return jsonErrorCode(ErrorCodes.api.invalidRequestBody, 400);
     }
     const kinds = parseKindCodes(body.kinds);
@@ -47,6 +48,7 @@ export async function POST(request: Request) {
       service,
       managed,
       email,
+      displayName,
       kinds,
       chiefKinds,
       honor,
@@ -54,6 +56,9 @@ export async function POST(request: Request) {
     return jsonOk({ arbiter });
   } catch (err) {
     if (err instanceof Error && err.message === "Invalid email") {
+      return jsonError(err.message, 400);
+    }
+    if (err instanceof Error && err.message === "Display name is required") {
       return jsonError(err.message, 400);
     }
     if (err instanceof Error && err.message === "Failed to create auth user") {

@@ -23,6 +23,12 @@ export async function GroupWarningsSection({ warnings }: Props) {
               </p>
               <p className="mt-1 text-sm text-zinc-600">{warning.reason}</p>
               <p className="mt-1 text-xs text-zinc-500">{warning.warning_date}</p>
+              <p className="mt-1 text-xs text-zinc-500">
+                {t("addedBy", {
+                  name:
+                    warning.created_by_name?.trim() || t("addedByUnknown"),
+                })}
+              </p>
             </div>
           </li>
         ))}

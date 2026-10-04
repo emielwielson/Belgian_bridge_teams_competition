@@ -2,12 +2,17 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { TeamConventionCardsSection } from "@/components/teams/TeamConventionCardsSection";
+import { TeamDisciplineSection } from "@/components/teams/TeamDisciplineSection";
 import { TeamInfoSection } from "@/components/teams/TeamInfoSection";
 import { TeamMatchesList } from "@/components/teams/TeamMatchesList";
 import { TeamNextMatchLink } from "@/components/teams/TeamNextMatchLink";
 import { TeamRosterSection } from "@/components/teams/TeamRosterSection";
-import { COMPETITION_ADMIN_ROLES } from "@/lib/auth/roles";
-import { hasAnyRole } from "@/lib/auth/roles";
+import { canDisciplineTeam } from "@/lib/auth/match-access";
+import {
+  ARBITER_ACCESS_ROLES,
+  COMPETITION_ADMIN_ROLES,
+  hasAnyRole,
+} from "@/lib/auth/roles";
 import { canManageTeamConventionCards, canManageTeamRoster } from "@/lib/auth/team-access";
 import { getUserRoles } from "@/lib/auth/session";
 import { listConventionCards } from "@/lib/competition/convention-card-queries";
@@ -57,6 +62,11 @@ export default async function TeamPage({ params }: Props) {
     : false;
 
   const canManageLocation = canManageRoster;
+
+  const canManageDiscipline =
+    user && hasAnyRole(roles, [...ARBITER_ACCESS_ROLES])
+      ? await canDisciplineTeam(supabase, roles, teamId)
+      : false;
 
   const [conventionCards, rosterState, nextMatch] = await Promise.all([
     listConventionCards(supabase, teamId),
@@ -122,6 +132,8 @@ export default async function TeamPage({ params }: Props) {
         initialCards={conventionCards}
         canManage={canManageConventionCards}
       />
+
+      {canManageDiscipline ? <TeamDisciplineSection teamId={team.id} /> : null}
 
       <TeamMatchesList teamName={team.name} matches={matches} />
     </main>

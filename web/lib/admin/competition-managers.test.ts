@@ -147,6 +147,23 @@ function createServiceMock(options: {
         };
       }
 
+      if (table === "user_profiles") {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { user_id: userId, display_name: "Test Manager" },
+                error: null,
+              }),
+            }),
+          }),
+          update: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }),
+          insert: vi.fn().mockResolvedValue({ error: null }),
+        };
+      }
+
       throw new Error(`Unexpected table: ${table}`);
     }),
     _state: {
@@ -208,6 +225,7 @@ describe("createOrEnsureCompetitionManager", () => {
     const result = await createOrEnsureCompetitionManager({
       service: service as never,
       email: "coupezweiffel@bbbw.be",
+      displayName: "Coupe Zweiffel",
       kinds: ["zweiffel"],
       isGlobal: true,
     });
@@ -227,6 +245,7 @@ describe("createOrEnsureCompetitionManager", () => {
     const result = await createOrEnsureCompetitionManager({
       service: service as never,
       email: "manager@example.com",
+      displayName: "Manager Example",
       kinds: ["zweiffel", "flanders"],
       isGlobal: false,
     });
@@ -244,6 +263,7 @@ describe("createOrEnsureCompetitionManager", () => {
       createOrEnsureCompetitionManager({
         service: service as never,
         email: "manager@example.com",
+        displayName: "Manager Example",
         kinds: [],
         isGlobal: false,
       }),
