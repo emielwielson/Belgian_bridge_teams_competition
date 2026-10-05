@@ -448,7 +448,7 @@
     "captainBadge": "Kapitein",
     "matchesPlayed": "{count, plural, =0 {0 wedstrijden} one {# wedstrijd} other {# wedstrijden}}",
     "substitutesTitle": "Invallers",
-    "noSubstitutesPlayed": "Nog geen invallers hebben gespeeld.",
+    "noSubstitutesPlayed": "Er hebben nog geen invallers gespeeld.",
     "rosterEditable": "Voeg niet-toegewezen clubleden toe aan dit team.",
     "remove": "Verwijderen",
     "addFromClub": "Toevoegen uit club",
