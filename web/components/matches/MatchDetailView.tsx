@@ -246,6 +246,136 @@ export async function MatchDetailView({
       ? { href: "/admin", label: t("backAdminDashboard") }
       : null;
 
+  /* Lineups are shown in the honor scorecard once results are published. */
+  const lineupSection = !honorScorecard ? (
+    <>
+      {honorCtx.isHonor && honorPerms ? (
+        <div
+          className={`mb-4 rounded-lg border px-4 py-3 text-sm ${
+            honorCtx.homeLocked && honorCtx.awayLocked
+              ? "border-emerald-200 bg-emerald-50 text-emerald-950"
+              : honorCtx.phase === "sequential"
+                ? "border-sky-200 bg-sky-50 text-sky-950"
+                : "border-zinc-300 bg-zinc-50 text-zinc-900"
+          }`}
+          role="status"
+        >
+          <p className="font-semibold">
+            {honorCtx.homeLocked && honorCtx.awayLocked
+              ? t("honorLineup.phaseBothLockedTitle")
+              : honorCtx.phase === "sequential"
+                ? t("honorLineup.phaseSequentialTitle")
+                : t("honorLineup.phaseBlindTitle")}
+          </p>
+          <p className="mt-1">
+            {honorCtx.homeLocked && honorCtx.awayLocked
+              ? t("honorLineup.phaseBothLockedBody")
+              : honorCtx.phase === "sequential"
+                ? honorCtx.awayLocked
+                  ? t("honorLineup.phaseSequentialHomeTurn", {
+                      awayTeam: match.away_team.name,
+                      homeTeam: match.home_team.name,
+                    })
+                  : t("honorLineup.phaseSequentialAwayTurn", {
+                      awayTeam: match.away_team.name,
+                    })
+                : t("honorLineup.phaseBlindBody")}
+          </p>
+        </div>
+      ) : null}
+
+      <div className="grid gap-4 md:grid-cols-2">
+        {honorCtx.isHonor && honorPerms ? (
+          <>
+            <HonorMatchLineupEditor
+              matchId={matchId}
+              side="home"
+              teamId={match.home_team_id}
+              teamName={match.home_team.name}
+              opponentTeamName={match.away_team.name}
+              roster={homeRoster}
+              initialLineup={visibleHomeLineup}
+              canEdit={canEditHome && honorPerms.canEditHome}
+              canLock={honorPerms.canLockHome}
+              canUnlock={honorPerms.canUnlock}
+              canViewSeats={honorPerms.canViewHome}
+              locked={honorCtx.homeLocked}
+              lockedAt={match.home_lineup_locked_at}
+              matchDatetime={match.datetime}
+              opponentLocked={honorCtx.awayLocked}
+              phase={honorCtx.phase}
+              venueTables={honorCtx.venueTables}
+            />
+            <HonorMatchLineupEditor
+              matchId={matchId}
+              side="away"
+              teamId={match.away_team_id}
+              teamName={match.away_team.name}
+              opponentTeamName={match.home_team.name}
+              roster={awayRoster}
+              initialLineup={visibleAwayLineup}
+              canEdit={canEditAway && honorPerms.canEditAway}
+              canLock={honorPerms.canLockAway}
+              canUnlock={honorPerms.canUnlock}
+              canViewSeats={honorPerms.canViewAway}
+              locked={honorCtx.awayLocked}
+              lockedAt={match.away_lineup_locked_at}
+              matchDatetime={match.datetime}
+              opponentLocked={honorCtx.homeLocked}
+              phase={honorCtx.phase}
+              venueTables={honorCtx.venueTables}
+            />
+          </>
+        ) : (
+          <>
+            <MatchLineupEditor
+              matchId={matchId}
+              teamId={match.home_team_id}
+              teamName={match.home_team.name}
+              roster={homeRoster}
+              initialLineup={homeLineup}
+              canEdit={canEditHome}
+            />
+            <MatchLineupEditor
+              matchId={matchId}
+              teamId={match.away_team_id}
+              teamName={match.away_team.name}
+              roster={awayRoster}
+              initialLineup={awayLineup}
+              canEdit={canEditAway}
+            />
+          </>
+        )}
+      </div>
+    </>
+  ) : null;
+
+  const scoreSection = honorScorecard ? (
+    <HonorMatchScorecardView scorecard={honorScorecard} />
+  ) : (
+    <MatchScoreForm
+      matchId={matchId}
+      scheduledBoardCount={match.board_count}
+      allowsBoardChoice={showBoardChoice}
+      initialImpsHome={match.imps_home}
+      initialImpsAway={match.imps_away}
+      initialVpHome={match.vp_home}
+      initialVpAway={match.vp_away}
+      initialMisSeating={match.mis_seating}
+      initialSelectedBoardCount={match.selected_board_count}
+      initialVpBoardCount={match.vp_board_count}
+      playedAt={match.played_at}
+      isAdmin={isAdmin}
+      canEditFinishedScore={canEditFinishedScore}
+      lineupsComplete={lineupsComplete}
+      allowSubmit={canSubmitScoreForMatch && !honorCtx.isHonor}
+      isHonor={honorCtx.isHonor}
+    />
+  );
+
+  /* After scoring a regional match, show the result above the line-ups. */
+  const scoreFirst = !honorCtx.isHonor && match.played_at != null;
+
   return (
     <main className="page-container flex flex-col gap-6">
       <header>
@@ -340,131 +470,16 @@ export async function MatchDetailView({
         />
       ) : null}
 
-      {/* Lineups are shown in the honor scorecard once results are published. */}
-      {!honorScorecard ? (
+      {scoreFirst ? (
         <>
-          {honorCtx.isHonor && honorPerms ? (
-            <div
-              className={`mb-4 rounded-lg border px-4 py-3 text-sm ${
-                honorCtx.homeLocked && honorCtx.awayLocked
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-950"
-                  : honorCtx.phase === "sequential"
-                    ? "border-sky-200 bg-sky-50 text-sky-950"
-                    : "border-zinc-300 bg-zinc-50 text-zinc-900"
-              }`}
-              role="status"
-            >
-              <p className="font-semibold">
-                {honorCtx.homeLocked && honorCtx.awayLocked
-                  ? t("honorLineup.phaseBothLockedTitle")
-                  : honorCtx.phase === "sequential"
-                    ? t("honorLineup.phaseSequentialTitle")
-                    : t("honorLineup.phaseBlindTitle")}
-              </p>
-              <p className="mt-1">
-                {honorCtx.homeLocked && honorCtx.awayLocked
-                  ? t("honorLineup.phaseBothLockedBody")
-                  : honorCtx.phase === "sequential"
-                    ? honorCtx.awayLocked
-                      ? t("honorLineup.phaseSequentialHomeTurn", {
-                          awayTeam: match.away_team.name,
-                          homeTeam: match.home_team.name,
-                        })
-                      : t("honorLineup.phaseSequentialAwayTurn", {
-                          awayTeam: match.away_team.name,
-                        })
-                    : t("honorLineup.phaseBlindBody")}
-              </p>
-            </div>
-          ) : null}
-
-          <div className="grid gap-4 md:grid-cols-2">
-            {honorCtx.isHonor && honorPerms ? (
-              <>
-                <HonorMatchLineupEditor
-                  matchId={matchId}
-                  side="home"
-                  teamId={match.home_team_id}
-                  teamName={match.home_team.name}
-                  opponentTeamName={match.away_team.name}
-                  roster={homeRoster}
-                  initialLineup={visibleHomeLineup}
-                  canEdit={canEditHome && honorPerms.canEditHome}
-                  canLock={honorPerms.canLockHome}
-                  canUnlock={honorPerms.canUnlock}
-                  canViewSeats={honorPerms.canViewHome}
-                  locked={honorCtx.homeLocked}
-                  lockedAt={match.home_lineup_locked_at}
-                  matchDatetime={match.datetime}
-                  opponentLocked={honorCtx.awayLocked}
-                  phase={honorCtx.phase}
-                  venueTables={honorCtx.venueTables}
-                />
-                <HonorMatchLineupEditor
-                  matchId={matchId}
-                  side="away"
-                  teamId={match.away_team_id}
-                  teamName={match.away_team.name}
-                  opponentTeamName={match.home_team.name}
-                  roster={awayRoster}
-                  initialLineup={visibleAwayLineup}
-                  canEdit={canEditAway && honorPerms.canEditAway}
-                  canLock={honorPerms.canLockAway}
-                  canUnlock={honorPerms.canUnlock}
-                  canViewSeats={honorPerms.canViewAway}
-                  locked={honorCtx.awayLocked}
-                  lockedAt={match.away_lineup_locked_at}
-                  matchDatetime={match.datetime}
-                  opponentLocked={honorCtx.homeLocked}
-                  phase={honorCtx.phase}
-                  venueTables={honorCtx.venueTables}
-                />
-              </>
-            ) : (
-              <>
-                <MatchLineupEditor
-                  matchId={matchId}
-                  teamId={match.home_team_id}
-                  teamName={match.home_team.name}
-                  roster={homeRoster}
-                  initialLineup={homeLineup}
-                  canEdit={canEditHome}
-                />
-                <MatchLineupEditor
-                  matchId={matchId}
-                  teamId={match.away_team_id}
-                  teamName={match.away_team.name}
-                  roster={awayRoster}
-                  initialLineup={awayLineup}
-                  canEdit={canEditAway}
-                />
-              </>
-            )}
-          </div>
+          {scoreSection}
+          {lineupSection}
         </>
-      ) : null}
-
-      {honorScorecard ? (
-        <HonorMatchScorecardView scorecard={honorScorecard} />
       ) : (
-        <MatchScoreForm
-          matchId={matchId}
-          scheduledBoardCount={match.board_count}
-          allowsBoardChoice={showBoardChoice}
-          initialImpsHome={match.imps_home}
-          initialImpsAway={match.imps_away}
-          initialVpHome={match.vp_home}
-          initialVpAway={match.vp_away}
-          initialMisSeating={match.mis_seating}
-          initialSelectedBoardCount={match.selected_board_count}
-          initialVpBoardCount={match.vp_board_count}
-          playedAt={match.played_at}
-          isAdmin={isAdmin}
-          canEditFinishedScore={canEditFinishedScore}
-          lineupsComplete={lineupsComplete}
-          allowSubmit={canSubmitScoreForMatch && !honorCtx.isHonor}
-          isHonor={honorCtx.isHonor}
-        />
+        <>
+          {lineupSection}
+          {scoreSection}
+        </>
       )}
 
       {canAddPenalty ? (
