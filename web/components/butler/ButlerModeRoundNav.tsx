@@ -11,10 +11,10 @@ export type ButlerModeRound = {
 type Mode = "hands" | "frequency";
 
 const chipClass =
-  "inline-flex h-8 min-w-8 items-center justify-center rounded-md border border-zinc-200 px-2 text-sm text-zinc-700 hover:bg-zinc-50";
+  "inline-flex h-8 min-w-8 items-center justify-center rounded-md border border-zinc-300 bg-white px-2 text-sm font-medium text-zinc-800 shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-600 hover:bg-emerald-100 hover:text-emerald-950 hover:shadow-md";
 
 const chipDisabledClass =
-  "inline-flex h-8 min-w-8 items-center justify-center rounded-md border border-zinc-100 px-2 text-sm text-zinc-400";
+  "inline-flex h-8 min-w-8 cursor-not-allowed items-center justify-center rounded-md border border-zinc-100 px-2 text-sm text-zinc-400";
 
 export function ButlerModeRoundNav({
   rounds,
