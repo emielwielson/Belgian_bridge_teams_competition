@@ -104,10 +104,10 @@ export default async function LeagueArbiterRequestsPage({ params }: Props) {
                       : ""}
                   </p>
                 </div>
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2">
                   <Link
                     href={`/matches/${request.match_id}`}
-                    className="text-sm font-medium text-emerald-800 underline"
+                    className="btn-secondary px-3 py-1.5 text-sm"
                   >
                     {t("openMatch")}
                   </Link>
@@ -116,7 +116,7 @@ export default async function LeagueArbiterRequestsPage({ params }: Props) {
                       href={request.ruling_signed_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm font-medium text-emerald-800 underline"
+                      className="btn-secondary px-3 py-1.5 text-sm"
                     >
                       {t("viewRuling")}
                     </a>
