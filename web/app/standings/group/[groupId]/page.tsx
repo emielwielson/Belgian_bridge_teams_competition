@@ -54,7 +54,7 @@ export default async function GroupStandingsPage({ params }: Props) {
   };
 
   return (
-    <main className="page-container-full flex min-h-0 flex-1 flex-col gap-4 sm:gap-6">
+    <main className="page-container-full flex flex-col gap-4 sm:gap-6">
       <header>
         <Link
           href={`/standings/league/${league.id}`}

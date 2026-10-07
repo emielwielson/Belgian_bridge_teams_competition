@@ -64,11 +64,11 @@ export function GroupStandingsGrid({ grid, labels }: Props) {
   }
 
   return (
-    <div className="flex min-h-0 w-full flex-1 flex-col gap-2">
+    <div className="flex w-full flex-col gap-2">
       {!hasMatches ? (
         <p className="text-sm text-zinc-500">{labels.roundColumnsPending}</p>
       ) : null}
-      <div className="w-full min-w-0 flex-1 overflow-x-auto rounded-xl border border-slate-300 bg-white shadow-sm">
+      <div className="w-full min-w-0 overflow-x-auto rounded-xl border border-slate-300 bg-white shadow-sm">
         <table className="w-full min-w-max border-separate border-spacing-0 text-sm">
           <thead>
             <tr>
