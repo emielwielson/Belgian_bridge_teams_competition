@@ -67,7 +67,7 @@ export async function StandingsHome({ showForbidden = false }: Props) {
             <Link
               key={league.id}
               href={`/standings/league/${league.id}`}
-              className="card font-medium hover:border-zinc-400"
+              className="card-interactive"
             >
               {translateLeagueName(league.name, tRegions)}
             </Link>

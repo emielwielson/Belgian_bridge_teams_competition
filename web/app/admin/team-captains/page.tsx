@@ -20,7 +20,7 @@ export default async function TeamCaptainsHubPage() {
           <Link
             key={link.kind}
             href={adminTeamCaptainsPath(link.scope, link.regionCode)}
-            className="card font-medium hover:border-zinc-400"
+            className="card-interactive"
           >
             {t(link.labelKey)}
           </Link>

@@ -31,7 +31,7 @@ export function TeamMatchesList({ teamName, matches }: Props) {
             <li key={match.id}>
               <Link
                 href={`/matches/${match.id}`}
-                className="block rounded-md border border-zinc-100 px-3 py-3 text-sm transition-colors hover:border-zinc-300 hover:bg-zinc-50"
+                className="list-interactive"
               >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="flex flex-wrap items-center gap-2 font-medium text-zinc-900">

@@ -18,7 +18,7 @@ export default async function CompetitionHubPage() {
           <Link
             key={link.kind}
             href={adminScopePath(link.scope, link.regionCode)}
-            className="card font-medium hover:border-zinc-400"
+            className="card-interactive"
           >
             {t(link.labelKey)}
           </Link>

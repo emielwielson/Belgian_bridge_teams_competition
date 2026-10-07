@@ -58,7 +58,7 @@ export function ManualsHub({ showCaptainGuides, showHonorGuides }: Props) {
           <li key={section.href}>
             <Link
               href={section.href}
-              className="block rounded-2xl border border-slate-300 bg-white px-4 py-4 shadow-sm transition-colors hover:border-emerald-500 hover:bg-emerald-50 sm:px-5"
+              className="card-interactive rounded-2xl px-4 py-4 sm:px-5"
             >
               <p className="text-base font-semibold text-slate-900">
                 {t(section.titleKey)}

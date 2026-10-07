@@ -117,7 +117,7 @@ export function ButlerOverallStandings({
             return (
               <tr
                 key={row.combinationId}
-                className="hover:[&>td]:bg-zinc-100/80"
+                className="hover:[&>td]:bg-emerald-50"
               >
                 <td
                   className={`px-3 py-2 tabular-nums text-zinc-500 ${stripe}`}
@@ -211,7 +211,7 @@ export function ButlerOverallPlayerStandings({
           {rows.map((row, index) => {
             const stripe = index % 2 === 1 ? "bg-zinc-50" : "bg-white";
             return (
-              <tr key={row.playerId} className="hover:[&>td]:bg-zinc-100/80">
+              <tr key={row.playerId} className="hover:[&>td]:bg-emerald-50">
                 <td
                   className={`px-3 py-2 tabular-nums text-zinc-500 ${stripe}`}
                 >

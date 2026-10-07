@@ -437,8 +437,8 @@ export function ArbiterInbox({
             type="button"
             className={
               statusFilter === opt.value
-                ? "rounded-md border border-zinc-900 bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white"
-                : "rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+                ? "chip-active h-auto min-w-0 px-3 py-1.5"
+                : "chip h-auto min-w-0 px-3 py-1.5"
             }
             aria-pressed={statusFilter === opt.value}
             onClick={() => setStatusFilter(opt.value)}
@@ -485,7 +485,7 @@ export function ArbiterInbox({
               >
                 <button
                   type="button"
-                  className="flex w-full items-start gap-3 px-4 py-4 text-left hover:bg-zinc-50"
+                  className="flex w-full items-start gap-3 px-4 py-4 text-left transition-colors hover:bg-emerald-50"
                   aria-expanded={isExpanded}
                   aria-controls={panelId}
                   onClick={() => toggleExpanded(r.id)}

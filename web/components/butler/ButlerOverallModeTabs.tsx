@@ -46,7 +46,7 @@ export function ButlerOverallModeTabs({
                 "-mb-px border-b-2 px-4 py-2.5 text-sm font-medium transition-colors",
                 selected
                   ? "border-zinc-900 text-zinc-900"
-                  : "border-transparent text-zinc-500 hover:border-zinc-300 hover:text-zinc-700",
+                  : "border-transparent text-zinc-500 hover:border-emerald-600 hover:text-emerald-800",
               ].join(" ")}
             >
               {tab.label}

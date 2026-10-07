@@ -27,7 +27,7 @@ type MeResponse = {
 function navLinkClass(active: boolean): string {
   return active
     ? "border-b-2 border-zinc-900 pb-0.5 text-sm font-semibold text-zinc-900"
-    : "border-b-2 border-transparent pb-0.5 text-sm font-medium text-zinc-600 hover:text-zinc-900";
+    : "border-b-2 border-transparent pb-0.5 text-sm font-medium text-zinc-600 hover:border-emerald-600 hover:text-emerald-800";
 }
 
 function mobileLinkClass(active: boolean): string {

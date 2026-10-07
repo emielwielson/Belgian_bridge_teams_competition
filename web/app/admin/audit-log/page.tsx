@@ -20,7 +20,7 @@ export default async function AuditLogHubPage() {
           <Link
             key={link.kind}
             href={adminAuditLogPath(link.scope, link.regionCode)}
-            className="card font-medium hover:border-zinc-400"
+            className="card-interactive"
           >
             {t(link.labelKey)}
           </Link>

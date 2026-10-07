@@ -165,7 +165,7 @@ export function AccountMenu({
               : (activePlayer?.name ?? email)
             : t("signIn")
         }
-        className="flex h-9 max-w-[min(100vw-2rem,20rem)] items-center gap-2 rounded-md border border-zinc-200 bg-white px-2 shadow-sm hover:border-zinc-300 focus:outline-none focus:ring-2 focus:ring-zinc-200 disabled:cursor-wait disabled:opacity-80"
+        className="flex h-9 max-w-[min(100vw-2rem,20rem)] items-center gap-2 rounded-md border border-zinc-200 bg-white px-2 shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-600 hover:bg-emerald-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-200 disabled:cursor-wait disabled:opacity-80"
       >
         <span
           aria-hidden
@@ -223,7 +223,7 @@ export function AccountMenu({
                         className={`w-full rounded px-2 py-1.5 text-left text-sm ${
                           isActive
                             ? "bg-emerald-50 font-medium text-emerald-900"
-                            : "text-zinc-700 hover:bg-zinc-50"
+                            : "text-zinc-700 hover:bg-emerald-50"
                         }`}
                       >
                         {player.name}
@@ -262,7 +262,7 @@ export function AccountMenu({
                         className={`w-full rounded px-2 py-1.5 text-left text-sm ${
                           isActive
                             ? "bg-emerald-50 font-medium text-emerald-900"
-                            : "text-zinc-700 hover:bg-zinc-50"
+                            : "text-zinc-700 hover:bg-emerald-50"
                         }`}
                       >
                         {team.name}
@@ -291,7 +291,7 @@ export function AccountMenu({
               <button
                 type="submit"
                 role="menuitem"
-                className="w-full px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50"
+                className="w-full px-3 py-2 text-left text-sm text-zinc-700 hover:bg-emerald-50"
               >
                 {t("signOut")}
               </button>
@@ -300,7 +300,7 @@ export function AccountMenu({
             <Link
               href="/login"
               role="menuitem"
-              className="block px-3 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-50"
+              className="block px-3 py-2 text-sm font-medium text-zinc-900 hover:bg-emerald-50"
               onClick={() => setOpen(false)}
             >
               {t("signIn")}

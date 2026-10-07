@@ -16,7 +16,7 @@ export function DatumScoreInfo({
     <span className="relative inline-flex">
       <button
         type="button"
-        className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-zinc-300 text-xs font-semibold text-zinc-600 hover:bg-zinc-50"
+        className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-zinc-300 text-xs font-semibold text-zinc-600 transition-colors hover:border-emerald-600 hover:bg-emerald-100 hover:text-emerald-950"
         aria-label={ariaLabel}
         aria-expanded={open}
         aria-controls={panelId}

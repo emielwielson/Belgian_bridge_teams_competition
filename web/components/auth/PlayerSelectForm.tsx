@@ -48,7 +48,7 @@ export function PlayerSelectForm({ players, nextPath }: Props) {
         {players.map((player) => (
           <label
             key={player.id}
-            className="flex cursor-pointer items-start gap-3 rounded-lg border border-zinc-200 px-3 py-3 hover:border-emerald-300 has-checked:border-emerald-500 has-checked:bg-emerald-50/40"
+            className="flex cursor-pointer items-start gap-3 rounded-lg border border-zinc-200 px-3 py-3 shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-600 hover:bg-emerald-100 hover:shadow-md has-checked:border-emerald-600 has-checked:bg-emerald-50"
           >
             <input
               type="radio"

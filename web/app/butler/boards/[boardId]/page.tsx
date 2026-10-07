@@ -85,8 +85,7 @@ export default async function ButlerBoardPage({
     boardNumber: board.board_number,
   });
 
-  const navLinkClass =
-    "rounded-md border border-zinc-200 px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50";
+  const navLinkClass = "btn-secondary px-3 py-1.5";
   const navDisabledClass =
     "rounded-md border border-transparent px-3 py-1.5 text-sm text-zinc-300";
 
@@ -141,11 +140,7 @@ export default async function ButlerBoardPage({
                 key={b.id}
                 href={`/butler/boards/${b.id}`}
                 aria-current={active ? "page" : undefined}
-                className={
-                  active
-                    ? "inline-flex h-8 min-w-8 items-center justify-center rounded-md bg-zinc-900 px-2 text-sm font-medium text-white"
-                    : "inline-flex h-8 min-w-8 items-center justify-center rounded-md border border-zinc-200 px-2 text-sm text-zinc-700 hover:bg-zinc-50"
-                }
+                className={active ? "chip-active" : "chip"}
               >
                 {b.board_number}
               </Link>

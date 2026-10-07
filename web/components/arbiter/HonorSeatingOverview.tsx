@@ -393,11 +393,11 @@ export function HonorSeatingOverview() {
               type="button"
               disabled={loading}
               onClick={() => setMatchDayFilter(null)}
-              className={`rounded border px-2.5 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50 ${
+              className={
                 matchDayFilter == null
-                  ? "border-zinc-900 bg-zinc-900 text-white"
-                  : "border-zinc-300 bg-white text-zinc-800 hover:border-zinc-500"
-              }`}
+                  ? "chip-active h-auto min-w-0 px-2.5 py-1 disabled:cursor-not-allowed disabled:opacity-50"
+                  : "chip h-auto min-w-0 px-2.5 py-1 disabled:cursor-not-allowed disabled:opacity-50"
+              }
             >
               {t("allDays")}
             </button>
@@ -415,11 +415,11 @@ export function HonorSeatingOverview() {
                     void onRoundChange(first.round);
                   }
                 }}
-                className={`rounded border px-2.5 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50 ${
+                className={
                   matchDayFilter === day
-                    ? "border-zinc-900 bg-zinc-900 text-white"
-                    : "border-zinc-300 bg-white text-zinc-800 hover:border-zinc-500"
-                }`}
+                    ? "chip-active h-auto min-w-0 px-2.5 py-1 disabled:cursor-not-allowed disabled:opacity-50"
+                    : "chip h-auto min-w-0 px-2.5 py-1 disabled:cursor-not-allowed disabled:opacity-50"
+                }
               >
                 {t("dayChip", { day })}
               </button>
@@ -455,7 +455,7 @@ export function HonorSeatingOverview() {
               type="button"
               onClick={() => void onRefresh()}
               disabled={loading || round == null}
-              className="rounded border border-zinc-300 bg-white px-2.5 py-1.5 text-sm text-zinc-800 hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-50"
+              className="btn-secondary px-2.5 py-1.5 text-sm"
             >
               {t("refresh")}
             </button>
@@ -484,7 +484,7 @@ export function HonorSeatingOverview() {
           type="button"
           aria-expanded={lineupsOpen}
           onClick={() => setLineupsOpen((open) => !open)}
-          className="flex w-full items-start justify-between gap-3 px-4 py-3 text-left hover:bg-zinc-50"
+          className="flex w-full items-start justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-emerald-50"
         >
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
@@ -646,7 +646,7 @@ export function HonorSeatingOverview() {
                       <div className="mt-3 flex flex-wrap gap-2">
                         <Link
                           href={`/matches/${match.match_id}`}
-                          className="rounded border border-zinc-300 bg-white px-2.5 py-1 text-sm text-zinc-800 hover:border-zinc-500"
+                          className="btn-secondary px-2.5 py-1 text-sm"
                         >
                           {t("openMatch")}
                         </Link>
@@ -655,7 +655,7 @@ export function HonorSeatingOverview() {
                             type="button"
                             disabled={unlocking === homeUnlockKey}
                             onClick={() => void unlockSide(match, "home")}
-                            className="rounded border border-zinc-300 bg-white px-2.5 py-1 text-sm text-zinc-800 hover:border-zinc-500 disabled:opacity-50"
+                            className="btn-secondary px-2.5 py-1 text-sm"
                           >
                             {unlocking === homeUnlockKey
                               ? t("unlocking")
@@ -667,7 +667,7 @@ export function HonorSeatingOverview() {
                             type="button"
                             disabled={unlocking === awayUnlockKey}
                             onClick={() => void unlockSide(match, "away")}
-                            className="rounded border border-zinc-300 bg-white px-2.5 py-1 text-sm text-zinc-800 hover:border-zinc-500 disabled:opacity-50"
+                            className="btn-secondary px-2.5 py-1 text-sm"
                           >
                             {unlocking === awayUnlockKey
                               ? t("unlocking")

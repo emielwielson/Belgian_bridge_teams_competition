@@ -74,7 +74,7 @@ export function RegularSeasonScoring({ linkedPlayerName }: Props) {
         <li key={m.id}>
           <Link
             href={`/matches/${m.id}`}
-            className="block rounded-lg border border-zinc-200 bg-white px-4 py-4 shadow-sm hover:border-emerald-300 hover:bg-emerald-50/30"
+            className="list-interactive px-4 py-4"
           >
             <span className="text-xs font-medium uppercase tracking-wide text-zinc-500">
               {t("matchCard", { groupName: m.group_name, round: m.round })}
