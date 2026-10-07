@@ -18,8 +18,8 @@ type Props = {
   scorecard: HonorMatchScorecard;
 };
 
-/** Thick vertical divider between board | open | closed | result. */
-const SECTION = "border-l-[3px] border-l-zinc-500";
+/** Stronger vertical divider between board | open | closed | result. */
+const SECTION = "border-l-2 border-l-zinc-400";
 /** Thin divider within a section. */
 const INNER = "border-l border-l-zinc-200";
 const ROW_BOTTOM = "border-b border-b-zinc-100";
@@ -155,7 +155,7 @@ export async function HonorMatchScorecardView({ scorecard }: Props) {
               </th>
               <th
                 colSpan={3}
-                className={`${INNER} ${HEAD_BOTTOM} ${HEAD_CELL} text-center font-semibold align-bottom`}
+                className={`${INNER} ${HEAD_BOTTOM} ${HEAD_CELL} text-center font-semibold align-top`}
               >
                 {t("result")}
               </th>
