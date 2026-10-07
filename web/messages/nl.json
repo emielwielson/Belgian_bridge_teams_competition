@@ -278,7 +278,7 @@
       "phaseBlindTitle": "Blinde line-up",
       "phaseBlindBody": "Beide teams vullen in zonder elkaars line-up te zien. Line-ups worden zichtbaar wanneer beide vastliggen.",
       "phaseBothLockedTitle": "Beide line-ups vastgelegd",
-      "phaseBothLockedBody": "De plaatsen staan vast. Vraag de arbiter als een line-up ontgrendeld moet worden.",
+      "phaseBothLockedBody": "De plaatsen staan vast. Contacteer de arbiter wanneer een line-up ontgrendeld moet worden.",
       "awayGoesFirstHint": "Vul alle plaatsen in en leg vast wanneer klaar.",
       "homeMayEnterHint": "Uit is vastgelegd. U kunt nu de thuis-line-up zetten en vastleggen.",
       "waitingForAwayBody": "Wachten tot {team} eerst de line-up vastlegt.",
