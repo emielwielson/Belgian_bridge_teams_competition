@@ -172,11 +172,6 @@ export function MatchScoreForm({
               : t("vpScaleBoards", { boardCount: effectiveVpBoardCount })}
           </p>
         ) : null}
-        {playedAt ? (
-          <p className="mt-2 text-xs text-zinc-500">
-            {t("playedAt", { datetime: formatBrussels(playedAt, intlLocale) })}
-          </p>
-        ) : null}
         <p className="mt-2 text-xs text-zinc-500">{t("lockedContact")}</p>
       </section>
     );
