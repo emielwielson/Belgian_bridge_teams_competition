@@ -366,7 +366,7 @@
       "imps": "IMP: {home} – {away}",
       "vp": "VP: {home} – {away}",
       "playedAt": "Gespeeld {datetime}",
-      "lockedContact": "Score is vergrendeld. Neem contact op met een scheidsrechter of competitiebeheerder om te wijzigen.",
+      "lockedContact": "Score is vergrendeld. Neem contact op met een scheidsrechter of competitiebeheerder om de score te wijzigen.",
       "homeImps": "Thuis IMP",
       "awayImps": "Uit IMP",
       "submitOfficial": "Officiële score indienen",
