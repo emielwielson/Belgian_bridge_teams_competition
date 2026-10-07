@@ -116,7 +116,7 @@
     },
     "leagueRequests": {
       "title": "Demandes d'arbitre",
-      "description": "Demandes d'arbitre ouvertes et résolues pour cette ligue (les demandes annulées ne sont pas listées).",
+      "description": "Demandes d'arbitre ouvertes et traitées pour cette ligue.",
       "backToLeague": "← Classement {leagueName}",
       "empty": "Aucune demande d'arbitre ouverte ou résolue.",
       "matchLine": "{groupName} · Journée {round} : {homeTeam} vs {awayTeam}",

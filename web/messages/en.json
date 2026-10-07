@@ -116,7 +116,7 @@
     },
     "leagueRequests": {
       "title": "Arbiter requests",
-      "description": "Open and resolved arbiter requests for this league (cancelled requests are not listed).",
+      "description": "Open and resolved arbiter requests for this league.",
       "backToLeague": "← {leagueName} standings",
       "empty": "No open or resolved arbiter requests.",
       "matchLine": "{groupName} · Round {round}: {homeTeam} vs {awayTeam}",

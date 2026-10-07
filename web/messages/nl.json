@@ -116,7 +116,7 @@
     },
     "leagueRequests": {
       "title": "Scheidsrechterverzoeken",
-      "description": "Open en afgehandelde scheidsrechterverzoeken voor deze competitie (geannuleerde verzoeken staan niet in de lijst).",
+      "description": "Open en behandelde scheidsrechterverzoeken voor deze competitie.",
       "backToLeague": "← Klassement {leagueName}",
       "empty": "Geen open of afgehandelde scheidsrechterverzoeken.",
       "matchLine": "{groupName} · Ronde {round}: {homeTeam} vs {awayTeam}",
