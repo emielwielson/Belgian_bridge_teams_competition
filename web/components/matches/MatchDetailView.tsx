@@ -315,12 +315,13 @@ export async function MatchDetailView({
           showArbiter={showArbiterRequests}
           showHomeAwaySwitch={showHomeAwaySwitch}
           postpone={
-            showPostpone
+            showPostpone && postponementState
               ? {
                   homeTeamName: match.home_team.name,
                   awayTeamName: match.away_team.name,
                   homeTeamId: match.home_team_id,
                   awayTeamId: match.away_team_id,
+                  initialState: postponementState,
                 }
               : null
           }

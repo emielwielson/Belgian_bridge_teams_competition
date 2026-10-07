@@ -1,7 +1,7 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   hasHomeAwaySwitchRespondActions,
@@ -10,6 +10,8 @@ import {
 } from "@/lib/competition/home-away-switch";
 import { useTranslateApiError } from "@/lib/i18n/translate-api-error";
 
+const CLOSE_AFTER_RESPOND_MS = 1500;
+
 type Props = {
   matchId: string;
   homeTeamName: string;
@@ -17,6 +19,8 @@ type Props = {
   homeTeamId: string;
   awayTeamId: string;
   initialState: MatchHomeAwaySwitchState;
+  onResponded?: () => void;
+  onPendingChange?: (pending: boolean) => void;
 };
 
 export function HomeAwaySwitchWorkflow({
@@ -26,11 +30,15 @@ export function HomeAwaySwitchWorkflow({
   homeTeamId,
   awayTeamId,
   initialState,
+  onResponded,
+  onPendingChange,
 }: Props) {
   const t = useTranslations("match.homeAwaySwitch");
   const tCommon = useTranslations("common");
   const translateApiError = useTranslateApiError();
   const router = useRouter();
+  const onRespondedRef = useRef(onResponded);
+  onRespondedRef.current = onResponded;
   const [state, setState] = useState(initialState);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -40,6 +48,15 @@ export function HomeAwaySwitchWorkflow({
       : "",
   );
   const [busy, setBusy] = useState(false);
+  const [confirmingResponse, setConfirmingResponse] = useState(false);
+
+  useEffect(() => {
+    if (!confirmingResponse) return;
+    const timer = window.setTimeout(() => {
+      onRespondedRef.current?.();
+    }, CLOSE_AFTER_RESPOND_MS);
+    return () => window.clearTimeout(timer);
+  }, [confirmingResponse]);
 
   const teamLabel = (teamId: string) =>
     teamId === homeTeamId ? homeTeamName : awayTeamName;
@@ -70,6 +87,7 @@ export function HomeAwaySwitchWorkflow({
     }
     const body = (await res.json()) as { state: MatchHomeAwaySwitchState };
     setState(body.state);
+    onPendingChange?.(body.state.pending != null);
     setMessage(t("proposedSuccess"));
   }
 
@@ -98,24 +116,28 @@ export function HomeAwaySwitchWorkflow({
     }
     const body = (await res.json()) as { state: MatchHomeAwaySwitchState };
     setState(body.state);
+    onPendingChange?.(false);
     if (action === "approve") {
       setMessage(t("approved"));
-      router.refresh();
     } else if (action === "reject") {
       setMessage(t("rejected"));
     } else {
       setMessage(t("cancelled"));
     }
+    setConfirmingResponse(true);
+    router.refresh();
   }
 
   return (
     <section className="card flex flex-col gap-4">
       <div>
         <h2 className="text-sm font-semibold text-zinc-900">{t("title")}</h2>
-        <p className="mt-1 text-sm text-zinc-600">{t("description")}</p>
+        {!confirmingResponse ? (
+          <p className="mt-1 text-sm text-zinc-600">{t("description")}</p>
+        ) : null}
       </div>
 
-      {firstLeg && state.first_leg_round != null ? (
+      {confirmingResponse ? null : firstLeg && state.first_leg_round != null ? (
         <p className="text-sm text-zinc-600">
           {t("firstLegLine", {
             firstLegRound: state.first_leg_round,
@@ -139,7 +161,7 @@ export function HomeAwaySwitchWorkflow({
         </p>
       ) : null}
 
-      {state.pending ? (
+      {confirmingResponse ? null : state.pending ? (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-sm">
           <p className="font-medium text-amber-900">{t("pendingTitle")}</p>
           <p className="mt-1 text-amber-800">

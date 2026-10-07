@@ -146,10 +146,12 @@
     "workflows": {
       "hideReschedule": "Hide reschedule",
       "rescheduleMatch": "Reschedule match",
+      "pendingReschedule": "Pending reschedule",
       "hideArbiterRequest": "Hide arbiter request",
       "requestArbiter": "Request arbiter",
       "hideHomeAwaySwap": "Hide home/away swap",
-      "homeAwaySwap": "Home/away swap"
+      "homeAwaySwap": "Home/away swap",
+      "pendingHomeAwaySwap": "Pending home/away swap"
     },
     "reschedule": {
       "title": "Reschedule match",

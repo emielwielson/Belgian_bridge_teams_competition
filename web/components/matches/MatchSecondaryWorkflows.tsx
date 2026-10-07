@@ -6,12 +6,17 @@ import { ArbiterRequestWorkflow } from "@/components/matches/ArbiterRequestWorkf
 import { HomeAwaySwitchWorkflow } from "@/components/matches/HomeAwaySwitchWorkflow";
 import { PostponeWorkflow } from "@/components/matches/PostponeWorkflow";
 import type { MatchHomeAwaySwitchState } from "@/lib/competition/home-away-switch";
+import type { MatchPostponementState } from "@/lib/competition/postponement";
 
 type TeamPairProps = {
   homeTeamName: string;
   awayTeamName: string;
   homeTeamId: string;
   awayTeamId: string;
+};
+
+type PostponeProps = TeamPairProps & {
+  initialState: MatchPostponementState;
 };
 
 type HomeAwayProps = TeamPairProps & {
@@ -24,7 +29,7 @@ type Props = {
   showPostpone: boolean;
   showArbiter: boolean;
   showHomeAwaySwitch: boolean;
-  postpone: TeamPairProps | null;
+  postpone: PostponeProps | null;
   homeAwaySwitch: HomeAwayProps | null;
 };
 
@@ -37,9 +42,15 @@ export function MatchSecondaryWorkflows({
   homeAwaySwitch,
 }: Props) {
   const t = useTranslations("match.workflows");
-  const [postponeOpen, setPostponeOpen] = useState(false);
+  const [postponePending, setPostponePending] = useState(
+    () => postpone?.initialState.pending != null,
+  );
+  const [switchPending, setSwitchPending] = useState(
+    () => homeAwaySwitch?.initialState.pending != null,
+  );
+  const [postponeOpen, setPostponeOpen] = useState(postponePending);
   const [arbiterOpen, setArbiterOpen] = useState(false);
-  const [switchOpen, setSwitchOpen] = useState(false);
+  const [switchOpen, setSwitchOpen] = useState(switchPending);
 
   if (!showPostpone && !showArbiter && !showHomeAwaySwitch) return null;
 
@@ -53,7 +64,11 @@ export function MatchSecondaryWorkflows({
             aria-expanded={postponeOpen}
             onClick={() => setPostponeOpen((open) => !open)}
           >
-            {postponeOpen ? t("hideReschedule") : t("rescheduleMatch")}
+            {postponeOpen
+              ? t("hideReschedule")
+              : postponePending
+                ? t("pendingReschedule")
+                : t("rescheduleMatch")}
           </button>
         ) : null}
         {showArbiter ? (
@@ -73,13 +88,25 @@ export function MatchSecondaryWorkflows({
             aria-expanded={switchOpen}
             onClick={() => setSwitchOpen((open) => !open)}
           >
-            {switchOpen ? t("hideHomeAwaySwap") : t("homeAwaySwap")}
+            {switchOpen
+              ? t("hideHomeAwaySwap")
+              : switchPending
+                ? t("pendingHomeAwaySwap")
+                : t("homeAwaySwap")}
           </button>
         ) : null}
       </div>
 
       {postponeOpen && showPostpone && postpone ? (
-        <PostponeWorkflow matchId={matchId} {...postpone} />
+        <PostponeWorkflow
+          matchId={matchId}
+          {...postpone}
+          onPendingChange={setPostponePending}
+          onResponded={() => {
+            setPostponePending(false);
+            setPostponeOpen(false);
+          }}
+        />
       ) : null}
 
       {arbiterOpen && showArbiter ? (
@@ -87,7 +114,15 @@ export function MatchSecondaryWorkflows({
       ) : null}
 
       {switchOpen && showHomeAwaySwitch && homeAwaySwitch ? (
-        <HomeAwaySwitchWorkflow key={matchId} {...homeAwaySwitch} />
+        <HomeAwaySwitchWorkflow
+          key={matchId}
+          {...homeAwaySwitch}
+          onPendingChange={setSwitchPending}
+          onResponded={() => {
+            setSwitchPending(false);
+            setSwitchOpen(false);
+          }}
+        />
       ) : null}
     </section>
   );

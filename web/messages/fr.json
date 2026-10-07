@@ -146,10 +146,12 @@
     "workflows": {
       "hideReschedule": "Masquer le report",
       "rescheduleMatch": "Reporter la rencontre",
+      "pendingReschedule": "Report en attente",
       "hideArbiterRequest": "Masquer la demande d'arbitre",
       "requestArbiter": "Demander un arbitre",
       "hideHomeAwaySwap": "Masquer l'inversion domicile/extérieur",
-      "homeAwaySwap": "Inversion domicile/extérieur"
+      "homeAwaySwap": "Inversion domicile/extérieur",
+      "pendingHomeAwaySwap": "Inversion domicile/extérieur en attente"
     },
     "reschedule": {
       "title": "Reporter la rencontre",
