@@ -1598,10 +1598,10 @@
   "manuals": {
     "title": "Handleiding",
     "intro": "Stap-voor-stap instructies voor veelvoorkomende taken op het competitieplatform.",
-    "toc": {
-      "label": "Op deze pagina"
-    },
+    "backToManuals": "← Handleiding",
     "player": {
+      "sectionTitle": "Speler",
+      "sectionIntro": "Opstellingen en wedstrijdscores invoeren.",
       "enterScore": {
         "title": "Een wedstrijdscore invoeren",
         "steps": {
@@ -1634,6 +1634,7 @@
     },
     "honor": {
       "sectionTitle": "Eredivisie",
+      "sectionIntro": "Eredivisie-line-ups invoeren en vastleggen.",
       "lineup": {
         "title": "De eredivisie-line-up invoeren",
         "steps": {
@@ -1665,7 +1666,8 @@
       }
     },
     "captain": {
-      "sectionTitle": "Handleiding voor kapiteins",
+      "sectionTitle": "Kapiteins",
+      "sectionIntro": "Teamleden beheren, wedstrijden uitstellen en thuis/uit wisselen.",
       "addMembers": {
         "title": "Teamleden toevoegen",
         "steps": {

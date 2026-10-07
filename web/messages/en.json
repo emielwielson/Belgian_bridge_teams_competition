@@ -1598,10 +1598,10 @@
   "manuals": {
     "title": "Manuals",
     "intro": "Step-by-step guides for common tasks in the competition platform.",
-    "toc": {
-      "label": "On this page"
-    },
+    "backToManuals": "← Manuals",
     "player": {
+      "sectionTitle": "Player",
+      "sectionIntro": "How to enter line-ups and match scores.",
       "enterScore": {
         "title": "Enter a match score",
         "steps": {
@@ -1634,6 +1634,7 @@
     },
     "honor": {
       "sectionTitle": "Honor Division",
+      "sectionIntro": "How to enter and lock Honor Division line-ups.",
       "lineup": {
         "title": "Enter the Honor Division line-up",
         "steps": {
@@ -1665,7 +1666,8 @@
       }
     },
     "captain": {
-      "sectionTitle": "Captain guides",
+      "sectionTitle": "Captains",
+      "sectionIntro": "How to manage the roster, postpone matches, and switch home/away.",
       "addMembers": {
         "title": "Add team members",
         "steps": {

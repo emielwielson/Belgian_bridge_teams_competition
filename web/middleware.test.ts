@@ -70,7 +70,9 @@ describe("requiredRolesForPath", () => {
 describe("isAuthOnlyPath", () => {
   it("requires auth for manuals", () => {
     expect(isAuthOnlyPath("/manuals")).toBe(true);
-    expect(isAuthOnlyPath("/manuals/players")).toBe(true);
+    expect(isAuthOnlyPath("/manuals/player")).toBe(true);
+    expect(isAuthOnlyPath("/manuals/honor-division")).toBe(true);
+    expect(isAuthOnlyPath("/manuals/captains")).toBe(true);
   });
 
   it("does not apply to other paths", () => {
