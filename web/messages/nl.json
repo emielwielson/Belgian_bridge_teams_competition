@@ -146,10 +146,12 @@
     "workflows": {
       "hideReschedule": "Uitstel verbergen",
       "rescheduleMatch": "Wedstrijd verplaatsen",
+      "pendingReschedule": "Uitstel in behandeling",
       "hideArbiterRequest": "Scheidsrechterverzoek verbergen",
       "requestArbiter": "Scheidsrechterverzoek",
       "hideHomeAwaySwap": "Thuis/uit-wissel verbergen",
-      "homeAwaySwap": "Thuis/uit-wissel"
+      "homeAwaySwap": "Thuis/uit-wissel",
+      "pendingHomeAwaySwap": "Thuis/uit-wissel in behandeling"
     },
     "reschedule": {
       "title": "Wedstrijd verplaatsen",

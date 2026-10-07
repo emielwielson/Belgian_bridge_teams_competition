@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import type { MatchPostponementState } from "@/lib/competition/postponement";
 import { toIntlLocale } from "@/i18n/intl-locale";
@@ -12,12 +13,17 @@ import {
   toDatetimeLocalValue,
 } from "@/lib/time/brussels";
 
+const CLOSE_AFTER_RESPOND_MS = 1500;
+
 type Props = {
   matchId: string;
   homeTeamName: string;
   awayTeamName: string;
   homeTeamId: string;
   awayTeamId: string;
+  initialState: MatchPostponementState;
+  onResponded?: () => void;
+  onPendingChange?: (pending: boolean) => void;
 };
 
 export function PostponeWorkflow({
@@ -26,47 +32,39 @@ export function PostponeWorkflow({
   awayTeamName,
   homeTeamId,
   awayTeamId,
+  initialState,
+  onResponded,
+  onPendingChange,
 }: Props) {
   const t = useTranslations("match.reschedule");
   const tCommon = useTranslations("common");
   const locale = useLocale() as Locale;
   const intlLocale = toIntlLocale(locale);
   const translateApiError = useTranslateApiError();
-  const [state, setState] = useState<MatchPostponementState | null>(null);
-  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const onRespondedRef = useRef(onResponded);
+  onRespondedRef.current = onResponded;
+  const [state, setState] = useState(initialState);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [proposedLocal, setProposedLocal] = useState("");
-  const [proposingTeamId, setProposingTeamId] = useState("");
+  const [proposedLocal, setProposedLocal] = useState(() =>
+    toDatetimeLocalValue(initialState.datetime),
+  );
+  const [proposingTeamId, setProposingTeamId] = useState(() =>
+    initialState.captain_teams.length === 1
+      ? initialState.captain_teams[0]
+      : "",
+  );
   const [busy, setBusy] = useState(false);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    const res = await fetch(`/api/matches/${matchId}/postpone`);
-    if (res.status === 403) {
-      setState(null);
-      setLoading(false);
-      return;
-    }
-    if (!res.ok) {
-      const body = await res.json();
-      setError(body.error ? translateApiError(body.error) : t("loadFailed"));
-      setLoading(false);
-      return;
-    }
-    const body = (await res.json()) as { state: MatchPostponementState };
-    setState(body.state);
-    if (body.state.captain_teams.length === 1) {
-      setProposingTeamId(body.state.captain_teams[0]);
-    }
-    setProposedLocal(toDatetimeLocalValue(body.state.datetime));
-    setLoading(false);
-  }, [matchId, t, translateApiError]);
+  const [confirmingResponse, setConfirmingResponse] = useState(false);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (!confirmingResponse) return;
+    const timer = window.setTimeout(() => {
+      onRespondedRef.current?.();
+    }, CLOSE_AFTER_RESPOND_MS);
+    return () => window.clearTimeout(timer);
+  }, [confirmingResponse]);
 
   async function handlePropose(e: React.FormEvent) {
     e.preventDefault();
@@ -93,13 +91,14 @@ export function PostponeWorkflow({
     }
     const body = (await res.json()) as { state: MatchPostponementState };
     setState(body.state);
+    onPendingChange?.(body.state.pending != null);
     setMessage(t("proposedSuccess"));
   }
 
   async function handleRespond(
     action: "approve" | "reject" | "cancel",
   ) {
-    if (!state?.pending) return;
+    if (!state.pending) return;
     setBusy(true);
     setError(null);
     setMessage(null);
@@ -123,6 +122,7 @@ export function PostponeWorkflow({
     }
     const body = (await res.json()) as { state: MatchPostponementState };
     setState(body.state);
+    onPendingChange?.(false);
     if (action === "approve") {
       setMessage(t("approved"));
     } else if (action === "reject") {
@@ -130,22 +130,13 @@ export function PostponeWorkflow({
     } else {
       setMessage(t("cancelled"));
     }
-  }
-
-  if (loading) {
-    return (
-      <section className="card">
-        <p className="text-sm text-zinc-500">{t("loading")}</p>
-      </section>
-    );
-  }
-
-  if (!state) {
-    return null;
+    setConfirmingResponse(true);
+    router.refresh();
   }
 
   const played = state.played_at != null;
   const showSection =
+    confirmingResponse ||
     state.can_propose ||
     state.can_approve ||
     state.can_reject ||
@@ -163,7 +154,9 @@ export function PostponeWorkflow({
     <section className="card flex flex-col gap-4">
       <div>
         <h2 className="text-sm font-semibold text-zinc-900">{t("title")}</h2>
-        <p className="mt-1 text-sm text-zinc-600">{t("description")}</p>
+        {!confirmingResponse ? (
+          <p className="mt-1 text-sm text-zinc-600">{t("description")}</p>
+        ) : null}
       </div>
 
       {error ? (
@@ -177,7 +170,7 @@ export function PostponeWorkflow({
         </p>
       ) : null}
 
-      {played ? (
+      {confirmingResponse ? null : played ? (
         <p className="text-sm text-zinc-500">{t("playedNoLonger")}</p>
       ) : state.pending ? (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-sm">
@@ -224,7 +217,7 @@ export function PostponeWorkflow({
               </button>
             ) : null}
           </div>
-          </div>
+        </div>
       ) : state.can_propose ? (
         <form onSubmit={handlePropose} className="flex flex-col gap-3">
           {state.captain_teams.length !== 1 ? (
