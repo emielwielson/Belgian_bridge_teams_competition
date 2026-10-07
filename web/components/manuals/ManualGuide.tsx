@@ -18,11 +18,16 @@ export function ManualGuide({ guide }: ManualGuideProps) {
   const locale = useLocale() as Locale;
 
   return (
-    <section id={guide.anchor} className="scroll-mt-20">
-      <h2 className="text-xl font-semibold text-zinc-900">
-        {t(`${guide.translationKey}.title`)}
-      </h2>
-      <ol className="mt-6 flex flex-col gap-8">
+    <section
+      id={guide.anchor}
+      className="scroll-mt-20 overflow-hidden rounded-2xl border border-slate-300 bg-white shadow-sm"
+    >
+      <header className="border-b border-slate-200 bg-slate-900 px-4 py-4 sm:px-6">
+        <h2 className="text-lg font-semibold text-white sm:text-xl">
+          {t(`${guide.translationKey}.title`)}
+        </h2>
+      </header>
+      <ol className="flex flex-col gap-8 px-4 py-6 sm:px-6">
         {guide.steps.map((step, index) => (
           <ManualStep
             key={step.id}
