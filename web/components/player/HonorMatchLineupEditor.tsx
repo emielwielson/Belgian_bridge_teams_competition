@@ -536,6 +536,7 @@ export function HonorMatchLineupEditor({
           message={t("lockConfirmMessage")}
           confirmLabel={t("lockConfirmAction")}
           cancelLabel={t("cancel")}
+          tone="confirm"
           confirming={locking}
           onConfirm={() => void submitLock()}
           onCancel={() => {

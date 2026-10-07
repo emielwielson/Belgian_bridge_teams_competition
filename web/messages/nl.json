@@ -72,7 +72,7 @@
     "divisionStandings": "Klassement per afdeling",
     "noDivisions": "Nog geen afdelingen in deze competitie.",
     "breadcrumb": "{leagueName} · {divisionName}",
-    "fullStandings": "Volledig klassement",
+    "fullStandings": "Scoretabel",
     "viewArbiterRequests": "Arbitrages",
     "disciplineLoading": {
       "message": "Straffen, waarschuwingen en uitspraken laden…"
@@ -116,7 +116,7 @@
     },
     "leagueRequests": {
       "title": "Scheidsrechterverzoeken",
-      "description": "Open en afgehandelde scheidsrechterverzoeken voor deze competitie (geannuleerde verzoeken staan niet in de lijst).",
+      "description": "Open en behandelde scheidsrechterverzoeken voor deze competitie.",
       "backToLeague": "← Klassement {leagueName}",
       "empty": "Geen open of afgehandelde scheidsrechterverzoeken.",
       "matchLine": "{groupName} · Ronde {round}: {homeTeam} vs {awayTeam}",
@@ -278,7 +278,7 @@
       "phaseBlindTitle": "Blinde line-up",
       "phaseBlindBody": "Beide teams vullen in zonder elkaars line-up te zien. Line-ups worden zichtbaar wanneer beide vastliggen.",
       "phaseBothLockedTitle": "Beide line-ups vastgelegd",
-      "phaseBothLockedBody": "De plaatsen staan vast. Vraag de arbiter als een line-up ontgrendeld moet worden.",
+      "phaseBothLockedBody": "De plaatsen staan vast. Contacteer de arbiter wanneer een line-up ontgrendeld moet worden.",
       "awayGoesFirstHint": "Vul alle plaatsen in en leg vast wanneer klaar.",
       "homeMayEnterHint": "Uit is vastgelegd. U kunt nu de thuis-line-up zetten en vastleggen.",
       "waitingForAwayBody": "Wachten tot {team} eerst de line-up vastlegt.",
@@ -366,7 +366,7 @@
       "imps": "IMP: {home} – {away}",
       "vp": "VP: {home} – {away}",
       "playedAt": "Gespeeld {datetime}",
-      "lockedContact": "Score is vergrendeld. Neem contact op met een scheidsrechter of competitiebeheerder om te wijzigen.",
+      "lockedContact": "Score is vergrendeld. Neem contact op met een scheidsrechter of competitiebeheerder om de score te wijzigen.",
       "homeImps": "Thuis IMP",
       "awayImps": "Uit IMP",
       "submitOfficial": "Officiële score indienen",
@@ -450,7 +450,7 @@
     "captainBadge": "Kapitein",
     "matchesPlayed": "{count, plural, =0 {0 wedstrijden} one {# wedstrijd} other {# wedstrijden}}",
     "substitutesTitle": "Invallers",
-    "noSubstitutesPlayed": "Nog geen invallers hebben gespeeld.",
+    "noSubstitutesPlayed": "Er hebben nog geen invallers gespeeld.",
     "rosterEditable": "Voeg niet-toegewezen clubleden toe aan dit team.",
     "remove": "Verwijderen",
     "addFromClub": "Toevoegen uit club",
@@ -877,7 +877,7 @@
     "ewImps": "OW IMP",
     "ns": "NZ",
     "ew": "OW",
-    "pairDetail": "Resultaten dit paar",
+    "pairDetail": "Resultaten voor dit paar",
     "direction": "Richting",
     "opponent": "Tegenstander",
     "noBoards": "Geen giften.",
@@ -1598,10 +1598,10 @@
   "manuals": {
     "title": "Handleiding",
     "intro": "Stap-voor-stap instructies voor veelvoorkomende taken op het competitieplatform.",
-    "toc": {
-      "label": "Op deze pagina"
-    },
+    "backToManuals": "← Handleiding",
     "player": {
+      "sectionTitle": "Speler",
+      "sectionIntro": "Opstellingen en wedstrijdscores invoeren.",
       "enterScore": {
         "title": "Een wedstrijdscore invoeren",
         "steps": {
@@ -1634,6 +1634,7 @@
     },
     "honor": {
       "sectionTitle": "Eredivisie",
+      "sectionIntro": "Eredivisie-line-ups invoeren en vastleggen.",
       "lineup": {
         "title": "De eredivisie-line-up invoeren",
         "steps": {
@@ -1665,7 +1666,8 @@
       }
     },
     "captain": {
-      "sectionTitle": "Handleiding voor kapiteins",
+      "sectionTitle": "Kapiteins",
+      "sectionIntro": "Teamleden beheren, wedstrijden uitstellen en thuis/uit wisselen.",
       "addMembers": {
         "title": "Teamleden toevoegen",
         "steps": {

@@ -72,7 +72,7 @@
     "divisionStandings": "Classement par division",
     "noDivisions": "Aucune division dans cette ligue pour l'instant.",
     "breadcrumb": "{leagueName} · {divisionName}",
-    "fullStandings": "Classement complet",
+    "fullStandings": "Tableau des scores",
     "viewArbiterRequests": "Arbitrages",
     "disciplineLoading": {
       "message": "Chargement des pénalités, avertissements et décisions…"
@@ -116,7 +116,7 @@
     },
     "leagueRequests": {
       "title": "Demandes d'arbitre",
-      "description": "Demandes d'arbitre ouvertes et résolues pour cette ligue (les demandes annulées ne sont pas listées).",
+      "description": "Demandes d'arbitre ouvertes et traitées pour cette ligue.",
       "backToLeague": "← Classement {leagueName}",
       "empty": "Aucune demande d'arbitre ouverte ou résolue.",
       "matchLine": "{groupName} · Journée {round} : {homeTeam} vs {awayTeam}",
@@ -1598,10 +1598,10 @@
   "manuals": {
     "title": "Guides",
     "intro": "Guides pas à pas pour les tâches courantes sur la plateforme de compétition.",
-    "toc": {
-      "label": "Sur cette page"
-    },
+    "backToManuals": "← Guides",
     "player": {
+      "sectionTitle": "Joueur",
+      "sectionIntro": "Comment saisir les compositions et les scores.",
       "enterScore": {
         "title": "Saisir le score d'une rencontre",
         "steps": {
@@ -1634,6 +1634,7 @@
     },
     "honor": {
       "sectionTitle": "Division d'honneur",
+      "sectionIntro": "Comment saisir et verrouiller les compositions de Division d'honneur.",
       "lineup": {
         "title": "Saisir la composition Division d'honneur",
         "steps": {
@@ -1665,7 +1666,8 @@
       }
     },
     "captain": {
-      "sectionTitle": "Guides capitaine",
+      "sectionTitle": "Capitaines",
+      "sectionIntro": "Comment gérer l'effectif, reporter des rencontres et inverser domicile/extérieur.",
       "addMembers": {
         "title": "Ajouter des membres à l'équipe",
         "steps": {

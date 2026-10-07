@@ -76,7 +76,7 @@ export default async function TeamPage({ params }: Props) {
     loadNextUnplayedMatchForTeam(supabase, teamId),
   ]);
 
-  const { team, captain, club, group, division, league, roster, matches, clubLocation, hasCentralizedVenue } =
+  const { team, captain, club, group, league, roster, matches, clubLocation, hasCentralizedVenue } =
     detail;
   const leagueName = translateLeagueName(league.name, tRegions);
 
@@ -104,9 +104,6 @@ export default async function TeamPage({ params }: Props) {
         team={team}
         captain={captain}
         club={club}
-        group={group}
-        division={division}
-        league={league}
         clubLocation={clubLocation}
         hasCentralizedVenue={hasCentralizedVenue}
         canLinkToPlayers={canLinkToPlayers}

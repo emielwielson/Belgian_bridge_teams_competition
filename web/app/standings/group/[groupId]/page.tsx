@@ -30,7 +30,7 @@ export default async function GroupStandingsPage({ params }: Props) {
     notFound();
   }
 
-  const { group, division, league, standings, matches, byeRounds, arbiterRequestMatchIds } =
+  const { group, league, standings, matches, byeRounds, arbiterRequestMatchIds } =
     data;
   const leagueName = translateLeagueName(league.name, tRegions);
   const grid = buildGroupStandingsGrid(
@@ -54,7 +54,7 @@ export default async function GroupStandingsPage({ params }: Props) {
   };
 
   return (
-    <main className="page-container-full flex min-h-0 flex-1 flex-col gap-4 sm:gap-6">
+    <main className="page-container-full flex flex-col gap-4 sm:gap-6">
       <header>
         <Link
           href={`/standings/league/${league.id}`}
@@ -63,12 +63,6 @@ export default async function GroupStandingsPage({ params }: Props) {
           {t("backToLeagueStandings", { leagueName })}
         </Link>
         <h1 className="mt-2 text-2xl font-semibold">{group.name}</h1>
-        <p className="mt-1 text-sm text-zinc-600">
-          {t("breadcrumb", {
-            leagueName,
-            divisionName: division.name,
-          })}
-        </p>
       </header>
       <GroupStandingsGrid grid={grid} labels={tableLabels} />
       <Suspense fallback={<GroupDisciplineSectionsFallback />}>

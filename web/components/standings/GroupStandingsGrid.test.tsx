@@ -32,8 +32,8 @@ const sampleGrid: GroupStandingsGridData = {
       vpTotal: 20,
       penaltyVp: 0,
       cells: [
-        { vp: 14, isHome: true, pairingClass: "bg-sky-100", matchId: "m1", scheduledDateLabel: null, scheduledTimeLabel: null, hasArbiterRequest: true },
-        { vp: null, isHome: false, pairingClass: "bg-amber-100", matchId: null, scheduledDateLabel: null, scheduledTimeLabel: null, hasArbiterRequest: false },
+        { vp: 14, isHome: true, pairingClass: "bg-sky-200 text-sky-950", matchId: "m1", scheduledDateLabel: null, scheduledTimeLabel: null, hasArbiterRequest: true },
+        { vp: null, isHome: false, pairingClass: "bg-amber-200 text-amber-950", matchId: null, scheduledDateLabel: null, scheduledTimeLabel: null, hasArbiterRequest: false },
       ],
     },
     {
@@ -43,8 +43,8 @@ const sampleGrid: GroupStandingsGridData = {
       vpTotal: 12,
       penaltyVp: 0,
       cells: [
-        { vp: 6, isHome: false, pairingClass: "bg-sky-100", matchId: null, scheduledDateLabel: null, scheduledTimeLabel: null, hasArbiterRequest: true },
-        { vp: 10, isHome: true, pairingClass: "bg-amber-100", matchId: "m2", scheduledDateLabel: null, scheduledTimeLabel: null, hasArbiterRequest: false },
+        { vp: 6, isHome: false, pairingClass: "bg-sky-200 text-sky-950", matchId: null, scheduledDateLabel: null, scheduledTimeLabel: null, hasArbiterRequest: true },
+        { vp: 10, isHome: true, pairingClass: "bg-amber-200 text-amber-950", matchId: "m2", scheduledDateLabel: null, scheduledTimeLabel: null, hasArbiterRequest: false },
       ],
     },
   ],
@@ -88,8 +88,8 @@ describe("GroupStandingsGrid", () => {
     const { container } = render(
       <GroupStandingsGrid grid={sampleGrid} labels={labels} />,
     );
-    expect(container.querySelector(".bg-sky-100")).toBeTruthy();
-    expect(container.querySelector(".bg-amber-100")).toBeTruthy();
+    expect(container.querySelector(".bg-sky-200")).toBeTruthy();
+    expect(container.querySelector(".bg-amber-200")).toBeTruthy();
   });
 
   it("highlights cells with an arbiter request", () => {

@@ -5,12 +5,11 @@ import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import type { TeamDetail } from "@/lib/competition/team-queries";
-import { translateLeagueName } from "@/lib/i18n/labels";
 import { TeamLocationModal } from "./TeamLocationModal";
 
 type Props = Pick<
   TeamDetail,
-  "team" | "captain" | "club" | "group" | "division" | "league" | "clubLocation" | "hasCentralizedVenue"
+  "team" | "captain" | "club" | "clubLocation" | "hasCentralizedVenue"
 > & {
   canLinkToPlayers: boolean;
   showCaptainContacts: boolean;
@@ -27,9 +26,6 @@ export function TeamInfoSection({
   team,
   captain,
   club,
-  group,
-  division,
-  league,
   clubLocation,
   hasCentralizedVenue,
   canLinkToPlayers,
@@ -38,8 +34,6 @@ export function TeamInfoSection({
   nextMatchLink = null,
 }: Props) {
   const t = useTranslations("team");
-  const tRegions = useTranslations("regions");
-  const leagueName = translateLeagueName(league.name, tRegions);
 
   const email = showCaptainContacts ? trimmed(captain?.email) : null;
   const phone = showCaptainContacts ? trimmed(captain?.phone) : null;
@@ -60,12 +54,7 @@ export function TeamInfoSection({
     <section className="rounded-lg border border-zinc-200 bg-white p-4">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-sm text-zinc-600">
-            {[leagueName, division.name, group.name].join(" · ")}
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold text-zinc-900">
-            {team.name}
-          </h1>
+          <h1 className="text-2xl font-semibold text-zinc-900">{team.name}</h1>
           <p className="mt-1 text-sm text-zinc-600">{club.name}</p>
         </div>
         {nextMatchLink}

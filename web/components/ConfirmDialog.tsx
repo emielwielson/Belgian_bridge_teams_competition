@@ -8,6 +8,8 @@ type Props = {
   onConfirm: () => void;
   onCancel: () => void;
   confirming?: boolean;
+  /** Destructive actions stay amber; positive confirms use emerald. */
+  tone?: "danger" | "confirm";
 };
 
 export function ConfirmDialog({
@@ -18,7 +20,13 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
   confirming = false,
+  tone = "danger",
 }: Props) {
+  const confirmClass =
+    tone === "confirm"
+      ? "rounded-lg bg-emerald-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-800 disabled:opacity-60"
+      : "rounded-lg bg-amber-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-800 disabled:opacity-60";
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center"
@@ -51,7 +59,7 @@ export function ConfirmDialog({
             type="button"
             onClick={onConfirm}
             disabled={confirming}
-            className="rounded-lg bg-amber-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-800 disabled:opacity-60"
+            className={confirmClass}
           >
             {confirmLabel}
           </button>

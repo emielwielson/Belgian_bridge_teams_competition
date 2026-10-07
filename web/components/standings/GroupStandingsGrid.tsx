@@ -47,12 +47,12 @@ const STICKY_COLS = {
 } as const;
 
 const stickyHead =
-  "sticky z-20 shrink-0 bg-white px-1 py-2 text-left font-medium text-zinc-500 sm:px-2";
+  "sticky z-20 shrink-0 bg-slate-900 px-1 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-300 sm:px-2";
 const stickyHeadEdge =
-  "sticky z-20 shrink-0 bg-white px-1 py-2 text-left font-medium text-zinc-500 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.08)] sm:px-2";
-const stickyCell = "sticky z-10 shrink-0 bg-white px-1 py-1.5 sm:px-2";
+  "sticky z-20 shrink-0 bg-slate-900 px-1 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-300 shadow-[2px_0_6px_-2px_rgba(0,0,0,0.35)] sm:px-2";
+const stickyCell = "sticky z-10 shrink-0 bg-slate-50 px-1 py-1.5 sm:px-2";
 const stickyCellEdge =
-  "sticky z-10 shrink-0 bg-white px-1 py-1.5 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)] sm:px-2";
+  "sticky z-10 shrink-0 bg-slate-50 px-1 py-1.5 shadow-[2px_0_6px_-2px_rgba(0,0,0,0.12)] sm:px-2";
 
 export function GroupStandingsGrid({ grid, labels }: Props) {
   const { rounds, rows, hasMatches } = grid;
@@ -64,14 +64,14 @@ export function GroupStandingsGrid({ grid, labels }: Props) {
   }
 
   return (
-    <div className="flex min-h-0 w-full flex-1 flex-col gap-2">
+    <div className="flex w-full flex-col gap-2">
       {!hasMatches ? (
         <p className="text-sm text-zinc-500">{labels.roundColumnsPending}</p>
       ) : null}
-      <div className="w-full min-w-0 flex-1 overflow-x-auto rounded-lg border border-zinc-200 bg-white">
+      <div className="w-full min-w-0 overflow-x-auto rounded-xl border border-slate-300 bg-white shadow-sm">
         <table className="w-full min-w-max border-separate border-spacing-0 text-sm">
           <thead>
-            <tr className="border-b border-zinc-200">
+            <tr>
               <th
                 className={`${stickyHead} ${STICKY_COLS.rank.left} ${STICKY_COLS.rank.width}`}
               >
@@ -95,12 +95,12 @@ export function GroupStandingsGrid({ grid, labels }: Props) {
               {rounds.map((col) => (
                 <th
                   key={col.round}
-                  className="min-w-[3.25rem] px-1 py-1.5 text-right font-medium text-zinc-500"
+                  className="min-w-[3.25rem] bg-slate-900 px-1 py-1.5 text-right font-semibold text-slate-200"
                 >
                   <span className="block whitespace-nowrap text-[11px] leading-tight tabular-nums">
                     {col.dateLabel}
                   </span>
-                  <span className="block whitespace-nowrap text-[11px] leading-tight tabular-nums">
+                  <span className="block whitespace-nowrap text-[11px] font-medium leading-tight tabular-nums text-slate-400">
                     {col.timeLabel}
                   </span>
                 </th>
@@ -109,14 +109,14 @@ export function GroupStandingsGrid({ grid, labels }: Props) {
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr key={row.teamId} className="border-b border-zinc-100">
+              <tr key={row.teamId} className="border-b border-slate-200">
                 <td
-                  className={`${stickyCell} ${STICKY_COLS.rank.left} ${STICKY_COLS.rank.width} text-zinc-500`}
+                  className={`${stickyCell} ${STICKY_COLS.rank.left} ${STICKY_COLS.rank.width} tabular-nums text-slate-500`}
                 >
                   {row.rank}
                 </td>
                 <td
-                  className={`${stickyCell} ${STICKY_COLS.team.left} ${STICKY_COLS.team.width} max-w-[7rem] font-medium sm:max-w-[9rem]`}
+                  className={`${stickyCell} ${STICKY_COLS.team.left} ${STICKY_COLS.team.width} max-w-[7rem] font-semibold text-slate-900 sm:max-w-[9rem]`}
                 >
                   <Link
                     href={`/teams/${row.teamId}`}
@@ -127,12 +127,14 @@ export function GroupStandingsGrid({ grid, labels }: Props) {
                   </Link>
                 </td>
                 <td
-                  className={`${stickyCell} ${STICKY_COLS.penalty.left} ${STICKY_COLS.penalty.width} text-right tabular-nums text-zinc-600`}
+                  className={`${stickyCell} ${STICKY_COLS.penalty.left} ${STICKY_COLS.penalty.width} text-right tabular-nums ${
+                    row.penaltyVp > 0 ? "font-medium text-rose-700" : "text-slate-400"
+                  }`}
                 >
                   {row.penaltyVp > 0 ? `−${row.penaltyVp}` : "0"}
                 </td>
                 <td
-                  className={`${stickyCellEdge} ${STICKY_COLS.vp.left} ${STICKY_COLS.vp.width} text-right tabular-nums font-medium`}
+                  className={`${stickyCellEdge} ${STICKY_COLS.vp.left} ${STICKY_COLS.vp.width} text-right tabular-nums font-semibold text-slate-900`}
                 >
                   {row.vpTotal}
                 </td>
@@ -140,8 +142,8 @@ export function GroupStandingsGrid({ grid, labels }: Props) {
                   <td
                     key={rounds[index]?.round ?? index}
                     className={[
-                      "px-1 py-1.5 text-right tabular-nums",
-                      cell.pairingClass ?? "",
+                      "px-1 py-1.5 text-right font-medium tabular-nums",
+                      cell.pairingClass ?? "bg-white text-slate-400",
                       cell.hasArbiterRequest
                         ? "outline outline-2 outline-offset-[-2px] outline-amber-500"
                         : "",
@@ -163,20 +165,20 @@ export function GroupStandingsGrid({ grid, labels }: Props) {
                       {cell.isHome && cell.matchId ? (
                         <Link
                           href={`/matches/${cell.matchId}`}
-                          className="inline-flex rounded text-zinc-500 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-1"
+                          className="inline-flex rounded text-current/60 hover:text-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-1"
                           aria-label={labels.viewMatchAria}
                         >
                           <HomeIcon linked homeLabel={labels.homeAria} />
                         </Link>
                       ) : cell.isHome ? (
-                        <span className="inline-flex text-zinc-500">
+                        <span className="inline-flex text-current/60">
                           <HomeIcon homeLabel={labels.homeAria} />
                         </span>
                       ) : null}
                       {cell.vp != null ? (
                         <span>{cell.vp}</span>
                       ) : cell.scheduledDateLabel || cell.scheduledTimeLabel ? (
-                        <span className="text-[11px] leading-tight text-zinc-600 tabular-nums">
+                        <span className="text-[11px] leading-tight tabular-nums text-current/80">
                           <span className="block whitespace-nowrap">
                             {cell.scheduledDateLabel}
                           </span>
