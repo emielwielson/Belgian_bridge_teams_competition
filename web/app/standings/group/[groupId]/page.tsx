@@ -30,15 +30,26 @@ export default async function GroupStandingsPage({ params }: Props) {
     notFound();
   }
 
-  const { group, league, standings, matches, byeRounds, arbiterRequestMatchIds } =
-    data;
+  const {
+    group,
+    league,
+    standings,
+    matches,
+    byeRounds,
+    arbiterRequestMatchIds,
+    officialRoundDatetimes,
+  } = data;
   const leagueName = translateLeagueName(league.name, tRegions);
+  const officialDatetimeByRound = new Map(
+    officialRoundDatetimes.map((d) => [d.round, d.datetime]),
+  );
   const grid = buildGroupStandingsGrid(
     standings,
     matches,
     byeRounds,
     intlLocale,
     new Set(arbiterRequestMatchIds),
+    officialDatetimeByRound,
   );
 
   const tableLabels = {

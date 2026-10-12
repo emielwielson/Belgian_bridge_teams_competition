@@ -73,7 +73,7 @@ function pairingClassForIndex(index: number): string {
   return PAIRING_BG_CLASSES[index % PAIRING_BG_CLASSES.length];
 }
 
-/** Column header date: most common fixture time in the round (official schedule date). */
+/** Fallback column anchor: most common live fixture datetime in the round. */
 function roundColumnDatetime(datetimes: string[]): string | null {
   if (datetimes.length === 0) return null;
 
@@ -100,6 +100,7 @@ function buildRoundColumns(
   matches: GroupMatchRow[],
   roundNumbers: number[],
   intlLocale: string,
+  officialDatetimeByRound: ReadonlyMap<number, string>,
 ): RoundColumn[] {
   const byRound = new Map<number, string[]>();
   for (const match of matches) {
@@ -112,6 +113,7 @@ function buildRoundColumns(
   return [...roundNumbers]
     .map((round) => {
       const anchor =
+        officialDatetimeByRound.get(round) ??
         roundColumnDatetime(byRound.get(round) ?? []) ??
         new Date(0).toISOString();
       return { round, anchor };
@@ -132,6 +134,7 @@ export function buildGroupStandingsGrid(
   byeRounds: GroupByeRoundRow[] = [],
   intlLocale = "en-GB",
   arbiterRequestMatchIds: ReadonlySet<string> = new Set(),
+  officialDatetimeByRound: ReadonlyMap<number, string> = new Map(),
 ): GroupStandingsGridData {
   const byeByTeamRound = new Map<string, GroupByeRoundRow>();
   for (const bye of byeRounds) {
@@ -153,6 +156,7 @@ export function buildGroupStandingsGrid(
     matches,
     [...roundDatetimes.keys()],
     intlLocale,
+    officialDatetimeByRound,
   );
   const roundColumnByRound = new Map(rounds.map((col) => [col.round, col]));
   const hasMatches = matches.length > 0 || byeRounds.length > 0;

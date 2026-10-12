@@ -37,7 +37,7 @@ export async function getCachedGroupStandingsGrid(
         arbiterRequestMatchIds: [...requestMatchIds],
       };
     },
-    ["group-standings-grid-v2", groupId],
+    ["group-standings-grid-v3", groupId],
     { tags: [standingsGroupTag(groupId)] },
   )();
 }

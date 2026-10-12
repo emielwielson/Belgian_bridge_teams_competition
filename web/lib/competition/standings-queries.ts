@@ -1,4 +1,5 @@
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
+import { loadCompetitionMatchDatesForGroup } from "./group-match-rounds";
 import type { GroupByeRoundRow, GroupMatchRow } from "./group-standings-grid";
 import { LEAGUE_NAMES, type LeagueName } from "./league-names";
 import { sortDivisionsByCanonicalName } from "./sort-divisions";
@@ -40,9 +41,16 @@ export type GroupStandingsContext = {
   standings: Omit<StandingsRow, "group_id">[];
 };
 
+export type OfficialRoundDatetime = {
+  round: number;
+  datetime: string;
+};
+
 export type GroupStandingsGridData = GroupStandingsContext & {
   matches: GroupMatchRow[];
   byeRounds: GroupByeRoundRow[];
+  /** Official competition_match_dates slots (JSON-safe for cache). */
+  officialRoundDatetimes: OfficialRoundDatetime[];
   /** Match IDs with open or resolved arbiter requests (not cancelled). */
   arbiterRequestMatchIds: string[];
 };
@@ -290,10 +298,20 @@ export async function loadLeagueStandings(
   };
 }
 
+type LeagueScheduleFields = {
+  season_id: string;
+  scope: string;
+  region_id: string | null;
+};
+
+type GroupContextInternal = Omit<GroupStandingsContext, "standings"> & {
+  leagueSchedule: LeagueScheduleFields;
+};
+
 async function loadGroupContext(
   supabase: SupabaseClient,
   groupId: string,
-): Promise<Omit<GroupStandingsContext, "standings"> | null> {
+): Promise<GroupContextInternal | null> {
   const { data: group, error: groupError } = await supabase
     .from("groups")
     .select(
@@ -305,7 +323,10 @@ async function loadGroupContext(
         name,
         league:leagues (
           id,
-          name
+          name,
+          season_id,
+          scope,
+          region_id
         )
       )
     `,
@@ -322,16 +343,35 @@ async function loadGroupContext(
     : rawDivision) as {
     id: string;
     name: string;
-    league: { id: string; name: string } | { id: string; name: string }[];
+    league:
+      | {
+          id: string;
+          name: string;
+          season_id: string;
+          scope: string;
+          region_id: string | null;
+        }
+      | {
+          id: string;
+          name: string;
+          season_id: string;
+          scope: string;
+          region_id: string | null;
+        }[];
   };
-  const league = Array.isArray(division.league)
+  const leagueRow = Array.isArray(division.league)
     ? division.league[0]
     : division.league;
 
   return {
     group: { id: group.id, name: group.name },
     division: { id: division.id, name: division.name },
-    league,
+    league: { id: leagueRow.id, name: leagueRow.name },
+    leagueSchedule: {
+      season_id: leagueRow.season_id,
+      scope: leagueRow.scope,
+      region_id: leagueRow.region_id,
+    },
   };
 }
 
@@ -490,7 +530,8 @@ export async function loadGroupStandings(
   if (!context) return null;
 
   const standings = await fetchGroupStandings(supabase, groupId);
-  return { ...context, standings };
+  const { leagueSchedule: _leagueSchedule, ...publicContext } = context;
+  return { ...publicContext, standings };
 }
 
 export async function loadGroupStandingsGridData(
@@ -501,17 +542,22 @@ export async function loadGroupStandingsGridData(
   const context = await loadGroupContext(supabase, groupId);
   if (!context) return null;
 
-  const [standings, matches, byeRounds] = await Promise.all([
-    fetchGroupStandings(supabase, groupId),
-    fetchGroupMatches(supabase, groupId),
-    fetchGroupByeRounds(supabase, groupId),
-  ]);
+  const { leagueSchedule, ...publicContext } = context;
+
+  const [standings, matches, byeRounds, officialRoundDatetimes] =
+    await Promise.all([
+      fetchGroupStandings(supabase, groupId),
+      fetchGroupMatches(supabase, groupId),
+      fetchGroupByeRounds(supabase, groupId),
+      loadCompetitionMatchDatesForGroup(supabase, groupId, leagueSchedule),
+    ]);
 
   return {
-    ...context,
+    ...publicContext,
     standings,
     matches,
     byeRounds,
+    officialRoundDatetimes,
     arbiterRequestMatchIds: [...(options?.arbiterRequestMatchIds ?? [])],
   };
 }

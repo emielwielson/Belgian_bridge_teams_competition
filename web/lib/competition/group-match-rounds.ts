@@ -189,7 +189,8 @@ async function loadGroupContext(supabase: SupabaseClient, groupId: string) {
   };
 }
 
-async function loadRegionalDates(
+/** Official competition_match_dates slots for a group's league (season/scope/region/division). */
+export async function loadCompetitionMatchDatesForGroup(
   supabase: SupabaseClient,
   groupId: string,
   league: { season_id: string; scope: string; region_id: string | null },
@@ -226,7 +227,11 @@ export async function loadGroupMatchRoundConfig(
 ): Promise<GroupMatchRoundConfig> {
   await syncGroupRoundCount(supabase, groupId);
   const ctx = await loadGroupContext(supabase, groupId);
-  const regionalDates = await loadRegionalDates(supabase, groupId, ctx.league);
+  const regionalDates = await loadCompetitionMatchDatesForGroup(
+    supabase,
+    groupId,
+    ctx.league,
+  );
 
   const { data: skippedRows, error: skippedError } = await supabase
     .from("group_skipped_match_rounds")
@@ -331,7 +336,11 @@ export async function fetchGroupFixtureRoundDates(
   await syncGroupRoundCount(supabase, groupId);
   const roundCount = await requiredGroupRoundCount(supabase, groupId);
 
-  const regionalDates = await loadRegionalDates(supabase, groupId, league);
+  const regionalDates = await loadCompetitionMatchDatesForGroup(
+    supabase,
+    groupId,
+    league,
+  );
   const dateByCalendarRound = new Map(
     regionalDates.map((d) => [d.round, d.datetime]),
   );

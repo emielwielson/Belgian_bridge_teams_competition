@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getActivePlayerId } from "@/lib/auth/active-player";
 import { leagueNameForCompetitionKind } from "@/lib/competition/league-names";
-import { applyMatchDatesDivisionFilter } from "@/lib/competition/match-dates-query";
+import { loadCompetitionMatchDatesForGroup } from "@/lib/competition/group-match-rounds";
 import { getActiveSeason } from "@/lib/competition/season";
 import {
   resolveClubMatchLocation,
@@ -210,32 +210,12 @@ async function loadOfficialRoundDatetimes(
   groupId: string,
   league: { season_id: string; scope: string; region_id: string | null },
 ): Promise<Map<number, string>> {
-  const { data: datesDivisionId, error: resolveError } = await supabase.rpc(
-    "resolve_group_match_dates_division_id",
-    { p_group_id: groupId },
+  const dates = await loadCompetitionMatchDatesForGroup(
+    supabase,
+    groupId,
+    league,
   );
-  if (resolveError) throw new Error(resolveError.message);
-
-  let datesQuery = supabase
-    .from("competition_match_dates")
-    .select("round, datetime")
-    .eq("season_id", league.season_id)
-    .eq("scope", league.scope)
-    .order("round");
-
-  datesQuery =
-    league.scope === "national"
-      ? datesQuery.is("region_id", null)
-      : datesQuery.eq("region_id", league.region_id!);
-
-  datesQuery = applyMatchDatesDivisionFilter(datesQuery, datesDivisionId);
-
-  const { data: dates, error: datesError } = await datesQuery;
-  if (datesError) throw new Error(datesError.message);
-
-  return new Map(
-    (dates ?? []).map((d) => [d.round as number, d.datetime as string]),
-  );
+  return new Map(dates.map((d) => [d.round, d.datetime]));
 }
 
 export function mapRawMatchToTeamMatchRow(

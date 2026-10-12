@@ -238,6 +238,78 @@ describe("buildGroupStandingsGrid", () => {
     );
   });
 
+  it("keeps official round time when half the fixtures move same-day", () => {
+    // CEST: 14:00 Brussels = 12:00Z, 13:00 Brussels = 11:00Z
+    const officialDate = "2026-10-17T12:00:00.000Z";
+    const movedSameDay = "2026-10-17T11:00:00.000Z";
+    const roundTeams: StandingsTeamRow[] = [
+      { team_id: "t1", team_name: "Alpha", vp_total: 0 },
+      { team_id: "t2", team_name: "Bravo", vp_total: 0 },
+      { team_id: "t3", team_name: "Charlie", vp_total: 0 },
+      { team_id: "t4", team_name: "Delta", vp_total: 0 },
+      { team_id: "t5", team_name: "Echo", vp_total: 0 },
+      { team_id: "t6", team_name: "Foxtrot", vp_total: 0 },
+      { team_id: "t7", team_name: "Golf", vp_total: 0 },
+      { team_id: "t8", team_name: "Hotel", vp_total: 0 },
+    ];
+    const matches = [
+      match({
+        round: 4,
+        id: "kept-1",
+        played_at: null,
+        datetime: officialDate,
+        home_team_id: "t1",
+        away_team_id: "t2",
+      }),
+      match({
+        round: 4,
+        id: "kept-2",
+        played_at: null,
+        datetime: officialDate,
+        home_team_id: "t3",
+        away_team_id: "t4",
+      }),
+      match({
+        round: 4,
+        id: "moved-1",
+        played_at: null,
+        datetime: movedSameDay,
+        home_team_id: "t5",
+        away_team_id: "t6",
+      }),
+      match({
+        round: 4,
+        id: "moved-2",
+        played_at: null,
+        datetime: movedSameDay,
+        home_team_id: "t7",
+        away_team_id: "t8",
+      }),
+    ];
+    const officialByRound = new Map([[4, officialDate]]);
+    const grid = buildGroupStandingsGrid(
+      roundTeams,
+      matches,
+      [],
+      "nl-BE",
+      new Set(),
+      officialByRound,
+    );
+
+    expect(grid.rounds[0].dateLabel).toBe("17/10/26");
+    expect(grid.rounds[0].timeLabel).toBe("14:00");
+
+    expect(grid.rows.find((r) => r.teamId === "t1")!.cells[0].scheduledTimeLabel).toBeNull();
+    expect(grid.rows.find((r) => r.teamId === "t3")!.cells[0].scheduledTimeLabel).toBeNull();
+    expect(grid.rows.find((r) => r.teamId === "t5")!.cells[0].scheduledDateLabel).toBeNull();
+    expect(grid.rows.find((r) => r.teamId === "t5")!.cells[0].scheduledTimeLabel).toBe(
+      "13:00",
+    );
+    expect(grid.rows.find((r) => r.teamId === "t7")!.cells[0].scheduledTimeLabel).toBe(
+      "13:00",
+    );
+  });
+
   it("shows scheduled time when only the hour differs on the same day", () => {
     const matches = [
       match({
