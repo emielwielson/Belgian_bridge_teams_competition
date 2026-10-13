@@ -2,7 +2,6 @@
 
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import type { ClubSubCandidate } from "@/lib/competition/player-matches";
 
 type Props = {
@@ -12,6 +11,14 @@ type Props = {
   onSelect: (player: ClubSubCandidate) => void;
   onClose: () => void;
 };
+
+function matchesQuery(player: ClubSubCandidate, query: string): boolean {
+  const haystack = [player.name, player.member_number]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return haystack.includes(query.trim().toLowerCase());
+}
 
 export function AddSubPicker({
   matchId,
@@ -24,6 +31,7 @@ export function AddSubPicker({
   const [candidates, setCandidates] = useState<ClubSubCandidate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -54,31 +62,22 @@ export function AddSubPicker({
     () => candidates.filter((p) => !exclude.has(p.id)),
     [candidates, exclude],
   );
-
-  const options = useMemo(
+  const filtered = useMemo(
     () =>
-      available.map((player) => {
-        const label = `${player.name}${
-          player.member_number ? ` (${player.member_number})` : ""
-        }`;
-        const searchText = [player.name, player.member_number]
-          .filter(Boolean)
-          .join(" ");
-        return { value: player.id, label, searchText };
-      }),
-    [available],
+      query.trim()
+        ? available.filter((p) => matchesQuery(p, query))
+        : available,
+    [available, query],
   );
 
-  function handleSelect(playerId: string) {
-    const player = available.find((p) => p.id === playerId);
-    if (!player) return;
+  function handleSelect(player: ClubSubCandidate) {
     onSelect(player);
     onClose();
   }
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 px-4 pb-4 pt-16"
       role="presentation"
       onClick={onClose}
     >
@@ -112,15 +111,46 @@ export function AddSubPicker({
             <p className="mt-3 text-sm text-zinc-600">{t("noneAvailable")}</p>
           ) : null}
           {!loading && !error && available.length > 0 ? (
-            <div className="mt-3">
-              <SearchableSelect
-                options={options}
-                value=""
-                onChange={handleSelect}
+            <>
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
                 placeholder={t("searchPlayer")}
-                emptyMessage={t("noPlayerMatches")}
+                className="mt-3 w-full rounded-lg border border-zinc-300 px-3 py-2"
+                autoComplete="off"
+                autoFocus
               />
-            </div>
+              <ul
+                role="listbox"
+                className="mt-2 max-h-[min(50dvh,20rem)] overflow-y-auto rounded-lg border border-zinc-200 py-1"
+              >
+                {filtered.length === 0 ? (
+                  <li className="px-3 py-2 text-sm text-zinc-500">
+                    {t("noPlayerMatches")}
+                  </li>
+                ) : (
+                  filtered.map((player) => {
+                    const label = `${player.name}${
+                      player.member_number
+                        ? ` (${player.member_number})`
+                        : ""
+                    }`;
+                    return (
+                      <li key={player.id} role="option">
+                        <button
+                          type="button"
+                          className="w-full px-3 py-2 text-left text-sm text-zinc-800 hover:bg-zinc-100"
+                          onClick={() => handleSelect(player)}
+                        >
+                          {label}
+                        </button>
+                      </li>
+                    );
+                  })
+                )}
+              </ul>
+            </>
           ) : null}
         </div>
       </div>
