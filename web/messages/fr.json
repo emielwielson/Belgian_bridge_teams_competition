@@ -87,7 +87,8 @@
       "roundColumnsPending": "Les colonnes de journée apparaissent après la génération du calendrier.",
       "viewMatchAria": "Voir la rencontre",
       "homeAria": "Home team",
-      "arbiterRequestAria": "La rencontre a une demande d'arbitre"
+      "arbiterRequestAria": "La rencontre a une demande d'arbitre",
+      "locationChangedAria": "Le lieu de la rencontre a été modifié"
     },
     "penalties": {
       "title": "Pénalités",
@@ -149,9 +150,9 @@
       "pendingReschedule": "Report en attente",
       "hideArbiterRequest": "Masquer la demande d'arbitre",
       "requestArbiter": "Demander un arbitre",
-      "hideHomeAwaySwap": "Masquer l'inversion domicile/extérieur",
-      "homeAwaySwap": "Inversion domicile/extérieur",
-      "pendingHomeAwaySwap": "Inversion domicile/extérieur en attente"
+      "hideLocationChange": "Masquer le changement de lieu",
+      "locationChange": "Changer de lieu",
+      "pendingLocationChange": "Changement de lieu en attente"
     },
     "reschedule": {
       "title": "Reporter la rencontre",
@@ -177,28 +178,29 @@
       "proposeFailed": "Échec de la proposition de report",
       "respondFailed": "Échec de {action}"
     },
-    "homeAwaySwitch": {
-      "title": "Inversion domicile/extérieur",
-      "description": "Les capitaines peuvent demander d'inverser l'équipe hôte de cette rencontre. L'autre capitaine ou un gestionnaire de compétition doit approuver.",
-      "firstLegLine": "Journée {firstLegRound} (aller) : {firstLegHome} (domicile) vs {firstLegAway} (extérieur). Cette rencontre (journée {round}) : {currentHome} (domicile) vs {currentAway} (extérieur).",
-      "onlyCaptain": "Seul le capitaine de l'équipe à domicile ou à l'extérieur peut proposer une inversion. Les demandes en attente peuvent être approuvées par le capitaine adverse ou un gestionnaire de compétition sur cette page.",
+    "locationChange": {
+      "title": "Changer le lieu de la rencontre",
+      "description": "Proposez un autre lieu pour cette rencontre. L'autre capitaine ou un gestionnaire de compétition doit approuver.",
+      "currentLocation": "Lieu actuel : {location}",
+      "onlyCaptain": "Seul le capitaine de l'équipe à domicile ou à l'extérieur peut proposer un changement de lieu. Les demandes en attente peuvent être approuvées par le capitaine adverse ou un gestionnaire de compétition sur cette page.",
       "pendingTitle": "En attente d'approbation",
-      "pendingBody": "{requestingTeam} a proposé une inversion domicile/extérieur. La rencontre indique encore {homeTeam} (domicile) vs {awayTeam} (extérieur) jusqu'à approbation.",
-      "approveSwap": "Approuver l'inversion",
-      "reject": "Refuser",
+      "pendingBody": "{proposingTeam} a proposé de jouer à : {location}",
+      "approveChange": "Approuver le lieu",
       "cancelRequest": "Annuler la demande",
-      "needsSwitchHint": "Cette rencontre indique encore la même équipe à domicile qu'à la journée {firstLegRound}. Proposez une inversion pour que l'autre équipe reçoive, comme au match retour standard.",
       "proposingAs": "Proposition au nom de",
       "selectTeam": "Choisir l'équipe",
-      "proposeSwap": "Proposer une inversion domicile/extérieur",
+      "newLocation": "Nouveau lieu",
+      "otherTeamLocation": "Lieu de {team} : {location}",
+      "customLocation": "Lieu personnalisé",
+      "proposeChange": "Proposer un changement de lieu",
       "sending": "Envoi…",
-      "chooseTeam": "Choisissez l'équipe que vous représentez",
-      "proposedSuccess": "Inversion domicile/extérieur proposée. L'autre capitaine ou un gestionnaire de compétition peut approuver ou refuser sur cette page.",
-      "approved": "L'hôte de cette rencontre a été inversé vers l'autre équipe.",
-      "rejected": "Demande d'inversion domicile/extérieur refusée.",
-      "cancelled": "Demande d'inversion domicile/extérieur annulée.",
+      "chooseTeamAndLocation": "Choisissez une équipe et un lieu",
+      "proposedSuccess": "Changement de lieu proposé. L'autre capitaine ou un gestionnaire de compétition peut approuver ou refuser sur cette page.",
+      "approved": "Lieu de la rencontre mis à jour.",
+      "rejected": "Demande de changement de lieu refusée.",
+      "cancelled": "Demande de changement de lieu annulée.",
       "blocked": "Un report peut être en cours, ou cette rencontre n'accepte pas de nouvelle demande pour l'instant.",
-      "proposeFailed": "Échec de la proposition d'inversion domicile/extérieur",
+      "proposeFailed": "Échec de la proposition de changement de lieu",
       "respondFailed": "Échec de {action}"
     },
     "arbiterRequest": {
@@ -470,6 +472,8 @@
     "played": "Jouée",
     "scheduled": "Programmée",
     "rescheduled": "Reportée",
+    "locationChanged": "Lieu modifié",
+    "locationLine": "Lieu : {location}",
     "homeVs": "Home team contre {opponent}",
     "awayVs": "Visiting team contre {opponent}",
     "vpLine": "VP {teamVp} – {opponentVp}",
@@ -1434,16 +1438,16 @@
       "openMatch": "Ouvrir la rencontre",
       "loginFirst": "Connexion d'abord"
     },
-    "homeAwaySwitchProposed": {
-      "subject": "Inversion domicile/extérieur : {homeTeam} vs {awayTeam} (journée {round})",
-      "bodyProposed": "{requestingTeam} a proposé d'inverser l'équipe hôte pour cette rencontre.",
+    "locationChangeProposed": {
+      "subject": "Changement de lieu : {homeTeam} vs {awayTeam} (journée {round})",
+      "bodyProposed": "{proposingTeam} a proposé de jouer à : {location}",
       "matchLine": "Journée {round} : {homeTeam} vs {awayTeam}",
       "openMatch": "Ouvrir la rencontre : {url}",
       "loginFirst": "Connexion d'abord : {url}"
     },
-    "homeAwaySwitchDecision": {
-      "subject": "Inversion domicile/extérieur {action} : {homeTeam} vs {awayTeam} (journée {round})",
-      "bodyDecision": "La demande de {requestingTeam} a été {action}.",
+    "locationChangeDecision": {
+      "subject": "Changement de lieu {action} : {homeTeam} vs {awayTeam} (journée {round})",
+      "bodyDecision": "La demande de lieu de {proposingTeam} ({location}) a été {action}.",
       "approved": "approuvée",
       "rejected": "refusée",
       "cancelled": "annulée",
@@ -1492,6 +1496,9 @@
       "proposedDatetimeRequired": "proposed_datetime et proposing_team_id sont obligatoires",
       "postponeActionRequired": "request_id et action (approve|reject|cancel) sont obligatoires",
       "homeAwayNotAvailable": "L'inversion domicile/extérieur n'est pas disponible pour cette rencontre",
+      "locationChangeNotAvailable": "Le changement de lieu n'est pas disponible pour cette rencontre",
+      "proposingTeamIdRequired": "proposing_team_id est requis",
+      "proposedLocationRequired": "proposed_location est requis",
       "requestingTeamIdRequired": "requesting_team_id est obligatoire",
       "teamWarningFieldsRequired": "team_id, warning_date et reason sont obligatoires",
       "teamNotActiveSeason": "L'équipe n'appartient pas à la saison active",
@@ -1667,7 +1674,7 @@
     },
     "captain": {
       "sectionTitle": "Capitaines",
-      "sectionIntro": "Comment gérer l'effectif, reporter des rencontres et inverser domicile/extérieur.",
+      "sectionIntro": "Comment gérer l'effectif, reporter des rencontres et changer le lieu.",
       "addMembers": {
         "title": "Ajouter des membres à l'équipe",
         "steps": {
@@ -1714,20 +1721,20 @@
           }
         }
       },
-      "homeAway": {
-        "title": "Inverser domicile et extérieur",
+      "locationChange": {
+        "title": "Changer le lieu de la rencontre",
         "steps": {
-          "open-swap": {
-            "title": "Ouvrir l'inversion domicile/extérieur",
-            "body": "Sur une rencontre non jouée, cliquez sur Inversion domicile/extérieur. Cela concerne surtout les journées miroir d'un championnat aller-retour."
+          "open-change": {
+            "title": "Ouvrir le changement de lieu",
+            "body": "Sur une rencontre non jouée, cliquez sur Changer de lieu."
           },
-          "propose-swap": {
-            "title": "Proposer l'inversion",
-            "body": "Cliquez sur Proposer l'inversion domicile/extérieur. Vous ne pouvez pas proposer tant qu'un report est en attente."
+          "propose-change": {
+            "title": "Proposer un nouveau lieu",
+            "body": "Par défaut, le lieu de l'autre équipe est sélectionné ; vous pouvez aussi choisir un lieu personnalisé. Cliquez sur Proposer un changement de lieu. Vous ne pouvez pas proposer tant qu'un report est en attente."
           },
-          "approve-swap": {
+          "approve-change": {
             "title": "Obtenir l'approbation",
-            "body": "L'autre capitaine ou un responsable doit approuver. Après approbation, l'équipe hôte affichée sur la page est mise à jour."
+            "body": "L'autre capitaine ou un gestionnaire de compétition doit approuver. Après approbation, la rencontre affiche le nouveau lieu."
           }
         }
       }

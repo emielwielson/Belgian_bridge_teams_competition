@@ -14,6 +14,8 @@ const played: TeamMatchRow = {
   teamVp: 14,
   opponentVp: 10,
   isRescheduled: false,
+  hasLocationChange: false,
+  locationOverride: null,
 };
 
 const scheduled: TeamMatchRow = {
@@ -26,6 +28,8 @@ const scheduled: TeamMatchRow = {
   teamVp: null,
   opponentVp: null,
   isRescheduled: false,
+  hasLocationChange: false,
+  locationOverride: null,
 };
 
 const rescheduled: TeamMatchRow = {
@@ -38,6 +42,8 @@ const rescheduled: TeamMatchRow = {
   teamVp: null,
   opponentVp: null,
   isRescheduled: true,
+  hasLocationChange: false,
+  locationOverride: null,
 };
 
 describe("TeamMatchesList", () => {

@@ -11,6 +11,7 @@ export type GroupStandingsGridLabels = {
   viewMatchAria: string;
   homeAria: string;
   arbiterRequestAria: string;
+  locationChangedAria: string;
 };
 
 type Props = {
@@ -151,14 +152,28 @@ export function GroupStandingsGrid({ grid, labels }: Props) {
                       .filter(Boolean)
                       .join(" ")}
                     title={
-                      cell.hasArbiterRequest
-                        ? labels.arbiterRequestAria
-                        : undefined
+                      [
+                        cell.hasArbiterRequest
+                          ? labels.arbiterRequestAria
+                          : null,
+                        cell.hasLocationChange
+                          ? labels.locationChangedAria
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ") || undefined
                     }
                     aria-label={
-                      cell.hasArbiterRequest
-                        ? labels.arbiterRequestAria
-                        : undefined
+                      [
+                        cell.hasArbiterRequest
+                          ? labels.arbiterRequestAria
+                          : null,
+                        cell.hasLocationChange
+                          ? labels.locationChangedAria
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ") || undefined
                     }
                   >
                     <div className="flex items-center justify-end gap-1">
@@ -173,6 +188,14 @@ export function GroupStandingsGrid({ grid, labels }: Props) {
                       ) : cell.isHome ? (
                         <span className="inline-flex text-current/60">
                           <HomeIcon homeLabel={labels.homeAria} />
+                        </span>
+                      ) : null}
+                      {cell.hasLocationChange ? (
+                        <span
+                          className="inline-flex h-3.5 min-w-3.5 items-center justify-center rounded-sm bg-violet-600/90 px-0.5 text-[9px] font-bold leading-none text-white"
+                          aria-hidden
+                        >
+                          L
                         </span>
                       ) : null}
                       {cell.vp != null ? (

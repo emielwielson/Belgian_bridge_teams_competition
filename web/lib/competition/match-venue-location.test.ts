@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   loadMatchVenueLocation,
+  loadMatchVenueLocations,
   locationFromVenueTeamRow,
   venueTeamIdForMatch,
 } from "./match-venue-location";
@@ -55,10 +56,69 @@ function matchChain(data: unknown, error: unknown = null) {
 }
 
 describe("loadMatchVenueLocation", () => {
+  it("prefers location_override over hosting team venue", async () => {
+    const select = matchChain({
+      home_team_id: "home-1",
+      hosting_team_id: "home-1",
+      location_override: "  Custom hall  ",
+      home_team: {
+        location: "Home hall",
+        club: { competition_location: "Home club" },
+        group: { division: { centralized_location: null } },
+      },
+      away_team: {
+        location: "Away hall",
+        club: { competition_location: null },
+        group: { division: { centralized_location: null } },
+      },
+    });
+
+    const from = vi.fn(() => ({ select: vi.fn(() => select) }));
+
+    const location = await loadMatchVenueLocation(
+      { from } as unknown as SupabaseClient,
+      { id: "m1", home_team_id: "home-1" },
+    );
+
+    expect(location).toBe("Custom hall");
+  });
+
+  it("returns both team venues alongside display location", async () => {
+    const select = matchChain({
+      home_team_id: "home-1",
+      hosting_team_id: "home-1",
+      location_override: null,
+      home_team: {
+        location: "Home hall",
+        club: { competition_location: null },
+        group: { division: { centralized_location: null } },
+      },
+      away_team: {
+        location: "Away hall",
+        club: { competition_location: null },
+        group: { division: { centralized_location: null } },
+      },
+    });
+
+    const from = vi.fn(() => ({ select: vi.fn(() => select) }));
+
+    const venues = await loadMatchVenueLocations(
+      { from } as unknown as SupabaseClient,
+      { id: "m1", home_team_id: "home-1" },
+    );
+
+    expect(venues).toEqual({
+      displayLocation: "Home hall",
+      homeTeamLocation: "Home hall",
+      awayTeamLocation: "Away hall",
+    });
+  });
+
   it("resolves hosting away team from a single match query", async () => {
     const select = matchChain({
       home_team_id: "home-1",
       hosting_team_id: "away-1",
+      location_override: null,
       home_team: {
         location: "Home hall",
         club: { competition_location: "Home club" },

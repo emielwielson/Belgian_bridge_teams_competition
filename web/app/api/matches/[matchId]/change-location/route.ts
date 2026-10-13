@@ -2,18 +2,18 @@ import { getLocale } from "next-intl/server";
 import { requireAuth } from "@/lib/auth/route-auth";
 import { loadMatchContext } from "@/lib/auth/match-access";
 import {
-  canAccessHomeAwaySwitchWorkflow,
-  getMatchHomeAwaySwitchState,
-  proposeMatchHomeAwaySwitch,
-  respondMatchHomeAwaySwitch,
-} from "@/lib/competition/home-away-switch";
+  canAccessLocationChangeWorkflow,
+  getMatchLocationChangeState,
+  proposeMatchLocationChange,
+  respondMatchLocationChange,
+} from "@/lib/competition/location-change";
 import { revalidateMatchDerivedViews } from "@/lib/competition/revalidate-standings";
-import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
+import { jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
 import { ErrorCodes } from "@/lib/http/error-codes";
 import {
-  sendHomeAwaySwitchDecisionEmail,
-  sendHomeAwaySwitchProposedEmail,
-} from "@/lib/notifications/home-away-switch-email";
+  sendLocationChangeDecisionEmail,
+  sendLocationChangeProposedEmail,
+} from "@/lib/notifications/location-change-email";
 
 type Params = { params: Promise<{ matchId: string }> };
 
@@ -21,14 +21,14 @@ export async function GET(_request: Request, { params }: Params) {
   try {
     const { matchId } = await params;
     const { supabase } = await requireAuth();
-    const state = await getMatchHomeAwaySwitchState(supabase, matchId);
+    const state = await getMatchLocationChangeState(supabase, matchId);
 
     if (!state) {
       return jsonErrorCode(ErrorCodes.api.matchNotFound, 404);
     }
 
-    if (!canAccessHomeAwaySwitchWorkflow(state)) {
-      return jsonErrorCode(ErrorCodes.api.homeAwayNotAvailable, 403);
+    if (!canAccessLocationChangeWorkflow(state)) {
+      return jsonErrorCode(ErrorCodes.api.locationChangeNotAvailable, 403);
     }
 
     return jsonOk({ state });
@@ -44,30 +44,42 @@ export async function POST(request: Request, { params }: Params) {
     const body = (await request.json()) as Record<string, unknown>;
     const match = await loadMatchContext(supabase, matchId);
 
-    const requestingTeamId = String(
-      body.requesting_team_id ?? body.requestingTeamId ?? "",
+    const proposingTeamId = String(
+      body.proposing_team_id ?? body.proposingTeamId ?? "",
     );
+    const proposedLocation = String(
+      body.proposed_location ?? body.proposedLocation ?? "",
+    ).trim();
 
-    if (!requestingTeamId) {
-      return jsonErrorCode(ErrorCodes.api.requestingTeamIdRequired, 400);
+    if (!proposingTeamId) {
+      return jsonErrorCode(ErrorCodes.api.proposingTeamIdRequired, 400);
+    }
+    if (!proposedLocation) {
+      return jsonErrorCode(ErrorCodes.api.proposedLocationRequired, 400);
     }
 
-    await proposeMatchHomeAwaySwitch(supabase, matchId, requestingTeamId);
-    const state = await getMatchHomeAwaySwitchState(supabase, matchId);
+    await proposeMatchLocationChange(
+      supabase,
+      matchId,
+      proposedLocation,
+      proposingTeamId,
+    );
+    const state = await getMatchLocationChangeState(supabase, matchId);
 
-    const requestingTeamName =
-      requestingTeamId === match.home_team_id
+    const proposingTeamName =
+      proposingTeamId === match.home_team_id
         ? match.home_team.name
         : match.away_team.name;
     const locale = await getLocale();
-    await sendHomeAwaySwitchProposedEmail(
+    await sendLocationChangeProposedEmail(
       {
         matchId,
         round: match.round,
         homeTeamName: match.home_team.name,
         awayTeamName: match.away_team.name,
-        requestingTeamName,
-        requestingTeamId,
+        proposingTeamName,
+        proposingTeamId,
+        proposedLocation,
       },
       match.home_team_id,
       match.away_team_id,
@@ -94,35 +106,37 @@ export async function PATCH(request: Request, { params }: Params) {
     }
 
     const matchBefore = await loadMatchContext(supabase, matchId);
-    const stateBefore = await getMatchHomeAwaySwitchState(supabase, matchId);
+    const stateBefore = await getMatchLocationChangeState(supabase, matchId);
 
-    await respondMatchHomeAwaySwitch(
+    await respondMatchLocationChange(
       supabase,
       requestId,
       action as "approve" | "reject" | "cancel",
     );
 
-    const state = await getMatchHomeAwaySwitchState(supabase, matchId);
+    const state = await getMatchLocationChangeState(supabase, matchId);
 
     if (action === "approve") {
       await revalidateMatchDerivedViews(supabase, matchBefore);
     }
 
-    const requestingTeamId = stateBefore?.pending?.requesting_team_id;
-    if (requestingTeamId) {
-      const requestingTeamName =
-        requestingTeamId === matchBefore.home_team_id
+    const proposingTeamId = stateBefore?.pending?.proposing_team_id;
+    const proposedLocation = stateBefore?.pending?.proposed_location;
+    if (proposingTeamId && proposedLocation) {
+      const proposingTeamName =
+        proposingTeamId === matchBefore.home_team_id
           ? matchBefore.home_team.name
           : matchBefore.away_team.name;
       const locale = await getLocale();
-      await sendHomeAwaySwitchDecisionEmail(
+      await sendLocationChangeDecisionEmail(
         {
           matchId,
           round: matchBefore.round,
           homeTeamName: matchBefore.home_team.name,
           awayTeamName: matchBefore.away_team.name,
-          requestingTeamName,
-          requestingTeamId,
+          proposingTeamName,
+          proposingTeamId,
+          proposedLocation,
           action: action as "approve" | "reject" | "cancel",
         },
         matchBefore.home_team_id,

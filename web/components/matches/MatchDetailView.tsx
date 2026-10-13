@@ -26,9 +26,9 @@ import {
   loadMatchArbiterRequestsForUser,
 } from "@/lib/competition/arbiter-request";
 import {
-  canAccessHomeAwaySwitchWorkflow,
-  getMatchHomeAwaySwitchState,
-} from "@/lib/competition/home-away-switch";
+  canAccessLocationChangeWorkflow,
+  getMatchLocationChangeState,
+} from "@/lib/competition/location-change";
 import {
   honorPermissionsForViewer,
   loadHonorMatchLineupContext,
@@ -37,7 +37,7 @@ import {
 import { loadHonorMatchScorecard } from "@/lib/competition/honor-match-scorecard";
 import type { MatchPageBackLink } from "@/lib/competition/match-page-context";
 import { loadGroupScoringContext } from "@/lib/competition/match-scoring-context";
-import { loadMatchVenueLocation } from "@/lib/competition/match-venue-location";
+import { loadMatchVenueLocations } from "@/lib/competition/match-venue-location";
 import { loadTeamRoster } from "@/lib/competition/player-matches";
 import { translateLeagueName } from "@/lib/i18n/labels";
 import { allowsBoardChoice } from "@/lib/scoring/board-count-rules";
@@ -100,7 +100,7 @@ export async function MatchDetailView({
     homeRoster,
     awayRoster,
     scoringContext,
-    venueLocationRaw,
+    venueLocationsRaw,
     canEditFinishedScore,
     canAddPenalty,
   ] = await Promise.all([
@@ -110,7 +110,7 @@ export async function MatchDetailView({
     loadTeamRoster(supabase, match.home_team_id),
     loadTeamRoster(supabase, match.away_team_id),
     loadGroupScoringContext(supabase, match.group_id),
-    loadMatchVenueLocation(supabase, match),
+    loadMatchVenueLocations(supabase, match),
     userId
       ? canEditFinishedScoreForMatch(supabase, roles, matchId)
       : false,
@@ -139,7 +139,15 @@ export async function MatchDetailView({
       : false,
   ]);
 
-  const venueLocation = honorCtx.isHonor ? null : venueLocationRaw;
+  const venueLocation = honorCtx.isHonor
+    ? null
+    : venueLocationsRaw.displayLocation;
+  const homeTeamVenue = honorCtx.isHonor
+    ? null
+    : venueLocationsRaw.homeTeamLocation;
+  const awayTeamVenue = honorCtx.isHonor
+    ? null
+    : venueLocationsRaw.awayTeamLocation;
   const lineupsComplete = lineupIsCompleteFromData(
     match,
     lineup,
@@ -172,7 +180,7 @@ export async function MatchDetailView({
   }
 
   // Honor: dates/venues are fixed and an arbiter is on site — no reschedule or remote arbiter request.
-  const [honorScorecard, postponementState, arbiterRequestsState, homeAwaySwitchState] =
+  const [honorScorecard, postponementState, arbiterRequestsState, locationChangeState] =
     await Promise.all([
       honorCtx.isHonor
         ? loadHonorMatchScorecard(
@@ -190,8 +198,8 @@ export async function MatchDetailView({
             .then((loaded) => loaded.state)
             .catch(() => null)
         : Promise.resolve(null),
-      userId
-        ? getMatchHomeAwaySwitchState(supabase, matchId).catch(() => null)
+      userId && !honorCtx.isHonor
+        ? getMatchLocationChangeState(supabase, matchId).catch(() => null)
         : Promise.resolve(null),
     ]);
 
@@ -200,10 +208,11 @@ export async function MatchDetailView({
     canOps &&
     postponementState != null &&
     canAccessPostponementWorkflow(postponementState);
-  const showHomeAwaySwitch =
+  const showLocationChange =
+    !honorCtx.isHonor &&
     canOps &&
-    homeAwaySwitchState != null &&
-    canAccessHomeAwaySwitchWorkflow(homeAwaySwitchState);
+    locationChangeState != null &&
+    canAccessLocationChangeWorkflow(locationChangeState);
   const showArbiterRequests =
     !honorCtx.isHonor &&
     (canSubmitScoreForMatch ||
@@ -438,12 +447,12 @@ export async function MatchDetailView({
         ) : null}
       </header>
 
-      {showPostpone || showArbiterRequests || showHomeAwaySwitch ? (
+      {showPostpone || showArbiterRequests || showLocationChange ? (
         <MatchSecondaryWorkflows
           matchId={matchId}
           showPostpone={showPostpone}
           showArbiter={showArbiterRequests}
-          showHomeAwaySwitch={showHomeAwaySwitch}
+          showLocationChange={showLocationChange}
           postpone={
             showPostpone && postponementState
               ? {
@@ -455,15 +464,18 @@ export async function MatchDetailView({
                 }
               : null
           }
-          homeAwaySwitch={
-            showHomeAwaySwitch && homeAwaySwitchState
+          locationChange={
+            showLocationChange && locationChangeState
               ? {
                   matchId,
                   homeTeamName: match.home_team.name,
                   awayTeamName: match.away_team.name,
                   homeTeamId: match.home_team_id,
                   awayTeamId: match.away_team_id,
-                  initialState: homeAwaySwitchState,
+                  currentVenue: venueLocation,
+                  homeTeamVenue,
+                  awayTeamVenue,
+                  initialState: locationChangeState,
                 }
               : null
           }

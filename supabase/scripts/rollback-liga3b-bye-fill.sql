@@ -86,9 +86,9 @@ begin
   select * from public.ops_backup_liga3b_bye_fill_rulings;
 
   -- Related tables were required empty at fill time; restore if any rows were snapshotted.
-  if to_regclass('public.ops_backup_liga3b_bye_fill_home_away') is not null then
-    insert into public.match_home_away_switch_requests
-    select * from public.ops_backup_liga3b_bye_fill_home_away;
+  if to_regclass('public.ops_backup_liga3b_bye_fill_location_changes') is not null then
+    insert into public.match_location_change_requests
+    select * from public.ops_backup_liga3b_bye_fill_location_changes;
   end if;
 
   if to_regclass('public.ops_backup_liga3b_bye_fill_postponements') is not null then

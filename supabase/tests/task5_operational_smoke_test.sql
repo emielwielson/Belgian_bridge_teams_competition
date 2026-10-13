@@ -13,7 +13,7 @@ begin
       ('arbiter_request_resolve'),
       ('get_match_arbiter_requests_state'),
       ('propose_match_postponement'),
-      ('propose_match_home_away_switch')
+      ('propose_match_location_change')
   ) as expected(name)
   left join pg_proc p on p.proname = expected.name
     and p.pronamespace = 'public'::regnamespace

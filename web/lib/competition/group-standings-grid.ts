@@ -22,6 +22,7 @@ export type GroupMatchRow = {
   home_team_id: string;
   away_team_id: string;
   hosting_team_id?: string | null;
+  location_override?: string | null;
   vp_home: number | null;
   vp_away: number | null;
   played_at: string | null;
@@ -46,6 +47,8 @@ export type GridCell = {
   scheduledTimeLabel: string | null;
   /** Open or resolved arbiter request on this match (not cancelled). */
   hasArbiterRequest: boolean;
+  /** Approved match location override is set. */
+  hasLocationChange: boolean;
 };
 
 export type RoundColumn = {
@@ -194,6 +197,10 @@ export function buildGroupStandingsGrid(
         postponed && (dateDiffers || timeDiffers) ? matchHeader.time : null;
 
       const hasArbiterRequest = arbiterRequestMatchIds.has(match.id);
+      const hasLocationChange = Boolean(
+        typeof match.location_override === "string" &&
+          match.location_override.trim(),
+      );
 
       const setCell = (
         teamId: string,
@@ -214,6 +221,7 @@ export function buildGroupStandingsGrid(
           scheduledDateLabel,
           scheduledTimeLabel,
           hasArbiterRequest,
+          hasLocationChange,
         });
       };
 
@@ -240,6 +248,7 @@ export function buildGroupStandingsGrid(
     scheduledDateLabel: null,
     scheduledTimeLabel: null,
     hasArbiterRequest: false,
+    hasLocationChange: false,
   };
 
   for (const bye of byeRounds) {
@@ -257,6 +266,7 @@ export function buildGroupStandingsGrid(
       scheduledDateLabel: null,
       scheduledTimeLabel: null,
       hasArbiterRequest: false,
+      hasLocationChange: false,
     });
   }
 
@@ -273,6 +283,7 @@ export function buildGroupStandingsGrid(
           scheduledDateLabel: null,
           scheduledTimeLabel: null,
           hasArbiterRequest: false,
+          hasLocationChange: false,
         };
       }
       return teamCells?.get(round) ?? emptyCell;

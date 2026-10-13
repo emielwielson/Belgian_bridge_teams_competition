@@ -29,7 +29,7 @@ declare
   v_scored int;
   v_hosting_switched int;
   v_datetime_changed int;
-  v_home_away_reqs int;
+  v_location_change_reqs int;
   v_postponement_reqs int;
   v_lineups int;
   v_arbiter_reqs int;
@@ -200,15 +200,15 @@ begin
       v_datetime_changed;
   end if;
 
-  select count(*) into v_home_away_reqs
-  from public.match_home_away_switch_requests r
+  select count(*) into v_location_change_reqs
+  from public.match_location_change_requests r
   join public.matches m on m.id = r.match_id
   where m.group_id = v_group_id;
 
-  if v_home_away_reqs > 0 then
+  if v_location_change_reqs > 0 then
     raise exception
-      'Found % home/away switch request(s) for LIGA 3 B; aborting',
-      v_home_away_reqs;
+      'Found % location change request(s) for LIGA 3 B; aborting',
+      v_location_change_reqs;
   end if;
 
   select count(*) into v_postponement_reqs
@@ -277,9 +277,9 @@ begin
   join public.matches m on m.id = r.match_id
   where m.group_id = v_group_id;
 
-  create table public.ops_backup_liga3b_bye_fill_home_away as
+  create table public.ops_backup_liga3b_bye_fill_location_changes as
   select r.*
-  from public.match_home_away_switch_requests r
+  from public.match_location_change_requests r
   join public.matches m on m.id = r.match_id
   where m.group_id = v_group_id;
 
@@ -305,7 +305,7 @@ begin
   select count(*) into v_bye_count from public.ops_backup_liga3b_bye_fill_byes;
   select count(*) into v_slot_count from public.ops_backup_liga3b_bye_fill_slots;
   select count(*) into v_ruling_count from public.ops_backup_liga3b_bye_fill_rulings;
-  select count(*) into v_switch_backup_count from public.ops_backup_liga3b_bye_fill_home_away;
+  select count(*) into v_switch_backup_count from public.ops_backup_liga3b_bye_fill_location_changes;
   select count(*) into v_postponement_backup_count from public.ops_backup_liga3b_bye_fill_postponements;
   select count(*) into v_lineup_backup_count from public.ops_backup_liga3b_bye_fill_lineups;
   select count(*) into v_arbiter_backup_count from public.ops_backup_liga3b_bye_fill_arbiter_requests;
@@ -321,7 +321,7 @@ begin
     bye_count int not null,
     slot_count int not null,
     ruling_count int not null,
-    home_away_count int not null,
+    location_change_count int not null,
     postponement_count int not null,
     lineup_count int not null,
     arbiter_request_count int not null
@@ -331,7 +331,7 @@ begin
   alter table public.ops_backup_liga3b_bye_fill_matches enable row level security;
   alter table public.ops_backup_liga3b_bye_fill_byes enable row level security;
   alter table public.ops_backup_liga3b_bye_fill_rulings enable row level security;
-  alter table public.ops_backup_liga3b_bye_fill_home_away enable row level security;
+  alter table public.ops_backup_liga3b_bye_fill_location_changes enable row level security;
   alter table public.ops_backup_liga3b_bye_fill_postponements enable row level security;
   alter table public.ops_backup_liga3b_bye_fill_lineups enable row level security;
   alter table public.ops_backup_liga3b_bye_fill_arbiter_requests enable row level security;
@@ -341,7 +341,7 @@ begin
   revoke all on table public.ops_backup_liga3b_bye_fill_matches from anon, authenticated;
   revoke all on table public.ops_backup_liga3b_bye_fill_byes from anon, authenticated;
   revoke all on table public.ops_backup_liga3b_bye_fill_rulings from anon, authenticated;
-  revoke all on table public.ops_backup_liga3b_bye_fill_home_away from anon, authenticated;
+  revoke all on table public.ops_backup_liga3b_bye_fill_location_changes from anon, authenticated;
   revoke all on table public.ops_backup_liga3b_bye_fill_postponements from anon, authenticated;
   revoke all on table public.ops_backup_liga3b_bye_fill_lineups from anon, authenticated;
   revoke all on table public.ops_backup_liga3b_bye_fill_arbiter_requests from anon, authenticated;
@@ -357,7 +357,7 @@ begin
     bye_count,
     slot_count,
     ruling_count,
-    home_away_count,
+    location_change_count,
     postponement_count,
     lineup_count,
     arbiter_request_count

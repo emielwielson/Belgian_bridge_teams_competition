@@ -382,11 +382,31 @@ async function fetchGroupMatches(
   let { data: matches, error: matchesError } = await supabase
     .from("matches")
     .select(
-      "id, round, datetime, home_team_id, away_team_id, hosting_team_id, vp_home, vp_away, played_at",
+      "id, round, datetime, home_team_id, away_team_id, hosting_team_id, location_override, vp_home, vp_away, played_at",
     )
     .eq("group_id", groupId)
     .order("round")
     .order("datetime");
+
+  if (
+    matchesError &&
+    matchesError.code === "42703" &&
+    typeof matchesError.message === "string" &&
+    matchesError.message.includes("location_override")
+  ) {
+    const fallbackOverride = await supabase
+      .from("matches")
+      .select(
+        "id, round, datetime, home_team_id, away_team_id, hosting_team_id, vp_home, vp_away, played_at",
+      )
+      .eq("group_id", groupId)
+      .order("round")
+      .order("datetime");
+    matches =
+      fallbackOverride.data?.map((m) => ({ ...m, location_override: null })) ??
+      null;
+    matchesError = fallbackOverride.error;
+  }
 
   if (isMissingHostingTeamIdColumn(matchesError)) {
     const fallback = await supabase
@@ -396,7 +416,11 @@ async function fetchGroupMatches(
       .order("round")
       .order("datetime");
     matches =
-      fallback.data?.map((m) => ({ ...m, hosting_team_id: null })) ?? null;
+      fallback.data?.map((m) => ({
+        ...m,
+        hosting_team_id: null,
+        location_override: null,
+      })) ?? null;
     matchesError = fallback.error;
   }
 

@@ -87,8 +87,10 @@
       "roundColumnsPending": "Round columns appear after the match schedule is generated.",
       "viewMatchAria": "View match",
       "homeAria": "Home",
-      "arbiterRequestAria": "Match has an arbiter request"
+      "arbiterRequestAria": "Match has an arbiter request",
+      "locationChangedAria": "Match location has been changed"
     },
+
     "penalties": {
       "title": "Penalties",
       "description": "VP deductions applied to teams in this group.",
@@ -149,9 +151,9 @@
       "pendingReschedule": "Pending reschedule",
       "hideArbiterRequest": "Hide arbiter request",
       "requestArbiter": "Request arbiter",
-      "hideHomeAwaySwap": "Hide home/away swap",
-      "homeAwaySwap": "Home/away swap",
-      "pendingHomeAwaySwap": "Pending home/away swap"
+      "hideLocationChange": "Hide location change",
+      "locationChange": "Change location",
+      "pendingLocationChange": "Pending location change"
     },
     "reschedule": {
       "title": "Reschedule match",
@@ -177,28 +179,29 @@
       "proposeFailed": "Failed to propose postponement",
       "respondFailed": "Failed to {action}"
     },
-    "homeAwaySwitch": {
-      "title": "Home/away switch",
-      "description": "Captains can request switching which team is marked as host for this match. The other captain or a competition manager must approve.",
-      "firstLegLine": "Round {firstLegRound} (first leg): {firstLegHome} (home) vs {firstLegAway} (away). This match (round {round}): {currentHome} (home) vs {currentAway} (away).",
-      "onlyCaptain": "Only the home or away team captain can propose a swap. Pending requests can be approved by the opposing captain or a competition manager on this page.",
+    "locationChange": {
+      "title": "Change match location",
+      "description": "Propose a different venue for this match. The other captain or a competition manager must approve.",
+      "currentLocation": "Current location: {location}",
+      "onlyCaptain": "Only the home or away team captain can propose a location change. Pending requests can be approved by the opposing captain or a competition manager on this page.",
       "pendingTitle": "Pending approval",
-      "pendingBody": "{requestingTeam} proposed swapping home and away. The match still lists {homeTeam} (home) vs {awayTeam} (away) until approved.",
-      "approveSwap": "Approve swap",
-      "reject": "Reject",
+      "pendingBody": "{proposingTeam} proposed playing at: {location}",
+      "approveChange": "Approve location",
       "cancelRequest": "Cancel request",
-      "needsSwitchHint": "This match still lists the same home team as round {firstLegRound}. Propose a swap so the other team hosts, as in the standard return leg.",
       "proposingAs": "Proposing as",
       "selectTeam": "Select team",
-      "proposeSwap": "Propose home/away swap",
+      "newLocation": "New location",
+      "otherTeamLocation": "{team}'s location: {location}",
+      "customLocation": "Custom location",
+      "proposeChange": "Propose location change",
       "sending": "Sending…",
-      "chooseTeam": "Choose which team you represent",
-      "proposedSuccess": "Home/away switch proposed. The other captain or a competition manager can approve or reject on this match page.",
-      "approved": "Host switched to the other team for this match.",
-      "rejected": "Home/away switch request rejected.",
-      "cancelled": "Home/away switch request cancelled.",
+      "chooseTeamAndLocation": "Choose a team and a location",
+      "proposedSuccess": "Location change proposed. The other captain or a competition manager can approve or reject on this match page.",
+      "approved": "Match location updated.",
+      "rejected": "Location change request rejected.",
+      "cancelled": "Location change request cancelled.",
       "blocked": "A postponement may be pending, or this match cannot accept a new request right now.",
-      "proposeFailed": "Failed to propose home/away switch",
+      "proposeFailed": "Failed to propose location change",
       "respondFailed": "Failed to {action}"
     },
     "arbiterRequest": {
@@ -470,6 +473,8 @@
     "played": "Played",
     "scheduled": "Scheduled",
     "rescheduled": "Rescheduled",
+    "locationChanged": "Location changed",
+    "locationLine": "Location: {location}",
     "homeVs": "Home vs {opponent}",
     "awayVs": "Away vs {opponent}",
     "vpLine": "VP {teamVp} – {opponentVp}",
@@ -1434,16 +1439,16 @@
       "openMatch": "Open match",
       "loginFirst": "Login first"
     },
-    "homeAwaySwitchProposed": {
-      "subject": "Home/away switch request: {homeTeam} vs {awayTeam} (round {round})",
-      "bodyProposed": "{requestingTeam} proposed switching the host side for this match.",
+    "locationChangeProposed": {
+      "subject": "Location change request: {homeTeam} vs {awayTeam} (round {round})",
+      "bodyProposed": "{proposingTeam} proposed playing at: {location}",
       "matchLine": "Round {round}: {homeTeam} vs {awayTeam}",
       "openMatch": "Open match: {url}",
       "loginFirst": "Login first: {url}"
     },
-    "homeAwaySwitchDecision": {
-      "subject": "Home/away switch {action}: {homeTeam} vs {awayTeam} (round {round})",
-      "bodyDecision": "{requestingTeam} request was {action}.",
+    "locationChangeDecision": {
+      "subject": "Location change {action}: {homeTeam} vs {awayTeam} (round {round})",
+      "bodyDecision": "{proposingTeam} location request ({location}) was {action}.",
       "approved": "approved",
       "rejected": "rejected",
       "cancelled": "cancelled",
@@ -1492,6 +1497,9 @@
       "proposedDatetimeRequired": "proposed_datetime and proposing_team_id are required",
       "postponeActionRequired": "request_id and action (approve|reject|cancel) are required",
       "homeAwayNotAvailable": "Home/away switch is not available for this match",
+      "locationChangeNotAvailable": "Location change is not available for this match",
+      "proposingTeamIdRequired": "proposing_team_id is required",
+      "proposedLocationRequired": "proposed_location is required",
       "requestingTeamIdRequired": "requesting_team_id is required",
       "teamWarningFieldsRequired": "team_id, warning_date, and reason are required",
       "teamNotActiveSeason": "Team is not in the active season",
@@ -1667,7 +1675,7 @@
     },
     "captain": {
       "sectionTitle": "Captains",
-      "sectionIntro": "How to manage the roster, postpone matches, and switch home/away.",
+      "sectionIntro": "How to manage the roster, postpone matches, and change match location.",
       "addMembers": {
         "title": "Add team members",
         "steps": {
@@ -1714,20 +1722,20 @@
           }
         }
       },
-      "homeAway": {
-        "title": "Switch home and away",
+      "locationChange": {
+        "title": "Change match location",
         "steps": {
-          "open-swap": {
-            "title": "Open home/away swap",
-            "body": "On an unplayed match page, click Home/away swap. This is mainly used in mirror rounds of a double round-robin schedule."
+          "open-change": {
+            "title": "Open location change",
+            "body": "On an unplayed match page, click Change location."
           },
-          "propose-swap": {
-            "title": "Propose a swap",
-            "body": "Click Propose home/away swap. You cannot propose while a postponement request is pending."
+          "propose-change": {
+            "title": "Propose a new location",
+            "body": "By default the other team’s venue is selected; you can choose a custom location instead. Click Propose location change. You cannot propose while a postponement request is pending."
           },
-          "approve-swap": {
+          "approve-change": {
             "title": "Get approval",
-            "body": "The other captain or a competition manager must approve. After approval, which team is marked as host updates on the match page."
+            "body": "The other captain or a competition manager must approve. After approval, the match shows the new location."
           }
         }
       }

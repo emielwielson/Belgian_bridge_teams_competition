@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { ArbiterRequestWorkflow } from "@/components/matches/ArbiterRequestWorkflow";
-import { HomeAwaySwitchWorkflow } from "@/components/matches/HomeAwaySwitchWorkflow";
+import { LocationChangeWorkflow } from "@/components/matches/LocationChangeWorkflow";
 import { PostponeWorkflow } from "@/components/matches/PostponeWorkflow";
-import type { MatchHomeAwaySwitchState } from "@/lib/competition/home-away-switch";
+import type { MatchLocationChangeState } from "@/lib/competition/location-change";
 import type { MatchPostponementState } from "@/lib/competition/postponement";
 
 type TeamPairProps = {
@@ -19,40 +19,65 @@ type PostponeProps = TeamPairProps & {
   initialState: MatchPostponementState;
 };
 
-type HomeAwayProps = TeamPairProps & {
+type LocationChangeProps = TeamPairProps & {
   matchId: string;
-  initialState: MatchHomeAwaySwitchState;
+  currentVenue: string | null;
+  homeTeamVenue: string | null;
+  awayTeamVenue: string | null;
+  initialState: MatchLocationChangeState;
 };
+
+type OpenPanel = "postpone" | "arbiter" | "location" | null;
 
 type Props = {
   matchId: string;
   showPostpone: boolean;
   showArbiter: boolean;
-  showHomeAwaySwitch: boolean;
+  showLocationChange: boolean;
   postpone: PostponeProps | null;
-  homeAwaySwitch: HomeAwayProps | null;
+  locationChange: LocationChangeProps | null;
 };
+
+function initialOpenPanel(
+  postponePending: boolean,
+  locationPending: boolean,
+): OpenPanel {
+  if (postponePending) return "postpone";
+  if (locationPending) return "location";
+  return null;
+}
 
 export function MatchSecondaryWorkflows({
   matchId,
   showPostpone,
   showArbiter,
-  showHomeAwaySwitch,
+  showLocationChange,
   postpone,
-  homeAwaySwitch,
+  locationChange,
 }: Props) {
   const t = useTranslations("match.workflows");
   const [postponePending, setPostponePending] = useState(
     () => postpone?.initialState.pending != null,
   );
-  const [switchPending, setSwitchPending] = useState(
-    () => homeAwaySwitch?.initialState.pending != null,
+  const [locationPending, setLocationPending] = useState(
+    () => locationChange?.initialState.pending != null,
   );
-  const [postponeOpen, setPostponeOpen] = useState(postponePending);
-  const [arbiterOpen, setArbiterOpen] = useState(false);
-  const [switchOpen, setSwitchOpen] = useState(switchPending);
+  const [openPanel, setOpenPanel] = useState<OpenPanel>(() =>
+    initialOpenPanel(
+      postpone?.initialState.pending != null,
+      locationChange?.initialState.pending != null,
+    ),
+  );
 
-  if (!showPostpone && !showArbiter && !showHomeAwaySwitch) return null;
+  function togglePanel(panel: Exclude<OpenPanel, null>) {
+    setOpenPanel((current) => (current === panel ? null : panel));
+  }
+
+  if (!showPostpone && !showArbiter && !showLocationChange) return null;
+
+  const postponeOpen = openPanel === "postpone";
+  const arbiterOpen = openPanel === "arbiter";
+  const locationOpen = openPanel === "location";
 
   return (
     <section className="flex flex-col gap-3">
@@ -60,9 +85,10 @@ export function MatchSecondaryWorkflows({
         {showPostpone ? (
           <button
             type="button"
-            className="btn-secondary text-sm"
+            className={`text-sm ${postponeOpen ? "btn-primary" : "btn-secondary"}`}
             aria-expanded={postponeOpen}
-            onClick={() => setPostponeOpen((open) => !open)}
+            aria-pressed={postponeOpen}
+            onClick={() => togglePanel("postpone")}
           >
             {postponeOpen
               ? t("hideReschedule")
@@ -74,25 +100,27 @@ export function MatchSecondaryWorkflows({
         {showArbiter ? (
           <button
             type="button"
-            className="btn-secondary text-sm"
+            className={`text-sm ${arbiterOpen ? "btn-primary" : "btn-secondary"}`}
             aria-expanded={arbiterOpen}
-            onClick={() => setArbiterOpen((open) => !open)}
+            aria-pressed={arbiterOpen}
+            onClick={() => togglePanel("arbiter")}
           >
             {arbiterOpen ? t("hideArbiterRequest") : t("requestArbiter")}
           </button>
         ) : null}
-        {showHomeAwaySwitch ? (
+        {showLocationChange ? (
           <button
             type="button"
-            className="btn-secondary text-sm"
-            aria-expanded={switchOpen}
-            onClick={() => setSwitchOpen((open) => !open)}
+            className={`text-sm ${locationOpen ? "btn-primary" : "btn-secondary"}`}
+            aria-expanded={locationOpen}
+            aria-pressed={locationOpen}
+            onClick={() => togglePanel("location")}
           >
-            {switchOpen
-              ? t("hideHomeAwaySwap")
-              : switchPending
-                ? t("pendingHomeAwaySwap")
-                : t("homeAwaySwap")}
+            {locationOpen
+              ? t("hideLocationChange")
+              : locationPending
+                ? t("pendingLocationChange")
+                : t("locationChange")}
           </button>
         ) : null}
       </div>
@@ -104,7 +132,7 @@ export function MatchSecondaryWorkflows({
           onPendingChange={setPostponePending}
           onResponded={() => {
             setPostponePending(false);
-            setPostponeOpen(false);
+            setOpenPanel(null);
           }}
         />
       ) : null}
@@ -113,14 +141,14 @@ export function MatchSecondaryWorkflows({
         <ArbiterRequestWorkflow matchId={matchId} />
       ) : null}
 
-      {switchOpen && showHomeAwaySwitch && homeAwaySwitch ? (
-        <HomeAwaySwitchWorkflow
+      {locationOpen && showLocationChange && locationChange ? (
+        <LocationChangeWorkflow
           key={matchId}
-          {...homeAwaySwitch}
-          onPendingChange={setSwitchPending}
+          {...locationChange}
+          onPendingChange={setLocationPending}
           onResponded={() => {
-            setSwitchPending(false);
-            setSwitchOpen(false);
+            setLocationPending(false);
+            setOpenPanel(null);
           }}
         />
       ) : null}

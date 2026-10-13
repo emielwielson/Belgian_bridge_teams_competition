@@ -375,6 +375,23 @@ describe("buildGroupStandingsGrid", () => {
     expect(grid.rows[0].cells[0].hasArbiterRequest).toBe(false);
   });
 
+  it("sets hasLocationChange when location_override is present", () => {
+    const matches = [
+      match({
+        round: 1,
+        location_override: "Alternate venue",
+        played_at: null,
+        vp_home: null,
+        vp_away: null,
+      }),
+    ];
+    const grid = buildGroupStandingsGrid(teams, matches);
+    const alpha = grid.rows.find((r) => r.teamId === "t1")!;
+    const bravo = grid.rows.find((r) => r.teamId === "t2")!;
+    expect(alpha.cells[0].hasLocationChange).toBe(true);
+    expect(bravo.cells[0].hasLocationChange).toBe(true);
+  });
+
   it("uses different pairing colors for separate fixtures in the same round", () => {
     const matches = [
       match({ round: 1, id: "m1", home_team_id: "t1", away_team_id: "t2" }),

@@ -62,6 +62,7 @@ export default async function GroupStandingsPage({ params }: Props) {
     viewMatchAria: tTable("viewMatchAria"),
     homeAria: tTable("homeAria"),
     arbiterRequestAria: tTable("arbiterRequestAria"),
+    locationChangedAria: tTable("locationChangedAria"),
   };
 
   return (

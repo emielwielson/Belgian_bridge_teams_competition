@@ -71,13 +71,13 @@ export const CAPTAIN_GUIDES: ManualGuideDef[] = [
     ],
   },
   {
-    id: "home-away",
-    anchor: "home-away-switch",
-    translationKey: "captain.homeAway",
+    id: "location-change",
+    anchor: "location-change",
+    translationKey: "captain.locationChange",
     steps: [
-      { id: "open-swap" },
-      { id: "propose-swap" },
-      { id: "approve-swap" },
+      { id: "open-change" },
+      { id: "propose-change" },
+      { id: "approve-change" },
     ],
   },
 ];

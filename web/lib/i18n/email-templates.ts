@@ -45,16 +45,17 @@ export type PostponementDecisionEmailBuildContext =
     action: WorkflowDecision;
   };
 
-export type HomeAwaySwitchProposedEmailBuildContext = CaptainContactFields & {
+export type LocationChangeProposedEmailBuildContext = CaptainContactFields & {
   matchId: string;
   round: number;
   homeTeamName: string;
   awayTeamName: string;
-  requestingTeamName: string;
+  proposingTeamName: string;
+  proposedLocation: string;
 };
 
-export type HomeAwaySwitchDecisionEmailBuildContext =
-  HomeAwaySwitchProposedEmailBuildContext & {
+export type LocationChangeDecisionEmailBuildContext =
+  LocationChangeProposedEmailBuildContext & {
     action: WorkflowDecision;
   };
 
@@ -67,7 +68,7 @@ const POSTPONEMENT_ACTION_KEY: Record<
   cancel: "cancelled",
 };
 
-const HOME_AWAY_ACTION_KEY: Record<
+const LOCATION_CHANGE_ACTION_KEY: Record<
   WorkflowDecision,
   "approved" | "rejected" | "cancelled"
 > = {
@@ -266,19 +267,19 @@ export function buildPostponementDecisionEmail(
   return { subject, bodyText, bodyHtml };
 }
 
-export function buildHomeAwaySwitchProposedEmail(
-  ctx: HomeAwaySwitchProposedEmailBuildContext,
+export function buildLocationChangeProposedEmail(
+  ctx: LocationChangeProposedEmailBuildContext,
   matchUrl: string,
   loginUrl: string,
   { t }: Pick<EmailTemplateContext, "t">,
 ): EmailContent {
-  const matchLine = t("homeAwaySwitchProposed.matchLine", {
+  const matchLine = t("locationChangeProposed.matchLine", {
     round: ctx.round,
     homeTeam: ctx.homeTeamName,
     awayTeam: ctx.awayTeamName,
   });
 
-  const subject = t("homeAwaySwitchProposed.subject", {
+  const subject = t("locationChangeProposed.subject", {
     homeTeam: ctx.homeTeamName,
     awayTeam: ctx.awayTeamName,
     round: ctx.round,
@@ -287,45 +288,47 @@ export function buildHomeAwaySwitchProposedEmail(
   const captainBlock = buildCaptainContactBlock(ctx, { t });
 
   const bodyText = [
-    t("homeAwaySwitchProposed.bodyProposed", {
-      requestingTeam: ctx.requestingTeamName,
+    t("locationChangeProposed.bodyProposed", {
+      proposingTeam: ctx.proposingTeamName,
+      location: ctx.proposedLocation,
     }),
     ...captainBlock.textLines,
     matchLine,
     "",
-    t("homeAwaySwitchProposed.openMatch", { url: matchUrl }),
-    t("homeAwaySwitchProposed.loginFirst", { url: loginUrl }),
+    t("locationChangeProposed.openMatch", { url: matchUrl }),
+    t("locationChangeProposed.loginFirst", { url: loginUrl }),
   ].join("\n");
 
   const bodyHtml = [
-    `<p>${t("homeAwaySwitchProposed.bodyProposed", {
-      requestingTeam: ctx.requestingTeamName,
+    `<p>${t("locationChangeProposed.bodyProposed", {
+      proposingTeam: ctx.proposingTeamName,
+      location: ctx.proposedLocation,
     })}</p>`,
     captainBlock.htmlBlock,
     `<p><strong>${matchLine}</strong></p>`,
-    `<p><a href="${matchUrl}">${t("homeAwaySwitchDecision.openMatch")}</a><br>`,
-    `<a href="${loginUrl}">${t("homeAwaySwitchDecision.loginFirst")}</a></p>`,
+    `<p><a href="${matchUrl}">${t("locationChangeDecision.openMatch")}</a><br>`,
+    `<a href="${loginUrl}">${t("locationChangeDecision.loginFirst")}</a></p>`,
   ].join("");
 
   return { subject, bodyText, bodyHtml };
 }
 
-export function buildHomeAwaySwitchDecisionEmail(
-  ctx: HomeAwaySwitchDecisionEmailBuildContext,
+export function buildLocationChangeDecisionEmail(
+  ctx: LocationChangeDecisionEmailBuildContext,
   matchUrl: string,
   loginUrl: string,
   { t }: Pick<EmailTemplateContext, "t">,
 ): EmailContent {
   const actionLabel = t(
-    `homeAwaySwitchDecision.${HOME_AWAY_ACTION_KEY[ctx.action]}`,
+    `locationChangeDecision.${LOCATION_CHANGE_ACTION_KEY[ctx.action]}`,
   );
-  const matchLine = t("homeAwaySwitchDecision.matchLine", {
+  const matchLine = t("locationChangeDecision.matchLine", {
     round: ctx.round,
     homeTeam: ctx.homeTeamName,
     awayTeam: ctx.awayTeamName,
   });
 
-  const subject = t("homeAwaySwitchDecision.subject", {
+  const subject = t("locationChangeDecision.subject", {
     action: actionLabel,
     homeTeam: ctx.homeTeamName,
     awayTeam: ctx.awayTeamName,
@@ -335,26 +338,28 @@ export function buildHomeAwaySwitchDecisionEmail(
   const captainBlock = buildCaptainContactBlock(ctx, { t });
 
   const bodyText = [
-    t("homeAwaySwitchDecision.bodyDecision", {
-      requestingTeam: ctx.requestingTeamName,
+    t("locationChangeDecision.bodyDecision", {
+      proposingTeam: ctx.proposingTeamName,
       action: actionLabel,
+      location: ctx.proposedLocation,
     }),
     ...captainBlock.textLines,
     matchLine,
     "",
-    `${t("homeAwaySwitchDecision.openMatch")}: ${matchUrl}`,
-    `${t("homeAwaySwitchDecision.loginFirst")}: ${loginUrl}`,
+    `${t("locationChangeDecision.openMatch")}: ${matchUrl}`,
+    `${t("locationChangeDecision.loginFirst")}: ${loginUrl}`,
   ].join("\n");
 
   const bodyHtml = [
-    `<p>${t("homeAwaySwitchDecision.bodyDecision", {
-      requestingTeam: ctx.requestingTeamName,
+    `<p>${t("locationChangeDecision.bodyDecision", {
+      proposingTeam: ctx.proposingTeamName,
       action: actionLabel,
+      location: ctx.proposedLocation,
     })}</p>`,
     captainBlock.htmlBlock,
     `<p><strong>${matchLine}</strong></p>`,
-    `<p><a href="${matchUrl}">${t("homeAwaySwitchDecision.openMatch")}</a><br>`,
-    `<a href="${loginUrl}">${t("homeAwaySwitchDecision.loginFirst")}</a></p>`,
+    `<p><a href="${matchUrl}">${t("locationChangeDecision.openMatch")}</a><br>`,
+    `<a href="${loginUrl}">${t("locationChangeDecision.loginFirst")}</a></p>`,
   ].join("");
 
   return { subject, bodyText, bodyHtml };

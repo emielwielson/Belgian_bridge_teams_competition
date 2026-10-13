@@ -41,6 +41,10 @@ export type TeamMatchRow = {
   opponentVp: number | null;
   /** Unscored fixture moved off the official round datetime. */
   isRescheduled: boolean;
+  /** Approved match location override is set. */
+  hasLocationChange: boolean;
+  /** Applied location override text when set. */
+  locationOverride: string | null;
 };
 
 export type TeamDetail = {
@@ -77,6 +81,7 @@ type RawMatch = {
   home_team_id: string;
   away_team_id: string;
   hosting_team_id: string | null;
+  location_override?: string | null;
   vp_home: number | null;
   vp_away: number | null;
   played_at: string | null;
@@ -244,6 +249,15 @@ export function mapRawMatchToTeamMatchRow(
       officialDatetimeByRound.get(match.round),
       match.played_at,
     ),
+    hasLocationChange: Boolean(
+      typeof match.location_override === "string" &&
+        match.location_override.trim(),
+    ),
+    locationOverride:
+      typeof match.location_override === "string" &&
+      match.location_override.trim()
+        ? match.location_override.trim()
+        : null,
   };
 }
 
@@ -358,11 +372,31 @@ export async function loadTeamDetail(
   let { data: matchRows, error: matchesError } = await supabase
     .from("matches")
     .select(
-      "id, round, datetime, home_team_id, away_team_id, hosting_team_id, vp_home, vp_away, played_at",
+      "id, round, datetime, home_team_id, away_team_id, hosting_team_id, location_override, vp_home, vp_away, played_at",
     )
     .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
     .order("datetime")
     .order("round");
+
+  if (
+    matchesError &&
+    matchesError.code === "42703" &&
+    typeof matchesError.message === "string" &&
+    matchesError.message.includes("location_override")
+  ) {
+    const fallbackOverride = await supabase
+      .from("matches")
+      .select(
+        "id, round, datetime, home_team_id, away_team_id, hosting_team_id, vp_home, vp_away, played_at",
+      )
+      .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
+      .order("datetime")
+      .order("round");
+    matchRows =
+      fallbackOverride.data?.map((m) => ({ ...m, location_override: null })) ??
+      null;
+    matchesError = fallbackOverride.error;
+  }
 
   if (isMissingHostingTeamIdColumn(matchesError)) {
     const fallback = await supabase
@@ -372,7 +406,11 @@ export async function loadTeamDetail(
       .order("datetime")
       .order("round");
     matchRows =
-      fallback.data?.map((m) => ({ ...m, hosting_team_id: null })) ?? null;
+      fallback.data?.map((m) => ({
+        ...m,
+        hosting_team_id: null,
+        location_override: null,
+      })) ?? null;
     matchesError = fallback.error;
   }
 

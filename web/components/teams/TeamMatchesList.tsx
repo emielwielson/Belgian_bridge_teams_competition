@@ -41,6 +41,11 @@ export function TeamMatchesList({ teamName, matches }: Props) {
                       {t("rescheduled")}
                     </span>
                   ) : null}
+                  {match.hasLocationChange ? (
+                    <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-900">
+                      {t("locationChanged")}
+                    </span>
+                  ) : null}
                 </span>
                 <span
                   className={
@@ -60,6 +65,11 @@ export function TeamMatchesList({ teamName, matches }: Props) {
                   ? t("homeVs", { opponent: match.opponent.name })
                   : t("awayVs", { opponent: match.opponent.name })}
               </p>
+              {match.locationOverride ? (
+                <p className="mt-1 text-sm text-zinc-600">
+                  {t("locationLine", { location: match.locationOverride })}
+                </p>
+              ) : null}
               {match.status === "played" &&
               match.teamVp != null &&
               match.opponentVp != null ? (

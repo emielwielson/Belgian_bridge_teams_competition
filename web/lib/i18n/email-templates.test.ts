@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  buildHomeAwaySwitchProposedEmail,
+  buildLocationChangeProposedEmail,
   buildPostponementProposedEmail,
   loadEmailTemplateContext,
 } from "./email-templates";
@@ -39,13 +39,14 @@ describe("workflow email templates", () => {
 
   it("uses email unavailable fallback when captain email is missing", async () => {
     const ctx = await loadEmailTemplateContext("en");
-    const { bodyText } = buildHomeAwaySwitchProposedEmail(
+    const { bodyText } = buildLocationChangeProposedEmail(
       {
         matchId: "m1",
         round: 4,
         homeTeamName: "Home FC",
         awayTeamName: "Away FC",
-        requestingTeamName: "Home FC",
+        proposingTeamName: "Home FC",
+        proposedLocation: "Club Hall",
         requestingCaptainName: "Jan Janssens",
         requestingCaptainEmail: null,
         receivingCaptainName: "Piet Pieters",

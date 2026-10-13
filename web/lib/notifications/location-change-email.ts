@@ -1,6 +1,6 @@
 import {
-  buildHomeAwaySwitchDecisionEmail,
-  buildHomeAwaySwitchProposedEmail,
+  buildLocationChangeDecisionEmail,
+  buildLocationChangeProposedEmail,
   loadEmailTemplateContext,
 } from "@/lib/i18n/email-templates";
 import { createServiceClient } from "@/lib/supabase/server-client";
@@ -14,25 +14,27 @@ import { loadMatchCompetitionKindCode } from "./match-competition-kind";
 import { loginThenMatchUrl, matchPostponementUrl } from "./postponement-email";
 import { sendResendEmail } from "./resend-email";
 
-export type HomeAwaySwitchProposedEmailContext = {
+export type LocationChangeProposedEmailContext = {
   matchId: string;
   round: number;
   homeTeamName: string;
   awayTeamName: string;
-  requestingTeamName: string;
-  requestingTeamId: string;
+  proposingTeamName: string;
+  proposingTeamId: string;
+  proposedLocation: string;
 };
 
-export type HomeAwaySwitchDecision = "approve" | "reject" | "cancel";
+export type LocationChangeDecision = "approve" | "reject" | "cancel";
 
-export type HomeAwaySwitchDecisionEmailContext = {
+export type LocationChangeDecisionEmailContext = {
   matchId: string;
   round: number;
   homeTeamName: string;
   awayTeamName: string;
-  requestingTeamName: string;
-  requestingTeamId: string;
-  action: HomeAwaySwitchDecision;
+  proposingTeamName: string;
+  proposingTeamId: string;
+  proposedLocation: string;
+  action: LocationChangeDecision;
 };
 
 function uniqueEmails(addresses: string[]): string[] {
@@ -47,7 +49,7 @@ function uniqueEmails(addresses: string[]): string[] {
   return out;
 }
 
-async function loadHomeAwaySwitchRecipients(
+async function loadLocationChangeRecipients(
   homeTeamId: string,
   awayTeamId: string,
 ): Promise<string[]> {
@@ -62,7 +64,7 @@ async function loadHomeAwaySwitchRecipients(
 async function loadCaptainContactFields(
   homeTeamId: string,
   awayTeamId: string,
-  requestingTeamId: string,
+  proposingTeamId: string,
 ) {
   const supabase = createServiceClient();
   const contacts = await loadCaptainContactsForTeams(supabase, [
@@ -73,20 +75,21 @@ async function loadCaptainContactFields(
     contacts,
     homeTeamId,
     awayTeamId,
-    requestingTeamId,
+    proposingTeamId,
   );
   return toCaptainContactFields(requesting, receiving);
 }
 
-async function sendHomeAwaySwitchMail(
+async function sendLocationChangeMail(
   ctx: {
     matchId: string;
     round: number;
     homeTeamName: string;
     awayTeamName: string;
-    requestingTeamName: string;
-    requestingTeamId: string;
-    action?: HomeAwaySwitchDecision;
+    proposingTeamName: string;
+    proposingTeamId: string;
+    proposedLocation: string;
+    action?: LocationChangeDecision;
   },
   homeTeamId: string,
   awayTeamId: string,
@@ -95,7 +98,7 @@ async function sendHomeAwaySwitchMail(
   locale?: string | null,
 ): Promise<void> {
   const [captainFields, emailContext, competitionKind] = await Promise.all([
-    loadCaptainContactFields(homeTeamId, awayTeamId, ctx.requestingTeamId),
+    loadCaptainContactFields(homeTeamId, awayTeamId, ctx.proposingTeamId),
     loadEmailTemplateContext(locale),
     loadMatchCompetitionKindCode(ctx.matchId),
   ]);
@@ -103,13 +106,14 @@ async function sendHomeAwaySwitchMail(
   const loginUrl = loginThenMatchUrl(ctx.matchId);
 
   const { subject, bodyText, bodyHtml } = ctx.action
-    ? buildHomeAwaySwitchDecisionEmail(
+    ? buildLocationChangeDecisionEmail(
         {
           matchId: ctx.matchId,
           round: ctx.round,
           homeTeamName: ctx.homeTeamName,
           awayTeamName: ctx.awayTeamName,
-          requestingTeamName: ctx.requestingTeamName,
+          proposingTeamName: ctx.proposingTeamName,
+          proposedLocation: ctx.proposedLocation,
           action: ctx.action,
           ...captainFields,
         },
@@ -117,8 +121,16 @@ async function sendHomeAwaySwitchMail(
         loginUrl,
         emailContext,
       )
-    : buildHomeAwaySwitchProposedEmail(
-        { ...ctx, ...captainFields },
+    : buildLocationChangeProposedEmail(
+        {
+          matchId: ctx.matchId,
+          round: ctx.round,
+          homeTeamName: ctx.homeTeamName,
+          awayTeamName: ctx.awayTeamName,
+          proposingTeamName: ctx.proposingTeamName,
+          proposedLocation: ctx.proposedLocation,
+          ...captainFields,
+        },
         matchUrl,
         loginUrl,
         emailContext,
@@ -134,42 +146,40 @@ async function sendHomeAwaySwitchMail(
   });
 }
 
-/** Send Resend notification when a home/away switch request is proposed. */
-export async function sendHomeAwaySwitchProposedEmail(
-  ctx: HomeAwaySwitchProposedEmailContext,
+export async function sendLocationChangeProposedEmail(
+  ctx: LocationChangeProposedEmailContext,
   homeTeamId: string,
   awayTeamId: string,
   locale?: string | null,
 ): Promise<void> {
-  const to = await loadHomeAwaySwitchRecipients(homeTeamId, awayTeamId);
+  const to = await loadLocationChangeRecipients(homeTeamId, awayTeamId);
   if (to.length === 0) return;
-  await sendHomeAwaySwitchMail(
+  await sendLocationChangeMail(
     ctx,
     homeTeamId,
     awayTeamId,
     to,
-    "home_away_switch_proposed",
+    "location_change_proposed",
     locale,
   );
 }
 
-/** Send Resend notification when a home/away switch request is approved/rejected/cancelled. */
-export async function sendHomeAwaySwitchDecisionEmail(
-  ctx: HomeAwaySwitchDecisionEmailContext,
+export async function sendLocationChangeDecisionEmail(
+  ctx: LocationChangeDecisionEmailContext,
   homeTeamId: string,
   awayTeamId: string,
   locale?: string | null,
 ): Promise<void> {
-  const to = await loadHomeAwaySwitchRecipients(homeTeamId, awayTeamId);
+  const to = await loadLocationChangeRecipients(homeTeamId, awayTeamId);
   if (to.length === 0) return;
 
-  const logLabelByAction: Record<HomeAwaySwitchDecision, string> = {
-    approve: "home_away_switch_approved",
-    reject: "home_away_switch_rejected",
-    cancel: "home_away_switch_cancelled",
+  const logLabelByAction: Record<LocationChangeDecision, string> = {
+    approve: "location_change_approved",
+    reject: "location_change_rejected",
+    cancel: "location_change_cancelled",
   };
 
-  await sendHomeAwaySwitchMail(
+  await sendLocationChangeMail(
     { ...ctx, action: ctx.action },
     homeTeamId,
     awayTeamId,

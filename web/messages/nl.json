@@ -87,7 +87,8 @@
       "roundColumnsPending": "Rondekolommen verschijnen nadat het wedstrijdschema is gegenereerd.",
       "viewMatchAria": "Wedstrijd bekijken",
       "homeAria": "Thuis",
-      "arbiterRequestAria": "Wedstrijd heeft een scheidsrechterverzoek"
+      "arbiterRequestAria": "Wedstrijd heeft een scheidsrechterverzoek",
+      "locationChangedAria": "Wedstrijdlocatie is gewijzigd"
     },
     "penalties": {
       "title": "Straffen",
@@ -149,9 +150,9 @@
       "pendingReschedule": "Uitstel in behandeling",
       "hideArbiterRequest": "Scheidsrechterverzoek verbergen",
       "requestArbiter": "Scheidsrechterverzoek",
-      "hideHomeAwaySwap": "Thuis/uit-wissel verbergen",
-      "homeAwaySwap": "Thuis/uit-wissel",
-      "pendingHomeAwaySwap": "Thuis/uit-wissel in behandeling"
+      "hideLocationChange": "Locatiewijziging verbergen",
+      "locationChange": "Locatie wijzigen",
+      "pendingLocationChange": "Locatiewijziging in behandeling"
     },
     "reschedule": {
       "title": "Wedstrijd verplaatsen",
@@ -177,28 +178,29 @@
       "proposeFailed": "Uitstel voorstellen mislukt",
       "respondFailed": "{action} mislukt"
     },
-    "homeAwaySwitch": {
-      "title": "Thuis/uit-wissel",
-      "description": "Kapiteins kunnen vragen om te wisselen welk team als gastheer voor deze wedstrijd staat. De andere kapitein of een competitiebeheerder moet goedkeuren.",
-      "firstLegLine": "Ronde {firstLegRound} (heen): {firstLegHome} (thuis) vs {firstLegAway} (uit). Deze wedstrijd (ronde {round}): {currentHome} (thuis) vs {currentAway} (uit).",
-      "onlyCaptain": "Alleen de kapitein van thuis- of uitteam kan een wissel voorstellen. Hangende aanvragen keurt de tegenstander of een competitiebeheerder goed op deze pagina.",
+    "locationChange": {
+      "title": "Wedstrijdlocatie wijzigen",
+      "description": "Stel een andere speellocatie voor. De andere kapitein of een competitiebeheerder moet goedkeuren.",
+      "currentLocation": "Huidige locatie: {location}",
+      "onlyCaptain": "Alleen de kapitein van thuis- of uitteam kan een locatiewijziging voorstellen. Hangende aanvragen keurt de tegenstander of een competitiebeheerder goed op deze pagina.",
       "pendingTitle": "Wacht op goedkeuring",
-      "pendingBody": "{requestingTeam} stelde een thuis/uit-wissel voor. De wedstrijd vermeldt nog {homeTeam} (thuis) vs {awayTeam} (uit) tot goedkeuring.",
-      "approveSwap": "Wissel goedkeuren",
-      "reject": "Afwijzen",
+      "pendingBody": "{proposingTeam} stelde voor te spelen op: {location}",
+      "approveChange": "Locatie goedkeuren",
       "cancelRequest": "Aanvraag annuleren",
-      "needsSwitchHint": "Deze wedstrijd vermeldt nog hetzelfde thuisteam als ronde {firstLegRound}. Stel een wissel voor zodat het andere team gastheer is, zoals in de standaardterugwedstrijd.",
       "proposingAs": "Voorstel namens",
       "selectTeam": "Team kiezen",
-      "proposeSwap": "Thuis/uit-wissel voorstellen",
+      "newLocation": "Nieuwe locatie",
+      "otherTeamLocation": "Locatie van {team}: {location}",
+      "customLocation": "Aangepaste locatie",
+      "proposeChange": "Locatiewijziging voorstellen",
       "sending": "Verzenden…",
-      "chooseTeam": "Kies welk team u vertegenwoordigt",
-      "proposedSuccess": "Thuis/uit-wissel voorgesteld. De andere kapitein of een competitiebeheerder kan goedkeuren of afwijzen op deze wedstrijdpagina.",
-      "approved": "Gastheer voor deze wedstrijd naar het andere team gewisseld.",
-      "rejected": "Thuis/uit-wisselaanvraag afgewezen.",
-      "cancelled": "Thuis/uit-wisselaanvraag geannuleerd.",
+      "chooseTeamAndLocation": "Kies een team en een locatie",
+      "proposedSuccess": "Locatiewijziging voorgesteld. De andere kapitein of een competitiebeheerder kan goedkeuren of afwijzen op deze wedstrijdpagina.",
+      "approved": "Wedstrijdlocatie bijgewerkt.",
+      "rejected": "Locatiewijzigingsaanvraag afgewezen.",
+      "cancelled": "Locatiewijzigingsaanvraag geannuleerd.",
       "blocked": "Er kan een uitstel hangen, of deze wedstrijd accepteert nu geen nieuwe aanvraag.",
-      "proposeFailed": "Thuis/uit-wissel voorstellen mislukt",
+      "proposeFailed": "Locatiewijziging voorstellen mislukt",
       "respondFailed": "{action} mislukt"
     },
     "arbiterRequest": {
@@ -470,6 +472,8 @@
     "played": "Gespeeld",
     "scheduled": "Gepland",
     "rescheduled": "Verzet",
+    "locationChanged": "Locatie gewijzigd",
+    "locationLine": "Locatie: {location}",
     "homeVs": "Thuis tegen {opponent}",
     "awayVs": "Uit tegen {opponent}",
     "vpLine": "VP {teamVp} – {opponentVp}",
@@ -1434,16 +1438,16 @@
       "openMatch": "Wedstrijd openen",
       "loginFirst": "Eerst aanmelden"
     },
-    "homeAwaySwitchProposed": {
-      "subject": "Thuis/uit-wissel: {homeTeam} vs {awayTeam} (ronde {round})",
-      "bodyProposed": "{requestingTeam} stelde een wissel van gastheer voor deze wedstrijd voor.",
+    "locationChangeProposed": {
+      "subject": "Locatiewijziging: {homeTeam} vs {awayTeam} (ronde {round})",
+      "bodyProposed": "{proposingTeam} stelde voor te spelen op: {location}",
       "matchLine": "Ronde {round}: {homeTeam} vs {awayTeam}",
       "openMatch": "Wedstrijd openen: {url}",
       "loginFirst": "Eerst aanmelden: {url}"
     },
-    "homeAwaySwitchDecision": {
-      "subject": "Thuis/uit-wissel {action}: {homeTeam} vs {awayTeam} (ronde {round})",
-      "bodyDecision": "Verzoek van {requestingTeam} werd {action}.",
+    "locationChangeDecision": {
+      "subject": "Locatiewijziging {action}: {homeTeam} vs {awayTeam} (ronde {round})",
+      "bodyDecision": "Locatieverzoek van {proposingTeam} ({location}) werd {action}.",
       "approved": "goedgekeurd",
       "rejected": "afgewezen",
       "cancelled": "geannuleerd",
@@ -1492,6 +1496,9 @@
       "proposedDatetimeRequired": "proposed_datetime en proposing_team_id zijn verplicht",
       "postponeActionRequired": "request_id en action (approve|reject|cancel) zijn verplicht",
       "homeAwayNotAvailable": "Thuis/uit-wissel is niet beschikbaar voor deze wedstrijd",
+      "locationChangeNotAvailable": "Locatiewijziging is niet beschikbaar voor deze wedstrijd",
+      "proposingTeamIdRequired": "proposing_team_id is verplicht",
+      "proposedLocationRequired": "proposed_location is verplicht",
       "requestingTeamIdRequired": "requesting_team_id is verplicht",
       "teamWarningFieldsRequired": "team_id, warning_date en reason zijn verplicht",
       "teamNotActiveSeason": "Team hoort niet bij het actieve seizoen",
@@ -1667,7 +1674,7 @@
     },
     "captain": {
       "sectionTitle": "Kapiteins",
-      "sectionIntro": "Teamleden beheren, wedstrijden uitstellen en thuis/uit wisselen.",
+      "sectionIntro": "Teamleden beheren, wedstrijden uitstellen en wedstrijdlocatie wijzigen.",
       "addMembers": {
         "title": "Teamleden toevoegen",
         "steps": {
@@ -1714,20 +1721,20 @@
           }
         }
       },
-      "homeAway": {
-        "title": "Thuis en uit wisselen",
+      "locationChange": {
+        "title": "Wedstrijdlocatie wijzigen",
         "steps": {
-          "open-swap": {
-            "title": "Open thuis/uit-wissel",
-            "body": "Klik op een ongespeelde wedstrijdpagina op Thuis/uit wisselen. Dit wordt vooral gebruikt in spiegelrondes van een dubbele round-robin."
+          "open-change": {
+            "title": "Open locatiewijziging",
+            "body": "Klik op een ongespeelde wedstrijdpagina op Locatie wijzigen."
           },
-          "propose-swap": {
-            "title": "Stel een wissel voor",
-            "body": "Klik op Thuis/uit-wissel voorstellen. U kunt niet voorstellen terwijl een uitstelverzoek in behandeling is."
+          "propose-change": {
+            "title": "Stel een nieuwe locatie voor",
+            "body": "Standaard is de locatie van het andere team geselecteerd; u kunt ook een aangepaste locatie kiezen. Klik op Locatiewijziging voorstellen. U kunt niet voorstellen terwijl een uitstelverzoek in behandeling is."
           },
-          "approve-swap": {
+          "approve-change": {
             "title": "Goedkeuring verkrijgen",
-            "body": "De andere kapitein of een wedstrijdleider moet goedkeuren. Na goedkeuring wordt bijgewerkt welk team als gastheer wordt vermeld."
+            "body": "De andere kapitein of een competitiebeheerder moet goedkeuren. Na goedkeuring toont de wedstrijd de nieuwe locatie."
           }
         }
       }

@@ -667,4 +667,26 @@ describe("mapRawMatchToTeamMatchRow", () => {
 
     expect(row.isRescheduled).toBe(true);
   });
+
+  it("marks location change when location_override is set", () => {
+    const row = mapRawMatchToTeamMatchRow(
+      {
+        id: "m5",
+        round: 2,
+        datetime: "2025-02-08T13:00:00Z",
+        home_team_id: "home-1",
+        away_team_id: "away-1",
+        hosting_team_id: "home-1",
+        location_override: "Other Club Hall",
+        vp_home: null,
+        vp_away: null,
+        played_at: null,
+      },
+      "home-1",
+      teamNames,
+    );
+
+    expect(row.hasLocationChange).toBe(true);
+    expect(row.locationOverride).toBe("Other Club Hall");
+  });
 });

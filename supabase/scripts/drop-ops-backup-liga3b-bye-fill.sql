@@ -6,6 +6,7 @@ drop table if exists public.ops_backup_liga3b_bye_fill_matches;
 drop table if exists public.ops_backup_liga3b_bye_fill_byes;
 drop table if exists public.ops_backup_liga3b_bye_fill_rulings;
 drop table if exists public.ops_backup_liga3b_bye_fill_home_away;
+drop table if exists public.ops_backup_liga3b_bye_fill_location_changes;
 drop table if exists public.ops_backup_liga3b_bye_fill_postponements;
 drop table if exists public.ops_backup_liga3b_bye_fill_lineups;
 drop table if exists public.ops_backup_liga3b_bye_fill_arbiter_requests;
