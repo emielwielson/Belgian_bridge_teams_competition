@@ -16,6 +16,20 @@ export const ZWEIFFEL_DIVISION_NAMES = [
 
 export type ZweiffelDivisionName = (typeof ZWEIFFEL_DIVISION_NAMES)[number];
 
+/**
+ * Divisions with their own competition_match_dates rows (not the region-wide
+ * Honneur evening calendar). Must stay in sync with
+ * resolve_group_match_dates_division_id for Zweiffel.
+ */
+export const ZWEIFFEL_PER_DIVISION_MATCH_DATE_NAMES = [
+  "2A",
+  "APM 1",
+  "APM 2",
+] as const satisfies readonly ZweiffelDivisionName[];
+
+export type ZweiffelPerDivisionMatchDateName =
+  (typeof ZWEIFFEL_PER_DIVISION_MATCH_DATE_NAMES)[number];
+
 export type ZweiffelFixtureRow = {
   round: number;
   home: string;
@@ -598,4 +612,28 @@ export const ZWEIFFEL_DIVISION_SPECS: ZweiffelDivisionSpec[] = [
     ],
   },
 ];
+
+export type ZweiffelMatchDateCalendarPlan = {
+  /** Region-wide calendar (division_id null) — Honneur evening slots. */
+  regionWide: ZweiffelRoundSlot[];
+  /** Per-division calendars for 2A / APM. */
+  perDivision: {
+    name: ZweiffelPerDivisionMatchDateName;
+    rounds: ZweiffelRoundSlot[];
+  }[];
+};
+
+/** Official match-date calendars to upsert for Zweiffel. */
+export function zweiffelMatchDateCalendars(): ZweiffelMatchDateCalendarPlan {
+  const honneur = ZWEIFFEL_DIVISION_SPECS.find((s) => s.name === "Honneur");
+  if (!honneur) throw new Error("Honneur division missing from data");
+
+  const perDivision = ZWEIFFEL_PER_DIVISION_MATCH_DATE_NAMES.map((name) => {
+    const spec = ZWEIFFEL_DIVISION_SPECS.find((s) => s.name === name);
+    if (!spec) throw new Error(`${name} division missing from data`);
+    return { name, rounds: spec.rounds };
+  });
+
+  return { regionWide: honneur.rounds, perDivision };
+}
 

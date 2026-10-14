@@ -37,7 +37,8 @@ export async function getCachedGroupStandingsGrid(
         arbiterRequestMatchIds: [...requestMatchIds],
       };
     },
-    ["group-standings-grid-v3", groupId],
+    // v4: Zweiffel APM/2A per-division official match dates
+    ["group-standings-grid-v4", groupId],
     { tags: [standingsGroupTag(groupId)] },
   )();
 }

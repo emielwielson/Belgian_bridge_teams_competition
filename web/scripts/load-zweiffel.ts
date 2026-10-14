@@ -5,10 +5,11 @@
  *
  * Usage (from web/):
  *   npm run load:zweiffel
+ *   npm run load:zweiffel -- --dates-only   # refresh calendars only (no match reset)
  *
  * Requires web/.env.local with NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY.
  * Clubs must already exist with the federation club_number values listed in the data module.
- * Requires migration 0076 (zweiffel region + competition_kind).
+ * Requires migrations 0076 (zweiffel region) and 0086 (per-division match dates).
  */
 
 import { readFileSync, existsSync } from "node:fs";
@@ -21,6 +22,7 @@ import {
   uniqueZweiffelClubNumbers,
   ZWEIFFEL_DIVISION_SPECS,
   ZWEIFFEL_TEAM_CLUB_NUMBERS,
+  zweiffelMatchDateCalendars,
   zweiffelSlotToBrusselsLocal,
   type ZweiffelDivisionSpec,
   type ZweiffelRoundSlot,
@@ -121,33 +123,62 @@ async function listZweiffelGroups(
   return rows;
 }
 
-/** Evening Honneur calendar (14 rounds @ 20:00) for regional readiness. */
-function eveningCalendarSlots(): ZweiffelRoundSlot[] {
-  const honneur = ZWEIFFEL_DIVISION_SPECS.find((s) => s.name === "Honneur");
-  if (!honneur) throw new Error("Honneur division missing from data");
-  return honneur.rounds;
+async function resolveZweiffelDivisionId(
+  supabase: SupabaseClient,
+  seasonId: string,
+  divisionName: string,
+): Promise<string> {
+  const regionId = await getZweiffelRegionId(supabase);
+  const { data: league, error: leagueError } = await supabase
+    .from("leagues")
+    .select("id")
+    .eq("season_id", seasonId)
+    .eq("scope", "regional")
+    .eq("region_id", regionId)
+    .single();
+  if (leagueError || !league) {
+    throw new Error("Zweiffel regional league not found");
+  }
+
+  const { data: division, error: divError } = await supabase
+    .from("divisions")
+    .select("id")
+    .eq("league_id", league.id)
+    .eq("name", divisionName)
+    .single();
+  if (divError || !division) {
+    throw new Error(`Zweiffel division not found: ${divisionName}`);
+  }
+  return division.id;
 }
 
-async function upsertZweiffelMatchDates(
+async function upsertMatchDateSlots(
   supabase: SupabaseClient,
   seasonId: string,
   regionId: string,
   rounds: ZweiffelRoundSlot[],
+  divisionId: string | null,
 ) {
-  const { error: deleteError } = await supabase
+  let deleteQuery = supabase
     .from("competition_match_dates")
     .delete()
     .eq("season_id", seasonId)
     .eq("scope", "regional")
-    .eq("region_id", regionId)
-    .is("division_id", null);
+    .eq("region_id", regionId);
+
+  deleteQuery =
+    divisionId === null
+      ? deleteQuery.is("division_id", null)
+      : deleteQuery.eq("division_id", divisionId);
+
+  const { error: deleteError } = await deleteQuery;
   if (deleteError) throw deleteError;
 
   const rows = rounds.map((slot) => ({
     season_id: seasonId,
     scope: "regional" as const,
     region_id: regionId,
-    division_id: null,
+    division_id: divisionId,
     round: slot.round,
     datetime: parseBrusselsToUtc(zweiffelSlotToBrusselsLocal(slot)),
   }));
@@ -156,6 +187,42 @@ async function upsertZweiffelMatchDates(
     .from("competition_match_dates")
     .insert(rows);
   if (insertError) throw insertError;
+}
+
+/** Region-wide Honneur calendar + per-division calendars for 2A / APM. */
+async function upsertAllZweiffelMatchDates(
+  supabase: SupabaseClient,
+  seasonId: string,
+  regionId: string,
+) {
+  const calendars = zweiffelMatchDateCalendars();
+
+  await upsertMatchDateSlots(
+    supabase,
+    seasonId,
+    regionId,
+    calendars.regionWide,
+    null,
+  );
+  console.log(
+    `  region-wide (Honneur): ${calendars.regionWide.length} rounds`,
+  );
+
+  for (const { name, rounds } of calendars.perDivision) {
+    const divisionId = await resolveZweiffelDivisionId(
+      supabase,
+      seasonId,
+      name,
+    );
+    await upsertMatchDateSlots(
+      supabase,
+      seasonId,
+      regionId,
+      rounds,
+      divisionId,
+    );
+    console.log(`  ${name}: ${rounds.length} rounds`);
+  }
 }
 
 async function resetZweiffel(
@@ -438,6 +505,8 @@ async function main() {
   loadEnvFile(".env.local");
   loadEnvFile(".env");
 
+  const datesOnly = process.argv.includes("--dates-only");
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const secret = process.env.SUPABASE_SECRET_KEY;
   if (!url || !secret) {
@@ -458,16 +527,18 @@ async function main() {
   console.log(`Active season: ${season.name}`);
   await ensureZweiffelStructure(supabase, season.id);
 
+  if (datesOnly) {
+    console.log("Refreshing Zweiffel match dates only…");
+    await upsertAllZweiffelMatchDates(supabase, season.id, regionId);
+    console.log("Done.");
+    return;
+  }
+
   console.log("Resetting Zweiffel data…");
   await resetZweiffel(supabase, season.id);
 
-  console.log("Loading regional match dates (Honneur 20:00 calendar)…");
-  await upsertZweiffelMatchDates(
-    supabase,
-    season.id,
-    regionId,
-    eveningCalendarSlots(),
-  );
+  console.log("Loading Zweiffel match dates…");
+  await upsertAllZweiffelMatchDates(supabase, season.id, regionId);
 
   console.log("Seeding teams (clubs by club_number)…");
   const teamIdsByDivision = await seedZweiffelTeams(supabase, season.id);
