@@ -8,6 +8,7 @@ import { toIntlLocale } from "@/i18n/intl-locale";
 import type { Locale } from "@/i18n/config";
 import { useTranslateApiError } from "@/lib/i18n/translate-api-error";
 import {
+  brusselsTodayDateString,
   formatBrussels,
   parseBrusselsToUtc,
   toDatetimeLocalValue,
@@ -70,6 +71,11 @@ export function PostponeWorkflow({
     e.preventDefault();
     if (!proposingTeamId || !proposedLocal) {
       setError(t("chooseTeamAndDate"));
+      return;
+    }
+    const proposedDate = proposedLocal.split("T")[0] ?? "";
+    if (proposedDate < brusselsTodayDateString()) {
+      setError(t("dateMustBeTodayOrFuture"));
       return;
     }
     setBusy(true);
@@ -244,6 +250,7 @@ export function PostponeWorkflow({
               type="datetime-local"
               value={proposedLocal}
               onChange={(e) => setProposedLocal(e.target.value)}
+              min={`${brusselsTodayDateString()}T00:00`}
               className="input"
               required
             />

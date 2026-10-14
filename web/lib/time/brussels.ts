@@ -83,3 +83,28 @@ export function toDatetimeLocalValue(isoUtc: string): string {
   const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
   return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
 }
+
+/** Calendar date in Europe/Brussels as YYYY-MM-DD. */
+export function toBrusselsDateString(isoUtcOrDate: string | Date): string {
+  const date =
+    typeof isoUtcOrDate === "string" ? new Date(isoUtcOrDate) : isoUtcOrDate;
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: BRUSSELS,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const parts = formatter.formatToParts(date);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
+/** Today's calendar date in Europe/Brussels as YYYY-MM-DD. */
+export function brusselsTodayDateString(): string {
+  return toBrusselsDateString(new Date());
+}
+
+/** True when the Brussels calendar date of isoUtc is strictly before today. */
+export function isBrusselsDateBeforeToday(isoUtc: string): boolean {
+  return toBrusselsDateString(isoUtc) < brusselsTodayDateString();
+}

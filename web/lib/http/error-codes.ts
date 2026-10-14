@@ -36,6 +36,7 @@ export const ErrorCodes = {
     imagePathRequired: "api.imagePathRequired",
     imagePathsTooMany: "api.imagePathsTooMany",
     proposedDatetimeRequired: "api.proposedDatetimeRequired",
+    proposedDatetimeInPast: "api.proposedDatetimeInPast",
     postponeActionRequired: "api.postponeActionRequired",
     homeAwayNotAvailable: "api.homeAwayNotAvailable",
     locationChangeNotAvailable: "api.locationChangeNotAvailable",

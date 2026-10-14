@@ -116,6 +116,8 @@ describe("/api/matches/[matchId]/postpone", () => {
   });
 
   it("POST proposes postponement", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2025-06-01T12:00:00.000Z"));
     vi.mocked(loadMatchContext).mockResolvedValue(baseMatch);
     vi.mocked(proposeMatchPostponement).mockResolvedValue("req-1");
     vi.mocked(getMatchPostponementState).mockResolvedValue({
@@ -143,6 +145,59 @@ describe("/api/matches/[matchId]/postpone", () => {
     expect(res.status).toBe(200);
     expect(proposeMatchPostponement).toHaveBeenCalled();
     expect(sendPostponementProposedEmail).toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it("POST rejects proposed datetime on a past Brussels calendar day", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-14T12:00:00.000Z"));
+
+    const res = await POST(
+      new Request("http://x", {
+        method: "POST",
+        body: JSON.stringify({
+          proposed_datetime: "2026-10-13T14:00:00.000Z",
+          proposing_team_id: "home-1",
+        }),
+      }),
+      { params: Promise.resolve({ matchId: "match-1" }) },
+    );
+    const body = await res.json();
+    expect(res.status).toBe(400);
+    expect(body.error).toBe("api.proposedDatetimeInPast");
+    expect(proposeMatchPostponement).not.toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it("POST allows proposed datetime on today in Brussels", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-14T15:00:00.000Z"));
+    vi.mocked(loadMatchContext).mockResolvedValue(baseMatch);
+    vi.mocked(proposeMatchPostponement).mockResolvedValue("req-1");
+    vi.mocked(getMatchPostponementState).mockResolvedValue({
+      ...baseState,
+      pending: {
+        id: "req-1",
+        proposed_datetime: "2026-10-14T08:00:00.000Z",
+        proposing_team_id: "home-1",
+        proposed_by: "user-1",
+        created_at: "2026-10-14T10:00:00.000Z",
+      },
+    });
+
+    const res = await POST(
+      new Request("http://x", {
+        method: "POST",
+        body: JSON.stringify({
+          proposed_datetime: "2026-10-14T08:00:00.000Z",
+          proposing_team_id: "home-1",
+        }),
+      }),
+      { params: Promise.resolve({ matchId: "match-1" }) },
+    );
+    expect(res.status).toBe(200);
+    expect(proposeMatchPostponement).toHaveBeenCalled();
+    vi.useRealTimers();
   });
 
   it("PATCH approves postponement", async () => {

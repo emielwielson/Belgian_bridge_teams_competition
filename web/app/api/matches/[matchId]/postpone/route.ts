@@ -14,7 +14,10 @@ import {
   sendPostponementDecisionEmail,
   sendPostponementProposedEmail,
 } from "@/lib/notifications/postponement-email";
-import { parseBrusselsToUtc } from "@/lib/time/brussels";
+import {
+  isBrusselsDateBeforeToday,
+  parseBrusselsToUtc,
+} from "@/lib/time/brussels";
 
 type Params = { params: Promise<{ matchId: string }> };
 
@@ -63,6 +66,10 @@ export async function POST(request: Request, { params }: Params) {
 
     if (!proposedDatetime || !proposingTeamId) {
       return jsonErrorCode(ErrorCodes.api.proposedDatetimeRequired, 400);
+    }
+
+    if (isBrusselsDateBeforeToday(proposedDatetime)) {
+      return jsonErrorCode(ErrorCodes.api.proposedDatetimeInPast, 400);
     }
 
     const match = await loadMatchContext(supabase, matchId);

@@ -46,6 +46,12 @@ describe("codeForError", () => {
     ).toBe(ErrorCodes.api.playerAlreadyOnAnotherTeam);
   });
 
+  it("maps past postponement datetime errors", () => {
+    expect(
+      codeForError(new Error("Proposed datetime cannot be in the past")),
+    ).toBe(ErrorCodes.api.proposedDatetimeInPast);
+  });
+
   it("returns null for unknown dynamic errors", () => {
     expect(codeForError(new Error("duplicate key value"))).toBeNull();
   });

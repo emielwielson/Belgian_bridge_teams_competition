@@ -58,6 +58,8 @@ const MESSAGE_TO_CODE: Record<string, ErrorCode> = {
   "Player is already on another team this season in the same competition":
     ErrorCodes.api.playerAlreadyOnAnotherTeam,
   "Competition setup is locked": ErrorCodes.api.competitionSetupLocked,
+  "Proposed datetime cannot be in the past":
+    ErrorCodes.api.proposedDatetimeInPast,
 };
 
 const NATIONAL_EXPECTED_DAYS = /^Expected (\d+) match days for (\w+), got (\d+)$/;
