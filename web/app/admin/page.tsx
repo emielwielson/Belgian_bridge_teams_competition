@@ -42,6 +42,12 @@ export default async function AdminPage() {
             {t("teamCaptainsHubDescription")}
           </p>
         </Link>
+        <Link href="/admin/missing-scores" className="card-interactive">
+          <span className="font-medium">{t("missingScoresHub")}</span>
+          <p className="mt-1 text-sm font-normal text-zinc-600">
+            {t("missingScoresHubDescription")}
+          </p>
+        </Link>
         <Link href="/admin/arbiters" className="card-interactive">
           <span className="font-medium">{t("arbitersHub")}</span>
           <p className="mt-1 text-sm font-normal text-zinc-600">

@@ -932,6 +932,8 @@
     "auditLogHubDescription": "Geschiedenis van wedstrijdwijzigingen per groep.",
     "teamCaptainsHub": "Teamkapiteins",
     "teamCaptainsHubDescription": "Wijzig teamkapiteins per groep zonder de competitie-wizard te openen.",
+    "missingScoresHub": "Ontbrekende scores",
+    "missingScoresHubDescription": "Wedstrijden die al gestart zijn maar nog geen score hebben, gegroepeerd per afdeling.",
     "arbitersHub": "Scheidsrechters",
     "arbitersHubDescription": "Maak scheidsrechteraccounts aan en wijs competities of eredivisie-toegang toe.",
     "arbitersPage": {
@@ -999,9 +1001,11 @@
     "disciplineScopesTitle": "Discipline — kies scope",
     "auditLogScopesTitle": "Auditlog — kies scope",
     "teamCaptainsScopesTitle": "Teamkapiteins — kies scope",
+    "missingScoresScopesTitle": "Ontbrekende scores — kies scope",
     "backDiscipline": "← Discipline",
     "backAuditLog": "← Auditlog",
     "backTeamCaptains": "← Teamkapiteins",
+    "backMissingScores": "← Ontbrekende scores",
     "scopesTitle": "Competitiescopes",
     "backAdmin": "← Beheer",
     "backScopes": "← Competitiescopes",
@@ -1157,6 +1161,17 @@
       "description": "Wijzig de kapitein van elk team in de geselecteerde groep. Kapiteins moeten lid zijn van de club van het team.",
       "loadingTeams": "Teams laden…",
       "noTeams": "Nog geen teams in deze groep."
+    },
+    "missingScoresPage": {
+      "title": "Ontbrekende scores",
+      "description": "Wedstrijden waarvan de geplande start voorbij is maar die nog geen score hebben.",
+      "loading": "Wedstrijden laden…",
+      "loadFailed": "Ontbrekende scores konden niet geladen worden.",
+      "empty": "Geen wedstrijden zonder score.",
+      "round": "Ronde",
+      "when": "Gepland",
+      "group": "Groep",
+      "match": "Wedstrijd"
     },
     "startLeague": {
       "loading": "Gereedheid laden…",

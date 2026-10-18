@@ -71,3 +71,11 @@ export function adminTeamCaptainsPath(
   if (scope === SCOPES.NATIONAL) return "/admin/team-captains/national";
   return `/admin/team-captains/regional/${regionCode ?? REGION_CODES.FLANDERS}`;
 }
+
+export function adminMissingScoresPath(
+  scope: CompetitionScope,
+  regionCode?: string,
+): string {
+  if (scope === SCOPES.NATIONAL) return "/admin/missing-scores/national";
+  return `/admin/missing-scores/regional/${regionCode ?? REGION_CODES.FLANDERS}`;
+}

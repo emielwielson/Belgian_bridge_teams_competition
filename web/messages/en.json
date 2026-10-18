@@ -933,6 +933,8 @@
     "auditLogHubDescription": "Match change history and operational actions per group.",
     "teamCaptainsHub": "Team captains",
     "teamCaptainsHubDescription": "Change team captains per group without opening competition setup.",
+    "missingScoresHub": "Missing scores",
+    "missingScoresHubDescription": "Matches that have started but still have no score, grouped by division.",
     "arbitersHub": "Arbiters",
     "arbitersHubDescription": "Create arbiter accounts and assign competitions or Honor Division access.",
     "arbitersPage": {
@@ -1000,9 +1002,11 @@
     "disciplineScopesTitle": "Discipline — choose scope",
     "auditLogScopesTitle": "Audit log — choose scope",
     "teamCaptainsScopesTitle": "Team captains — choose scope",
+    "missingScoresScopesTitle": "Missing scores — choose scope",
     "backDiscipline": "← Discipline",
     "backAuditLog": "← Audit log",
     "backTeamCaptains": "← Team captains",
+    "backMissingScores": "← Missing scores",
     "scopesTitle": "Competition scopes",
     "backAdmin": "← Admin",
     "backScopes": "← Scopes",
@@ -1158,6 +1162,17 @@
       "description": "Change the captain of any team in the selected group. Captains must be members of the team's club.",
       "loadingTeams": "Loading teams…",
       "noTeams": "No teams in this group yet."
+    },
+    "missingScoresPage": {
+      "title": "Missing scores",
+      "description": "Matches whose scheduled start has passed but that still have no score.",
+      "loading": "Loading matches…",
+      "loadFailed": "Could not load missing scores.",
+      "empty": "No matches are missing a score.",
+      "round": "Round",
+      "when": "Scheduled",
+      "group": "Group",
+      "match": "Match"
     },
     "startLeague": {
       "loading": "Loading readiness…",
