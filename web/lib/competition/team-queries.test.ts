@@ -598,6 +598,29 @@ describe("mapRawMatchToTeamMatchRow", () => {
     expect(row.teamVp).toBe(14);
     expect(row.opponentVp).toBe(10);
     expect(row.isRescheduled).toBe(false);
+    expect(row.isForfait).toBe(false);
+  });
+
+  it("marks forfait matches", () => {
+    const row = mapRawMatchToTeamMatchRow(
+      {
+        id: "m-f",
+        round: 5,
+        datetime: "2025-01-29T13:00:00Z",
+        home_team_id: "home-1",
+        away_team_id: "away-1",
+        hosting_team_id: "home-1",
+        vp_home: 0,
+        vp_away: 14,
+        played_at: "2025-01-29T18:00:00Z",
+        forfait_side: "home",
+      },
+      "home-1",
+      teamNames,
+    );
+    expect(row.isForfait).toBe(true);
+    expect(row.teamVp).toBe(0);
+    expect(row.opponentVp).toBe(14);
   });
 
   it("maps away match VP to team and opponent sides", () => {

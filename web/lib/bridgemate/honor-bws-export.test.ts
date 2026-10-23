@@ -213,6 +213,7 @@ describe("buildHonorBwsSessionInput", () => {
     expect(exported.plan.tables).toHaveLength(8);
     expect(exported.plan.roundData).toHaveLength(8);
     expect(exported.plan.playerNumbers).toHaveLength(32);
+
     expect(exported.plan.settings).toHaveLength(1);
     expect(exported.plan.settings[0]).toMatchObject({
       BM2NameSource: 2,
@@ -290,5 +291,50 @@ describe("buildHonorBwsSessionInput", () => {
     expect(honorRoundReadyForBws(matches).length).toBeGreaterThan(0);
     const built = buildHonorBwsSessionInput(1, matches);
     expect(built.ok).toBe(false);
+  });
+
+  it("maps 3 active matches (forfait round) to 6 Bridgemate tables", () => {
+    const matches = [
+      readyMatch({
+        match_id: "m1",
+        home_team: { id: "t3", name: "T3" },
+        away_team: { id: "t8", name: "T8" },
+        home_slot: 3,
+        away_slot: 8,
+        venue_tables: { openTable: 1, closedTable: 2 },
+      }),
+      readyMatch({
+        match_id: "m2",
+        home_team: { id: "t1", name: "T1" },
+        away_team: { id: "t5", name: "T5" },
+        home_slot: 1,
+        away_slot: 5,
+        venue_tables: { openTable: 3, closedTable: 4 },
+      }),
+      readyMatch({
+        match_id: "m3",
+        home_team: { id: "t2", name: "T2" },
+        away_team: { id: "t6", name: "T6" },
+        home_slot: 2,
+        away_slot: 6,
+        venue_tables: { openTable: 5, closedTable: 6 },
+      }),
+    ];
+
+    const built = buildHonorBwsSessionInput(1, matches);
+    expect(built.ok).toBe(true);
+    if (!built.ok) return;
+    expect(built.input.matches).toHaveLength(3);
+    expect(
+      built.input.matches.flatMap((m) => m.tables.map((t) => t.bridgemateTable)),
+    ).toEqual([1, 2, 3, 4, 5, 6]);
+
+    const exported = exportHonorRoundBws(1, matches, sampleBoards, {
+      guid: "11111111-2222-3333-4444-555555555555",
+    });
+    expect(exported.ok).toBe(true);
+    if (!exported.ok) return;
+    expect(exported.plan.tables).toHaveLength(6);
+    expect(exported.plan.playerNumbers).toHaveLength(24);
   });
 });

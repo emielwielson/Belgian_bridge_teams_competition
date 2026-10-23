@@ -63,6 +63,7 @@ const baseMatch = {
   vp_home: null,
   vp_away: null,
   played_at: null,
+  forfait_side: null,
   home_lineup_locked_at: null,
   away_lineup_locked_at: null,
   home_team: { id: "home-1", name: "Home", club_id: "club-1" },

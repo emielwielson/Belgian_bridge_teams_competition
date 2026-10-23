@@ -11,6 +11,7 @@ import {
   parseAveragePmAwards,
 } from "@/lib/results/adjustment-helpers";
 import type { AverageAward, NonOffendingSide, WeightedScoreLeg } from "@/lib/results/types";
+import { recalculateGroupForfaits } from "@/lib/scoring/forfait";
 import { pointsToImps } from "@/lib/scoring/wbf-imp-table";
 import { lookupVp } from "@/lib/scoring/vp-lookup";
 import {
@@ -401,14 +402,30 @@ export async function applyHonorRoundMatchScores(
 
   const { data: matchRows, error: matchErr } = await service
     .from("matches")
-    .select("id")
+    .select("id, forfait_side")
     .in("id", matchIds);
 
   if (matchErr) {
     return { ok: false, error: matchErr.message };
   }
 
-  const matchIdsFound = new Set((matchRows ?? []).map((m) => m.id as string));
+  const matchById = new Map(
+    (matchRows ?? []).map((m) => [
+      m.id as string,
+      m.forfait_side as string | null,
+    ]),
+  );
+
+  const activeSeating = params.matches.filter((seating) => {
+    const forfaitSide = matchById.get(seating.match_id);
+    return forfaitSide === undefined || forfaitSide == null;
+  });
+
+  const activeMatchIds = activeSeating.map((m) => m.match_id);
+
+  if (activeMatchIds.length === 0) {
+    return { ok: true, scores: [] };
+  }
 
   const { data: results, error: resultsErr } = await service
     .from("honor_board_results")
@@ -417,7 +434,7 @@ export async function applyHonorRoundMatchScores(
     )
     .eq("group_id", params.groupId)
     .eq("tournament_round", params.tournamentRound)
-    .in("match_id", matchIds);
+    .in("match_id", activeMatchIds);
 
   if (resultsErr) {
     return { ok: false, error: resultsErr.message };
@@ -426,8 +443,8 @@ export async function applyHonorRoundMatchScores(
   const resultRows = (results ?? []) as ResultRow[];
   const scores: HonorPublishedMatchScore[] = [];
 
-  for (const seating of params.matches) {
-    if (!matchIdsFound.has(seating.match_id)) {
+  for (const seating of activeSeating) {
+    if (!matchById.has(seating.match_id)) {
       return { ok: false, error: `Wedstrijd ${seating.match_id} niet gevonden.` };
     }
 
@@ -500,6 +517,15 @@ export async function applyHonorRoundMatchScores(
       vpHome,
       vpAway,
     });
+  }
+
+  try {
+    await recalculateGroupForfaits(service, params.groupId);
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "Forfait-herberekening mislukt.",
+    };
   }
 
   return { ok: true, scores };

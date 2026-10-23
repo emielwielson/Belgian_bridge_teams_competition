@@ -17,6 +17,7 @@ const labels: GroupStandingsGridLabels = {
   homeAria: "Home",
   arbiterRequestAria: "Match has an arbiter request",
   locationChangedAria: "Match location has been changed",
+  forfaitAria: "Match decided by forfait",
 };
 
 const sampleGrid: GroupStandingsGridData = {
@@ -33,8 +34,8 @@ const sampleGrid: GroupStandingsGridData = {
       vpTotal: 20,
       penaltyVp: 0,
       cells: [
-        { vp: 14, isHome: true, pairingClass: "bg-sky-200 text-sky-950", matchId: "m1", scheduledDateLabel: null, scheduledTimeLabel: null, hasArbiterRequest: true, hasLocationChange: false },
-        { vp: null, isHome: false, pairingClass: "bg-amber-200 text-amber-950", matchId: null, scheduledDateLabel: null, scheduledTimeLabel: null, hasArbiterRequest: false, hasLocationChange: false },
+        { vp: 14, isHome: true, pairingClass: "bg-sky-200 text-sky-950", matchId: "m1", scheduledDateLabel: null, scheduledTimeLabel: null, hasArbiterRequest: true, hasLocationChange: false, isForfait: false },
+        { vp: null, isHome: false, pairingClass: "bg-amber-200 text-amber-950", matchId: null, scheduledDateLabel: null, scheduledTimeLabel: null, hasArbiterRequest: false, hasLocationChange: false, isForfait: false },
       ],
     },
     {
@@ -44,8 +45,8 @@ const sampleGrid: GroupStandingsGridData = {
       vpTotal: 12,
       penaltyVp: 0,
       cells: [
-        { vp: 6, isHome: false, pairingClass: "bg-sky-200 text-sky-950", matchId: null, scheduledDateLabel: null, scheduledTimeLabel: null, hasArbiterRequest: true, hasLocationChange: false },
-        { vp: 10, isHome: true, pairingClass: "bg-amber-200 text-amber-950", matchId: "m2", scheduledDateLabel: null, scheduledTimeLabel: null, hasArbiterRequest: false, hasLocationChange: true },
+        { vp: 6, isHome: false, pairingClass: "bg-sky-200 text-sky-950", matchId: null, scheduledDateLabel: null, scheduledTimeLabel: null, hasArbiterRequest: true, hasLocationChange: false, isForfait: false },
+        { vp: 10, isHome: true, pairingClass: "bg-amber-200 text-amber-950", matchId: "m2", scheduledDateLabel: null, scheduledTimeLabel: null, hasArbiterRequest: false, hasLocationChange: true, isForfait: false },
       ],
     },
   ],

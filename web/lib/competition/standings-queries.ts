@@ -382,7 +382,7 @@ async function fetchGroupMatches(
   let { data: matches, error: matchesError } = await supabase
     .from("matches")
     .select(
-      "id, round, datetime, home_team_id, away_team_id, hosting_team_id, location_override, vp_home, vp_away, played_at",
+      "id, round, datetime, home_team_id, away_team_id, hosting_team_id, location_override, vp_home, vp_away, played_at, forfait_side",
     )
     .eq("group_id", groupId)
     .order("round")
@@ -397,7 +397,7 @@ async function fetchGroupMatches(
     const fallbackOverride = await supabase
       .from("matches")
       .select(
-        "id, round, datetime, home_team_id, away_team_id, hosting_team_id, vp_home, vp_away, played_at",
+        "id, round, datetime, home_team_id, away_team_id, hosting_team_id, vp_home, vp_away, played_at, forfait_side",
       )
       .eq("group_id", groupId)
       .order("round")
@@ -411,7 +411,9 @@ async function fetchGroupMatches(
   if (isMissingHostingTeamIdColumn(matchesError)) {
     const fallback = await supabase
       .from("matches")
-      .select("id, round, datetime, home_team_id, away_team_id, vp_home, vp_away, played_at")
+      .select(
+        "id, round, datetime, home_team_id, away_team_id, vp_home, vp_away, played_at, forfait_side",
+      )
       .eq("group_id", groupId)
       .order("round")
       .order("datetime");

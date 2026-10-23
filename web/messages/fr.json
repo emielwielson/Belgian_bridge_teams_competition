@@ -88,7 +88,8 @@
       "viewMatchAria": "Voir la rencontre",
       "homeAria": "Home team",
       "arbiterRequestAria": "La rencontre a une demande d'arbitre",
-      "locationChangedAria": "Le lieu de la rencontre a été modifié"
+      "locationChangedAria": "Le lieu de la rencontre a été modifié",
+      "forfaitAria": "Rencontre décidée par forfait"
     },
     "penalties": {
       "title": "Pénalités",
@@ -153,6 +154,22 @@
       "hideLocationChange": "Masquer le changement de lieu",
       "locationChange": "Changer de lieu",
       "pendingLocationChange": "Changement de lieu en attente"
+    },
+    "forfait": {
+      "badge": "Forfait",
+      "vpLine": "{homeVp} – {awayVp} VP",
+      "record": "Enregistrer un forfait",
+      "hide": "Masquer le forfait",
+      "title": "Enregistrer un forfait",
+      "description": "L'équipe qui déclare forfait marque 0 VP. L'autre équipe reçoit le maximum entre 12 et sa moyenne de VP sur les autres rencontres jouées (recalculée au fur et à mesure des résultats).",
+      "homeForfeits": "{team} déclare forfait (domicile)",
+      "awayForfeits": "{team} déclare forfait (extérieur)",
+      "activeBanner": "Forfait : {team} a déclaré forfait",
+      "activeHint": "Cette rencontre n'a pas besoin de composition ni de tables Bridgemate. Les VP du vainqueur sont mises à jour lorsque d'autres résultats changent.",
+      "clear": "Annuler le forfait",
+      "clearing": "Annulation…",
+      "applyFailed": "Échec de l'enregistrement du forfait",
+      "clearFailed": "Échec de l'annulation du forfait"
     },
     "reschedule": {
       "title": "Reporter la rencontre",
@@ -474,6 +491,7 @@
     "scheduled": "Programmée",
     "rescheduled": "Reportée",
     "locationChanged": "Lieu modifié",
+    "forfait": "Forfait",
     "locationLine": "Lieu : {location}",
     "homeVs": "Home team contre {opponent}",
     "awayVs": "Visiting team contre {opponent}",
@@ -1550,7 +1568,11 @@
       "captainIdInvalid": "captain_id doit être un identifiant de joueur valide",
       "competitionSetupLocked": "La configuration de la compétition est verrouillée",
       "locationFieldRequired": "location est requis (chaîne ou null)",
-      "locationCentralizedVenue": "Cette division utilise un lieu centralisé ; le lieu de l'équipe ne peut pas être modifié"
+      "locationCentralizedVenue": "Cette division utilise un lieu centralisé ; le lieu de l'équipe ne peut pas être modifié",
+      "forfaitSideRequired": "le côté forfait doit être domicile ou extérieur",
+      "forfaitAlreadySet": "La rencontre a déjà un forfait",
+      "forfaitNotSet": "La rencontre n'a pas de forfait",
+      "matchHasForfaitClearFirst": "La rencontre a un forfait ; annulez le forfait avant de saisir les IMPs"
     },
     "auth": {
       "emailNotRegistered": "Cette adresse e-mail n'est pas enregistrée dans notre base de données. Si vous êtes joueur de bridge, votre fédération (VBL ou LBF) peut avoir une autre adresse e-mail — essayez une autre adresse ou contactez votre club.",

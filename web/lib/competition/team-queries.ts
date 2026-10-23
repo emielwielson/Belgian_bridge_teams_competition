@@ -45,6 +45,8 @@ export type TeamMatchRow = {
   hasLocationChange: boolean;
   /** Applied location override text when set. */
   locationOverride: string | null;
+  /** Match decided by forfait. */
+  isForfait: boolean;
 };
 
 export type TeamDetail = {
@@ -85,6 +87,7 @@ type RawMatch = {
   vp_home: number | null;
   vp_away: number | null;
   played_at: string | null;
+  forfait_side?: "home" | "away" | null;
 };
 
 function isMissingHostingTeamIdColumn(error: PostgrestError | null): boolean {
@@ -258,6 +261,8 @@ export function mapRawMatchToTeamMatchRow(
       match.location_override.trim()
         ? match.location_override.trim()
         : null,
+    isForfait:
+      match.forfait_side === "home" || match.forfait_side === "away",
   };
 }
 
@@ -372,7 +377,7 @@ export async function loadTeamDetail(
   let { data: matchRows, error: matchesError } = await supabase
     .from("matches")
     .select(
-      "id, round, datetime, home_team_id, away_team_id, hosting_team_id, location_override, vp_home, vp_away, played_at",
+      "id, round, datetime, home_team_id, away_team_id, hosting_team_id, location_override, vp_home, vp_away, played_at, forfait_side",
     )
     .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
     .order("datetime")
@@ -387,7 +392,7 @@ export async function loadTeamDetail(
     const fallbackOverride = await supabase
       .from("matches")
       .select(
-        "id, round, datetime, home_team_id, away_team_id, hosting_team_id, vp_home, vp_away, played_at",
+        "id, round, datetime, home_team_id, away_team_id, hosting_team_id, vp_home, vp_away, played_at, forfait_side",
       )
       .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
       .order("datetime")
@@ -401,7 +406,9 @@ export async function loadTeamDetail(
   if (isMissingHostingTeamIdColumn(matchesError)) {
     const fallback = await supabase
       .from("matches")
-      .select("id, round, datetime, home_team_id, away_team_id, vp_home, vp_away, played_at")
+      .select(
+        "id, round, datetime, home_team_id, away_team_id, vp_home, vp_away, played_at, forfait_side",
+      )
       .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
       .order("datetime")
       .order("round");

@@ -56,6 +56,7 @@ const baseMatch = {
   vp_home: null,
   vp_away: null,
   played_at: null,
+  forfait_side: null,
   home_lineup_locked_at: "2025-01-01T11:00:00Z",
   away_lineup_locked_at: "2025-01-01T11:00:00Z",
   home_team: { id: "home-1", name: "Home", club_id: "club-1" },

@@ -88,7 +88,8 @@
       "viewMatchAria": "View match",
       "homeAria": "Home",
       "arbiterRequestAria": "Match has an arbiter request",
-      "locationChangedAria": "Match location has been changed"
+      "locationChangedAria": "Match location has been changed",
+      "forfaitAria": "Match decided by forfait"
     },
 
     "penalties": {
@@ -154,6 +155,22 @@
       "hideLocationChange": "Hide location change",
       "locationChange": "Change location",
       "pendingLocationChange": "Pending location change"
+    },
+    "forfait": {
+      "badge": "Forfait",
+      "vpLine": "{homeVp} – {awayVp} VP",
+      "record": "Record forfait",
+      "hide": "Hide forfait",
+      "title": "Record forfait",
+      "description": "The forfeiting team scores 0 VP. The other team gets the maximum of 12 and their average VP from other played matches (recalculated as results come in).",
+      "homeForfeits": "{team} forfeits (home)",
+      "awayForfeits": "{team} forfeits (away)",
+      "activeBanner": "Forfait: {team} forfeited",
+      "activeHint": "This match does not need a line-up or Bridgemate tables. Winner VP updates when other results change.",
+      "clear": "Clear forfait",
+      "clearing": "Clearing…",
+      "applyFailed": "Failed to record forfait",
+      "clearFailed": "Failed to clear forfait"
     },
     "reschedule": {
       "title": "Reschedule match",
@@ -475,6 +492,7 @@
     "scheduled": "Scheduled",
     "rescheduled": "Rescheduled",
     "locationChanged": "Location changed",
+    "forfait": "Forfait",
     "locationLine": "Location: {location}",
     "homeVs": "Home vs {opponent}",
     "awayVs": "Away vs {opponent}",
@@ -1551,7 +1569,11 @@
       "captainIdInvalid": "captain_id must be a valid player id",
       "competitionSetupLocked": "Competition setup is locked",
       "locationFieldRequired": "location is required (string or null)",
-      "locationCentralizedVenue": "This division uses a centralized venue; team location cannot be changed"
+      "locationCentralizedVenue": "This division uses a centralized venue; team location cannot be changed",
+      "forfaitSideRequired": "forfait side must be home or away",
+      "forfaitAlreadySet": "Match already has a forfait",
+      "forfaitNotSet": "Match does not have a forfait",
+      "matchHasForfaitClearFirst": "Match has a forfait; clear the forfait before entering IMPs"
     },
     "auth": {
       "emailNotRegistered": "This email address is not registered in our database. If you are a bridge player, your federation (VBL or LBF) may have a different email address on file — try another address or contact your club.",

@@ -112,9 +112,28 @@ describe("buildGroupStandingsGrid", () => {
     expect(alpha.cells[0].vp).toBe(14);
     expect(alpha.cells[0].isHome).toBe(true);
     expect(alpha.cells[0].matchId).toBe("m-1");
+    expect(alpha.cells[0].isForfait).toBe(false);
     expect(bravo.cells[0].vp).toBe(6);
     expect(bravo.cells[0].isHome).toBe(false);
     expect(bravo.cells[0].matchId).toBeNull();
+  });
+
+  it("marks forfait cells on both sides", () => {
+    const matches = [
+      match({
+        round: 1,
+        vp_home: 0,
+        vp_away: 14,
+        forfait_side: "home",
+      }),
+    ];
+    const grid = buildGroupStandingsGrid(teams, matches);
+    const alpha = grid.rows.find((r) => r.teamId === "t1")!;
+    const bravo = grid.rows.find((r) => r.teamId === "t2")!;
+    expect(alpha.cells[0].isForfait).toBe(true);
+    expect(alpha.cells[0].vp).toBe(0);
+    expect(bravo.cells[0].isForfait).toBe(true);
+    expect(bravo.cells[0].vp).toBe(14);
   });
 
   it("moves home flag and match link to away side when hosting_team_id switches", () => {

@@ -18,6 +18,7 @@ export function matchResponseFields(match: {
   imps_away?: number | null;
   vp_home?: number | null;
   vp_away?: number | null;
+  forfait_side?: "home" | "away" | null;
   home_team?: { id: string; name: string; club_id?: string };
   away_team?: { id: string; name: string; club_id?: string };
 }) {

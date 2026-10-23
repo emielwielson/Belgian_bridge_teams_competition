@@ -18,9 +18,17 @@ import {
   isHonorDivision,
   validateScoreBoardOptions,
 } from "./board-count-rules";
+import { recalculateGroupForfaits } from "./forfait";
 import { lookupVp } from "./vp-lookup";
 
 export { BoardCountValidationError };
+
+export class ForfaitScoreError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ForfaitScoreError";
+  }
+}
 
 export type LineupPlayerInput = {
   player_id: string;
@@ -365,6 +373,12 @@ export async function submitMatchScore(
 ): Promise<SubmittedMatchScore> {
   const { impsHome, impsAway } = payload;
 
+  if (match.forfait_side) {
+    throw new ForfaitScoreError(
+      "Match has a forfait; clear the forfait before entering IMPs",
+    );
+  }
+
   if (!options.isAdminEdit) {
     await assertLineupComplete(supabase, match);
   }
@@ -432,6 +446,8 @@ export async function submitMatchScore(
     : `score_submitted:${JSON.stringify(logPayload)}`;
 
   await insertMatchLog(supabase, match.id, userId, action);
+
+  await recalculateGroupForfaits(supabase, match.group_id);
 
   return data as SubmittedMatchScore;
 }

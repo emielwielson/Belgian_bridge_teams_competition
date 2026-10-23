@@ -6,7 +6,10 @@ import {
   TeamValidationError,
 } from "@/lib/competition/team-captain";
 import { BoardCountValidationError } from "@/lib/scoring/board-count-rules";
-import { LineupValidationError } from "@/lib/scoring/match-operations";
+import {
+  ForfaitScoreError,
+  LineupValidationError,
+} from "@/lib/scoring/match-operations";
 import { VpLookupError } from "@/lib/scoring/vp-lookup";
 
 export function statusForError(err: unknown): number {
@@ -17,6 +20,7 @@ export function statusForError(err: unknown): number {
   if (err instanceof NationalNotReadyError) return err.status;
   if (err instanceof VpLookupError) return 400;
   if (err instanceof LineupValidationError) return 400;
+  if (err instanceof ForfaitScoreError) return 400;
   if (err instanceof BoardCountValidationError) return 400;
   if (err instanceof Error && err.message.includes("must have at least")) {
     return 400;

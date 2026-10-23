@@ -335,6 +335,7 @@ type MatchRow = {
   away_team_id: string;
   home_lineup_locked_at: string | null;
   away_lineup_locked_at: string | null;
+  forfait_side: "home" | "away" | null;
   home_team: TeamRef;
   away_team: TeamRef;
 };
@@ -470,6 +471,7 @@ export async function loadHonorRoundSeating(
       away_team_id,
       home_lineup_locked_at,
       away_lineup_locked_at,
+      forfait_side,
       home_team:teams!matches_home_team_id_fkey (id, name),
       away_team:teams!matches_away_team_id_fkey (id, name)
     `,
@@ -479,7 +481,10 @@ export async function loadHonorRoundSeating(
     .order("datetime", { ascending: true });
   if (matchesError) throw matchesError;
 
-  const matches = (matchesData ?? []) as MatchRow[];
+  // Forfait matches stay in standings but skip seating / Bridgemate / line-ups.
+  const matches = ((matchesData ?? []) as MatchRow[]).filter(
+    (m) => m.forfait_side == null,
+  );
   const matchIds = matches.map((m) => m.id);
 
   const { data: slots, error: slotsError } = await supabase

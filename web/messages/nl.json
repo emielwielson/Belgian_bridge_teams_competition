@@ -88,7 +88,8 @@
       "viewMatchAria": "Wedstrijd bekijken",
       "homeAria": "Thuis",
       "arbiterRequestAria": "Wedstrijd heeft een scheidsrechterverzoek",
-      "locationChangedAria": "Wedstrijdlocatie is gewijzigd"
+      "locationChangedAria": "Wedstrijdlocatie is gewijzigd",
+      "forfaitAria": "Wedstrijd beslist door forfait"
     },
     "penalties": {
       "title": "Straffen",
@@ -153,6 +154,22 @@
       "hideLocationChange": "Locatiewijziging verbergen",
       "locationChange": "Locatie wijzigen",
       "pendingLocationChange": "Locatiewijziging in behandeling"
+    },
+    "forfait": {
+      "badge": "Forfait",
+      "vpLine": "{homeVp} – {awayVp} VP",
+      "record": "Forfait registreren",
+      "hide": "Forfait verbergen",
+      "title": "Forfait registreren",
+      "description": "Het forfaitgevende team scoort 0 VP. Het andere team krijgt het maximum van 12 en hun gemiddelde VP van andere gespeelde wedstrijden (herberekend naarmate er resultaten bijkomen).",
+      "homeForfeits": "{team} geeft forfait (thuis)",
+      "awayForfeits": "{team} geeft forfait (uit)",
+      "activeBanner": "Forfait: {team} heeft forfait gegeven",
+      "activeHint": "Deze wedstrijd heeft geen opstelling of Bridgemate-tafels nodig. De VP van de winnaar worden bijgewerkt wanneer andere resultaten wijzigen.",
+      "clear": "Forfait wissen",
+      "clearing": "Wissen…",
+      "applyFailed": "Forfait registreren mislukt",
+      "clearFailed": "Forfait wissen mislukt"
     },
     "reschedule": {
       "title": "Wedstrijd verplaatsen",
@@ -474,6 +491,7 @@
     "scheduled": "Gepland",
     "rescheduled": "Verzet",
     "locationChanged": "Locatie gewijzigd",
+    "forfait": "Forfait",
     "locationLine": "Locatie: {location}",
     "homeVs": "Thuis tegen {opponent}",
     "awayVs": "Uit tegen {opponent}",
@@ -1550,7 +1568,11 @@
       "captainIdInvalid": "captain_id moet een geldige speler-id zijn",
       "competitionSetupLocked": "Competitie-opzet is vergrendeld",
       "locationFieldRequired": "location is verplicht (string of null)",
-      "locationCentralizedVenue": "Deze afdeling gebruikt een centrale locatie; de teamlocatie kan niet worden gewijzigd"
+      "locationCentralizedVenue": "Deze afdeling gebruikt een centrale locatie; de teamlocatie kan niet worden gewijzigd",
+      "forfaitSideRequired": "forfait-kant moet thuis of uit zijn",
+      "forfaitAlreadySet": "Wedstrijd heeft al een forfait",
+      "forfaitNotSet": "Wedstrijd heeft geen forfait",
+      "matchHasForfaitClearFirst": "Wedstrijd heeft een forfait; wis het forfait voordat u IMPs ingeeft"
     },
     "auth": {
       "emailNotRegistered": "Dit e-mailadres staat niet in onze database. Als u bridgespeler bent, kan uw federatie (VBL of LBF) een ander e-mailadres hebben — probeer een ander adres of neem contact op met uw club.",

@@ -12,6 +12,7 @@ export type GroupStandingsGridLabels = {
   homeAria: string;
   arbiterRequestAria: string;
   locationChangedAria: string;
+  forfaitAria: string;
 };
 
 type Props = {
@@ -196,6 +197,15 @@ export function GroupStandingsGrid({ grid, labels }: Props) {
                           aria-hidden
                         >
                           L
+                        </span>
+                      ) : null}
+                      {cell.isForfait ? (
+                        <span
+                          className="inline-flex h-3.5 min-w-3.5 items-center justify-center rounded-sm bg-amber-600/90 px-0.5 text-[9px] font-bold leading-none text-white"
+                          title={labels.forfaitAria}
+                          aria-label={labels.forfaitAria}
+                        >
+                          F
                         </span>
                       ) : null}
                       {cell.vp != null ? (

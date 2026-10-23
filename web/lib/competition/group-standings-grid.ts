@@ -26,6 +26,7 @@ export type GroupMatchRow = {
   vp_home: number | null;
   vp_away: number | null;
   played_at: string | null;
+  forfait_side?: "home" | "away" | null;
 };
 
 export type GroupByeRoundRow = {
@@ -49,6 +50,8 @@ export type GridCell = {
   hasArbiterRequest: boolean;
   /** Approved match location override is set. */
   hasLocationChange: boolean;
+  /** Match decided by forfait. */
+  isForfait: boolean;
 };
 
 export type RoundColumn = {
@@ -201,6 +204,8 @@ export function buildGroupStandingsGrid(
         typeof match.location_override === "string" &&
           match.location_override.trim(),
       );
+      const isForfait =
+        match.forfait_side === "home" || match.forfait_side === "away";
 
       const setCell = (
         teamId: string,
@@ -222,6 +227,7 @@ export function buildGroupStandingsGrid(
           scheduledTimeLabel,
           hasArbiterRequest,
           hasLocationChange,
+          isForfait,
         });
       };
 
@@ -249,6 +255,7 @@ export function buildGroupStandingsGrid(
     scheduledTimeLabel: null,
     hasArbiterRequest: false,
     hasLocationChange: false,
+    isForfait: false,
   };
 
   for (const bye of byeRounds) {
@@ -267,6 +274,7 @@ export function buildGroupStandingsGrid(
       scheduledTimeLabel: null,
       hasArbiterRequest: false,
       hasLocationChange: false,
+      isForfait: false,
     });
   }
 
@@ -284,6 +292,7 @@ export function buildGroupStandingsGrid(
           scheduledTimeLabel: null,
           hasArbiterRequest: false,
           hasLocationChange: false,
+          isForfait: false,
         };
       }
       return teamCells?.get(round) ?? emptyCell;

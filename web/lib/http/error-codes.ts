@@ -77,6 +77,10 @@ export const ErrorCodes = {
     competitionSetupLocked: "api.competitionSetupLocked",
     locationFieldRequired: "api.locationFieldRequired",
     locationCentralizedVenue: "api.locationCentralizedVenue",
+    forfaitSideRequired: "api.forfaitSideRequired",
+    forfaitAlreadySet: "api.forfaitAlreadySet",
+    forfaitNotSet: "api.forfaitNotSet",
+    matchHasForfaitClearFirst: "api.matchHasForfaitClearFirst",
   },
   auth: {
     emailNotRegistered: "auth.emailNotRegistered",

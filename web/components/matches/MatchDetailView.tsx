@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
+import { ForfaitWorkflow } from "@/components/matches/ForfaitWorkflow";
 import { HonorMatchScorecardView } from "@/components/matches/HonorMatchScorecard";
 import { MatchPenaltyForm } from "@/components/matches/MatchPenaltyForm";
 import { MatchSecondaryWorkflows } from "@/components/matches/MatchSecondaryWorkflows";
@@ -255,8 +256,9 @@ export async function MatchDetailView({
       ? { href: "/admin", label: t("backAdminDashboard") }
       : null;
 
-  /* Lineups are shown in the honor scorecard once results are published. */
-  const lineupSection = !honorScorecard ? (
+  /* Lineups are shown in the honor scorecard once results are published.
+     Forfait matches need neither line-ups nor Bridgemate tables. */
+  const lineupSection = !match.forfait_side && !honorScorecard ? (
     <>
       {honorCtx.isHonor && honorPerms ? (
         <div
@@ -359,7 +361,7 @@ export async function MatchDetailView({
     </>
   ) : null;
 
-  const scoreSection = honorScorecard ? (
+  const scoreSection = match.forfait_side ? null : honorScorecard ? (
     <HonorMatchScorecardView scorecard={honorScorecard} />
   ) : (
     <MatchScoreForm
@@ -416,17 +418,33 @@ export async function MatchDetailView({
         <p className="mt-2 flex flex-wrap items-center gap-2">
           <span
             className={
-              status === "played"
-                ? "rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800"
-                : "rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-700"
+              match.forfait_side
+                ? "rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-900"
+                : status === "played"
+                  ? "rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800"
+                  : "rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-700"
             }
           >
-            {status === "played" ? tStatus("played") : tStatus("scheduled")}
+            {match.forfait_side
+              ? t("forfait.badge")
+              : status === "played"
+                ? tStatus("played")
+                : tStatus("scheduled")}
           </span>
-          {match.played_at ? (
+          {match.played_at && !match.forfait_side ? (
             <span className="text-xs text-zinc-500">
               {tStatus("scoredAt", {
                 datetime: formatBrussels(match.played_at, intlLocale),
+              })}
+            </span>
+          ) : null}
+          {match.forfait_side &&
+          match.vp_home != null &&
+          match.vp_away != null ? (
+            <span className="text-xs tabular-nums text-zinc-600">
+              {t("forfait.vpLine", {
+                homeVp: match.vp_home,
+                awayVp: match.vp_away,
               })}
             </span>
           ) : null}
@@ -481,6 +499,14 @@ export async function MatchDetailView({
           }
         />
       ) : null}
+
+      <ForfaitWorkflow
+        matchId={matchId}
+        homeTeamName={match.home_team.name}
+        awayTeamName={match.away_team.name}
+        forfaitSide={match.forfait_side}
+        canManage={canEditFinishedScore}
+      />
 
       {scoreFirst ? (
         <>

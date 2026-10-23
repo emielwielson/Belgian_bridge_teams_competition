@@ -60,6 +60,10 @@ const MESSAGE_TO_CODE: Record<string, ErrorCode> = {
   "Competition setup is locked": ErrorCodes.api.competitionSetupLocked,
   "Proposed datetime cannot be in the past":
     ErrorCodes.api.proposedDatetimeInPast,
+  "Match has a forfait; clear the forfait before entering IMPs":
+    ErrorCodes.api.matchHasForfaitClearFirst,
+  "Match already has a forfait": ErrorCodes.api.forfaitAlreadySet,
+  "Match does not have a forfait": ErrorCodes.api.forfaitNotSet,
 };
 
 const NATIONAL_EXPECTED_DAYS = /^Expected (\d+) match days for (\w+), got (\d+)$/;

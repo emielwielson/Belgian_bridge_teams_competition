@@ -11,7 +11,12 @@ vi.mock("@/lib/scoring/vp-lookup", () => ({
   lookupVp: vi.fn(),
 }));
 
+vi.mock("@/lib/scoring/forfait", () => ({
+  recalculateGroupForfaits: vi.fn().mockResolvedValue(0),
+}));
+
 import { lookupVp } from "@/lib/scoring/vp-lookup";
+import { recalculateGroupForfaits } from "@/lib/scoring/forfait";
 
 describe("computeHonorMatchImps", () => {
   it("returns zeros for an empty board list", () => {
@@ -120,6 +125,7 @@ describe("applyHonorRoundMatchScores", () => {
                   data: [
                     {
                       id: "m1",
+                      forfait_side: null,
                       board_count: 16,
                       vp_board_count: null,
                     },
@@ -197,6 +203,10 @@ describe("applyHonorRoundMatchScores", () => {
         vpAway: 8,
       },
     ]);
+    expect(recalculateGroupForfaits).toHaveBeenCalledWith(
+      expect.anything(),
+      "g1",
+    );
     expect(updates).toEqual([
       {
         imps_home: 1,
@@ -228,7 +238,14 @@ describe("applyHonorRoundMatchScores", () => {
             select: () => ({
               in: () =>
                 Promise.resolve({
-                  data: [{ id: "m1", board_count: 16, vp_board_count: 16 }],
+                  data: [
+                    {
+                      id: "m1",
+                      forfait_side: null,
+                      board_count: 16,
+                      vp_board_count: 16,
+                    },
+                  ],
                   error: null,
                 }),
             }),
@@ -321,7 +338,9 @@ describe("applyHonorRoundMatchScores", () => {
             select: () => ({
               in: () =>
                 Promise.resolve({
-                  data: [{ id: "m1", board_count: 16, vp_board_count: null }],
+                  data: [
+                    { id: "m1", forfait_side: null, board_count: 16, vp_board_count: null },
+                  ],
                   error: null,
                 }),
             }),
@@ -365,5 +384,81 @@ describe("applyHonorRoundMatchScores", () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error).toMatch(/incomplete open\/closed/i);
+  });
+
+  it("skips forfait matches when publishing scores", async () => {
+    const updates: unknown[] = [];
+    const service = {
+      from: (table: string) => {
+        if (table === "matches") {
+          return {
+            select: () => ({
+              in: () =>
+                Promise.resolve({
+                  data: [
+                    { id: "m1", forfait_side: "home" },
+                    { id: "m2", forfait_side: null },
+                  ],
+                  error: null,
+                }),
+            }),
+            update: (payload: unknown) => ({
+              eq: () => {
+                updates.push(payload);
+                return Promise.resolve({ error: null });
+              },
+            }),
+          };
+        }
+        if (table === "honor_board_results") {
+          return {
+            select: () => ({
+              eq: () => ({
+                eq: () => ({
+                  in: (_col: string, ids: string[]) => {
+                    expect(ids).toEqual(["m2"]);
+                    return Promise.resolve({
+                      data: [
+                        {
+                          match_id: "m2",
+                          room: "open",
+                          board_id: "b1",
+                          ns_score: 420,
+                          computed_score: 420,
+                          admin_adjusted_ns_score: null,
+                        },
+                        {
+                          match_id: "m2",
+                          room: "closed",
+                          board_id: "b1",
+                          ns_score: 400,
+                          computed_score: 400,
+                          admin_adjusted_ns_score: null,
+                        },
+                      ],
+                      error: null,
+                    });
+                  },
+                }),
+              }),
+            }),
+          };
+        }
+        throw new Error(`unexpected table ${table}`);
+      },
+    };
+
+    const result = await applyHonorRoundMatchScores(service as never, {
+      groupId: "g1",
+      tournamentRound: 1,
+      matches: [seating("m1"), seating("m2")],
+      userId: null,
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.scores).toHaveLength(1);
+    expect(result.scores[0]?.matchId).toBe("m2");
+    expect(updates).toHaveLength(1);
   });
 });
