@@ -10,6 +10,7 @@ import {
   type PlayerImpCredit,
 } from "@/lib/butler/engine";
 import { formatPersonName } from "@/lib/butler/person-name";
+import { selectAllRows } from "@/lib/supabase/select-all";
 
 export type PublicCombinationStandingRow = {
   combinationId: string;
@@ -67,14 +68,26 @@ async function loadPublishedBoardCredits(
     return { publishedRounds: [], credits: [] };
   }
 
-  const { data: results } = await client
-    .from("honor_board_results")
-    .select(
-      "ns_combination_id, ew_combination_id, ns_butler_imps, ew_butler_imps, tournament_round",
-    )
-    .eq("group_id", groupId)
-    .eq("processing_status", "published")
-    .in("tournament_round", publishedRounds);
+  // Paginate: published season totals exceed API max_rows (1000), which would
+  // silently truncate boardsPlayed (e.g. 9 rounds × ~128 results ≈ 1150+).
+  const { data: results, error: resultsError } = await selectAllRows((from, to) =>
+    client
+      .from("honor_board_results")
+      .select(
+        "ns_combination_id, ew_combination_id, ns_butler_imps, ew_butler_imps, tournament_round",
+      )
+      .eq("group_id", groupId)
+      .eq("processing_status", "published")
+      .in("tournament_round", publishedRounds)
+      .order("tournament_round")
+      .order("id")
+      .range(from, to),
+  );
+  if (resultsError) {
+    throw new Error(
+      `Failed to load published Butler results: ${resultsError.message}`,
+    );
+  }
 
   const credits: {
     combinationId: string;
@@ -82,7 +95,7 @@ async function loadPublishedBoardCredits(
     roundId: string;
   }[] = [];
 
-  for (const r of results ?? []) {
+  for (const r of results) {
     const roundId = String(r.tournament_round);
     if (r.ns_butler_imps != null && r.ns_combination_id) {
       credits.push({

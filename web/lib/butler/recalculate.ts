@@ -18,6 +18,7 @@ import {
 import {
   parseAveragePmAwards,
 } from "@/lib/results/adjustment-helpers";
+import { selectAllRows } from "@/lib/supabase/select-all";
 
 export type RecalculateOk = {
   ok: true;
@@ -119,31 +120,37 @@ export async function recalculateHonorButler(
     }
   }
 
-  let query = service
-    .from("honor_board_results")
-    .select(RESULT_SELECT)
-    .eq("group_id", params.groupId);
+  const { data: results, error } = await selectAllRows((from, to) => {
+    let query = service
+      .from("honor_board_results")
+      .select(RESULT_SELECT)
+      .eq("group_id", params.groupId);
 
-  if (params.boardId && params.tournamentRound == null) {
-    query = query.eq("board_id", params.boardId);
-  } else if (params.tournamentRound != null) {
-    query = query.eq("tournament_round", params.tournamentRound);
-  }
+    if (params.boardId && params.tournamentRound == null) {
+      query = query.eq("board_id", params.boardId);
+    } else if (params.tournamentRound != null) {
+      query = query.eq("tournament_round", params.tournamentRound);
+    }
 
-  const { data: results, error } = await query;
+    return query.order("id").range(from, to);
+  });
   if (error) return { ok: false, error: error.message };
-  const rows = (results ?? []) as ResultRow[];
+  const rows = results as ResultRow[];
 
   let workRows = rows;
   if (params.tournamentRound != null) {
     const boardIds = [...new Set(rows.map((r) => r.board_id))];
     if (boardIds.length > 0) {
-      const { data: allForBoards, error: e2 } = await service
-        .from("honor_board_results")
-        .select(RESULT_SELECT)
-        .in("board_id", boardIds);
+      const { data: allForBoards, error: e2 } = await selectAllRows((from, to) =>
+        service
+          .from("honor_board_results")
+          .select(RESULT_SELECT)
+          .in("board_id", boardIds)
+          .order("id")
+          .range(from, to),
+      );
       if (e2) return { ok: false, error: e2.message };
-      workRows = (allForBoards ?? []) as ResultRow[];
+      workRows = allForBoards as ResultRow[];
     }
   }
 
