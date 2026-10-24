@@ -52,6 +52,7 @@ function createLoadTeamDetailSupabase(options: {
                           id: "div-1",
                           name: "Division 1",
                           centralized_location: null,
+                          division_level: { code: "first" },
                           league: {
                             id: "league-1",
                             name: "League",

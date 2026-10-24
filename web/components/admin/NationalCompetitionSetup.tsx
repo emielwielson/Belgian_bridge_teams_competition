@@ -7,6 +7,7 @@ import type { NationalReadiness } from "@/lib/competition/national-readiness";
 import { SCOPES } from "@/lib/competition/scopes";
 import { translateScheduleLabel } from "@/lib/i18n/labels";
 import type { NationalScheduleKey } from "@/lib/competition/national-structure";
+import { HonorMatchDayVenuesEditor } from "./HonorMatchDayVenuesEditor";
 import { NationalMatchDatesEditor } from "./NationalMatchDatesEditor";
 import { NationalStartLeagueSection } from "./NationalStartLeagueSection";
 import { NationalTeamsByDivision } from "./NationalTeamsByDivision";
@@ -17,9 +18,13 @@ const NATIONAL_SCHEDULE_KEYS: NationalScheduleKey[] = [
   "default",
 ];
 
-type SetupTab = "dates" | "teams" | "start";
+type SetupTab = "dates" | "venues" | "teams" | "start";
 
-function tabComplete(tab: SetupTab, readiness: NationalReadiness | null): boolean {
+function tabComplete(
+  tab: SetupTab,
+  readiness: NationalReadiness | null,
+  honorVenuesComplete: boolean | null,
+): boolean {
   if (!readiness) return false;
   if (tab === "dates") {
     return (
@@ -27,6 +32,9 @@ function tabComplete(tab: SetupTab, readiness: NationalReadiness | null): boolea
       readiness.calendars.first.complete &&
       readiness.calendars.default.complete
     );
+  }
+  if (tab === "venues") {
+    return honorVenuesComplete === true;
   }
   if (tab === "teams") {
     return readiness.allTeamsReady;
@@ -41,14 +49,25 @@ export function NationalCompetitionSetup() {
 
   const [activeTab, setActiveTab] = useState<SetupTab>("dates");
   const [readiness, setReadiness] = useState<NationalReadiness | null>(null);
+  const [honorVenuesComplete, setHonorVenuesComplete] = useState<boolean | null>(
+    null,
+  );
   const [message, setMessage] = useState<string | null>(null);
   const [structureLoading, setStructureLoading] = useState(true);
 
   const tabs: { id: SetupTab; label: string }[] = [
     { id: "dates", label: tTabs("matchDays") },
+    { id: "venues", label: tTabs("venues") },
     { id: "teams", label: tTabs("teams") },
     { id: "start", label: tTabs("startLeague") },
   ];
+
+  const loadHonorVenuesStatus = useCallback(async () => {
+    const res = await fetch("/api/admin/competition/honor-venues");
+    if (!res.ok) return;
+    const body = await res.json();
+    setHonorVenuesComplete(Boolean(body.complete));
+  }, []);
 
   const loadReadiness = useCallback(async () => {
     const res = await fetch("/api/admin/competition/national/readiness");
@@ -71,10 +90,10 @@ export function NationalCompetitionSetup() {
         setMessage(null);
       }
       setStructureLoading(false);
-      await loadReadiness();
+      await Promise.all([loadReadiness(), loadHonorVenuesStatus()]);
     }
     void init();
-  }, [loadReadiness, tTabs]);
+  }, [loadReadiness, loadHonorVenuesStatus, tTabs]);
 
   async function startLeague() {
     const res = await fetch("/api/admin/competition", {
@@ -119,7 +138,11 @@ export function NationalCompetitionSetup() {
         >
           {tabs.map((tab) => {
             const selected = activeTab === tab.id;
-            const complete = tabComplete(tab.id, readiness);
+            const complete = tabComplete(
+              tab.id,
+              readiness,
+              honorVenuesComplete,
+            );
             return (
               <button
                 key={tab.id}
@@ -171,6 +194,18 @@ export function NationalCompetitionSetup() {
                 />
               ))}
             </div>
+          </div>
+        )}
+
+        {activeTab === "venues" && (
+          <div
+            id="national-tab-venues"
+            role="tabpanel"
+            aria-labelledby="national-tab-venues-trigger"
+            className="flex flex-col gap-4 pt-2"
+          >
+            <p className="text-sm text-zinc-600">{tTabs("venuesIntro")}</p>
+            <HonorMatchDayVenuesEditor onSaved={loadHonorVenuesStatus} />
           </div>
         )}
 

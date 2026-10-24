@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ClubCompetitionLocationsPanel } from "@/components/admin/ClubCompetitionLocationsPanel";
+import { HonorMatchDayVenuesEditor } from "@/components/admin/HonorMatchDayVenuesEditor";
 import { translateRegionalScopeTitle } from "@/lib/i18n/labels";
 import { REGION_CODES, type RegionCode } from "@/lib/competition/scopes";
 
@@ -11,9 +12,13 @@ type RegionRow = { id: string; code: string; name: string };
 
 type Props = {
   regions: RegionRow[];
+  canManageHonorVenues?: boolean;
 };
 
-export function AdminClubLocationsPage({ regions }: Props) {
+export function AdminClubLocationsPage({
+  regions,
+  canManageHonorVenues = false,
+}: Props) {
   const t = useTranslations("admin");
 
   const [selectedRegionId, setSelectedRegionId] = useState("");
@@ -47,9 +52,17 @@ export function AdminClubLocationsPage({ regions }: Props) {
           {t("clubLocationsPageTitle")}
         </h1>
         <p className="mt-1 text-sm text-zinc-600">
-          {t("clubLocationsPageDescription")}
+          {canManageHonorVenues
+            ? t("clubLocationsPageDescriptionWithHonor")
+            : t("clubLocationsPageDescription")}
         </p>
       </header>
+
+      {canManageHonorVenues ? (
+        <section className="flex flex-col gap-2">
+          <HonorMatchDayVenuesEditor />
+        </section>
+      ) : null}
 
       <section className="card flex flex-col gap-4">
         <label className="flex flex-col gap-1">

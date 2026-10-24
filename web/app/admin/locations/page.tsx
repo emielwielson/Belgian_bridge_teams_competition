@@ -1,12 +1,25 @@
 import { AdminClubLocationsPage } from "@/components/admin/AdminClubLocationsPage";
+import { getManagedAdminHubLinks } from "@/lib/auth/admin-hub-access";
+import { COMPETITION_KIND_CODES } from "@/lib/auth/competition-scope";
 import { createServiceClient } from "@/lib/supabase/server-client";
 
 export default async function AdminLocationsPage() {
-  const supabase = createServiceClient();
-  const { data: regions } = await supabase
-    .from("regions")
-    .select("id, code, name")
-    .order("name");
+  const [hubLinks, regionsResult] = await Promise.all([
+    getManagedAdminHubLinks(),
+    createServiceClient()
+      .from("regions")
+      .select("id, code, name")
+      .order("name"),
+  ]);
 
-  return <AdminClubLocationsPage regions={regions ?? []} />;
+  const canManageHonorVenues = hubLinks.some(
+    (link) => link.kind === COMPETITION_KIND_CODES.NATIONAL,
+  );
+
+  return (
+    <AdminClubLocationsPage
+      regions={regionsResult.data ?? []}
+      canManageHonorVenues={canManageHonorVenues}
+    />
+  );
 }

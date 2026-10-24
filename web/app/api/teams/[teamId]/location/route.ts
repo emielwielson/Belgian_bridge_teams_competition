@@ -32,7 +32,11 @@ export async function PATCH(request: Request, { params }: TeamParams) {
         club:clubs(id, name, address, postal_code, location, competition_location),
         group:groups(
           id,
-          division:divisions(centralized_location)
+          division:divisions(
+            centralized_location,
+            division_level:division_levels(code),
+            league:leagues(scope)
+          )
         )
       `,
       )
@@ -57,14 +61,30 @@ export async function PATCH(request: Request, { params }: TeamParams) {
         ? (group as { division?: unknown }).division
         : null;
     const division = Array.isArray(rawDivision)
-      ? (rawDivision[0] as { centralized_location?: string | null } | undefined)
-      : (rawDivision as { centralized_location?: string | null } | null);
+      ? (rawDivision[0] as {
+          centralized_location?: string | null;
+          division_level?: unknown;
+          league?: unknown;
+        } | undefined)
+      : (rawDivision as {
+          centralized_location?: string | null;
+          division_level?: unknown;
+          league?: unknown;
+        } | null);
+
+    const rawLevel = division?.division_level;
+    const divisionLevel = Array.isArray(rawLevel) ? rawLevel[0] : rawLevel;
+    const rawLeague = division?.league;
+    const league = Array.isArray(rawLeague) ? rawLeague[0] : rawLeague;
+    const isHonorDivision =
+      (league as { scope?: string } | null | undefined)?.scope === "national" &&
+      (divisionLevel as { code?: string } | null | undefined)?.code === "honor";
 
     const centralized =
       typeof division?.centralized_location === "string"
         ? division.centralized_location.trim()
         : "";
-    if (centralized) {
+    if (isHonorDivision || centralized) {
       return jsonErrorCode(ErrorCodes.api.locationCentralizedVenue, 400);
     }
 

@@ -38,10 +38,14 @@ import {
 import { loadHonorMatchScorecard } from "@/lib/competition/honor-match-scorecard";
 import type { MatchPageBackLink } from "@/lib/competition/match-page-context";
 import { loadGroupScoringContext } from "@/lib/competition/match-scoring-context";
+import { loadHonorMatchVenue } from "@/lib/competition/honor-match-day-venues";
 import { loadMatchVenueLocations } from "@/lib/competition/match-venue-location";
 import { loadTeamRoster } from "@/lib/competition/player-matches";
 import { translateLeagueName } from "@/lib/i18n/labels";
-import { allowsBoardChoice } from "@/lib/scoring/board-count-rules";
+import {
+  allowsBoardChoice,
+  isHonorDivision,
+} from "@/lib/scoring/board-count-rules";
 import { getMatchLineup, lineupIsCompleteFromData } from "@/lib/scoring/match-operations";
 import { matchStatus } from "@/lib/scoring/match-state";
 import { toIntlLocale } from "@/i18n/intl-locale";
@@ -118,7 +122,9 @@ export async function MatchDetailView({
     userId ? canAddPenaltyForMatch(supabase, roles, matchId) : false,
   ]);
 
-  const [honorCtx, canEditHome, canEditAway] = await Promise.all([
+  const matchIsHonor = isHonorDivision(scoringContext);
+
+  const [honorCtx, canEditHome, canEditAway, honorVenue] = await Promise.all([
     loadHonorMatchLineupContext(supabase, match, scoringContext),
     userId && canOps
       ? canEditLineupForTeam(
@@ -138,10 +144,13 @@ export async function MatchDetailView({
           match.away_team_id,
         )
       : false,
+    matchIsHonor
+      ? loadHonorMatchVenue(supabase, match).catch(() => null)
+      : Promise.resolve(null),
   ]);
 
   const venueLocation = honorCtx.isHonor
-    ? null
+    ? honorVenue
     : venueLocationsRaw.displayLocation;
   const homeTeamVenue = honorCtx.isHonor
     ? null

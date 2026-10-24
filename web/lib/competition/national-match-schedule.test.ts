@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   collapseRoundsToMatchDays,
   expandMatchDaysToRounds,
+  honorMatchDayIndexForRound,
   NATIONAL_MATCH_DAY_COUNTS,
 } from "./national-match-schedule";
 
@@ -76,5 +77,21 @@ describe("national match schedule", () => {
 
   it("expects 14 days for default schedule", () => {
     expect(NATIONAL_MATCH_DAY_COUNTS.default).toBe(14);
+  });
+
+  it("maps honor rounds 1–21 to match days 1–7", () => {
+    expect(honorMatchDayIndexForRound(1)).toBe(1);
+    expect(honorMatchDayIndexForRound(2)).toBe(1);
+    expect(honorMatchDayIndexForRound(3)).toBe(1);
+    expect(honorMatchDayIndexForRound(4)).toBe(2);
+    expect(honorMatchDayIndexForRound(7)).toBe(3);
+    expect(honorMatchDayIndexForRound(9)).toBe(3);
+    expect(honorMatchDayIndexForRound(19)).toBe(7);
+    expect(honorMatchDayIndexForRound(21)).toBe(7);
+  });
+
+  it("rejects out-of-range honor rounds", () => {
+    expect(() => honorMatchDayIndexForRound(0)).toThrow();
+    expect(() => honorMatchDayIndexForRound(22)).toThrow();
   });
 });

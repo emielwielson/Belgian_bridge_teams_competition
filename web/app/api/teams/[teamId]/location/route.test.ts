@@ -34,7 +34,11 @@ type TeamRow = {
   };
   group: {
     id: string;
-    division: { centralized_location: string | null };
+    division: {
+      centralized_location: string | null;
+      division_level?: { code: string } | null;
+      league?: { scope: string } | null;
+    };
   };
 };
 
@@ -89,7 +93,11 @@ const baseTeam: TeamRow = {
   },
   group: {
     id: "group-1",
-    division: { centralized_location: null },
+    division: {
+      centralized_location: null,
+      division_level: { code: "first" },
+      league: { scope: "national" },
+    },
   },
 };
 
@@ -162,7 +170,11 @@ describe("PATCH /api/teams/[teamId]/location", () => {
         ...baseTeam,
         group: {
           id: "group-1",
-          division: { centralized_location: "Honor hall" },
+          division: {
+            centralized_location: "Honor hall",
+            division_level: { code: "first" },
+            league: { scope: "national" },
+          },
         },
       }) as never,
     });
@@ -178,6 +190,35 @@ describe("PATCH /api/teams/[teamId]/location", () => {
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toMatch(/centralized/i);
+    expect(createServiceClient).not.toHaveBeenCalled();
+  });
+
+  it("rejects when team is in national Honor Division", async () => {
+    vi.mocked(requireAuth).mockResolvedValue({
+      user: { id: "user-1" },
+      roles: ["player"],
+      supabase: mockSessionSupabase({
+        ...baseTeam,
+        group: {
+          id: "group-1",
+          division: {
+            centralized_location: null,
+            division_level: { code: "honor" },
+            league: { scope: "national" },
+          },
+        },
+      }) as never,
+    });
+
+    const res = await PATCH(
+      new Request("http://test", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ location: "Custom hall" }),
+      }),
+      { params: Promise.resolve({ teamId: "team-1" }) },
+    );
+    expect(res.status).toBe(400);
     expect(createServiceClient).not.toHaveBeenCalled();
   });
 

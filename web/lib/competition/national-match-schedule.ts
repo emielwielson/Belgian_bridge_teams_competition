@@ -49,6 +49,17 @@ export function anchorRoundForMatchDay(
   return roundForMatchDaySlot(scheduleKey, dayIndex, 0);
 }
 
+/**
+ * Honor (Eredivisie) match-day index (1–7) for a fixture round (1–21).
+ * Three consecutive rounds share one day.
+ */
+export function honorMatchDayIndexForRound(round: number): number {
+  if (!Number.isInteger(round) || round < 1 || round > 21) {
+    throw new Error(`Honor round must be 1–21, got ${round}`);
+  }
+  return Math.floor((round - 1) / slotsPerMatchDay("honor")) + 1;
+}
+
 export function expandMatchDaysToRounds(
   scheduleKey: NationalScheduleKey,
   matchDays: string[],

@@ -293,6 +293,7 @@ export async function loadTeamDetail(
           id,
           name,
           centralized_location,
+          division_level:division_levels ( code ),
           league:leagues (
             id,
             name,
@@ -319,6 +320,7 @@ export async function loadTeamDetail(
     id: string;
     name: string;
     centralized_location: string | null;
+    division_level: unknown;
     league: unknown;
   }>(group.division);
   if (!division) return null;
@@ -331,6 +333,10 @@ export async function loadTeamDetail(
     region_id: string | null;
   }>(division.league);
   if (!league) return null;
+
+  const divisionLevel = unwrapOne<{ code: string }>(division.division_level);
+  const isHonorDivision =
+    league.scope === "national" && divisionLevel?.code === "honor";
 
   const captainRaw = unwrapOne<{
     id: string;
@@ -461,10 +467,12 @@ export async function loadTeamDetail(
     typeof teamRow.location === "string" && teamRow.location.trim()
       ? teamRow.location.trim()
       : null;
-  const hasCentralizedVenue = Boolean(
-    typeof division.centralized_location === "string" &&
-      division.centralized_location.trim(),
-  );
+  const hasCentralizedVenue =
+    isHonorDivision ||
+    Boolean(
+      typeof division.centralized_location === "string" &&
+        division.centralized_location.trim(),
+    );
 
   return {
     team: {
