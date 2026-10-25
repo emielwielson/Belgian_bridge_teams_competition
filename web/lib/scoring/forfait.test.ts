@@ -43,7 +43,7 @@ describe("roundVpHalfUp", () => {
 });
 
 describe("forfaitWinnerVp", () => {
-  it("returns 12 when the winner has no other scored matches", () => {
+  it("returns 12 when neither team has other scored matches", () => {
     const matches = [
       scored({
         id: "f1",
@@ -54,7 +54,7 @@ describe("forfaitWinnerVp", () => {
         vp_away: 12,
       }),
     ];
-    expect(forfaitWinnerVp("b", matches, "f1")).toBe(FORFAIT_MIN_VP);
+    expect(forfaitWinnerVp("b", "a", matches, "f1")).toBe(FORFAIT_MIN_VP);
   });
 
   it("uses max(12, average) when average is below 12", () => {
@@ -83,7 +83,7 @@ describe("forfaitWinnerVp", () => {
       }),
     ];
     // avg of 8 and 10 = 9 → max(12, 9) = 12
-    expect(forfaitWinnerVp("b", matches, "f1")).toBe(12);
+    expect(forfaitWinnerVp("b", "a", matches, "f1")).toBe(12);
   });
 
   it("uses average when above 12", () => {
@@ -112,7 +112,7 @@ describe("forfaitWinnerVp", () => {
       }),
     ];
     // avg of 16 and 14 = 15
-    expect(forfaitWinnerVp("b", matches, "f1")).toBe(15);
+    expect(forfaitWinnerVp("b", "a", matches, "f1")).toBe(15);
   });
 
   it("rounds average to 2 decimals half-up", () => {
@@ -148,7 +148,7 @@ describe("forfaitWinnerVp", () => {
       }),
     ];
     // avg = (13.1 + 13.2 + 13.4) / 3 = 13.2333… → 13.23
-    expect(forfaitWinnerVp("b", matches, "f1")).toBe(13.23);
+    expect(forfaitWinnerVp("b", "a", matches, "f1")).toBe(13.23);
   });
 
   it("excludes other forfait matches from the average", () => {
@@ -177,7 +177,131 @@ describe("forfaitWinnerVp", () => {
         vp_away: 12,
       }),
     ];
-    expect(forfaitWinnerVp("b", matches, "f1")).toBe(18);
+    expect(forfaitWinnerVp("b", "a", matches, "f1")).toBe(18);
+  });
+
+  it("uses 20 - forfeiter average when that is the maximum", () => {
+    const matches = [
+      scored({
+        id: "m-winner",
+        home_team_id: "b",
+        away_team_id: "c",
+        vp_home: 13,
+        vp_away: 7,
+      }),
+      scored({
+        id: "m-forfeiter",
+        home_team_id: "a",
+        away_team_id: "d",
+        vp_home: 4,
+        vp_away: 16,
+      }),
+      scored({
+        id: "f1",
+        home_team_id: "a",
+        away_team_id: "b",
+        forfait_side: "home",
+        vp_home: 0,
+        vp_away: 12,
+      }),
+    ];
+    // max(12, 13, 20 - 4 = 16) = 16
+    expect(forfaitWinnerVp("b", "a", matches, "f1")).toBe(16);
+  });
+
+  it("ignores 20 - forfeiter average when below other candidates", () => {
+    const matches = [
+      scored({
+        id: "m-winner",
+        home_team_id: "b",
+        away_team_id: "c",
+        vp_home: 17,
+        vp_away: 3,
+      }),
+      scored({
+        id: "m-forfeiter",
+        home_team_id: "a",
+        away_team_id: "d",
+        vp_home: 14,
+        vp_away: 6,
+      }),
+      scored({
+        id: "f1",
+        home_team_id: "a",
+        away_team_id: "b",
+        forfait_side: "home",
+        vp_home: 0,
+        vp_away: 12,
+      }),
+    ];
+    // max(12, 17, 20 - 14 = 6) = 17
+    expect(forfaitWinnerVp("b", "a", matches, "f1")).toBe(17);
+  });
+
+  it("omits third term when forfeiter has no other played matches", () => {
+    const matches = [
+      scored({
+        id: "m1",
+        home_team_id: "b",
+        away_team_id: "c",
+        vp_home: 15,
+        vp_away: 5,
+      }),
+      scored({
+        id: "f1",
+        home_team_id: "a",
+        away_team_id: "b",
+        forfait_side: "home",
+        vp_home: 0,
+        vp_away: 12,
+      }),
+    ];
+    expect(forfaitWinnerVp("b", "a", matches, "f1")).toBe(15);
+  });
+
+  it("excludes forfeiter forfait and unplayed matches from third-term average", () => {
+    const matches = [
+      scored({
+        id: "m-winner",
+        home_team_id: "b",
+        away_team_id: "c",
+        vp_home: 12,
+        vp_away: 8,
+      }),
+      scored({
+        id: "m-forfeiter-played",
+        home_team_id: "a",
+        away_team_id: "d",
+        vp_home: 5,
+        vp_away: 15,
+      }),
+      scored({
+        id: "f-forfeiter-other",
+        home_team_id: "a",
+        away_team_id: "e",
+        forfait_side: "home",
+        vp_home: 0,
+        vp_away: 18,
+      }),
+      scored({
+        id: "unplayed",
+        home_team_id: "a",
+        away_team_id: "f",
+        vp_home: null,
+        vp_away: null,
+        played_at: null,
+      }),
+      scored({
+        id: "f1",
+        home_team_id: "a",
+        away_team_id: "b",
+        forfait_side: "home",
+        vp_home: 0,
+        vp_away: 12,
+      }),
+    ];
+    // forfeiter avg from played only = 5 → 20 - 5 = 15; max(12, 12, 15) = 15
+    expect(forfaitWinnerVp("b", "a", matches, "f1")).toBe(15);
   });
 });
 
@@ -195,6 +319,29 @@ describe("computeForfaitScores", () => {
     expect(
       computeForfaitScores("home", "home", "away", matches, "f1"),
     ).toEqual({ vpHome: 0, vpAway: 16, winnerVp: 16 });
+  });
+
+  it("applies third term via forfeiter average", () => {
+    const matches = [
+      scored({
+        id: "m-winner",
+        home_team_id: "away",
+        away_team_id: "x",
+        vp_home: 13,
+        vp_away: 7,
+      }),
+      scored({
+        id: "m-forfeiter",
+        home_team_id: "home",
+        away_team_id: "y",
+        vp_home: 3,
+        vp_away: 17,
+      }),
+    ];
+    // max(12, 13, 20 - 3 = 17) = 17
+    expect(
+      computeForfaitScores("home", "home", "away", matches, "f1"),
+    ).toEqual({ vpHome: 0, vpAway: 17, winnerVp: 17 });
   });
 });
 

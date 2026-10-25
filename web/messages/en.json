@@ -162,7 +162,7 @@
       "record": "Record forfait",
       "hide": "Hide forfait",
       "title": "Record forfait",
-      "description": "The forfeiting team scores 0 VP. The other team gets the maximum of 12 and their average VP from other played matches (recalculated as results come in).",
+      "description": "The forfeiting team scores 0 VP. The other team gets the maximum of 12, their average VP from other played matches, and 20 minus the forfeiting team's average VP from other played matches (recalculated as results come in).",
       "homeForfeits": "{team} forfeits (home)",
       "awayForfeits": "{team} forfeits (away)",
       "activeBanner": "Forfait: {team} forfeited",

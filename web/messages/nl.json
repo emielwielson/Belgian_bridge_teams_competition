@@ -161,7 +161,7 @@
       "record": "Forfait registreren",
       "hide": "Forfait verbergen",
       "title": "Forfait registreren",
-      "description": "Het forfaitgevende team scoort 0 VP. Het andere team krijgt het maximum van 12 en hun gemiddelde VP van andere gespeelde wedstrijden (herberekend naarmate er resultaten bijkomen).",
+      "description": "Het forfaitgevende team scoort 0 VP. Het andere team krijgt het maximum van 12, hun gemiddelde VP van andere gespeelde wedstrijden, en 20 minus het gemiddelde VP van het forfaitgevende team over andere gespeelde wedstrijden (herberekend naarmate er resultaten bijkomen).",
       "homeForfeits": "{team} geeft forfait (thuis)",
       "awayForfeits": "{team} geeft forfait (uit)",
       "activeBanner": "Forfait: {team} heeft forfait gegeven",

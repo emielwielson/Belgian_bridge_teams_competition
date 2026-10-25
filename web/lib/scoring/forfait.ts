@@ -43,31 +43,55 @@ export function roundVpHalfUp(value: number, decimals = 2): number {
 }
 
 /**
- * Winner VP = max(12, average of that team's other non-forfait scored matches),
- * rounded to 2 decimals (half-up).
- * Forfait and bye rows are excluded from the average.
+ * Mean VP from a team's other actually played matches.
+ * Skips the excluded match, unplayed rows, and any forfait (including other forfaits).
  */
-export function forfaitWinnerVp(
-  winnerTeamId: string,
+export function teamPlayedAverageVp(
+  teamId: string,
   groupMatches: ScoredMatchForAverage[],
   excludeMatchId: string,
-): number {
+): number | null {
   const vps: number[] = [];
   for (const m of groupMatches) {
     if (m.id === excludeMatchId) continue;
     if (m.played_at == null) continue;
     if (m.forfait_side != null) continue;
 
-    if (m.home_team_id === winnerTeamId && m.vp_home != null) {
+    if (m.home_team_id === teamId && m.vp_home != null) {
       vps.push(Number(m.vp_home));
-    } else if (m.away_team_id === winnerTeamId && m.vp_away != null) {
+    } else if (m.away_team_id === teamId && m.vp_away != null) {
       vps.push(Number(m.vp_away));
     }
   }
+  return meanVp(vps);
+}
 
-  const avg = meanVp(vps);
-  if (avg == null) return FORFAIT_MIN_VP;
-  return roundVpHalfUp(Math.max(FORFAIT_MIN_VP, avg));
+/**
+ * Winner VP = max(12, winnerAvg, 20 − forfeiterAvg), rounded to 2 decimals (half-up).
+ * Averages use only actually played non-forfait matches; missing averages are omitted.
+ */
+export function forfaitWinnerVp(
+  winnerTeamId: string,
+  forfeiterTeamId: string,
+  groupMatches: ScoredMatchForAverage[],
+  excludeMatchId: string,
+): number {
+  const candidates: number[] = [FORFAIT_MIN_VP];
+  const winnerAvg = teamPlayedAverageVp(
+    winnerTeamId,
+    groupMatches,
+    excludeMatchId,
+  );
+  if (winnerAvg != null) candidates.push(winnerAvg);
+
+  const forfeiterAvg = teamPlayedAverageVp(
+    forfeiterTeamId,
+    groupMatches,
+    excludeMatchId,
+  );
+  if (forfeiterAvg != null) candidates.push(20 - forfeiterAvg);
+
+  return roundVpHalfUp(Math.max(...candidates));
 }
 
 export function forfaitVpPair(
@@ -88,7 +112,13 @@ export function computeForfaitScores(
   matchId: string,
 ): { vpHome: number; vpAway: number; winnerVp: number } {
   const winnerTeamId = forfaitSide === "home" ? awayTeamId : homeTeamId;
-  const winnerVp = forfaitWinnerVp(winnerTeamId, groupMatches, matchId);
+  const forfeiterTeamId = forfaitSide === "home" ? homeTeamId : awayTeamId;
+  const winnerVp = forfaitWinnerVp(
+    winnerTeamId,
+    forfeiterTeamId,
+    groupMatches,
+    matchId,
+  );
   const { vpHome, vpAway } = forfaitVpPair(forfaitSide, winnerVp);
   return { vpHome, vpAway, winnerVp };
 }

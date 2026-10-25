@@ -161,7 +161,7 @@
       "record": "Enregistrer un forfait",
       "hide": "Masquer le forfait",
       "title": "Enregistrer un forfait",
-      "description": "L'équipe qui déclare forfait marque 0 VP. L'autre équipe reçoit le maximum entre 12 et sa moyenne de VP sur les autres rencontres jouées (recalculée au fur et à mesure des résultats).",
+      "description": "L'équipe qui déclare forfait marque 0 VP. L'autre équipe reçoit le maximum entre 12, sa moyenne de VP sur les autres rencontres jouées, et 20 moins la moyenne de VP de l'équipe forfaitaire sur les autres rencontres jouées (recalculée au fur et à mesure des résultats).",
       "homeForfeits": "{team} déclare forfait (domicile)",
       "awayForfeits": "{team} déclare forfait (extérieur)",
       "activeBanner": "Forfait : {team} a déclaré forfait",
