@@ -75,9 +75,9 @@ export const CAPTAIN_GUIDES: ManualGuideDef[] = [
     anchor: "location-change",
     translationKey: "captain.locationChange",
     steps: [
-      { id: "open-change" },
-      { id: "propose-change" },
-      { id: "approve-change" },
+      { id: "open-change", image: "captain-location-01-open-change.png" },
+      { id: "propose-change", image: "captain-location-02-propose-change.png" },
+      { id: "approve-change", image: "captain-location-03-approve-change.png" },
     ],
   },
 ];

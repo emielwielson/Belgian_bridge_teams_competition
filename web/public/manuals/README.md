@@ -24,3 +24,21 @@ Outputs:
 - `public/manuals/nl/honor-lineup-*.png`
 - `public/manuals/en/honor-lineup-*.png`
 - `public/manuals/fr/honor-lineup-*.png`
+
+## Location change (captains)
+
+Fixtures: `/dev/location-change-manual-shots?locale=nl|en|fr` (dev only).
+
+```bash
+# with npm run dev already running:
+npx playwright install chromium
+npm install -D playwright   # temporary
+node scripts/capture-location-change-manual-shots.mjs
+npm uninstall playwright
+```
+
+Outputs:
+
+- `public/manuals/nl/captain-location-*.png`
+- `public/manuals/en/captain-location-*.png`
+- `public/manuals/fr/captain-location-*.png`
