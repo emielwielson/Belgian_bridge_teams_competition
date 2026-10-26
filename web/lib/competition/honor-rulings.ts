@@ -69,6 +69,6 @@ export async function assertHonorArbiterUser(
   if (honorError) throw honorError;
   if (roleError) throw roleError;
   if (!honorRow || !roleRow) {
-    throw new AuthError("Forbidden: selected user is not a Honor arbiter", 400);
+    throw new AuthError("Forbidden: selected user is not a Honor arbiter", 403);
   }
 }
