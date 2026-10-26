@@ -17,7 +17,6 @@ import { canManageTeamConventionCards, canManageTeamRoster } from "@/lib/auth/te
 import { getUserRoles } from "@/lib/auth/session";
 import { listConventionCards } from "@/lib/competition/convention-card-queries";
 import { loadNextUnplayedMatchForTeam } from "@/lib/competition/player-matches";
-import { loadTeamRosterState } from "@/lib/competition/team-roster";
 import { loadTeamDetail } from "@/lib/competition/team-queries";
 import { translateLeagueName } from "@/lib/i18n/labels";
 import { createSessionClient } from "@/lib/supabase/server-client";
@@ -68,11 +67,10 @@ export default async function TeamPage({ params }: Props) {
       ? await canDisciplineTeam(supabase, roles, teamId)
       : false;
 
-  const [conventionCards, rosterState, nextMatch] = await Promise.all([
+  // Available club members (for the add-player picker) load client-side via
+  // /api/teams/.../roster — that query can be large and must not block SSR.
+  const [conventionCards, nextMatch] = await Promise.all([
     listConventionCards(supabase, teamId),
-    canManageRoster
-      ? loadTeamRosterState(supabase, teamId, detail.club.id)
-      : Promise.resolve(null),
     loadNextUnplayedMatchForTeam(supabase, teamId),
   ]);
 
@@ -119,7 +117,6 @@ export default async function TeamPage({ params }: Props) {
         captainId={team.captain_id}
         initialRoster={roster}
         substitutes={detail.substitutes}
-        initialAvailablePlayers={rosterState?.available_players}
         canManageRoster={canManageRoster}
         canLinkToPlayers={canLinkToPlayers}
       />
