@@ -81,8 +81,10 @@ export const ErrorCodes = {
     forfaitAlreadySet: "api.forfaitAlreadySet",
     forfaitNotSet: "api.forfaitNotSet",
     matchHasForfaitClearFirst: "api.matchHasForfaitClearFirst",
+    honorRulingOnly: "api.honorRulingOnly",
   },
   auth: {
+    onlyArbiterOrManagerDiscipline: "auth.onlyArbiterOrManagerDiscipline",
     emailNotRegistered: "auth.emailNotRegistered",
     unauthorized: "auth.unauthorized",
     forbidden: "auth.forbidden",

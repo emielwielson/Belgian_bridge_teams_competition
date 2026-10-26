@@ -87,7 +87,7 @@
       "roundColumnsPending": "Rondekolommen verschijnen nadat het wedstrijdschema is gegenereerd.",
       "viewMatchAria": "Wedstrijd bekijken",
       "homeAria": "Thuis",
-      "arbiterRequestAria": "Wedstrijd heeft een scheidsrechterverzoek",
+      "arbiterRequestAria": "Wedstrijd heeft een scheidsrechterverzoek of arbitrage",
       "locationChangedAria": "Wedstrijdlocatie is gewijzigd",
       "forfaitAria": "Wedstrijd beslist door forfait"
     },
@@ -412,6 +412,26 @@
       "uploadFailed": "Document uploaden mislukt",
       "saveFailed": "Straf toevoegen mislukt",
       "saveFailedGeneric": "Straf opslaan mislukt"
+    },
+    "ruling": {
+      "title": "Arbitrage toevoegen",
+      "description": "Publiceer de definitieve scheidsrechterlijke uitspraak als PDF of afbeelding. Het document moet de beslissing en de motivatie bevatten.",
+      "boardOptional": "Bord (optioneel)",
+      "rulingDate": "Datum uitspraak",
+      "file": "Beslissingsbestand (PDF of afbeelding)",
+      "add": "Arbitrage toevoegen",
+      "saving": "Opslaan…",
+      "fileRequired": "Een PDF of afbeelding is verplicht",
+      "saved": "Arbitrage gepubliceerd.",
+      "uploadFailed": "Document uploaden mislukt",
+      "saveFailed": "Arbitrage toevoegen mislukt",
+      "saveFailedGeneric": "Arbitrage opslaan mislukt",
+      "loadFailed": "Arbitrages laden mislukt",
+      "listTitle": "Arbitrages voor deze wedstrijd",
+      "loading": "Laden…",
+      "none": "Nog geen arbitrages.",
+      "boardLabel": " · Bord {board}",
+      "viewFile": "Bestand bekijken"
     }
   },
   "players": {
@@ -1584,7 +1604,8 @@
       "forfaitSideRequired": "forfait-kant moet thuis of uit zijn",
       "forfaitAlreadySet": "Wedstrijd heeft al een forfait",
       "forfaitNotSet": "Wedstrijd heeft geen forfait",
-      "matchHasForfaitClearFirst": "Wedstrijd heeft een forfait; wis het forfait voordat u IMPs ingeeft"
+      "matchHasForfaitClearFirst": "Wedstrijd heeft een forfait; wis het forfait voordat u IMPs ingeeft",
+      "honorRulingOnly": "Arbitrages kunnen alleen worden toegevoegd voor Eredivisie-wedstrijden"
     },
     "auth": {
       "emailNotRegistered": "Dit e-mailadres staat niet in onze database. Als u bridgespeler bent, kan uw federatie (VBL of LBF) een ander e-mailadres hebben — probeer een ander adres of neem contact op met uw club.",
@@ -1598,6 +1619,7 @@
       "matchAlreadyScored": "Wedstrijd al gescored; gebruik beheerdersbewerking",
       "cannotSubmitScore": "Geen toegang: u kunt geen score indienen voor deze wedstrijd",
       "onlyArbiterOrManagerEditScore": "Geen toegang: alleen scheidsrechters of competitiebeheerders kunnen officiële scores bewerken",
+      "onlyArbiterOrManagerDiscipline": "Geen toegang: alleen scheidsrechters of competitiebeheerders kunnen discipline beheren",
       "notAssignedClub": "Geen toegang: niet toegewezen aan deze club",
       "cannotManageConventionCards": "Geen toegang: u kunt geen conventiekaarten beheren voor dit team"
     },

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import {
+  assertCanAddPenaltyForMatch,
   assertCanDisciplineTeam,
   canAddPenaltyForMatch,
   canDisciplineTeam,
@@ -280,6 +281,17 @@ describe("match scope gates for arbiter discipline and finished scores", () => {
     await expect(
       canAddPenaltyForMatch(supabase, [ROLES.PLAYER], "match-1"),
     ).resolves.toBe(false);
+  });
+
+  it("assertCanAddPenaltyForMatch throws when denied", async () => {
+    await expect(
+      assertCanAddPenaltyForMatch(supabase, [ROLES.PLAYER], "match-1"),
+    ).rejects.toBeInstanceOf(AuthError);
+
+    vi.mocked(userIsArbiterForMatch).mockResolvedValueOnce(true);
+    await expect(
+      assertCanAddPenaltyForMatch(supabase, [ROLES.ARBITER], "match-1"),
+    ).resolves.toBeUndefined();
   });
 
   it("canDisciplineTeam allows pure arbiter only for in-scope team", async () => {

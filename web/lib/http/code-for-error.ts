@@ -17,6 +17,8 @@ const AUTH_MESSAGE_TO_CODE: Record<string, ErrorCode> = {
     ErrorCodes.auth.cannotSubmitScore,
   "Forbidden: only arbiters or competition managers can edit official scores":
     ErrorCodes.auth.onlyArbiterOrManagerEditScore,
+  "Forbidden: only arbiters or competition managers can manage discipline":
+    ErrorCodes.auth.onlyArbiterOrManagerDiscipline,
   "Forbidden: not assigned to this club": ErrorCodes.auth.notAssignedClub,
   "Forbidden: cannot manage convention cards for this team":
     ErrorCodes.auth.cannotManageConventionCards,
@@ -64,6 +66,7 @@ const MESSAGE_TO_CODE: Record<string, ErrorCode> = {
     ErrorCodes.api.matchHasForfaitClearFirst,
   "Match already has a forfait": ErrorCodes.api.forfaitAlreadySet,
   "Match does not have a forfait": ErrorCodes.api.forfaitNotSet,
+  "Honor Division rulings only": ErrorCodes.api.honorRulingOnly,
 };
 
 const NATIONAL_EXPECTED_DAYS = /^Expected (\d+) match days for (\w+), got (\d+)$/;

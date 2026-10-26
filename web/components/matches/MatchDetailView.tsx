@@ -3,6 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { ForfaitWorkflow } from "@/components/matches/ForfaitWorkflow";
 import { HonorMatchScorecardView } from "@/components/matches/HonorMatchScorecard";
 import { MatchPenaltyForm } from "@/components/matches/MatchPenaltyForm";
+import { MatchRulingForm } from "@/components/matches/MatchRulingForm";
 import { MatchSecondaryWorkflows } from "@/components/matches/MatchSecondaryWorkflows";
 import { HonorMatchLineupEditor } from "@/components/player/HonorMatchLineupEditor";
 import { MatchLineupEditor } from "@/components/player/MatchLineupEditor";
@@ -534,6 +535,10 @@ export async function MatchDetailView({
           homeTeam={{ id: match.home_team_id, name: match.home_team.name }}
           awayTeam={{ id: match.away_team_id, name: match.away_team.name }}
         />
+      ) : null}
+
+      {honorCtx.isHonor && canAddPenalty ? (
+        <MatchRulingForm matchId={matchId} />
       ) : null}
     </main>
   );

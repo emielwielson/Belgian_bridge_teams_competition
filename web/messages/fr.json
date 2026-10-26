@@ -87,7 +87,7 @@
       "roundColumnsPending": "Les colonnes de journée apparaissent après la génération du calendrier.",
       "viewMatchAria": "Voir la rencontre",
       "homeAria": "Home team",
-      "arbiterRequestAria": "La rencontre a une demande d'arbitre",
+      "arbiterRequestAria": "La rencontre a une demande d'arbitre ou un arbitrage",
       "locationChangedAria": "Le lieu de la rencontre a été modifié",
       "forfaitAria": "Rencontre décidée par forfait"
     },
@@ -412,6 +412,26 @@
       "uploadFailed": "Échec du téléversement du document",
       "saveFailed": "Échec de l'ajout de la pénalité",
       "saveFailedGeneric": "Échec de l'enregistrement de la pénalité"
+    },
+    "ruling": {
+      "title": "Ajouter un arbitrage",
+      "description": "Publiez la décision finale d'arbitre en PDF ou image. Le document doit contenir la décision et sa motivation.",
+      "boardOptional": "Donne (facultatif)",
+      "rulingDate": "Date de la décision",
+      "file": "Fichier de décision (PDF ou image)",
+      "add": "Ajouter l'arbitrage",
+      "saving": "Enregistrement…",
+      "fileRequired": "Un fichier PDF ou image est obligatoire",
+      "saved": "Arbitrage publié.",
+      "uploadFailed": "Échec du téléversement du document",
+      "saveFailed": "Échec de l'ajout de l'arbitrage",
+      "saveFailedGeneric": "Échec de l'enregistrement de l'arbitrage",
+      "loadFailed": "Échec du chargement des arbitrages",
+      "listTitle": "Arbitrages pour cette rencontre",
+      "loading": "Chargement…",
+      "none": "Aucun arbitrage pour l'instant.",
+      "boardLabel": " · Donne {board}",
+      "viewFile": "Voir le fichier"
     }
   },
   "players": {
@@ -1584,7 +1604,8 @@
       "forfaitSideRequired": "le côté forfait doit être domicile ou extérieur",
       "forfaitAlreadySet": "La rencontre a déjà un forfait",
       "forfaitNotSet": "La rencontre n'a pas de forfait",
-      "matchHasForfaitClearFirst": "La rencontre a un forfait ; annulez le forfait avant de saisir les IMPs"
+      "matchHasForfaitClearFirst": "La rencontre a un forfait ; annulez le forfait avant de saisir les IMPs",
+      "honorRulingOnly": "Les arbitrages ne peuvent être ajoutés que pour les rencontres de l'Honor Division"
     },
     "auth": {
       "emailNotRegistered": "Cette adresse e-mail n'est pas enregistrée dans notre base de données. Si vous êtes joueur de bridge, votre fédération (VBL ou LBF) peut avoir une autre adresse e-mail — essayez une autre adresse ou contactez votre club.",
@@ -1598,6 +1619,7 @@
       "matchAlreadyScored": "Rencontre déjà marquée ; utilisez la modification administrateur",
       "cannotSubmitScore": "Interdit : impossible de soumettre un résultat pour cette rencontre",
       "onlyArbiterOrManagerEditScore": "Interdit : seuls les arbitres ou gestionnaires de compétition peuvent modifier les résultats officiels",
+      "onlyArbiterOrManagerDiscipline": "Interdit : seuls les arbitres ou gestionnaires de compétition peuvent gérer la discipline",
       "notAssignedClub": "Interdit : non assigné à ce club",
       "cannotManageConventionCards": "Interdit : impossible de gérer les cartes de conventions pour cette équipe"
     },

@@ -87,7 +87,7 @@
       "roundColumnsPending": "Round columns appear after the match schedule is generated.",
       "viewMatchAria": "View match",
       "homeAria": "Home",
-      "arbiterRequestAria": "Match has an arbiter request",
+      "arbiterRequestAria": "Match has an arbiter request or ruling",
       "locationChangedAria": "Match location has been changed",
       "forfaitAria": "Match decided by forfait"
     },
@@ -413,6 +413,26 @@
       "uploadFailed": "Failed to upload document",
       "saveFailed": "Failed to add penalty",
       "saveFailedGeneric": "Failed to save penalty"
+    },
+    "ruling": {
+      "title": "Add arbitrage",
+      "description": "Publish the final arbiter decision as a PDF or image. The document must include the decision and its motivation.",
+      "boardOptional": "Board (optional)",
+      "rulingDate": "Ruling date",
+      "file": "Decision file (PDF or image)",
+      "add": "Add arbitrage",
+      "saving": "Saving…",
+      "fileRequired": "A PDF or image file is required",
+      "saved": "Arbitrage published.",
+      "uploadFailed": "Failed to upload document",
+      "saveFailed": "Failed to add arbitrage",
+      "saveFailedGeneric": "Failed to save arbitrage",
+      "loadFailed": "Failed to load arbitrages",
+      "listTitle": "Arbitrages for this match",
+      "loading": "Loading…",
+      "none": "No arbitrages yet.",
+      "boardLabel": " · Board {board}",
+      "viewFile": "View file"
     }
   },
   "players": {
@@ -1585,7 +1605,8 @@
       "forfaitSideRequired": "forfait side must be home or away",
       "forfaitAlreadySet": "Match already has a forfait",
       "forfaitNotSet": "Match does not have a forfait",
-      "matchHasForfaitClearFirst": "Match has a forfait; clear the forfait before entering IMPs"
+      "matchHasForfaitClearFirst": "Match has a forfait; clear the forfait before entering IMPs",
+      "honorRulingOnly": "Arbitrages can only be added for Honor Division matches"
     },
     "auth": {
       "emailNotRegistered": "This email address is not registered in our database. If you are a bridge player, your federation (VBL or LBF) may have a different email address on file — try another address or contact your club.",
@@ -1599,6 +1620,7 @@
       "matchAlreadyScored": "Match already scored; use admin edit",
       "cannotSubmitScore": "Forbidden: cannot submit score for this match",
       "onlyArbiterOrManagerEditScore": "Forbidden: only arbiters or competition managers can edit official scores",
+      "onlyArbiterOrManagerDiscipline": "Forbidden: only arbiters or competition managers can manage discipline",
       "notAssignedClub": "Forbidden: not assigned to this club",
       "cannotManageConventionCards": "Forbidden: cannot manage convention cards for this team"
     },

@@ -15,7 +15,7 @@ const labels: GroupStandingsGridLabels = {
   roundColumnsPending: "Round columns appear after the match schedule is generated.",
   viewMatchAria: "View match",
   homeAria: "Home",
-  arbiterRequestAria: "Match has an arbiter request",
+  arbiterRequestAria: "Match has an arbiter request or ruling",
   locationChangedAria: "Match location has been changed",
   forfaitAria: "Match decided by forfait",
 };
@@ -100,7 +100,7 @@ describe("GroupStandingsGrid", () => {
     );
     expect(container.querySelector(".outline-amber-500")).toBeTruthy();
     expect(
-      screen.getAllByTitle("Match has an arbiter request").length,
+      screen.getAllByTitle("Match has an arbiter request or ruling").length,
     ).toBeGreaterThanOrEqual(2);
   });
 

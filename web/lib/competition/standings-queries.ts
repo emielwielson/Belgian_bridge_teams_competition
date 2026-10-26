@@ -51,7 +51,10 @@ export type GroupStandingsGridData = GroupStandingsContext & {
   byeRounds: GroupByeRoundRow[];
   /** Official competition_match_dates slots (JSON-safe for cache). */
   officialRoundDatetimes: OfficialRoundDatetime[];
-  /** Match IDs with open or resolved arbiter requests (not cancelled). */
+  /**
+   * Match IDs with open/resolved arbiter requests or a published ruling
+   * (standalone Honor arbitrage included). Used for standings cell highlight.
+   */
   arbiterRequestMatchIds: string[];
 };
 
@@ -538,6 +541,30 @@ export async function fetchGroupMatchIdsWithArbiterRequests(
     )
     .eq("match.group_id", groupId)
     .in("status", ["open", "resolved"]);
+
+  if (error) throw error;
+
+  const ids = new Set<string>();
+  for (const row of data ?? []) {
+    if (row.match_id) ids.add(row.match_id);
+  }
+  return ids;
+}
+
+/** Match IDs that have a published ruling (incl. standalone Honor arbitrage). */
+export async function fetchGroupMatchIdsWithRulings(
+  supabase: SupabaseClient,
+  groupId: string,
+): Promise<Set<string>> {
+  const { data, error } = await supabase
+    .from("rulings")
+    .select(
+      `
+      match_id,
+      match:matches!inner (group_id)
+    `,
+    )
+    .eq("match.group_id", groupId);
 
   if (error) throw error;
 

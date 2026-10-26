@@ -1,6 +1,7 @@
 import { unstable_cache } from "next/cache";
 import {
   fetchGroupMatchIdsWithArbiterRequests,
+  fetchGroupMatchIdsWithRulings,
   loadGroupDisciplineData,
   loadGroupStandingsGridData,
   loadLeagueArbiterRequestSummaries,
@@ -27,18 +28,21 @@ export async function getCachedGroupStandingsGrid(
 ): Promise<GroupStandingsGridData | null> {
   return unstable_cache(
     async () => {
-      const [data, requestMatchIds] = await Promise.all([
+      const service = createServiceClient();
+      const [data, requestMatchIds, rulingMatchIds] = await Promise.all([
         loadGroupStandingsGridData(createPublicClient(), groupId),
-        fetchGroupMatchIdsWithArbiterRequests(createServiceClient(), groupId),
+        fetchGroupMatchIdsWithArbiterRequests(service, groupId),
+        fetchGroupMatchIdsWithRulings(service, groupId),
       ]);
       if (!data) return null;
+      const highlighted = new Set([...requestMatchIds, ...rulingMatchIds]);
       return {
         ...data,
-        arbiterRequestMatchIds: [...requestMatchIds],
+        arbiterRequestMatchIds: [...highlighted],
       };
     },
-    // v4: Zweiffel APM/2A per-division official match dates
-    ["group-standings-grid-v4", groupId],
+    // v5: highlight cells for published rulings (Honor arbitrage)
+    ["group-standings-grid-v5", groupId],
     { tags: [standingsGroupTag(groupId)] },
   )();
 }
