@@ -5,6 +5,7 @@ import {
   loadEligibleClubMembers,
 } from "@/lib/competition/active-primary-membership";
 import { getActiveSeason } from "@/lib/competition/season";
+import { formatPersonName } from "@/lib/person-name";
 
 export type PlayerMatchSummary = {
   id: string;
@@ -299,7 +300,8 @@ export async function loadClubSubCandidates(
         p,
       ): p is { id: string; name: string; member_number: string | null } =>
         p != null && !rosterIds.has(p.id),
-    );
+    )
+    .map((p) => ({ ...p, name: formatPersonName(p.name) }));
 
   return players.sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -330,5 +332,6 @@ export async function loadTeamRoster(
         p,
       ): p is { id: string; name: string; member_number: string | null } =>
         p != null,
-    );
+    )
+    .map((p) => ({ ...p, name: formatPersonName(p.name) }));
 }

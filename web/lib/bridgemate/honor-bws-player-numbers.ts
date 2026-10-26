@@ -3,7 +3,7 @@
  */
 
 import type { BwsPlayerNumberRow, BwsSettingsRow } from "@/lib/bridgemate/bws-session";
-import { formatPersonName } from "@/lib/butler/person-name";
+import { formatPersonName } from "@/lib/person-name";
 import type { HonorDirection, HonorRoom } from "@/lib/competition/honor-lineup";
 import type { HonorRoundMatchSeating } from "@/lib/competition/honor-seating-overview";
 

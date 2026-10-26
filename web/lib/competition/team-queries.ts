@@ -7,6 +7,7 @@ import {
   resolveClubMatchLocation,
   resolveTeamMatchLocation,
 } from "@/lib/competition/team-location";
+import { formatPersonName } from "@/lib/person-name";
 import { matchStatus, type MatchStatus } from "@/lib/scoring/match-state";
 import type { PostgrestError } from "@supabase/supabase-js";
 
@@ -163,7 +164,7 @@ export async function loadTeamSubstituteAppearances(
       existing.matches_played += 1;
     } else {
       byPlayer.set(player.id, {
-        name: player.name,
+        name: formatPersonName(player.name),
         member_number: player.member_number,
         matches_played: 1,
       });
@@ -377,6 +378,7 @@ export async function loadTeamDetail(
         }>(row.player),
       )
       .filter((p): p is Omit<TeamRosterPlayer, "matches_played"> => p != null)
+      .map((p) => ({ ...p, name: formatPersonName(p.name) }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }
 
@@ -487,7 +489,7 @@ export async function loadTeamDetail(
     captain: captainRaw
       ? {
           id: captainRaw.id,
-          name: captainRaw.name,
+          name: formatPersonName(captainRaw.name),
           member_number: captainRaw.member_number,
           matches_played: matchesPlayedByPlayer.get(captainRaw.id) ?? 0,
           ...(includeCaptainContacts

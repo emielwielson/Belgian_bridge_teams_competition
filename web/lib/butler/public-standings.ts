@@ -9,7 +9,7 @@ import {
   aggregatePlayerStandingsByAverage,
   type PlayerImpCredit,
 } from "@/lib/butler/engine";
-import { formatPersonName } from "@/lib/butler/person-name";
+import { formatPersonName } from "@/lib/person-name";
 import { selectAllRows } from "@/lib/supabase/select-all";
 
 export type PublicCombinationStandingRow = {

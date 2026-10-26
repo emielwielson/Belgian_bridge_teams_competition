@@ -5,7 +5,7 @@ import { useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { filterStandingsByMinRounds } from "@/lib/butler/filter-standings";
 import { formatImps } from "@/lib/butler/format";
-import { formatPairDisplayName } from "@/lib/butler/person-name";
+import { formatPairDisplayName } from "@/lib/person-name";
 import type {
   PublicCombinationStandingRow,
   PublicPlayerStandingRow,

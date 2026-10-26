@@ -21,6 +21,7 @@ import type {
   WeightedScoreLeg,
 } from "@/lib/results/types";
 import { assignedMatchImpsFromRoomAwards } from "@/lib/scoring/honor-match-imps";
+import { formatPersonName } from "@/lib/person-name";
 import type { MatchLineupEntry } from "@/lib/scoring/match-operations";
 import { pointsToImps } from "@/lib/scoring/wbf-imp-table";
 import {
@@ -569,7 +570,8 @@ export function pairNamesFromLineup(
   const inRoom = lineup.filter((p) => p.room === room);
   const nameAt = (dir: HonorDirection): string => {
     const seat = inRoom.find((p) => p.direction === dir);
-    return seat?.player?.name?.trim() || "—";
+    const raw = seat?.player?.name?.trim();
+    return raw ? formatPersonName(raw) : "—";
   };
   return {
     ns: `${nameAt("N")} & ${nameAt("S")}`,

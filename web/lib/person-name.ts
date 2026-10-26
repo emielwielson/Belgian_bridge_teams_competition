@@ -35,3 +35,23 @@ export function formatPairDisplayName(displayName: string): string {
     .map((part) => formatPersonName(part.trim()))
     .join(" · ");
 }
+
+/** Format the `name` field on a player-like row (and optional first/last). */
+export function withFormattedPersonName<
+  T extends {
+    name: string;
+    first_name?: string | null;
+    last_name?: string | null;
+  },
+>(row: T): T {
+  return {
+    ...row,
+    name: formatPersonName(row.name),
+    ...(row.first_name != null
+      ? { first_name: formatPersonName(row.first_name) }
+      : {}),
+    ...(row.last_name != null
+      ? { last_name: formatPersonName(row.last_name) }
+      : {}),
+  };
+}

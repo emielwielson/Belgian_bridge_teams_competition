@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { formatPersonName } from "@/lib/person-name";
 
 export type CaptainContact = {
   teamId: string;
@@ -60,7 +61,7 @@ export async function loadCaptainContactsForTeams(
     const email = await resolveCaptainEmail(supabase, captain);
     contacts.push({
       teamId: team.id,
-      name: captain.name,
+      name: formatPersonName(captain.name),
       email,
     });
   }

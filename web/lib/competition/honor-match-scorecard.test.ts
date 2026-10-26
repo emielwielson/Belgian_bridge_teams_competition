@@ -279,4 +279,30 @@ describe("pairNamesFromLineup", () => {
       ew: "Labaere Valérie & Labaere Alain",
     });
   });
+
+  it("title-cases federation-style uppercase surnames", () => {
+    const lineup: MatchLineupEntry[] = [
+      {
+        id: "1",
+        team_id: "h",
+        player_id: "p1",
+        is_substitute: false,
+        room: "open",
+        direction: "N",
+        player: { id: "p1", name: "Jan PEETERS", member_number: null },
+      },
+      {
+        id: "2",
+        team_id: "h",
+        player_id: "p2",
+        is_substitute: false,
+        room: "open",
+        direction: "S",
+        player: { id: "p2", name: "Marie DUPONT", member_number: null },
+      },
+    ];
+    expect(pairNamesFromLineup(lineup, "open").ns).toBe(
+      "Jan Peeters & Marie Dupont",
+    );
+  });
 });

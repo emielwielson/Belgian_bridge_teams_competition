@@ -1,4 +1,4 @@
-import { formatPersonName } from "@/lib/butler/person-name";
+import { formatPersonName } from "@/lib/person-name";
 
 /** Direction-agnostic player pair key (lexicographic min/max). */
 

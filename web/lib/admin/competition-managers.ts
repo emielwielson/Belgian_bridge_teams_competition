@@ -16,6 +16,7 @@ import {
   loadUserDisplayName,
   upsertUserDisplayName,
 } from "@/lib/auth/actor-display-name";
+import { formatPersonName } from "@/lib/person-name";
 
 export type CompetitionManagerListItem = {
   userId: string;
@@ -100,7 +101,8 @@ async function linkedPlayerName(
   if (!link) return null;
   const raw = link.player as unknown;
   const player = Array.isArray(raw) ? raw[0] : raw;
-  return (player as { name?: string } | null)?.name ?? null;
+  const name = (player as { name?: string } | null)?.name;
+  return name ? formatPersonName(name) : null;
 }
 
 async function loadManagerScopes(

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { formatPersonName } from "@/lib/person-name";
 
 /**
  * Resolve a staff display label for attribution.
@@ -30,7 +31,7 @@ export async function resolveActorDisplayName(
     const raw = link.player as unknown;
     const player = Array.isArray(raw) ? raw[0] : raw;
     const name = (player as { name?: string } | null)?.name?.trim();
-    if (name) return name;
+    if (name) return formatPersonName(name);
   }
 
   const { data: authData } = await service.auth.admin.getUserById(userId);

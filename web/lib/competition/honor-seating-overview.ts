@@ -21,6 +21,7 @@ import {
   slotsPerMatchDay,
 } from "@/lib/competition/national-match-schedule";
 import { requireActiveSeason } from "@/lib/competition/season";
+import { formatPersonName } from "@/lib/person-name";
 
 export type HonorLockStatus =
   | "waiting"
@@ -383,7 +384,7 @@ function firstCaptain(value: TeamCaptainRef): HonorSeatingTeamPlayer | null {
   if (value == null) return null;
   const c = Array.isArray(value) ? value[0] : value;
   if (!c?.id) return null;
-  return { id: c.id, name: c.name };
+  return { id: c.id, name: formatPersonName(c.name) };
 }
 
 async function loadHonorSeatingTeams(
@@ -421,7 +422,10 @@ async function loadHonorSeatingTeams(
     const player = firstPlayer(row.player);
     if (!player) continue;
     const entry = byTeam.get(row.team_id) ?? { captain: null, players: [] };
-    entry.players.push({ id: player.id, name: player.name });
+    entry.players.push({
+      id: player.id,
+      name: formatPersonName(player.name),
+    });
     byTeam.set(row.team_id, entry);
   }
 
@@ -549,7 +553,7 @@ export async function loadHonorRoundSeating(
       const player = firstPlayer(row.player);
       seats.push({
         player_id: row.player_id,
-        name: player?.name ?? "?",
+        name: player?.name ? formatPersonName(player.name) : "?",
         team_id: row.team_id,
         room: row.room,
         direction: row.direction,

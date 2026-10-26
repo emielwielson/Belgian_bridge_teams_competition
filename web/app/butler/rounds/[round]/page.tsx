@@ -5,7 +5,7 @@ import { createPublicClient } from "@/lib/supabase/server-client";
 import { resolvePublicHonorGroup } from "@/lib/butler/honor-group";
 import { getPublishedRoundStandings } from "@/lib/butler/public-standings";
 import { formatImps } from "@/lib/butler/format";
-import { formatPairDisplayName } from "@/lib/butler/person-name";
+import { formatPairDisplayName } from "@/lib/person-name";
 
 export default async function ButlerRoundPage({
   params,

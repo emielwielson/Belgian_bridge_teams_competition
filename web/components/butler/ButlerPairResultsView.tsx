@@ -7,7 +7,7 @@ import {
   type PairResultRow,
 } from "@/components/butler/ButlerPairResultsTable";
 import type { BoardHands, Dealer, Vulnerability } from "@/lib/boards/types";
-import { formatPairDisplayName } from "@/lib/butler/person-name";
+import { formatPairDisplayName } from "@/lib/person-name";
 import { parseAveragePmAwards } from "@/lib/results/adjustment-helpers";
 import { averageAwardLabel } from "@/lib/results/average-pm-labels";
 import type { AverageAward } from "@/lib/results/types";

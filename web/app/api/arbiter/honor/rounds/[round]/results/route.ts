@@ -8,6 +8,7 @@ import {
   loadHonorRoundSeating,
   resolveActiveHonorGroup,
 } from "@/lib/competition/honor-seating-overview";
+import { formatPersonName } from "@/lib/person-name";
 import { createServiceClient } from "@/lib/supabase/server-client";
 import { jsonError, jsonFromError } from "@/lib/http/api-response";
 
@@ -64,7 +65,10 @@ export async function GET(
       for (const room of ["open", "closed"] as const) {
         const seats = m.seats
           .filter((s) => s.room === room)
-          .map((s) => ({ direction: s.direction, name: s.name }))
+          .map((s) => ({
+            direction: s.direction,
+            name: formatPersonName(s.name),
+          }))
           .sort(
             (a, b) =>
               directionOrder.indexOf(a.direction as (typeof directionOrder)[number]) -

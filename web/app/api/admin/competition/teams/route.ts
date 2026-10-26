@@ -12,13 +12,15 @@ import {
 import { removePlayerFromTeamRoster } from "@/lib/competition/team-roster";
 import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
 import { ErrorCodes } from "@/lib/http/error-codes";
+import { formatPersonName } from "@/lib/person-name";
 
 function unwrapCaptain(raw: unknown): { id: string; name: string; member_number: string | null } | null {
   if (!raw) return null;
   const row = Array.isArray(raw) ? raw[0] : raw;
   if (!row || typeof row !== "object") return null;
   const p = row as { id: string; name: string; member_number: string | null };
-  return p.id ? p : null;
+  if (!p.id) return null;
+  return { ...p, name: formatPersonName(p.name) };
 }
 
 export async function GET(request: Request) {
@@ -69,7 +71,9 @@ export async function GET(request: Request) {
           : (raw as { name: string } | null);
         list.push({
           player_id: row.player_id,
-          player: player ? { name: player.name } : { name: "Unknown" },
+          player: player
+            ? { name: formatPersonName(player.name) }
+            : { name: "Unknown" },
         });
         rosters[row.team_id] = list;
       }

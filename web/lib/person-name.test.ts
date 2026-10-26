@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   formatPairDisplayName,
   formatPersonName,
-} from "@/lib/butler/person-name";
+  withFormattedPersonName,
+} from "@/lib/person-name";
 
 describe("formatPersonName", () => {
   it("title-cases fully uppercase surnames", () => {
@@ -23,5 +24,21 @@ describe("formatPairDisplayName", () => {
     expect(formatPairDisplayName("Jan PEETERS · Marie DUPONT")).toBe(
       "Jan Peeters · Marie Dupont",
     );
+  });
+});
+
+describe("withFormattedPersonName", () => {
+  it("formats name and optional first/last", () => {
+    expect(
+      withFormattedPersonName({
+        name: "Jan PEETERS",
+        first_name: "JAN",
+        last_name: "PEETERS",
+      }),
+    ).toEqual({
+      name: "Jan Peeters",
+      first_name: "Jan",
+      last_name: "Peeters",
+    });
   });
 });

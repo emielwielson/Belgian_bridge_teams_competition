@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { loadActivePrimaryMembershipsForPlayers } from "@/lib/competition/active-primary-membership";
+import { formatPersonName } from "@/lib/person-name";
 
 export type LinkedPlayer = {
   id: string;
@@ -74,7 +75,7 @@ export async function getActivePlayer(
 
   return {
     id: data.id,
-    name: data.name,
+    name: formatPersonName(data.name),
     member_number: data.member_number,
   };
 }
@@ -150,7 +151,7 @@ export async function getLinkedPlayers(
     };
     players.push({
       id: p.id,
-      name: p.name,
+      name: formatPersonName(p.name),
       member_number: p.member_number,
       club_name: clubByPlayer.get(p.id) ?? null,
     });

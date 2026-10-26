@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { groupIdsForSeason } from "@/lib/competition/admin-season-scope";
 import { getActiveSeason } from "@/lib/competition/season";
+import { formatPersonName } from "@/lib/person-name";
 
 export type PlayerTeamAppearance = {
   team_id: string;
@@ -135,7 +136,7 @@ export async function loadPlayerDetail(
   return {
     player: {
       id: player.id,
-      name: player.name,
+      name: formatPersonName(player.name),
       member_number: player.member_number,
     },
     assigned_team: assignedTeam,

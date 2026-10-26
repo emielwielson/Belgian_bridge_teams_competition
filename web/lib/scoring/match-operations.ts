@@ -19,6 +19,7 @@ import {
   validateScoreBoardOptions,
 } from "./board-count-rules";
 import { recalculateGroupForfaits } from "./forfait";
+import { formatPersonName } from "@/lib/person-name";
 import { lookupVp } from "./vp-lookup";
 
 export { BoardCountValidationError };
@@ -166,8 +167,15 @@ export async function getMatchLineup(
   if (error) throw error;
   return (data ?? []).map((row) => {
     const r = row as unknown as MatchLineupEntry;
+    const rawPlayer = r.player as unknown;
+    const player = (
+      Array.isArray(rawPlayer) ? rawPlayer[0] : rawPlayer
+    ) as MatchLineupEntry["player"] | null;
     return {
       ...r,
+      player: player
+        ? { ...player, name: formatPersonName(player.name) }
+        : r.player,
       room: r.room ?? null,
       direction: r.direction ?? null,
     };

@@ -10,6 +10,7 @@ import {
 import { TeamValidationError } from "@/lib/competition/team-captain";
 import { loadTeamPlayerMatchesPlayed } from "@/lib/competition/team-queries";
 import { getActiveSeason } from "@/lib/competition/season";
+import { withFormattedPersonName } from "@/lib/person-name";
 
 export type RosterPlayer = {
   player_id: string;
@@ -84,11 +85,16 @@ export function comparePlayersByLastName(
 }
 
 function toRosterPlayer(p: PlayerNameRow): RosterPlayer {
-  return {
-    player_id: p.id,
+  const formatted = withFormattedPersonName({
     name: p.name,
     first_name: p.first_name,
     last_name: p.last_name,
+  });
+  return {
+    player_id: p.id,
+    name: formatted.name,
+    first_name: formatted.first_name ?? null,
+    last_name: formatted.last_name ?? null,
     member_number: p.member_number,
   };
 }

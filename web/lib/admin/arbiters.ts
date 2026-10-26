@@ -14,6 +14,7 @@ import {
 } from "@/lib/auth/competition-scope";
 import { AuthError } from "@/lib/auth/auth-error";
 import { ROLES } from "@/lib/auth/roles";
+import { formatPersonName } from "@/lib/person-name";
 import {
   ensureAuthUserForLogin,
   normalizeLoginEmail,
@@ -145,7 +146,8 @@ async function linkedPlayerName(
   if (!link) return null;
   const raw = link.player as unknown;
   const player = Array.isArray(raw) ? raw[0] : raw;
-  return (player as { name?: string } | null)?.name ?? null;
+  const name = (player as { name?: string } | null)?.name;
+  return name ? formatPersonName(name) : null;
 }
 
 function arbiterOverlapsManaged(

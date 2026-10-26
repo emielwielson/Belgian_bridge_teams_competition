@@ -8,7 +8,7 @@ import { LeadLabel } from "@/components/butler/LeadLabel";
 import type { BoardHands, Dealer, Vulnerability } from "@/lib/boards/types";
 import { handDiagramLabelsFromButler } from "@/lib/boards/hand-diagram-labels";
 import { formatImps } from "@/lib/butler/format";
-import { formatPairDisplayName } from "@/lib/butler/person-name";
+import { formatPairDisplayName } from "@/lib/person-name";
 import { formatAveragePmScoreCell } from "@/lib/results/average-pm-labels";
 import { createPublicClient } from "@/lib/supabase/server-client";
 

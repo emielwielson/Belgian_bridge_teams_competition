@@ -8,6 +8,7 @@ import { COMPETITION_ADMIN_ROLES, requireRoles } from "@/lib/auth/route-auth";
 import { loadEligibleClubMembers } from "@/lib/competition/active-primary-membership";
 import { REGION_CODES, SCOPES } from "@/lib/competition/scopes";
 import { jsonFromError, jsonOk } from "@/lib/http/api-response";
+import { formatPersonName } from "@/lib/person-name";
 
 type Params = { params: Promise<{ clubId: string }> };
 
@@ -66,7 +67,7 @@ export async function GET(request: Request, { params }: Params) {
         if (!player?.id) return null;
         return {
           id: player.id,
-          name: player.name,
+          name: formatPersonName(player.name),
           member_number: player.member_number,
         };
       })
