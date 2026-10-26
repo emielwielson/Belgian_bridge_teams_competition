@@ -208,6 +208,8 @@ export function TeamConventionCardsSection({
                     </p>
                     <a
                       href={card.download_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="btn-secondary mt-2 inline-flex px-3 py-1.5 text-sm"
                     >
                       {t("download")}
