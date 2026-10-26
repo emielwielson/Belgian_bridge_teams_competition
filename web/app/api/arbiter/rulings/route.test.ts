@@ -38,9 +38,20 @@ vi.mock("@/lib/scoring/board-count-rules", () => ({
   isHonorDivision: vi.fn(),
 }));
 
+vi.mock("@/lib/competition/honor-rulings", () => ({
+  canChooseRulingArbiter: vi.fn(),
+  listHonorArbitersForAttribution: vi.fn(),
+  assertHonorArbiterUser: vi.fn(),
+}));
+
 import { requireRoles } from "@/lib/auth/route-auth";
 import { assertCanAddPenaltyForMatch } from "@/lib/auth/match-access";
 import { isGroupInActiveSeason } from "@/lib/competition/admin-season-scope";
+import {
+  assertHonorArbiterUser,
+  canChooseRulingArbiter,
+  listHonorArbitersForAttribution,
+} from "@/lib/competition/honor-rulings";
 import { loadGroupScoringContext } from "@/lib/competition/match-scoring-context";
 import { revalidateStandingsForGroup } from "@/lib/competition/revalidate-standings";
 import { createOperationalSignedUrl } from "@/lib/files/operational-file-storage";
@@ -52,6 +63,7 @@ function mockSupabase(handlers: {
   insertRuling?: { data: unknown; error: unknown };
   selectRulings?: { data: unknown; error: unknown };
   matchLogs?: { error: unknown };
+  onInsert?: (row: Record<string, unknown>) => void;
 }) {
   const from = vi.fn((table: string) => {
     if (table === "matches") {
@@ -78,22 +90,27 @@ function mockSupabase(handlers: {
             ),
           }),
         }),
-        insert: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue(
-              handlers.insertRuling ?? {
-                data: {
-                  id: "ruling-1",
-                  match_id: "match-1",
-                  board: null,
-                  file_path: "rulings/m1/a.pdf",
-                  ruling_date: "2026-03-01",
-                  created_at: "2026-03-01T12:00:00Z",
+        insert: vi.fn((row: Record<string, unknown>) => {
+          handlers.onInsert?.(row);
+          return {
+            select: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue(
+                handlers.insertRuling ?? {
+                  data: {
+                    id: "ruling-1",
+                    match_id: "match-1",
+                    board: null,
+                    file_path: "rulings/m1/a.pdf",
+                    ruling_date: "2026-03-01",
+                    created_at: "2026-03-01T12:00:00Z",
+                    created_by: row.created_by,
+                    created_by_name: "Arbiter Name",
+                  },
+                  error: null,
                 },
-                error: null,
-              },
-            ),
-          }),
+              ),
+            }),
+          };
         }),
       };
     }
@@ -121,11 +138,20 @@ describe("/api/arbiter/rulings", () => {
       "https://signed/ruling.pdf",
     );
     vi.mocked(revalidateStandingsForGroup).mockResolvedValue(undefined);
+    vi.mocked(canChooseRulingArbiter).mockReturnValue(false);
+    vi.mocked(listHonorArbitersForAttribution).mockResolvedValue([]);
+    vi.mocked(assertHonorArbiterUser).mockResolvedValue(undefined);
   });
 
   describe("POST", () => {
-    it("creates a ruling for honor arbiter", async () => {
-      const supabase = mockSupabase({ matchGroupId: "group-honor" });
+    it("creates a ruling for honor arbiter as themselves", async () => {
+      let inserted: Record<string, unknown> | null = null;
+      const supabase = mockSupabase({
+        matchGroupId: "group-honor",
+        onInsert: (row) => {
+          inserted = row;
+        },
+      });
       vi.mocked(requireRoles).mockResolvedValue({
         user: { id: "arbiter-1" },
         roles: ["arbiter"],
@@ -145,11 +171,8 @@ describe("/api/arbiter/rulings", () => {
       );
 
       expect(res.status).toBe(201);
-      expect(assertCanAddPenaltyForMatch).toHaveBeenCalledWith(
-        supabase,
-        ["arbiter"],
-        "match-1",
-      );
+      expect(inserted?.created_by).toBe("arbiter-1");
+      expect(assertHonorArbiterUser).not.toHaveBeenCalled();
       expect(revalidateStandingsForGroup).toHaveBeenCalledWith(
         supabase,
         "group-honor",
@@ -158,8 +181,15 @@ describe("/api/arbiter/rulings", () => {
       expect(body.ruling.id).toBe("ruling-1");
     });
 
-    it("creates a ruling for competition manager", async () => {
-      const supabase = mockSupabase({ matchGroupId: "group-honor" });
+    it("creates a ruling for competition manager attributed to a honor arbiter", async () => {
+      let inserted: Record<string, unknown> | null = null;
+      const supabase = mockSupabase({
+        matchGroupId: "group-honor",
+        onInsert: (row) => {
+          inserted = row;
+        },
+      });
+      vi.mocked(canChooseRulingArbiter).mockReturnValue(true);
       vi.mocked(requireRoles).mockResolvedValue({
         user: { id: "mgr-1" },
         roles: ["competition_manager"],
@@ -173,16 +203,39 @@ describe("/api/arbiter/rulings", () => {
           body: JSON.stringify({
             match_id: "match-1",
             file_path: "rulings/m1/b.pdf",
+            arbiter_user_id: "arbiter-2",
           }),
         }),
       );
 
       expect(res.status).toBe(201);
-      expect(assertCanAddPenaltyForMatch).toHaveBeenCalledWith(
-        supabase,
-        ["competition_manager"],
-        "match-1",
+      expect(assertHonorArbiterUser).toHaveBeenCalledWith({}, "arbiter-2");
+      expect(inserted?.created_by).toBe("arbiter-2");
+    });
+
+    it("requires arbiter_user_id for competition managers", async () => {
+      vi.mocked(canChooseRulingArbiter).mockReturnValue(true);
+      vi.mocked(requireRoles).mockResolvedValue({
+        user: { id: "mgr-1" },
+        roles: ["competition_manager"],
+        supabase: mockSupabase({ matchGroupId: "group-honor" }),
+      } as never);
+
+      const res = await POST(
+        new Request("http://x", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            match_id: "match-1",
+            file_path: "rulings/m1/b.pdf",
+          }),
+        }),
       );
+
+      expect(res.status).toBe(400);
+      await expect(res.json()).resolves.toEqual({
+        error: ErrorCodes.api.arbiterUserIdRequired,
+      });
     });
 
     it("rejects missing file_path", async () => {

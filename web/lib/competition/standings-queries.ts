@@ -91,6 +91,7 @@ export type GroupRulingRow = {
   ruling_date: string | null;
   file_path: string;
   arbiter_request_id: string | null;
+  created_by_name?: string | null;
   signed_url: string | null;
   match: {
     round: number;
@@ -486,6 +487,7 @@ export async function fetchGroupRulings(
         ruling_date,
         file_path,
         arbiter_request_id,
+        created_by_name,
         match:matches!inner (
           round,
           home_team:teams!matches_home_team_id_fkey (name),

@@ -115,6 +115,8 @@
       "matchFallback": "Match",
       "fromArbiterRequest": " · From arbiter request",
       "board": " · Board {board}",
+      "byArbiter": "Arbiter: {name}",
+      "byArbiterUnknown": "Unknown",
       "viewRuling": "View ruling"
     },
     "leagueRequests": {
@@ -417,6 +419,10 @@
     "ruling": {
       "title": "Add arbitrage",
       "description": "Publish the final arbiter decision as a PDF or image. The document must include the decision and its motivation.",
+      "arbiter": "Arbiter",
+      "arbiterHint": "Select the Honor Division arbiter who issued this decision.",
+      "arbiterRequired": "Select the arbiter who issued this decision",
+      "noHonorArbiters": "No Honor arbiters available",
       "boardOptional": "Board (optional)",
       "rulingDate": "Ruling date",
       "file": "Decision file (PDF or image)",
@@ -432,6 +438,8 @@
       "loading": "Loading…",
       "none": "No arbitrages yet.",
       "boardLabel": " · Board {board}",
+      "byArbiter": "Arbiter: {name}",
+      "byArbiterUnknown": "Unknown",
       "viewFile": "View file"
     }
   },
@@ -1606,7 +1614,8 @@
       "forfaitAlreadySet": "Match already has a forfait",
       "forfaitNotSet": "Match does not have a forfait",
       "matchHasForfaitClearFirst": "Match has a forfait; clear the forfait before entering IMPs",
-      "honorRulingOnly": "Arbitrages can only be added for Honor Division matches"
+      "honorRulingOnly": "Arbitrages can only be added for Honor Division matches",
+      "arbiterUserIdRequired": "Select the arbiter who issued this decision"
     },
     "auth": {
       "emailNotRegistered": "This email address is not registered in our database. If you are a bridge player, your federation (VBL or LBF) may have a different email address on file — try another address or contact your club.",
@@ -1621,6 +1630,7 @@
       "cannotSubmitScore": "Forbidden: cannot submit score for this match",
       "onlyArbiterOrManagerEditScore": "Forbidden: only arbiters or competition managers can edit official scores",
       "onlyArbiterOrManagerDiscipline": "Forbidden: only arbiters or competition managers can manage discipline",
+      "notHonorArbiter": "Forbidden: selected user is not a Honor arbiter",
       "notAssignedClub": "Forbidden: not assigned to this club",
       "cannotManageConventionCards": "Forbidden: cannot manage convention cards for this team"
     },

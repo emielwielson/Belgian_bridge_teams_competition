@@ -2,6 +2,11 @@ import { ARBITER_ACCESS_ROLES } from "@/lib/auth/roles";
 import { requireRoles } from "@/lib/auth/route-auth";
 import { assertCanAddPenaltyForMatch } from "@/lib/auth/match-access";
 import { isGroupInActiveSeason } from "@/lib/competition/admin-season-scope";
+import {
+  assertHonorArbiterUser,
+  canChooseRulingArbiter,
+  listHonorArbitersForAttribution,
+} from "@/lib/competition/honor-rulings";
 import { loadGroupScoringContext } from "@/lib/competition/match-scoring-context";
 import { revalidateStandingsForGroup } from "@/lib/competition/revalidate-standings";
 import { createOperationalSignedUrl } from "@/lib/files/operational-file-storage";
@@ -55,25 +60,34 @@ export async function GET(request: Request) {
     await assertCanAddPenaltyForMatch(supabase, roles, matchId);
     await assertHonorMatch(supabase, matchId);
 
-    const { data, error } = await supabase
-      .from("rulings")
-      .select(
-        `
-        id,
-        match_id,
-        board,
-        file_path,
-        ruling_date,
-        created_at,
-        arbiter_request_id
-      `,
-      )
-      .eq("match_id", matchId)
-      .order("ruling_date", { ascending: false });
+    const canChooseArbiter = canChooseRulingArbiter(roles);
+    const service = createServiceClient();
+
+    const [{ data, error }, honorArbiters] = await Promise.all([
+      supabase
+        .from("rulings")
+        .select(
+          `
+          id,
+          match_id,
+          board,
+          file_path,
+          ruling_date,
+          created_at,
+          created_by,
+          created_by_name,
+          arbiter_request_id
+        `,
+        )
+        .eq("match_id", matchId)
+        .order("ruling_date", { ascending: false }),
+      canChooseArbiter
+        ? listHonorArbitersForAttribution(service)
+        : Promise.resolve([]),
+    ]);
 
     if (error) return jsonError(error.message, 500);
 
-    const service = createServiceClient();
     const rulings = await Promise.all(
       (data ?? []).map(async (row) => {
         let signed_url: string | null = null;
@@ -86,7 +100,11 @@ export async function GET(request: Request) {
       }),
     );
 
-    return jsonOk({ rulings });
+    return jsonOk({
+      rulings,
+      canChooseArbiter,
+      honorArbiters,
+    });
   } catch (err) {
     if (err instanceof Error && err.message === "Honor Division rulings only") {
       return jsonErrorCode(ErrorCodes.api.honorRulingOnly, 403);
@@ -110,6 +128,11 @@ export async function POST(request: Request) {
         : null;
     const filePath = body.file_path as string | undefined;
     const rulingDate = (body.ruling_date as string | undefined) ?? null;
+    const arbiterUserIdRaw = body.arbiter_user_id;
+    const arbiterUserId =
+      typeof arbiterUserIdRaw === "string" && arbiterUserIdRaw.trim()
+        ? arbiterUserIdRaw.trim()
+        : null;
 
     if (!matchId || !filePath?.trim()) {
       return jsonErrorCode(ErrorCodes.api.matchIdAndFileRequired, 400);
@@ -125,6 +148,16 @@ export async function POST(request: Request) {
       return jsonErrorCode(ErrorCodes.api.matchNotActiveSeason, 400);
     }
 
+    let createdBy = user.id;
+    if (canChooseRulingArbiter(roles)) {
+      if (!arbiterUserId) {
+        return jsonErrorCode(ErrorCodes.api.arbiterUserIdRequired, 400);
+      }
+      const service = createServiceClient();
+      await assertHonorArbiterUser(service, arbiterUserId);
+      createdBy = arbiterUserId;
+    }
+
     const { data, error } = await supabase
       .from("rulings")
       .insert({
@@ -132,9 +165,11 @@ export async function POST(request: Request) {
         board: board ?? undefined,
         file_path: filePath.trim(),
         ruling_date: rulingDate ?? undefined,
-        created_by: user.id,
+        created_by: createdBy,
       })
-      .select("id, match_id, board, file_path, ruling_date, created_at")
+      .select(
+        "id, match_id, board, file_path, ruling_date, created_at, created_by, created_by_name",
+      )
       .single();
 
     if (error) return jsonError(error.message, 400);

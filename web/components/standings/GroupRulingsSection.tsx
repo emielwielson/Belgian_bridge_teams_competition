@@ -35,6 +35,11 @@ export async function GroupRulingsSection({ rulings }: Props) {
                       ? t("board", { board: ruling.board })
                       : ""}
                     {ruling.arbiter_request_id ? t("fromArbiterRequest") : ""}
+                    {" · "}
+                    {t("byArbiter", {
+                      name:
+                        ruling.created_by_name?.trim() || t("byArbiterUnknown"),
+                    })}
                   </p>
                 </div>
                 {ruling.signed_url ? (

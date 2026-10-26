@@ -82,9 +82,11 @@ export const ErrorCodes = {
     forfaitNotSet: "api.forfaitNotSet",
     matchHasForfaitClearFirst: "api.matchHasForfaitClearFirst",
     honorRulingOnly: "api.honorRulingOnly",
+    arbiterUserIdRequired: "api.arbiterUserIdRequired",
   },
   auth: {
     onlyArbiterOrManagerDiscipline: "auth.onlyArbiterOrManagerDiscipline",
+    notHonorArbiter: "auth.notHonorArbiter",
     emailNotRegistered: "auth.emailNotRegistered",
     unauthorized: "auth.unauthorized",
     forbidden: "auth.forbidden",

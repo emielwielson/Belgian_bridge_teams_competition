@@ -50,7 +50,7 @@ export async function getCachedGroupStandingsGrid(
 export async function getCachedGroupDisciplineData(groupId: string) {
   return unstable_cache(
     async () => loadGroupDisciplineData(createPublicClient(), groupId),
-    ["group-discipline-v2", groupId],
+    ["group-discipline-v3", groupId],
     { tags: [standingsGroupTag(groupId)] },
   )();
 }

@@ -19,6 +19,8 @@ const AUTH_MESSAGE_TO_CODE: Record<string, ErrorCode> = {
     ErrorCodes.auth.onlyArbiterOrManagerEditScore,
   "Forbidden: only arbiters or competition managers can manage discipline":
     ErrorCodes.auth.onlyArbiterOrManagerDiscipline,
+  "Forbidden: selected user is not a Honor arbiter":
+    ErrorCodes.auth.notHonorArbiter,
   "Forbidden: not assigned to this club": ErrorCodes.auth.notAssignedClub,
   "Forbidden: cannot manage convention cards for this team":
     ErrorCodes.auth.cannotManageConventionCards,

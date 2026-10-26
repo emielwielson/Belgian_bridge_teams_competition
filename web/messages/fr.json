@@ -114,6 +114,8 @@
       "matchFallback": "Rencontre",
       "fromArbiterRequest": " · Depuis une demande d'arbitre",
       "board": " · Donne {board}",
+      "byArbiter": "Arbitre : {name}",
+      "byArbiterUnknown": "Inconnu",
       "viewRuling": "Voir la décision"
     },
     "leagueRequests": {
@@ -416,6 +418,10 @@
     "ruling": {
       "title": "Ajouter un arbitrage",
       "description": "Publiez la décision finale d'arbitre en PDF ou image. Le document doit contenir la décision et sa motivation.",
+      "arbiter": "Arbitre",
+      "arbiterHint": "Choisissez l'arbitre Honor Division qui a rendu cette décision.",
+      "arbiterRequired": "Choisissez l'arbitre qui a rendu cette décision",
+      "noHonorArbiters": "Aucun arbitre Honor disponible",
       "boardOptional": "Donne (facultatif)",
       "rulingDate": "Date de la décision",
       "file": "Fichier de décision (PDF ou image)",
@@ -431,6 +437,8 @@
       "loading": "Chargement…",
       "none": "Aucun arbitrage pour l'instant.",
       "boardLabel": " · Donne {board}",
+      "byArbiter": "Arbitre : {name}",
+      "byArbiterUnknown": "Inconnu",
       "viewFile": "Voir le fichier"
     }
   },
@@ -1605,7 +1613,8 @@
       "forfaitAlreadySet": "La rencontre a déjà un forfait",
       "forfaitNotSet": "La rencontre n'a pas de forfait",
       "matchHasForfaitClearFirst": "La rencontre a un forfait ; annulez le forfait avant de saisir les IMPs",
-      "honorRulingOnly": "Les arbitrages ne peuvent être ajoutés que pour les rencontres de l'Honor Division"
+      "honorRulingOnly": "Les arbitrages ne peuvent être ajoutés que pour les rencontres de l'Honor Division",
+      "arbiterUserIdRequired": "Choisissez l'arbitre qui a rendu cette décision"
     },
     "auth": {
       "emailNotRegistered": "Cette adresse e-mail n'est pas enregistrée dans notre base de données. Si vous êtes joueur de bridge, votre fédération (VBL ou LBF) peut avoir une autre adresse e-mail — essayez une autre adresse ou contactez votre club.",
@@ -1620,6 +1629,7 @@
       "cannotSubmitScore": "Interdit : impossible de soumettre un résultat pour cette rencontre",
       "onlyArbiterOrManagerEditScore": "Interdit : seuls les arbitres ou gestionnaires de compétition peuvent modifier les résultats officiels",
       "onlyArbiterOrManagerDiscipline": "Interdit : seuls les arbitres ou gestionnaires de compétition peuvent gérer la discipline",
+      "notHonorArbiter": "Interdit : l'utilisateur sélectionné n'est pas un arbitre Honor",
       "notAssignedClub": "Interdit : non assigné à ce club",
       "cannotManageConventionCards": "Interdit : impossible de gérer les cartes de conventions pour cette équipe"
     },

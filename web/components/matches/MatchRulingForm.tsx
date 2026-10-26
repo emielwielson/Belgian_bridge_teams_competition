@@ -8,10 +8,16 @@ import {
 } from "@/components/files/FilePickerField";
 import { useTranslateApiError } from "@/lib/i18n/translate-api-error";
 
+type HonorArbiterOption = {
+  userId: string;
+  label: string;
+};
+
 type RulingRow = {
   id: string;
   board: number | null;
   ruling_date: string | null;
+  created_by_name?: string | null;
   signed_url: string | null;
 };
 
@@ -23,6 +29,9 @@ export function MatchRulingForm({ matchId }: Props) {
   const t = useTranslations("match.ruling");
   const translateApiError = useTranslateApiError();
   const [rulings, setRulings] = useState<RulingRow[]>([]);
+  const [canChooseArbiter, setCanChooseArbiter] = useState(false);
+  const [honorArbiters, setHonorArbiters] = useState<HonorArbiterOption[]>([]);
+  const [arbiterUserId, setArbiterUserId] = useState("");
   const [board, setBoard] = useState("");
   const [rulingDate, setRulingDate] = useState(
     () => new Date().toISOString().slice(0, 10),
@@ -44,6 +53,17 @@ export function MatchRulingForm({ matchId }: Props) {
         );
       }
       setRulings(body.rulings ?? []);
+      const choose = Boolean(body.canChooseArbiter);
+      setCanChooseArbiter(choose);
+      const arbiters = Array.isArray(body.honorArbiters)
+        ? (body.honorArbiters as HonorArbiterOption[])
+        : [];
+      setHonorArbiters(arbiters);
+      setArbiterUserId((prev) => {
+        if (!choose) return "";
+        if (prev && arbiters.some((a) => a.userId === prev)) return prev;
+        return arbiters[0]?.userId ?? "";
+      });
     } catch (e) {
       setMessage(
         e instanceof Error ? e.message : t("loadFailed"),
@@ -60,6 +80,10 @@ export function MatchRulingForm({ matchId }: Props) {
   async function submit() {
     if (!file) {
       setMessage(t("fileRequired"));
+      return;
+    }
+    if (canChooseArbiter && !arbiterUserId) {
+      setMessage(t("arbiterRequired"));
       return;
     }
 
@@ -94,6 +118,7 @@ export function MatchRulingForm({ matchId }: Props) {
               : null,
           file_path: uploadBody.path,
           ruling_date: rulingDate || null,
+          ...(canChooseArbiter ? { arbiter_user_id: arbiterUserId } : {}),
         }),
       });
       const body = await res.json();
@@ -122,6 +147,30 @@ export function MatchRulingForm({ matchId }: Props) {
       <p className="mt-1 text-xs text-zinc-500">{t("description")}</p>
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        {canChooseArbiter ? (
+          <label className="block text-xs font-medium text-zinc-600 sm:col-span-2">
+            {t("arbiter")}
+            <select
+              value={arbiterUserId}
+              onChange={(e) => setArbiterUserId(e.target.value)}
+              disabled={busy || honorArbiters.length === 0}
+              className="mt-1 w-full rounded-md border border-zinc-300 px-2 py-2 text-sm"
+            >
+              {honorArbiters.length === 0 ? (
+                <option value="">{t("noHonorArbiters")}</option>
+              ) : (
+                honorArbiters.map((arb) => (
+                  <option key={arb.userId} value={arb.userId}>
+                    {arb.label}
+                  </option>
+                ))
+              )}
+            </select>
+            <span className="mt-1 block text-[11px] font-normal text-zinc-500">
+              {t("arbiterHint")}
+            </span>
+          </label>
+        ) : null}
         <label className="block text-xs font-medium text-zinc-600">
           {t("boardOptional")}
           <input
@@ -159,7 +208,7 @@ export function MatchRulingForm({ matchId }: Props) {
       <button
         type="button"
         onClick={submit}
-        disabled={busy}
+        disabled={busy || (canChooseArbiter && honorArbiters.length === 0)}
         className="btn-primary mt-4 text-sm disabled:opacity-50"
       >
         {busy ? t("saving") : t("add")}
@@ -185,6 +234,11 @@ export function MatchRulingForm({ matchId }: Props) {
                   {ruling.board != null
                     ? t("boardLabel", { board: ruling.board })
                     : ""}
+                  {" · "}
+                  {t("byArbiter", {
+                    name:
+                      ruling.created_by_name?.trim() || t("byArbiterUnknown"),
+                  })}
                 </span>
                 {ruling.signed_url ? (
                   <a

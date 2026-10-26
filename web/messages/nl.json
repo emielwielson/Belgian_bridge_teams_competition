@@ -114,6 +114,8 @@
       "matchFallback": "Wedstrijd",
       "fromArbiterRequest": " · Via scheidsrechterverzoek",
       "board": " · Bord {board}",
+      "byArbiter": "Scheidsrechter: {name}",
+      "byArbiterUnknown": "Onbekend",
       "viewRuling": "Uitspraak bekijken"
     },
     "leagueRequests": {
@@ -416,6 +418,10 @@
     "ruling": {
       "title": "Arbitrage toevoegen",
       "description": "Publiceer de definitieve scheidsrechterlijke uitspraak als PDF of afbeelding. Het document moet de beslissing en de motivatie bevatten.",
+      "arbiter": "Scheidsrechter",
+      "arbiterHint": "Kies de Eredivisie-scheidsrechter die deze uitspraak deed.",
+      "arbiterRequired": "Kies de scheidsrechter die deze uitspraak deed",
+      "noHonorArbiters": "Geen Eredivisie-scheidsrechters beschikbaar",
       "boardOptional": "Bord (optioneel)",
       "rulingDate": "Datum uitspraak",
       "file": "Beslissingsbestand (PDF of afbeelding)",
@@ -431,6 +437,8 @@
       "loading": "Laden…",
       "none": "Nog geen arbitrages.",
       "boardLabel": " · Bord {board}",
+      "byArbiter": "Scheidsrechter: {name}",
+      "byArbiterUnknown": "Onbekend",
       "viewFile": "Bestand bekijken"
     }
   },
@@ -1605,7 +1613,8 @@
       "forfaitAlreadySet": "Wedstrijd heeft al een forfait",
       "forfaitNotSet": "Wedstrijd heeft geen forfait",
       "matchHasForfaitClearFirst": "Wedstrijd heeft een forfait; wis het forfait voordat u IMPs ingeeft",
-      "honorRulingOnly": "Arbitrages kunnen alleen worden toegevoegd voor Eredivisie-wedstrijden"
+      "honorRulingOnly": "Arbitrages kunnen alleen worden toegevoegd voor Eredivisie-wedstrijden",
+      "arbiterUserIdRequired": "Kies de scheidsrechter die deze uitspraak deed"
     },
     "auth": {
       "emailNotRegistered": "Dit e-mailadres staat niet in onze database. Als u bridgespeler bent, kan uw federatie (VBL of LBF) een ander e-mailadres hebben — probeer een ander adres of neem contact op met uw club.",
@@ -1620,6 +1629,7 @@
       "cannotSubmitScore": "Geen toegang: u kunt geen score indienen voor deze wedstrijd",
       "onlyArbiterOrManagerEditScore": "Geen toegang: alleen scheidsrechters of competitiebeheerders kunnen officiële scores bewerken",
       "onlyArbiterOrManagerDiscipline": "Geen toegang: alleen scheidsrechters of competitiebeheerders kunnen discipline beheren",
+      "notHonorArbiter": "Geen toegang: geselecteerde gebruiker is geen Eredivisie-scheidsrechter",
       "notAssignedClub": "Geen toegang: niet toegewezen aan deze club",
       "cannotManageConventionCards": "Geen toegang: u kunt geen conventiekaarten beheren voor dit team"
     },
