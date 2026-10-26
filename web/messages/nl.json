@@ -89,7 +89,14 @@
       "homeAria": "Thuis",
       "arbiterRequestAria": "Wedstrijd heeft een scheidsrechterverzoek of arbitrage",
       "locationChangedAria": "Wedstrijdlocatie is gewijzigd",
-      "forfaitAria": "Wedstrijd beslist door forfait"
+      "forfaitAria": "Wedstrijd beslist door forfait",
+      "legendTitle": "Legenda",
+      "legendHome": "Thuisploeg",
+      "legendPairing": "Zelfde kleur = zelfde wedstrijd",
+      "legendArbiter": "Scheidsrechterverzoek of arbitrage",
+      "legendLocation": "Locatie gewijzigd",
+      "legendForfait": "Forfait",
+      "legendPostponed": "Verplaatste datum/tijd"
     },
     "penalties": {
       "title": "Straffen",

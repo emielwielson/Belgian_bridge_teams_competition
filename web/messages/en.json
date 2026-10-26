@@ -89,7 +89,14 @@
       "homeAria": "Home",
       "arbiterRequestAria": "Match has an arbiter request or ruling",
       "locationChangedAria": "Match location has been changed",
-      "forfaitAria": "Match decided by forfait"
+      "forfaitAria": "Match decided by forfait",
+      "legendTitle": "Legend",
+      "legendHome": "Home team",
+      "legendPairing": "Same color = same match",
+      "legendArbiter": "Arbiter request or ruling",
+      "legendLocation": "Location changed",
+      "legendForfait": "Forfait",
+      "legendPostponed": "Rescheduled date/time"
     },
 
     "penalties": {

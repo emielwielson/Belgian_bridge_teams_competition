@@ -1,5 +1,8 @@
 import Link from "next/link";
-import type { GroupStandingsGridData } from "@/lib/competition/group-standings-grid";
+import {
+  PAIRING_BG_CLASSES,
+  type GroupStandingsGridData,
+} from "@/lib/competition/group-standings-grid";
 
 export type GroupStandingsGridLabels = {
   rank: string;
@@ -13,6 +16,13 @@ export type GroupStandingsGridLabels = {
   arbiterRequestAria: string;
   locationChangedAria: string;
   forfaitAria: string;
+  legendTitle: string;
+  legendHome: string;
+  legendPairing: string;
+  legendArbiter: string;
+  legendLocation: string;
+  legendForfait: string;
+  legendPostponed: string;
 };
 
 type Props = {
@@ -230,6 +240,73 @@ export function GroupStandingsGrid({ grid, labels }: Props) {
           </tbody>
         </table>
       </div>
+      {hasMatches ? (
+        <StandingsLegend labels={labels} />
+      ) : null}
+    </div>
+  );
+}
+
+function StandingsLegend({ labels }: { labels: GroupStandingsGridLabels }) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+        {labels.legendTitle}
+      </p>
+      <ul className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-700">
+        <li className="inline-flex items-center gap-1.5">
+          <span aria-hidden className="inline-flex text-slate-500">
+            <HomeIcon linked homeLabel={labels.homeAria} />
+          </span>
+          <span>{labels.legendHome}</span>
+        </li>
+        <li className="inline-flex items-center gap-1.5">
+          <span aria-hidden className="inline-flex overflow-hidden rounded-sm border border-slate-300">
+            {PAIRING_BG_CLASSES.map((cls) => (
+              <span
+                key={cls}
+                className={`inline-block h-3.5 w-3.5 ${cls.split(" ")[0]}`}
+              />
+            ))}
+          </span>
+          <span>{labels.legendPairing}</span>
+        </li>
+        <li className="inline-flex items-center gap-1.5">
+          <span
+            aria-hidden
+            className="inline-block h-3.5 w-5 rounded-sm bg-sky-200 outline outline-2 outline-offset-[-2px] outline-amber-500"
+          />
+          <span>{labels.legendArbiter}</span>
+        </li>
+        <li className="inline-flex items-center gap-1.5">
+          <span
+            aria-hidden
+            className="inline-flex h-3.5 min-w-3.5 items-center justify-center rounded-sm bg-violet-600/90 px-0.5 text-[9px] font-bold leading-none text-white"
+          >
+            L
+          </span>
+          <span>{labels.legendLocation}</span>
+        </li>
+        <li className="inline-flex items-center gap-1.5">
+          <span
+            aria-hidden
+            className="inline-flex h-3.5 min-w-3.5 items-center justify-center rounded-sm bg-amber-600/90 px-0.5 text-[9px] font-bold leading-none text-white"
+          >
+            F
+          </span>
+          <span>{labels.legendForfait}</span>
+        </li>
+        <li className="inline-flex items-center gap-1.5">
+          <span
+            aria-hidden
+            className="inline-flex flex-col text-[10px] leading-tight tabular-nums text-slate-500"
+          >
+            <span>04/10</span>
+            <span>20:00</span>
+          </span>
+          <span>{labels.legendPostponed}</span>
+        </li>
+      </ul>
     </div>
   );
 }

@@ -89,7 +89,14 @@
       "homeAria": "Home team",
       "arbiterRequestAria": "La rencontre a une demande d'arbitre ou un arbitrage",
       "locationChangedAria": "Le lieu de la rencontre a été modifié",
-      "forfaitAria": "Rencontre décidée par forfait"
+      "forfaitAria": "Rencontre décidée par forfait",
+      "legendTitle": "Légende",
+      "legendHome": "Équipe à domicile",
+      "legendPairing": "Même couleur = même rencontre",
+      "legendArbiter": "Demande d'arbitre ou arbitrage",
+      "legendLocation": "Lieu modifié",
+      "legendForfait": "Forfait",
+      "legendPostponed": "Date/heure reportée"
     },
     "penalties": {
       "title": "Pénalités",

@@ -64,6 +64,13 @@ export default async function GroupStandingsPage({ params }: Props) {
     arbiterRequestAria: tTable("arbiterRequestAria"),
     locationChangedAria: tTable("locationChangedAria"),
     forfaitAria: tTable("forfaitAria"),
+    legendTitle: tTable("legendTitle"),
+    legendHome: tTable("legendHome"),
+    legendPairing: tTable("legendPairing"),
+    legendArbiter: tTable("legendArbiter"),
+    legendLocation: tTable("legendLocation"),
+    legendForfait: tTable("legendForfait"),
+    legendPostponed: tTable("legendPostponed"),
   };
 
   return (

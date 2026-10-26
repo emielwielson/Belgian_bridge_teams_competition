@@ -18,6 +18,13 @@ const labels: GroupStandingsGridLabels = {
   arbiterRequestAria: "Match has an arbiter request or ruling",
   locationChangedAria: "Match location has been changed",
   forfaitAria: "Match decided by forfait",
+  legendTitle: "Legend",
+  legendHome: "Home team",
+  legendPairing: "Same color = same match",
+  legendArbiter: "Arbiter request or ruling",
+  legendLocation: "Location changed",
+  legendForfait: "Forfait",
+  legendPostponed: "Rescheduled date/time",
 };
 
 const sampleGrid: GroupStandingsGridData = {
@@ -114,6 +121,18 @@ describe("GroupStandingsGrid", () => {
     expect(
       screen.getByText(/round columns appear after the match schedule/i),
     ).toBeInTheDocument();
+    expect(screen.queryByText("Legend")).not.toBeInTheDocument();
+  });
+
+  it("renders a legend explaining standings symbols", () => {
+    render(<GroupStandingsGrid grid={sampleGrid} labels={labels} />);
+    expect(screen.getByText("Legend")).toBeInTheDocument();
+    expect(screen.getByText("Home team")).toBeInTheDocument();
+    expect(screen.getByText("Same color = same match")).toBeInTheDocument();
+    expect(screen.getByText("Arbiter request or ruling")).toBeInTheDocument();
+    expect(screen.getByText("Location changed")).toBeInTheDocument();
+    expect(screen.getByText("Forfait")).toBeInTheDocument();
+    expect(screen.getByText("Rescheduled date/time")).toBeInTheDocument();
   });
 
   it("uses aligned sticky column layout classes", () => {
