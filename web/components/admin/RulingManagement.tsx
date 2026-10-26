@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import {
+  FilePickerField,
+  FILE_PICKER_ACCEPT,
+} from "@/components/files/FilePickerField";
 
 type MatchOption = {
   id: string;
@@ -40,6 +44,7 @@ export function RulingManagement({ groupId }: Props) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [fileInputKey, setFileInputKey] = useState(0);
   const [form, setForm] = useState({
     match_id: "",
     board: "",
@@ -138,6 +143,7 @@ export function RulingManagement({ groupId }: Props) {
         ruling_date: new Date().toISOString().slice(0, 10),
         file: null,
       });
+      setFileInputKey((k) => k + 1);
       await loadRulings();
       setMessage(t("added"));
     } catch (e) {
@@ -207,20 +213,19 @@ export function RulingManagement({ groupId }: Props) {
             className="mt-1 w-full rounded-md border border-zinc-300 px-2 py-2 text-sm"
           />
         </label>
-        <label className="block text-xs font-medium text-zinc-600 sm:col-span-2">
-          {t("file")}
-          <input
-            type="file"
-            accept="application/pdf,image/jpeg,image/png,image/webp"
-            onChange={(e) =>
-              setForm((f) => ({
-                ...f,
-                file: e.target.files?.[0] ?? null,
-              }))
+        <div className="sm:col-span-2">
+          <FilePickerField
+            key={fileInputKey}
+            id="admin-ruling-file"
+            file={form.file}
+            onFileChange={(next) =>
+              setForm((f) => ({ ...f, file: next }))
             }
-            className="mt-1 w-full text-sm"
+            hint={t("file")}
+            accept={FILE_PICKER_ACCEPT}
+            disabled={busy}
           />
-        </label>
+        </div>
       </div>
 
       <div className="mt-3">
@@ -267,7 +272,7 @@ export function RulingManagement({ groupId }: Props) {
                           href={r.signed_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="font-medium text-emerald-800 underline"
+                          className="btn-secondary px-3 py-1.5 text-xs"
                         >
                           {t("viewFile")}
                         </a>

@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import {
+  FilePickerField,
+  FILE_PICKER_ACCEPT,
+} from "@/components/files/FilePickerField";
 import { useTranslateApiError } from "@/lib/i18n/translate-api-error";
 
 type Penalty = {
@@ -58,6 +62,7 @@ export function TeamDisciplineSection({ teamId }: Props) {
   const [message, setMessage] = useState<string | null>(null);
 
   const [editingPenaltyId, setEditingPenaltyId] = useState<string | null>(null);
+  const [penaltyFileInputKey, setPenaltyFileInputKey] = useState(0);
   const [penaltyForm, setPenaltyForm] = useState(emptyPenaltyForm);
 
   const [editingWarningId, setEditingWarningId] = useState<string | null>(null);
@@ -160,6 +165,7 @@ export function TeamDisciplineSection({ teamId }: Props) {
       const wasEditing = Boolean(editingPenaltyId);
       setEditingPenaltyId(null);
       setPenaltyForm(emptyPenaltyForm());
+      setPenaltyFileInputKey((k) => k + 1);
       await load();
       setMessage(wasEditing ? t("penaltyUpdated") : t("penaltyAdded"));
     } catch (e) {
@@ -198,6 +204,7 @@ export function TeamDisciplineSection({ teamId }: Props) {
       vp_deduction: String(p.vp_deduction),
       file: null,
     });
+    setPenaltyFileInputKey((k) => k + 1);
   }
 
   async function saveWarning() {
@@ -332,21 +339,19 @@ export function TeamDisciplineSection({ teamId }: Props) {
                   className="mt-1 w-full rounded-md border border-zinc-300 px-2 py-2 text-sm"
                 />
               </label>
-              <label className="block text-xs font-medium text-zinc-600 sm:col-span-2">
-                {t("documentOptional")}
-                <input
-                  type="file"
-                  accept="application/pdf,image/jpeg,image/png,image/webp"
-                  disabled={busy}
-                  onChange={(e) =>
-                    setPenaltyForm((f) => ({
-                      ...f,
-                      file: e.target.files?.[0] ?? null,
-                    }))
+              <div className="sm:col-span-2">
+                <FilePickerField
+                  key={penaltyFileInputKey}
+                  id="team-penalty-file"
+                  file={penaltyForm.file}
+                  onFileChange={(next) =>
+                    setPenaltyForm((f) => ({ ...f, file: next }))
                   }
-                  className="mt-1 block w-full text-sm text-zinc-600"
+                  hint={t("documentOptional")}
+                  accept={FILE_PICKER_ACCEPT}
+                  disabled={busy}
                 />
-              </label>
+              </div>
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
               <button
@@ -365,6 +370,7 @@ export function TeamDisciplineSection({ teamId }: Props) {
                   onClick={() => {
                     setEditingPenaltyId(null);
                     setPenaltyForm(emptyPenaltyForm());
+                    setPenaltyFileInputKey((k) => k + 1);
                   }}
                 >
                   {t("cancelEdit")}
@@ -397,7 +403,7 @@ export function TeamDisciplineSection({ teamId }: Props) {
                             href={p.file_signed_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-sm font-medium text-emerald-800 underline"
+                            className="btn-secondary px-3 py-1.5 text-xs"
                           >
                             {t("viewDocument")}
                           </a>

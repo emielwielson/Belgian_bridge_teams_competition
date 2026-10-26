@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import {
+  FilePickerField,
+  FILE_PICKER_ACCEPT,
+} from "@/components/files/FilePickerField";
 
 type Penalty = {
   id: string;
@@ -28,6 +32,7 @@ export function PenaltyManagement({ groupId, teams }: Props) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [fileInputKey, setFileInputKey] = useState(0);
   const [form, setForm] = useState({
     team_id: "",
     penalty_date: new Date().toISOString().slice(0, 10),
@@ -113,6 +118,7 @@ export function PenaltyManagement({ groupId, teams }: Props) {
         vp_deduction: "0",
         file: null,
       });
+      setFileInputKey((k) => k + 1);
       await load();
       setMessage(wasEditing ? t("updated") : t("added"));
     } catch (e) {
@@ -141,6 +147,7 @@ export function PenaltyManagement({ groupId, teams }: Props) {
       vp_deduction: String(p.vp_deduction),
       file: null,
     });
+    setFileInputKey((k) => k + 1);
   }
 
   if (!groupId) {
@@ -201,17 +208,18 @@ export function PenaltyManagement({ groupId, teams }: Props) {
             className="mt-1 w-full rounded-md border border-zinc-300 px-2 py-2 text-sm"
           />
         </label>
-        <label className="block text-xs font-medium text-zinc-600 sm:col-span-2">
-          {t("documentOptional")}
-          <input
-            type="file"
-            accept="application/pdf,image/jpeg,image/png,image/webp"
-            onChange={(e) =>
-              setForm((f) => ({ ...f, file: e.target.files?.[0] ?? null }))
+        <div className="sm:col-span-2">
+          <FilePickerField
+            key={fileInputKey}
+            id="admin-penalty-file"
+            file={form.file}
+            onFileChange={(next) =>
+              setForm((f) => ({ ...f, file: next }))
             }
-            className="mt-1 block w-full text-sm text-zinc-600"
+            hint={t("documentOptional")}
+            accept={FILE_PICKER_ACCEPT}
           />
-        </label>
+        </div>
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
@@ -230,6 +238,7 @@ export function PenaltyManagement({ groupId, teams }: Props) {
                 vp_deduction: "0",
                 file: null,
               });
+              setFileInputKey((k) => k + 1);
             }}
             className="btn-secondary text-sm"
           >

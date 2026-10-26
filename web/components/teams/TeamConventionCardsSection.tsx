@@ -1,75 +1,16 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import type { Locale } from "@/i18n/config";
 import { toIntlLocale } from "@/i18n/intl-locale";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import {
+  FilePickerField,
+  FILE_PICKER_ACCEPT,
+} from "@/components/files/FilePickerField";
 import type { ConventionCardListItem } from "@/lib/competition/convention-card-queries";
 import { formatBrussels } from "@/lib/time/brussels";
-
-const CONVENTION_CARD_ACCEPT =
-  "application/pdf,image/jpeg,image/png,image/webp";
-
-type ConventionCardFileInputProps = {
-  id: string;
-  file: File | null;
-  onFileChange: (file: File | null) => void;
-  hint: string;
-  chooseFileLabel: string;
-  noFileChosenLabel: string;
-  clearLabel: string;
-};
-
-function ConventionCardFileInput({
-  id,
-  file,
-  onFileChange,
-  hint,
-  chooseFileLabel,
-  noFileChosenLabel,
-  clearLabel,
-}: ConventionCardFileInputProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  function clearFile() {
-    onFileChange(null);
-    if (inputRef.current) {
-      inputRef.current.value = "";
-    }
-  }
-
-  return (
-    <div className="flex flex-col gap-1 text-sm">
-      <span className="text-zinc-600">{hint}</span>
-      <div className="flex flex-wrap items-center gap-2">
-        <input
-          ref={inputRef}
-          id={id}
-          type="file"
-          accept={CONVENTION_CARD_ACCEPT}
-          onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
-          className="sr-only"
-        />
-        <label htmlFor={id} className="btn-secondary cursor-pointer px-3 py-1.5">
-          {chooseFileLabel}
-        </label>
-        <span className="text-zinc-600">
-          {file ? file.name : noFileChosenLabel}
-        </span>
-        {file ? (
-          <button
-            type="button"
-            onClick={clearFile}
-            className="text-sm text-zinc-500 hover:text-zinc-800 hover:underline"
-          >
-            {clearLabel}
-          </button>
-        ) : null}
-      </div>
-    </div>
-  );
-}
 
 type Props = {
   teamId: string;
@@ -83,7 +24,6 @@ export function TeamConventionCardsSection({
   canManage,
 }: Props) {
   const t = useTranslations("team.conventionCards");
-  const tc = useTranslations("common");
   const locale = useLocale() as Locale;
   const intlLocale = toIntlLocale(locale);
   const [cards, setCards] = useState(initialCards);
@@ -96,6 +36,7 @@ export function TeamConventionCardsSection({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editFile, setEditFile] = useState<File | null>(null);
+  const [editFileInputKey, setEditFileInputKey] = useState(0);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<{
     id: string;
@@ -135,6 +76,7 @@ export function TeamConventionCardsSection({
     setEditingId(card.id);
     setEditName(card.name);
     setEditFile(null);
+    setEditFileInputKey((k) => k + 1);
     setMessage(null);
   }
 
@@ -197,12 +139,6 @@ export function TeamConventionCardsSection({
     setMessage(null);
   }
 
-  const fileInputLabels = {
-    chooseFileLabel: tc("chooseFile"),
-    noFileChosenLabel: tc("noFileChosen"),
-    clearLabel: tc("clear"),
-  };
-
   return (
     <section className="rounded-lg border border-zinc-200 bg-white p-4">
       <h2 className="text-sm font-semibold text-zinc-900">{t("title")}</h2>
@@ -234,12 +170,14 @@ export function TeamConventionCardsSection({
                       className="rounded-lg border border-zinc-300 px-3 py-2"
                     />
                   </label>
-                  <ConventionCardFileInput
+                  <FilePickerField
+                    key={editFileInputKey}
                     id={`convention-card-edit-file-${card.id}`}
                     file={editFile}
                     onFileChange={setEditFile}
                     hint={t("replaceFile")}
-                    {...fileInputLabels}
+                    accept={FILE_PICKER_ACCEPT}
+                    disabled={savingId === card.id}
                   />
                   <div className="flex flex-wrap gap-2">
                     <button
@@ -270,7 +208,7 @@ export function TeamConventionCardsSection({
                     </p>
                     <a
                       href={card.download_url}
-                      className="mt-2 inline-block text-emerald-800 hover:underline"
+                      className="btn-secondary mt-2 inline-flex px-3 py-1.5 text-sm"
                     >
                       {t("download")}
                     </a>
@@ -316,13 +254,14 @@ export function TeamConventionCardsSection({
               placeholder={t("namePlaceholder")}
             />
           </label>
-          <ConventionCardFileInput
+          <FilePickerField
             key={uploadFileInputKey}
             id="convention-card-upload-file"
             file={uploadFile}
             onFileChange={setUploadFile}
             hint={t("documentHint")}
-            {...fileInputLabels}
+            accept={FILE_PICKER_ACCEPT}
+            disabled={uploading}
           />
           <button
             type="submit"

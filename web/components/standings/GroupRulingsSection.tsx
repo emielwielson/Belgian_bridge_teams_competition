@@ -42,7 +42,7 @@ export async function GroupRulingsSection({ rulings }: Props) {
                     href={ruling.signed_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm font-medium text-emerald-800 underline"
+                    className="btn-secondary px-3 py-1.5 text-sm"
                   >
                     {t("viewRuling")}
                   </a>

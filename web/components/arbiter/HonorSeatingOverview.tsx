@@ -788,7 +788,7 @@ export function HonorSeatingOverview() {
               type="button"
               onClick={() => void downloadBws()}
               disabled={!downloadReady || downloadingBws || loading}
-              className="shrink-0 rounded border border-zinc-900 bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:border-zinc-300 disabled:bg-zinc-300"
+              className="btn-primary shrink-0 px-3 py-1.5 text-sm"
             >
               {downloadingBws ? t("downloadingBws") : t("downloadBws")}
             </button>

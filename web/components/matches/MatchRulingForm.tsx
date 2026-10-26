@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import {
+  FilePickerField,
+  FILE_PICKER_ACCEPT,
+} from "@/components/files/FilePickerField";
 import { useTranslateApiError } from "@/lib/i18n/translate-api-error";
 
 type RulingRow = {
@@ -24,6 +28,7 @@ export function MatchRulingForm({ matchId }: Props) {
     () => new Date().toISOString().slice(0, 10),
   );
   const [file, setFile] = useState<File | null>(null);
+  const [fileInputKey, setFileInputKey] = useState(0);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
@@ -99,6 +104,7 @@ export function MatchRulingForm({ matchId }: Props) {
       setBoard("");
       setRulingDate(new Date().toISOString().slice(0, 10));
       setFile(null);
+      setFileInputKey((k) => k + 1);
       await loadRulings();
       setMessage(t("saved"));
     } catch (e) {
@@ -137,16 +143,17 @@ export function MatchRulingForm({ matchId }: Props) {
             className="mt-1 w-full rounded-md border border-zinc-300 px-2 py-2 text-sm"
           />
         </label>
-        <label className="block text-xs font-medium text-zinc-600 sm:col-span-2">
-          {t("file")}
-          <input
-            type="file"
-            accept="application/pdf,image/jpeg,image/png,image/webp"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+        <div className="sm:col-span-2">
+          <FilePickerField
+            key={fileInputKey}
+            id="match-ruling-file"
+            file={file}
+            onFileChange={setFile}
+            hint={t("file")}
+            accept={FILE_PICKER_ACCEPT}
             disabled={busy}
-            className="mt-1 block w-full text-sm text-zinc-600"
           />
-        </label>
+        </div>
       </div>
 
       <button
@@ -184,7 +191,7 @@ export function MatchRulingForm({ matchId }: Props) {
                     href={ruling.signed_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-medium text-emerald-800 underline"
+                    className="btn-secondary px-3 py-1.5 text-xs"
                   >
                     {t("viewFile")}
                   </a>

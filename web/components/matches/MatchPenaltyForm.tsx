@@ -9,6 +9,10 @@ import {
   penaltyFieldsToPayload,
   type TeamOption,
 } from "@/components/discipline/DisciplinePenaltyFields";
+import {
+  FilePickerField,
+  FILE_PICKER_ACCEPT,
+} from "@/components/files/FilePickerField";
 import { useTranslateApiError } from "@/lib/i18n/translate-api-error";
 
 type Props = {
@@ -21,6 +25,7 @@ export function MatchPenaltyForm({ homeTeam, awayTeam }: Props) {
   const translateApiError = useTranslateApiError();
   const [fields, setFields] = useState(() => emptyPenaltyFields(homeTeam.id));
   const [file, setFile] = useState<File | null>(null);
+  const [fileInputKey, setFileInputKey] = useState(0);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -71,6 +76,7 @@ export function MatchPenaltyForm({ homeTeam, awayTeam }: Props) {
 
       setFields(emptyPenaltyFields(homeTeam.id));
       setFile(null);
+      setFileInputKey((k) => k + 1);
       setMessage(t("saved"));
     } catch (e) {
       setMessage(
@@ -95,15 +101,17 @@ export function MatchPenaltyForm({ homeTeam, awayTeam }: Props) {
           onChange={setFields}
           disabled={busy}
         />
-        <label className="mt-3 block text-xs font-medium text-zinc-600">
-          {t("documentOptional")}
-          <input
-            type="file"
-            accept="application/pdf,image/jpeg,image/png,image/webp"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            className="mt-1 block w-full text-sm text-zinc-600"
+        <div className="mt-3">
+          <FilePickerField
+            key={fileInputKey}
+            id="match-penalty-file"
+            file={file}
+            onFileChange={setFile}
+            hint={t("documentOptional")}
+            accept={FILE_PICKER_ACCEPT}
+            disabled={busy}
           />
-        </label>
+        </div>
       </div>
       <button
         type="button"
