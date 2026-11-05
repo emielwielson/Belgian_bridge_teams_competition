@@ -113,9 +113,7 @@ export async function POST(request: Request) {
     const buffer = await file.arrayBuffer();
     await uploadOperationalFile(service, storagePath, buffer, validated);
 
-    const signedUrl = await createOperationalSignedUrl(service, storagePath, {
-      downloadFileName: purpose === "ruling" ? fileName : null,
-    });
+    const signedUrl = await createOperationalSignedUrl(service, storagePath);
 
     return jsonOk({ path: storagePath, fileName, signedUrl }, { status: 201 });
   } catch (err) {

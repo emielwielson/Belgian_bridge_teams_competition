@@ -154,7 +154,6 @@ describe("/api/arbiter/requests/[requestId]/resolve", () => {
     expect(createOperationalSignedUrl).toHaveBeenCalledWith(
       undefined,
       "rulings/m1/abc/r.pdf",
-      { downloadFileName: "r.pdf" },
     );
     expect(sendArbiterRequestResolvedEmail).toHaveBeenCalledWith(
       {

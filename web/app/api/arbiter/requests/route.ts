@@ -298,7 +298,6 @@ export async function GET(request: Request) {
             ruling_signed_url = await createOperationalSignedUrl(
               service,
               rulingRow.file_path,
-              { downloadFileName: rulingRow.file_name },
             );
           } catch {
             ruling_signed_url = null;

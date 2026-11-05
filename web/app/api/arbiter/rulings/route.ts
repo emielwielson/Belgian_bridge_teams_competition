@@ -93,11 +93,7 @@ export async function GET(request: Request) {
       (data ?? []).map(async (row) => {
         let signed_url: string | null = null;
         try {
-          signed_url = await createOperationalSignedUrl(
-            service,
-            row.file_path,
-            { downloadFileName: row.file_name },
-          );
+          signed_url = await createOperationalSignedUrl(service, row.file_path);
         } catch {
           signed_url = null;
         }

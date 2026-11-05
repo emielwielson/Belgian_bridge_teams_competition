@@ -100,7 +100,6 @@ export async function POST(request: Request, { params }: Params) {
         rulingSignedUrl = await createOperationalSignedUrl(
           service,
           ruling.file_path,
-          { downloadFileName: ruling.file_name },
         );
       } catch {
         rulingSignedUrl = null;

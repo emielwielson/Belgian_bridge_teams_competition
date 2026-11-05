@@ -387,7 +387,6 @@ describe("/api/arbiter/rulings", () => {
       expect(createOperationalSignedUrl).toHaveBeenCalledWith(
         {},
         "rulings/m1/abc/Board 3 Ruling.pdf",
-        { downloadFileName: "Board 3 Ruling.pdf" },
       );
     });
 

@@ -44,9 +44,7 @@ export async function GET(request: Request) {
       (data ?? []).map(async (row) => {
         let signedUrl: string | null = null;
         try {
-          signedUrl = await createOperationalSignedUrl(service, row.file_path, {
-            downloadFileName: row.file_name,
-          });
+          signedUrl = await createOperationalSignedUrl(service, row.file_path);
         } catch {
           signedUrl = null;
         }

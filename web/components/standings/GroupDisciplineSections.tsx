@@ -45,7 +45,6 @@ export async function GroupDisciplineSections({ groupId }: Props) {
         const signed_url = await createOperationalSignedUrl(
           service,
           ruling.file_path,
-          { downloadFileName: ruling.file_name },
         );
         return { ...ruling, signed_url };
       } catch {
