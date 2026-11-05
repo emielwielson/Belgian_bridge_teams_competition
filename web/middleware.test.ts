@@ -22,6 +22,9 @@ describe("isPublicPath", () => {
   it("allows public APIs and standings", () => {
     expect(isPublicPath("/api/public/active-season")).toBe(true);
     expect(isPublicPath("/api/public/groups")).toBe(true);
+    expect(
+      isPublicPath("/api/public/rulings/ruling-1/file"),
+    ).toBe(true);
     expect(isPublicPath("/api/standings/abc")).toBe(true);
     expect(isPublicPath("/standings")).toBe(true);
     expect(isPublicPath("/standings/group-1")).toBe(true);

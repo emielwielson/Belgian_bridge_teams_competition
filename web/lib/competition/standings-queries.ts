@@ -112,6 +112,7 @@ export type LeagueArbiterRequestSummary = {
   round: number;
   home_team_name: string;
   away_team_name: string;
+  ruling_id: string | null;
   ruling_file_path: string | null;
   ruling_file_name: string | null;
   ruling_signed_url: string | null;
@@ -670,8 +671,8 @@ type LeagueRequestQueryRow = {
     away_team: { name: string } | { name: string }[] | null;
   }[] | null;
   rulings:
-    | { file_path: string; file_name: string | null }[]
-    | { file_path: string; file_name: string | null }
+    | { id: string; file_path: string; file_name: string | null }[]
+    | { id: string; file_path: string; file_name: string | null }
     | null;
 };
 
@@ -739,7 +740,7 @@ export async function loadLeagueArbiterRequestSummaries(
         home_team:teams!matches_home_team_id_fkey (name),
         away_team:teams!matches_away_team_id_fkey (name)
       ),
-      rulings (file_path, file_name)
+      rulings (id, file_path, file_name)
     `,
     )
     .in("status", ["open", "resolved"])
@@ -768,6 +769,7 @@ export async function loadLeagueArbiterRequestSummaries(
       round: match.round,
       home_team_name: teamName(match.home_team),
       away_team_name: teamName(match.away_team),
+      ruling_id: ruling?.id ?? null,
       ruling_file_path: ruling?.file_path ?? null,
       ruling_file_name: ruling?.file_name ?? null,
       ruling_signed_url: null,

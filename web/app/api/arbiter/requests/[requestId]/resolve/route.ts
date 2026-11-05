@@ -10,7 +10,7 @@ import {
   revalidateMatchDerivedViews,
   revalidateStandingsForGroup,
 } from "@/lib/competition/revalidate-standings";
-import { createOperationalSignedUrl } from "@/lib/files/operational-file-storage";
+import { absoluteRulingFileUrl } from "@/lib/files/ruling-file";
 import {
   jsonError,
   jsonFromError,
@@ -19,7 +19,6 @@ import {
 } from "@/lib/http/api-response";
 import { ErrorCodes } from "@/lib/http/error-codes";
 import { sendArbiterRequestResolvedEmail } from "@/lib/notifications/arbiter-request-email";
-import { createServiceClient } from "@/lib/supabase/server-client";
 
 type Params = { params: Promise<{ requestId: string }> };
 
@@ -86,25 +85,9 @@ export async function POST(request: Request, { params }: Params) {
       actions: actionsPayload,
     });
 
-    const service = createServiceClient();
-    const { data: ruling, error: rulingError } = await supabase
-      .from("rulings")
-      .select("file_path, file_name")
-      .eq("id", result.rulingId)
-      .maybeSingle();
-    if (rulingError) return jsonError(rulingError.message, 500);
-
-    let rulingSignedUrl: string | null = null;
-    if (ruling?.file_path) {
-      try {
-        rulingSignedUrl = await createOperationalSignedUrl(
-          service,
-          ruling.file_path,
-        );
-      } catch {
-        rulingSignedUrl = null;
-      }
-    }
+    const rulingSignedUrl = result.rulingId
+      ? absoluteRulingFileUrl(result.rulingId)
+      : null;
 
     if (result.score) {
       await revalidateMatchDerivedViews(supabase, {

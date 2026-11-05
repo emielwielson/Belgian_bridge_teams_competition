@@ -9,7 +9,7 @@ import {
 } from "@/lib/competition/honor-rulings";
 import { loadGroupScoringContext } from "@/lib/competition/match-scoring-context";
 import { revalidateStandingsForGroup } from "@/lib/competition/revalidate-standings";
-import { createOperationalSignedUrl } from "@/lib/files/operational-file-storage";
+import { rulingFilePath } from "@/lib/files/ruling-file";
 import {
   jsonError,
   jsonFromError,
@@ -89,17 +89,10 @@ export async function GET(request: Request) {
 
     if (error) return jsonError(error.message, 500);
 
-    const rulings = await Promise.all(
-      (data ?? []).map(async (row) => {
-        let signed_url: string | null = null;
-        try {
-          signed_url = await createOperationalSignedUrl(service, row.file_path);
-        } catch {
-          signed_url = null;
-        }
-        return { ...row, signed_url };
-      }),
-    );
+    const rulings = (data ?? []).map((row) => ({
+      ...row,
+      signed_url: rulingFilePath(row.id),
+    }));
 
     return jsonOk({
       rulings,

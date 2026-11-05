@@ -31,12 +31,8 @@ vi.mock("@/lib/notifications/arbiter-request-email", () => ({
   sendArbiterRequestResolvedEmail: vi.fn(),
 }));
 
-vi.mock("@/lib/files/operational-file-storage", () => ({
-  createOperationalSignedUrl: vi.fn(),
-}));
-
-vi.mock("@/lib/supabase/server-client", () => ({
-  createServiceClient: vi.fn(),
+vi.mock("@/lib/notifications/postponement-email", () => ({
+  getAppBaseUrl: () => "https://app.example.com",
 }));
 
 import { requireRoles } from "@/lib/auth/route-auth";
@@ -48,7 +44,6 @@ import {
   revalidateMatchDerivedViews,
   revalidateStandingsForGroup,
 } from "@/lib/competition/revalidate-standings";
-import { createOperationalSignedUrl } from "@/lib/files/operational-file-storage";
 import { sendArbiterRequestResolvedEmail } from "@/lib/notifications/arbiter-request-email";
 
 const mockFrom = vi.fn();
@@ -77,21 +72,6 @@ describe("/api/arbiter/requests/[requestId]/resolve", () => {
           })),
         };
       }
-      if (table === "rulings") {
-        return {
-          select: vi.fn(() => ({
-            eq: vi.fn(() => ({
-              maybeSingle: vi.fn().mockResolvedValue({
-                data: {
-                  file_path: "rulings/m1/abc/r.pdf",
-                  file_name: "r.pdf",
-                },
-                error: null,
-              }),
-            })),
-          })),
-        };
-      }
       return {};
     });
 
@@ -107,7 +87,6 @@ describe("/api/arbiter/requests/[requestId]/resolve", () => {
       penaltyIds: [],
       warningIds: [],
     });
-    vi.mocked(createOperationalSignedUrl).mockResolvedValue("https://signed/r.pdf");
   });
 
   it("requires ruling file_path", async () => {
@@ -151,14 +130,10 @@ describe("/api/arbiter/requests/[requestId]/resolve", () => {
       fileName: "r.pdf",
       actions: {},
     });
-    expect(createOperationalSignedUrl).toHaveBeenCalledWith(
-      undefined,
-      "rulings/m1/abc/r.pdf",
-    );
     expect(sendArbiterRequestResolvedEmail).toHaveBeenCalledWith(
       {
         requestId: "req-1",
-        rulingSignedUrl: "https://signed/r.pdf",
+        rulingSignedUrl: "https://app.example.com/api/public/rulings/ruling-1/file",
       },
       "en",
     );

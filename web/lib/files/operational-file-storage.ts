@@ -59,3 +59,19 @@ export async function createOperationalSignedUrl(
   if (!data?.signedUrl) throw new Error("Failed to create signed URL");
   return data.signedUrl;
 }
+
+export async function downloadOperationalFile(
+  supabase: SupabaseClient,
+  storagePath: string,
+): Promise<{ data: Blob; contentType: string | null }> {
+  const { data, error } = await supabase.storage
+    .from(OPERATIONAL_FILES_BUCKET)
+    .download(storagePath);
+
+  if (error) throw error;
+  if (!data) throw new Error("Failed to download file");
+  return {
+    data,
+    contentType: data.type || null,
+  };
+}

@@ -26,10 +26,6 @@ vi.mock("@/lib/competition/revalidate-standings", () => ({
   revalidateStandingsForGroup: vi.fn(),
 }));
 
-vi.mock("@/lib/files/operational-file-storage", () => ({
-  createOperationalSignedUrl: vi.fn(),
-}));
-
 vi.mock("@/lib/supabase/server-client", () => ({
   createServiceClient: vi.fn(() => ({})),
 }));
@@ -54,7 +50,6 @@ import {
 } from "@/lib/competition/honor-rulings";
 import { loadGroupScoringContext } from "@/lib/competition/match-scoring-context";
 import { revalidateStandingsForGroup } from "@/lib/competition/revalidate-standings";
-import { createOperationalSignedUrl } from "@/lib/files/operational-file-storage";
 import { isHonorDivision } from "@/lib/scoring/board-count-rules";
 import { ErrorCodes } from "@/lib/http/error-codes";
 
@@ -134,9 +129,6 @@ describe("/api/arbiter/rulings", () => {
     } as never);
     vi.mocked(isHonorDivision).mockReturnValue(true);
     vi.mocked(isGroupInActiveSeason).mockResolvedValue(true);
-    vi.mocked(createOperationalSignedUrl).mockResolvedValue(
-      "https://signed/ruling.pdf",
-    );
     vi.mocked(revalidateStandingsForGroup).mockResolvedValue(undefined);
     vi.mocked(canChooseRulingArbiter).mockReturnValue(false);
     vi.mocked(listHonorArbitersForAttribution).mockResolvedValue([]);
@@ -383,10 +375,8 @@ describe("/api/arbiter/rulings", () => {
       expect(res.status).toBe(200);
       const body = await res.json();
       expect(body.rulings).toHaveLength(1);
-      expect(body.rulings[0].signed_url).toBe("https://signed/ruling.pdf");
-      expect(createOperationalSignedUrl).toHaveBeenCalledWith(
-        {},
-        "rulings/m1/abc/Board 3 Ruling.pdf",
+      expect(body.rulings[0].signed_url).toBe(
+        "/api/public/rulings/r1/file",
       );
     });
 

@@ -5,6 +5,7 @@ import { GroupWarningsSection } from "@/components/standings/GroupWarningsSectio
 import { getCachedGroupDisciplineData } from "@/lib/competition/standings-cache";
 import { createServiceClient } from "@/lib/supabase/server-client";
 import { createOperationalSignedUrl } from "@/lib/files/operational-file-storage";
+import { rulingFilePath } from "@/lib/files/ruling-file";
 
 type Props = {
   groupId: string;
@@ -39,19 +40,10 @@ export async function GroupDisciplineSections({ groupId }: Props) {
     }),
   );
 
-  const rulingsWithUrls = await Promise.all(
-    rulings.map(async (ruling) => {
-      try {
-        const signed_url = await createOperationalSignedUrl(
-          service,
-          ruling.file_path,
-        );
-        return { ...ruling, signed_url };
-      } catch {
-        return { ...ruling, signed_url: null };
-      }
-    }),
-  );
+  const rulingsWithUrls = rulings.map((ruling) => ({
+    ...ruling,
+    signed_url: rulingFilePath(ruling.id),
+  }));
 
   return (
     <>

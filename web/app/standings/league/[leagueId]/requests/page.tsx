@@ -5,9 +5,8 @@ import {
   getCachedLeagueArbiterRequests,
   getCachedLeagueStandings,
 } from "@/lib/competition/standings-cache";
-import { createOperationalSignedUrl } from "@/lib/files/operational-file-storage";
+import { rulingFilePath } from "@/lib/files/ruling-file";
 import { translateLeagueName } from "@/lib/i18n/labels";
-import { createServiceClient } from "@/lib/supabase/server-client";
 import { formatBrussels } from "@/lib/time/brussels";
 import { toIntlLocale } from "@/i18n/intl-locale";
 import type { Locale } from "@/i18n/config";
@@ -33,24 +32,13 @@ export default async function LeagueArbiterRequestsPage({ params }: Props) {
   }
 
   const leagueName = translateLeagueName(leagueData.league.name, tRegions);
-  const service = createServiceClient();
 
-  const requestsWithUrls = await Promise.all(
-    requests.map(async (request) => {
-      if (!request.ruling_file_path) {
-        return { ...request, ruling_signed_url: null };
-      }
-      try {
-        const ruling_signed_url = await createOperationalSignedUrl(
-          service,
-          request.ruling_file_path,
-        );
-        return { ...request, ruling_signed_url };
-      } catch {
-        return { ...request, ruling_signed_url: null };
-      }
-    }),
-  );
+  const requestsWithUrls = requests.map((request) => ({
+    ...request,
+    ruling_signed_url: request.ruling_id
+      ? rulingFilePath(request.ruling_id)
+      : null,
+  }));
 
   return (
     <main className="page-container flex flex-col gap-6">

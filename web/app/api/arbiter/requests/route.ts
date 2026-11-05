@@ -16,6 +16,7 @@ import { requireRoles } from "@/lib/auth/route-auth";
 import type { InboxMatchContext } from "@/lib/competition/arbiter-request";
 import { loadGroupScoringContext } from "@/lib/competition/match-scoring-context";
 import { createOperationalSignedUrl } from "@/lib/files/operational-file-storage";
+import { rulingFilePath } from "@/lib/files/ruling-file";
 import { jsonError, jsonFromError, jsonOk } from "@/lib/http/api-response";
 import { allowsBoardChoice } from "@/lib/scoring/board-count-rules";
 import { createServiceClient } from "@/lib/supabase/server-client";
@@ -213,7 +214,7 @@ export async function GET(request: Request) {
           storage_path,
           sort_order
         ),
-        rulings (file_path, file_name),
+        rulings (id, file_path, file_name),
         match:matches (
           round,
           datetime,
@@ -286,23 +287,15 @@ export async function GET(request: Request) {
         }
 
         const rulingsRaw = row.rulings as
-          | { file_path: string; file_name: string | null }[]
-          | { file_path: string; file_name: string | null }
+          | { id: string; file_path: string; file_name: string | null }[]
+          | { id: string; file_path: string; file_name: string | null }
           | null;
         const rulingRow = Array.isArray(rulingsRaw)
           ? rulingsRaw[0]
           : rulingsRaw;
-        let ruling_signed_url: string | null = null;
-        if (rulingRow?.file_path) {
-          try {
-            ruling_signed_url = await createOperationalSignedUrl(
-              service,
-              rulingRow.file_path,
-            );
-          } catch {
-            ruling_signed_url = null;
-          }
-        }
+        const ruling_signed_url = rulingRow?.id
+          ? rulingFilePath(rulingRow.id)
+          : null;
 
         return {
           id: row.id,

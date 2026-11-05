@@ -1,9 +1,8 @@
 import { COMPETITION_ADMIN_ROLES, requireRoles } from "@/lib/auth/route-auth";
 import { activeSeasonMatchIds } from "@/lib/competition/admin-season-scope";
-import { createOperationalSignedUrl } from "@/lib/files/operational-file-storage";
+import { rulingFilePath } from "@/lib/files/ruling-file";
 import { jsonError, jsonFromError, jsonOk, jsonErrorCode } from "@/lib/http/api-response";
 import { ErrorCodes } from "@/lib/http/error-codes";
-import { createServiceClient } from "@/lib/supabase/server-client";
 
 export async function GET(request: Request) {
   try {
@@ -39,18 +38,10 @@ export async function GET(request: Request) {
 
     if (error) return jsonError(error.message, 500);
 
-    const service = createServiceClient();
-    const rulings = await Promise.all(
-      (data ?? []).map(async (row) => {
-        let signedUrl: string | null = null;
-        try {
-          signedUrl = await createOperationalSignedUrl(service, row.file_path);
-        } catch {
-          signedUrl = null;
-        }
-        return { ...row, signed_url: signedUrl };
-      }),
-    );
+    const rulings = (data ?? []).map((row) => ({
+      ...row,
+      signed_url: rulingFilePath(row.id),
+    }));
 
     return jsonOk({ rulings });
   } catch (err) {
