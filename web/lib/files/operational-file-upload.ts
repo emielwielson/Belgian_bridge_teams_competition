@@ -45,11 +45,29 @@ export function validateOperationalFile(file: File): ValidatedOperationalFile {
   return { mime, size: file.size, extension };
 }
 
+export function sanitizeOperationalFilename(
+  name: string,
+  extension: string,
+): string {
+  const base = name
+    .replace(/[/\\]/g, "")
+    .replace(/[^\w.\- ()]/g, "_")
+    .trim()
+    .slice(0, 120);
+  const safeBase = base.length > 0 ? base : "document";
+  const suffix = `.${extension}`;
+  if (safeBase.toLowerCase().endsWith(suffix)) {
+    return safeBase;
+  }
+  return `${safeBase}${suffix}`;
+}
+
 export function buildOperationalStoragePath(params: {
   purpose: OperationalFilePurpose;
   entityId: string;
   extension: string;
   fileId?: string;
+  fileName?: string;
 }): string {
   const id = params.fileId ?? crypto.randomUUID();
   const folder =
@@ -58,5 +76,14 @@ export function buildOperationalStoragePath(params: {
       : params.purpose === "penalty"
         ? "penalties"
         : "arbiter";
+
+  if (params.purpose === "ruling") {
+    const fileName = sanitizeOperationalFilename(
+      params.fileName ?? `document.${params.extension}`,
+      params.extension,
+    );
+    return `${folder}/${params.entityId}/${id}/${fileName}`;
+  }
+
   return `${folder}/${params.entityId}/${id}.${params.extension}`;
 }

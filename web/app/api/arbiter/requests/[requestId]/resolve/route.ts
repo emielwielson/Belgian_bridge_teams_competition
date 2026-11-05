@@ -36,6 +36,11 @@ export async function POST(request: Request, { params }: Params) {
     if (!filePath) {
       return jsonErrorCode(ErrorCodes.api.filePathRequired, 400);
     }
+    const fileNameRaw = body.file_name ?? body.fileName;
+    const fileName =
+      typeof fileNameRaw === "string" && fileNameRaw.trim()
+        ? fileNameRaw.trim()
+        : null;
 
     const { data: arbiterRequest, error: requestError } = await supabase
       .from("arbiter_requests")
@@ -77,13 +82,14 @@ export async function POST(request: Request, { params }: Params) {
 
     const result = await resolveArbiterRequest(supabase, requestId, {
       filePath,
+      fileName,
       actions: actionsPayload,
     });
 
     const service = createServiceClient();
     const { data: ruling, error: rulingError } = await supabase
       .from("rulings")
-      .select("file_path")
+      .select("file_path, file_name")
       .eq("id", result.rulingId)
       .maybeSingle();
     if (rulingError) return jsonError(rulingError.message, 500);
@@ -94,6 +100,7 @@ export async function POST(request: Request, { params }: Params) {
         rulingSignedUrl = await createOperationalSignedUrl(
           service,
           ruling.file_path,
+          { downloadFileName: ruling.file_name },
         );
       } catch {
         rulingSignedUrl = null;

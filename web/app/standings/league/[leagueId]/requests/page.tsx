@@ -44,6 +44,7 @@ export default async function LeagueArbiterRequestsPage({ params }: Props) {
         const ruling_signed_url = await createOperationalSignedUrl(
           service,
           request.ruling_file_path,
+          { downloadFileName: request.ruling_file_name },
         );
         return { ...request, ruling_signed_url };
       } catch {

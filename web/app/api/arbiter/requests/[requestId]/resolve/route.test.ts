@@ -82,7 +82,10 @@ describe("/api/arbiter/requests/[requestId]/resolve", () => {
           select: vi.fn(() => ({
             eq: vi.fn(() => ({
               maybeSingle: vi.fn().mockResolvedValue({
-                data: { file_path: "rulings/m1/r.pdf" },
+                data: {
+                  file_path: "rulings/m1/abc/r.pdf",
+                  file_name: "r.pdf",
+                },
                 error: null,
               }),
             })),
@@ -126,7 +129,10 @@ describe("/api/arbiter/requests/[requestId]/resolve", () => {
       new Request("http://x", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ file_path: "rulings/m1/r.pdf" }),
+        body: JSON.stringify({
+          file_path: "rulings/m1/abc/r.pdf",
+          file_name: "r.pdf",
+        }),
       }),
       { params: Promise.resolve({ requestId: "req-1" }) },
     );
@@ -135,12 +141,21 @@ describe("/api/arbiter/requests/[requestId]/resolve", () => {
     expect(buildResolveActionsPayload).toHaveBeenCalledWith(
       expect.anything(),
       "group-1",
-      { file_path: "rulings/m1/r.pdf" },
+      {
+        file_path: "rulings/m1/abc/r.pdf",
+        file_name: "r.pdf",
+      },
     );
     expect(resolveArbiterRequest).toHaveBeenCalledWith(expect.anything(), "req-1", {
-      filePath: "rulings/m1/r.pdf",
+      filePath: "rulings/m1/abc/r.pdf",
+      fileName: "r.pdf",
       actions: {},
     });
+    expect(createOperationalSignedUrl).toHaveBeenCalledWith(
+      undefined,
+      "rulings/m1/abc/r.pdf",
+      { downloadFileName: "r.pdf" },
+    );
     expect(sendArbiterRequestResolvedEmail).toHaveBeenCalledWith(
       {
         requestId: "req-1",

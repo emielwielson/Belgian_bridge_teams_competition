@@ -21,6 +21,7 @@ export async function GET(request: Request) {
         match_id,
         board,
         file_path,
+        file_name,
         ruling_date,
         created_at,
         updated_at,
@@ -43,7 +44,9 @@ export async function GET(request: Request) {
       (data ?? []).map(async (row) => {
         let signedUrl: string | null = null;
         try {
-          signedUrl = await createOperationalSignedUrl(service, row.file_path);
+          signedUrl = await createOperationalSignedUrl(service, row.file_path, {
+            downloadFileName: row.file_name,
+          });
         } catch {
           signedUrl = null;
         }
@@ -69,6 +72,11 @@ export async function POST(request: Request) {
         ? Number(boardRaw)
         : null;
     const filePath = body.file_path as string | undefined;
+    const fileNameRaw = body.file_name ?? body.fileName;
+    const fileName =
+      typeof fileNameRaw === "string" && fileNameRaw.trim()
+        ? fileNameRaw.trim()
+        : null;
     const rulingDate = (body.ruling_date as string | undefined) ?? null;
 
     if (!matchId || !filePath?.trim()) {
@@ -89,10 +97,11 @@ export async function POST(request: Request) {
         match_id: matchId,
         board: board ?? undefined,
         file_path: filePath.trim(),
+        file_name: fileName ?? undefined,
         ruling_date: rulingDate ?? undefined,
         created_by: user.id,
       })
-      .select("id, match_id, board, file_path, ruling_date, created_at")
+      .select("id, match_id, board, file_path, file_name, ruling_date, created_at")
       .single();
 
     if (error) return jsonError(error.message, 400);

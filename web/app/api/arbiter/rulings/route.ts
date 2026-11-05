@@ -72,6 +72,7 @@ export async function GET(request: Request) {
           match_id,
           board,
           file_path,
+          file_name,
           ruling_date,
           created_at,
           created_by,
@@ -92,7 +93,11 @@ export async function GET(request: Request) {
       (data ?? []).map(async (row) => {
         let signed_url: string | null = null;
         try {
-          signed_url = await createOperationalSignedUrl(service, row.file_path);
+          signed_url = await createOperationalSignedUrl(
+            service,
+            row.file_path,
+            { downloadFileName: row.file_name },
+          );
         } catch {
           signed_url = null;
         }
@@ -127,6 +132,11 @@ export async function POST(request: Request) {
         ? Number(boardRaw)
         : null;
     const filePath = body.file_path as string | undefined;
+    const fileNameRaw = body.file_name ?? body.fileName;
+    const fileName =
+      typeof fileNameRaw === "string" && fileNameRaw.trim()
+        ? fileNameRaw.trim()
+        : null;
     const rulingDate = (body.ruling_date as string | undefined) ?? null;
     const arbiterUserIdRaw = body.arbiter_user_id;
     const arbiterUserId =
@@ -164,11 +174,12 @@ export async function POST(request: Request) {
         match_id: matchId,
         board: board ?? undefined,
         file_path: filePath.trim(),
+        file_name: fileName ?? undefined,
         ruling_date: rulingDate ?? undefined,
         created_by: createdBy,
       })
       .select(
-        "id, match_id, board, file_path, ruling_date, created_at, created_by, created_by_name",
+        "id, match_id, board, file_path, file_name, ruling_date, created_at, created_by, created_by_name",
       )
       .single();
 

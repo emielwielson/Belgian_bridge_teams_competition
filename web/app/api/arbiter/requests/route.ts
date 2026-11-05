@@ -213,7 +213,7 @@ export async function GET(request: Request) {
           storage_path,
           sort_order
         ),
-        rulings (file_path),
+        rulings (file_path, file_name),
         match:matches (
           round,
           datetime,
@@ -286,8 +286,8 @@ export async function GET(request: Request) {
         }
 
         const rulingsRaw = row.rulings as
-          | { file_path: string }[]
-          | { file_path: string }
+          | { file_path: string; file_name: string | null }[]
+          | { file_path: string; file_name: string | null }
           | null;
         const rulingRow = Array.isArray(rulingsRaw)
           ? rulingsRaw[0]
@@ -298,6 +298,7 @@ export async function GET(request: Request) {
             ruling_signed_url = await createOperationalSignedUrl(
               service,
               rulingRow.file_path,
+              { downloadFileName: rulingRow.file_name },
             );
           } catch {
             ruling_signed_url = null;

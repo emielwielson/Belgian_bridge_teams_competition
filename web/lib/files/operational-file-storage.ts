@@ -41,11 +41,19 @@ export async function removeOperationalFile(
 export async function createOperationalSignedUrl(
   supabase: SupabaseClient,
   storagePath: string,
-  expiresInSeconds = 3600,
+  options?: {
+    expiresInSeconds?: number;
+    downloadFileName?: string | null;
+  },
 ): Promise<string> {
+  const expiresInSeconds = options?.expiresInSeconds ?? 3600;
+  const downloadFileName = options?.downloadFileName?.trim();
+  const signedOptions = downloadFileName
+    ? { download: downloadFileName }
+    : undefined;
   const { data, error } = await supabase.storage
     .from(OPERATIONAL_FILES_BUCKET)
-    .createSignedUrl(storagePath, expiresInSeconds);
+    .createSignedUrl(storagePath, expiresInSeconds, signedOptions);
 
   if (error) throw error;
   if (!data?.signedUrl) throw new Error("Failed to create signed URL");

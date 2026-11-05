@@ -131,6 +131,7 @@ export function RulingManagement({ groupId }: Props) {
               ? Number(form.board)
               : null,
           file_path: uploadBody.path,
+          file_name: uploadBody.fileName ?? null,
           ruling_date: form.ruling_date,
         }),
       });

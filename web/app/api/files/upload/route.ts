@@ -4,6 +4,7 @@ import { assertCanDisciplineTeam } from "@/lib/auth/match-access";
 import { ARBITER_ACCESS_ROLES, hasAnyRole } from "@/lib/auth/roles";
 import {
   buildOperationalStoragePath,
+  sanitizeOperationalFilename,
   validateOperationalFile,
   type OperationalFilePurpose,
 } from "@/lib/files/operational-file-upload";
@@ -95,21 +96,28 @@ export async function POST(request: Request) {
     await assertCanUploadForPurpose(supabase, purpose, entityId, roles);
 
     const validated = validateOperationalFile(file);
+    const fileName = sanitizeOperationalFilename(
+      file.name || `document.${validated.extension}`,
+      validated.extension,
+    );
     const fileId = randomUUID();
     const storagePath = buildOperationalStoragePath({
       purpose,
       entityId,
       extension: validated.extension,
       fileId,
+      fileName,
     });
 
     const service = createServiceClient();
     const buffer = await file.arrayBuffer();
     await uploadOperationalFile(service, storagePath, buffer, validated);
 
-    const signedUrl = await createOperationalSignedUrl(service, storagePath);
+    const signedUrl = await createOperationalSignedUrl(service, storagePath, {
+      downloadFileName: purpose === "ruling" ? fileName : null,
+    });
 
-    return jsonOk({ path: storagePath, signedUrl }, { status: 201 });
+    return jsonOk({ path: storagePath, fileName, signedUrl }, { status: 201 });
   } catch (err) {
     return jsonFromError(err);
   }

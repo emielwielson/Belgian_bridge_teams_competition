@@ -387,6 +387,7 @@ export async function resolveArbiterRequest(
   requestId: string,
   params: {
     filePath: string;
+    fileName?: string | null;
     actions?: ResolveActionsRpcPayload;
   },
 ): Promise<ResolveArbiterRequestResult> {
@@ -394,6 +395,7 @@ export async function resolveArbiterRequest(
     p_request_id: requestId,
     p_ruling_file_path: params.filePath,
     p_actions: params.actions ?? {},
+    p_ruling_file_name: params.fileName?.trim() || null,
   });
   if (error) throw error;
   return parseResolveResult(data);

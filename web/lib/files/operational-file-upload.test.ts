@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildOperationalStoragePath,
+  sanitizeOperationalFilename,
   validateOperationalFile,
 } from "./operational-file-upload";
 
@@ -20,15 +21,34 @@ describe("validateOperationalFile", () => {
   });
 });
 
+describe("sanitizeOperationalFilename", () => {
+  it("keeps a safe name and ensures extension", () => {
+    expect(sanitizeOperationalFilename("My Ruling.pdf", "pdf")).toBe(
+      "My Ruling.pdf",
+    );
+  });
+
+  it("strips path separators and unsafe characters", () => {
+    expect(sanitizeOperationalFilename("../evil\\name?.pdf", "pdf")).toBe(
+      "..evilname_.pdf",
+    );
+  });
+
+  it("falls back when empty after sanitize", () => {
+    expect(sanitizeOperationalFilename("///", "pdf")).toBe("document.pdf");
+  });
+});
+
 describe("buildOperationalStoragePath", () => {
-  it("builds ruling path under match id", () => {
+  it("builds ruling path with uuid folder and original filename", () => {
     const path = buildOperationalStoragePath({
       purpose: "ruling",
       entityId: "match-1",
       extension: "pdf",
       fileId: "abc",
+      fileName: "Board 3 Ruling.pdf",
     });
-    expect(path).toBe("rulings/match-1/abc.pdf");
+    expect(path).toBe("rulings/match-1/abc/Board 3 Ruling.pdf");
   });
 
   it("builds arbiter path under match id", () => {

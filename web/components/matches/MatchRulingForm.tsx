@@ -117,6 +117,7 @@ export function MatchRulingForm({ matchId }: Props) {
               ? Number(board)
               : null,
           file_path: uploadBody.path,
+          file_name: uploadBody.fileName ?? null,
           ruling_date: rulingDate || null,
           ...(canChooseArbiter ? { arbiter_user_id: arbiterUserId } : {}),
         }),

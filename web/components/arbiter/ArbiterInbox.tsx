@@ -61,6 +61,7 @@ type StatusFilter = "open" | "resolved" | "cancelled" | "all";
 type ResolveDraft = {
   file: File | null;
   uploadedPath: string | null;
+  uploadedFileName: string | null;
   uploading: boolean;
   fileInputKey: number;
   adjustScore: boolean;
@@ -87,6 +88,7 @@ function emptyDraft(match: InboxMatchContext | null): ResolveDraft {
   return {
     file: null,
     uploadedPath: null,
+    uploadedFileName: null,
     uploading: false,
     fileInputKey: 0,
     adjustScore: false,
@@ -211,6 +213,7 @@ export function ArbiterInbox({
     updateDraft(request, {
       file: next,
       uploadedPath: null,
+      uploadedFileName: null,
       uploading: Boolean(next),
     });
 
@@ -232,12 +235,15 @@ export function ArbiterInbox({
       updateDraft(request, {
         file: next,
         uploadedPath: uploadBody.path as string,
+        uploadedFileName:
+          typeof uploadBody.fileName === "string" ? uploadBody.fileName : null,
         uploading: false,
       });
     } catch (e) {
       updateDraft(request, {
         file: null,
         uploadedPath: null,
+        uploadedFileName: null,
         uploading: false,
         fileInputKey: draft.fileInputKey + 1,
       });
@@ -289,6 +295,7 @@ export function ArbiterInbox({
       const match = request.match;
       const payload: Record<string, unknown> = {
         file_path: draft.uploadedPath,
+        file_name: draft.uploadedFileName,
       };
 
       if (draft.adjustScore && draft.score && match) {

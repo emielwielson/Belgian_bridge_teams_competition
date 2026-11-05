@@ -164,7 +164,8 @@ describe("/api/arbiter/rulings", () => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             match_id: "match-1",
-            file_path: "rulings/m1/a.pdf",
+            file_path: "rulings/m1/abc/a.pdf",
+            file_name: "a.pdf",
             ruling_date: "2026-03-01",
           }),
         }),
@@ -172,6 +173,7 @@ describe("/api/arbiter/rulings", () => {
 
       expect(res.status).toBe(201);
       expect(inserted?.created_by).toBe("arbiter-1");
+      expect(inserted?.file_name).toBe("a.pdf");
       expect(assertHonorArbiterUser).not.toHaveBeenCalled();
       expect(revalidateStandingsForGroup).toHaveBeenCalledWith(
         supabase,
@@ -358,7 +360,8 @@ describe("/api/arbiter/rulings", () => {
               id: "r1",
               match_id: "match-1",
               board: 3,
-              file_path: "rulings/m1/a.pdf",
+              file_path: "rulings/m1/abc/Board 3 Ruling.pdf",
+              file_name: "Board 3 Ruling.pdf",
               ruling_date: "2026-03-01",
               created_at: "2026-03-01T12:00:00Z",
               arbiter_request_id: null,
@@ -381,6 +384,11 @@ describe("/api/arbiter/rulings", () => {
       const body = await res.json();
       expect(body.rulings).toHaveLength(1);
       expect(body.rulings[0].signed_url).toBe("https://signed/ruling.pdf");
+      expect(createOperationalSignedUrl).toHaveBeenCalledWith(
+        {},
+        "rulings/m1/abc/Board 3 Ruling.pdf",
+        { downloadFileName: "Board 3 Ruling.pdf" },
+      );
     });
 
     it("requires matchId", async () => {
