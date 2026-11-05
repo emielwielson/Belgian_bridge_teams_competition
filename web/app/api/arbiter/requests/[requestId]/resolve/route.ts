@@ -86,7 +86,7 @@ export async function POST(request: Request, { params }: Params) {
     });
 
     const rulingSignedUrl = result.rulingId
-      ? absoluteRulingFileUrl(result.rulingId)
+      ? absoluteRulingFileUrl(result.rulingId, fileName, filePath)
       : null;
 
     if (result.score) {

@@ -6,12 +6,7 @@ vi.mock("@/lib/supabase/server-client", () => ({
   createServiceClient: vi.fn(),
 }));
 
-vi.mock("@/lib/files/operational-file-storage", () => ({
-  downloadOperationalFile: vi.fn(),
-}));
-
 import { createServiceClient } from "@/lib/supabase/server-client";
-import { downloadOperationalFile } from "@/lib/files/operational-file-storage";
 
 describe("GET /api/public/rulings/[rulingId]/file", () => {
   beforeEach(() => {
@@ -39,7 +34,7 @@ describe("GET /api/public/rulings/[rulingId]/file", () => {
     });
   });
 
-  it("streams the file inline with the stored filename", async () => {
+  it("redirects to a URL ending with the display filename", async () => {
     vi.mocked(createServiceClient).mockReturnValue({
       from: vi.fn(() => ({
         select: vi.fn(() => ({
@@ -56,26 +51,14 @@ describe("GET /api/public/rulings/[rulingId]/file", () => {
         })),
       })),
     } as never);
-    vi.mocked(downloadOperationalFile).mockResolvedValue({
-      data: new Blob([new Uint8Array([1, 2, 3])], {
-        type: "application/pdf",
-      }),
-      contentType: "application/pdf",
-    });
 
-    const res = await GET(new Request("http://x"), {
+    const res = await GET(new Request("http://localhost/api/public/rulings/ruling-1/file"), {
       params: Promise.resolve({ rulingId: "ruling-1" }),
     });
 
-    expect(res.status).toBe(200);
-    expect(res.headers.get("Content-Type")).toBe("application/pdf");
-    expect(res.headers.get("Content-Disposition")).toContain("inline;");
-    expect(res.headers.get("Content-Disposition")).toContain(
-      'filename="Board 3 Ruling.pdf"',
-    );
-    expect(downloadOperationalFile).toHaveBeenCalledWith(
-      expect.anything(),
-      "rulings/m1/uuid.pdf",
+    expect(res.status).toBe(302);
+    expect(res.headers.get("Location")).toBe(
+      "http://localhost/api/public/rulings/ruling-1/Board%203%20Ruling.pdf",
     );
   });
 });

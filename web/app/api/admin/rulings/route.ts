@@ -40,7 +40,7 @@ export async function GET(request: Request) {
 
     const rulings = (data ?? []).map((row) => ({
       ...row,
-      signed_url: rulingFilePath(row.id),
+      signed_url: rulingFilePath(row.id, row.file_name, row.file_path),
     }));
 
     return jsonOk({ rulings });

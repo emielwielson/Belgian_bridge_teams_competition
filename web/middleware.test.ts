@@ -25,6 +25,9 @@ describe("isPublicPath", () => {
     expect(
       isPublicPath("/api/public/rulings/ruling-1/file"),
     ).toBe(true);
+    expect(
+      isPublicPath("/api/public/rulings/ruling-1/Board%203%20Ruling.pdf"),
+    ).toBe(true);
     expect(isPublicPath("/api/standings/abc")).toBe(true);
     expect(isPublicPath("/standings")).toBe(true);
     expect(isPublicPath("/standings/group-1")).toBe(true);

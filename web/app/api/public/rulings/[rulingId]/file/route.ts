@@ -1,18 +1,13 @@
 import { NextResponse } from "next/server";
-import { downloadOperationalFile } from "@/lib/files/operational-file-storage";
-import {
-  extensionFromPathOrName,
-  inlineContentDisposition,
-  mimeFromExtension,
-  resolveRulingDisplayFilename,
-} from "@/lib/files/ruling-file";
+import { rulingFilePath } from "@/lib/files/ruling-file";
 import { jsonError, jsonFromError, jsonErrorCode } from "@/lib/http/api-response";
 import { ErrorCodes } from "@/lib/http/error-codes";
 import { createServiceClient } from "@/lib/supabase/server-client";
 
 type Params = { params: Promise<{ rulingId: string }> };
 
-export async function GET(_request: Request, { params }: Params) {
+/** Legacy path: redirect to a URL that ends with the display filename. */
+export async function GET(request: Request, { params }: Params) {
   try {
     const { rulingId } = await params;
     if (!rulingId?.trim()) {
@@ -31,29 +26,11 @@ export async function GET(_request: Request, { params }: Params) {
       return jsonErrorCode(ErrorCodes.api.rulingNotFound, 404);
     }
 
-    const filename = resolveRulingDisplayFilename(
-      ruling.file_name,
-      ruling.file_path,
+    const target = new URL(
+      rulingFilePath(ruling.id, ruling.file_name, ruling.file_path),
+      request.url,
     );
-    const extension = extensionFromPathOrName(filename);
-    const fallbackMime = mimeFromExtension(extension);
-
-    let downloaded: { data: Blob; contentType: string | null };
-    try {
-      downloaded = await downloadOperationalFile(service, ruling.file_path);
-    } catch {
-      return jsonErrorCode(ErrorCodes.api.rulingNotFound, 404);
-    }
-
-    const bytes = await downloaded.data.arrayBuffer();
-    return new NextResponse(bytes, {
-      status: 200,
-      headers: {
-        "Content-Type": downloaded.contentType || fallbackMime,
-        "Content-Disposition": inlineContentDisposition(filename),
-        "Cache-Control": "private, max-age=3600",
-      },
-    });
+    return NextResponse.redirect(target, 302);
   } catch (err) {
     return jsonFromError(err);
   }

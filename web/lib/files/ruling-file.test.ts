@@ -6,8 +6,16 @@ import {
 } from "./ruling-file";
 
 describe("rulingFilePath", () => {
-  it("builds the public proxy path", () => {
-    expect(rulingFilePath("abc")).toBe("/api/public/rulings/abc/file");
+  it("ends with the encoded display filename", () => {
+    expect(
+      rulingFilePath("abc", "Board 3 Ruling.pdf", "rulings/m1/uuid.pdf"),
+    ).toBe("/api/public/rulings/abc/Board%203%20Ruling.pdf");
+  });
+
+  it("falls back to path basename when file_name is missing", () => {
+    expect(rulingFilePath("abc", null, "rulings/m1/x/My.pdf")).toBe(
+      "/api/public/rulings/abc/My.pdf",
+    );
   });
 });
 

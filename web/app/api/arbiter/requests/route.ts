@@ -294,7 +294,11 @@ export async function GET(request: Request) {
           ? rulingsRaw[0]
           : rulingsRaw;
         const ruling_signed_url = rulingRow?.id
-          ? rulingFilePath(rulingRow.id)
+          ? rulingFilePath(
+              rulingRow.id,
+              rulingRow.file_name,
+              rulingRow.file_path,
+            )
           : null;
 
         return {

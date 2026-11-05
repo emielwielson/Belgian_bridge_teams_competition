@@ -1,12 +1,29 @@
 import { getAppBaseUrl } from "@/lib/notifications/postponement-email";
 import { sanitizeOperationalFilename } from "./operational-file-upload";
 
-export function rulingFilePath(rulingId: string): string {
-  return `/api/public/rulings/${rulingId}/file`;
+/**
+ * Public ruling URL ending in the display filename.
+ * Chrome's PDF viewer uses the last path segment for Save As / tab title
+ * and often ignores Content-Disposition for inline PDFs.
+ */
+export function rulingFilePath(
+  rulingId: string,
+  fileName?: string | null,
+  filePath?: string | null,
+): string {
+  const name = resolveRulingDisplayFilename(
+    fileName,
+    filePath ?? "document.pdf",
+  );
+  return `/api/public/rulings/${rulingId}/${encodeURIComponent(name)}`;
 }
 
-export function absoluteRulingFileUrl(rulingId: string): string {
-  return `${getAppBaseUrl()}${rulingFilePath(rulingId)}`;
+export function absoluteRulingFileUrl(
+  rulingId: string,
+  fileName?: string | null,
+  filePath?: string | null,
+): string {
+  return `${getAppBaseUrl()}${rulingFilePath(rulingId, fileName, filePath)}`;
 }
 
 const EXT_TO_MIME: Record<string, string> = {

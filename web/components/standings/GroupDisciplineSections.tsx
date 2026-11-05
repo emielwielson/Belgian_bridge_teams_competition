@@ -42,7 +42,7 @@ export async function GroupDisciplineSections({ groupId }: Props) {
 
   const rulingsWithUrls = rulings.map((ruling) => ({
     ...ruling,
-    signed_url: rulingFilePath(ruling.id),
+    signed_url: rulingFilePath(ruling.id, ruling.file_name, ruling.file_path),
   }));
 
   return (

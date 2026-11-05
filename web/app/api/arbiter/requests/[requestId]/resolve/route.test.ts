@@ -133,7 +133,8 @@ describe("/api/arbiter/requests/[requestId]/resolve", () => {
     expect(sendArbiterRequestResolvedEmail).toHaveBeenCalledWith(
       {
         requestId: "req-1",
-        rulingSignedUrl: "https://app.example.com/api/public/rulings/ruling-1/file",
+        rulingSignedUrl:
+          "https://app.example.com/api/public/rulings/ruling-1/r.pdf",
       },
       "en",
     );

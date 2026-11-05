@@ -376,7 +376,7 @@ describe("/api/arbiter/rulings", () => {
       const body = await res.json();
       expect(body.rulings).toHaveLength(1);
       expect(body.rulings[0].signed_url).toBe(
-        "/api/public/rulings/r1/file",
+        "/api/public/rulings/r1/Board%203%20Ruling.pdf",
       );
     });
 

@@ -36,7 +36,11 @@ export default async function LeagueArbiterRequestsPage({ params }: Props) {
   const requestsWithUrls = requests.map((request) => ({
     ...request,
     ruling_signed_url: request.ruling_id
-      ? rulingFilePath(request.ruling_id)
+      ? rulingFilePath(
+          request.ruling_id,
+          request.ruling_file_name,
+          request.ruling_file_path,
+        )
       : null,
   }));
 
